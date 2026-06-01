@@ -19,6 +19,105 @@ export interface OverviewSectionParams {
   hass: HomeAssistant;
 }
 
+export function createSummaryCards(config: Simon42StrategyConfig, compact = false): LovelaceCardConfig[] {
+  const showCoversSummary = config.show_covers_summary !== false;
+  const showLightSummary = config.show_light_summary !== false;
+  const showSecuritySummary = config.show_security_summary !== false;
+  const showBatterySummary = config.show_battery_summary !== false;
+  const showClimateSummary = config.show_climate_summary === true;
+
+  const summaryCards: LovelaceCardConfig[] = [];
+  const compactConfig = compact ? { compact: true } : {};
+
+  if (showLightSummary) {
+    summaryCards.push({
+      type: 'custom:dashboard-strategy-summary-card',
+      summary_type: 'lights',
+      areas_options: config.areas_options || {},
+      ...compactConfig,
+    });
+  }
+
+  if (showCoversSummary) {
+    summaryCards.push({
+      type: 'custom:dashboard-strategy-summary-card',
+      summary_type: 'covers',
+      areas_options: config.areas_options || {},
+      ...compactConfig,
+    });
+  }
+
+  if (showSecuritySummary) {
+    summaryCards.push({
+      type: 'custom:dashboard-strategy-summary-card',
+      summary_type: 'security',
+      areas_options: config.areas_options || {},
+      ...compactConfig,
+    });
+  }
+
+  if (showBatterySummary) {
+    summaryCards.push({
+      type: 'custom:dashboard-strategy-summary-card',
+      summary_type: 'batteries',
+      areas_options: config.areas_options || {},
+      hide_mobile_app_batteries: config.hide_mobile_app_batteries,
+      battery_critical_threshold: config.battery_critical_threshold,
+      ...compactConfig,
+    });
+  }
+
+  if (showClimateSummary) {
+    summaryCards.push({
+      type: 'custom:dashboard-strategy-summary-card',
+      summary_type: 'climate',
+      areas_options: config.areas_options || {},
+      ...compactConfig,
+    });
+  }
+
+  return summaryCards;
+}
+
+export function appendSummaryCards(
+  cards: LovelaceCardConfig[],
+  config: Simon42StrategyConfig,
+  compact = false
+): void {
+  const summaryCards = createSummaryCards(config, compact);
+  if (summaryCards.length === 0) return;
+
+  cards.push({
+    type: 'heading',
+    heading: localize('sections.summaries'),
+  });
+
+  const summariesColumns = config.summaries_columns || 2;
+  if (summariesColumns === 4) {
+    cards.push({
+      type: 'horizontal-stack',
+      cards: summaryCards,
+    });
+    return;
+  }
+
+  for (let i = 0; i < summaryCards.length; i += 2) {
+    cards.push({
+      type: 'horizontal-stack',
+      cards: summaryCards.slice(i, i + 2),
+    });
+  }
+}
+
+export function createSummariesSection(
+  config: Simon42StrategyConfig,
+  compact = false
+): LovelaceSectionConfig | null {
+  const cards: LovelaceCardConfig[] = [];
+  appendSummaryCards(cards, config, compact);
+  return cards.length > 0 ? { type: 'grid', cards } : null;
+}
+
 /**
  * Creates the overview section with summaries, clock, optional alarm,
  * optional search card, and favorites.
@@ -88,84 +187,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
     });
   }
 
-  // Summaries columns (default: 2)
-  const summariesColumns = config.summaries_columns || 2;
-  const showCoversSummary = config.show_covers_summary !== false;
-  const showLightSummary = config.show_light_summary !== false;
-  const showSecuritySummary = config.show_security_summary !== false;
-  const showBatterySummary = config.show_battery_summary !== false;
-  const showClimateSummary = config.show_climate_summary === true;
-
-  // Build summary cards based on config
-  const summaryCards: LovelaceCardConfig[] = [];
-
-  if (showLightSummary) {
-    summaryCards.push({
-      type: 'custom:dashboard-strategy-summary-card',
-      summary_type: 'lights',
-      areas_options: config.areas_options || {},
-    });
-  }
-
-  if (showCoversSummary) {
-    summaryCards.push({
-      type: 'custom:dashboard-strategy-summary-card',
-      summary_type: 'covers',
-      areas_options: config.areas_options || {},
-    });
-  }
-
-  if (showSecuritySummary) {
-    summaryCards.push({
-      type: 'custom:dashboard-strategy-summary-card',
-      summary_type: 'security',
-      areas_options: config.areas_options || {},
-    });
-  }
-
-  if (showBatterySummary) {
-    summaryCards.push({
-      type: 'custom:dashboard-strategy-summary-card',
-      summary_type: 'batteries',
-      areas_options: config.areas_options || {},
-      hide_mobile_app_batteries: config.hide_mobile_app_batteries,
-      battery_critical_threshold: config.battery_critical_threshold,
-    });
-  }
-
-  if (showClimateSummary) {
-    summaryCards.push({
-      type: 'custom:dashboard-strategy-summary-card',
-      summary_type: 'climate',
-      areas_options: config.areas_options || {},
-    });
-  }
-
-  // Only show summaries heading and cards if at least one is enabled
-  if (summaryCards.length > 0) {
-    cards.push({
-      type: 'heading',
-      heading: localize('sections.summaries'),
-    });
-
-    // Layout logic: adapt to number of cards
-    if (summariesColumns === 4) {
-      // 4 columns: all cards in a single row
-      cards.push({
-        type: 'horizontal-stack',
-        cards: summaryCards,
-      });
-    } else {
-      // 2 columns: split into rows of 2
-      for (let i = 0; i < summaryCards.length; i += 2) {
-        const rowCards = summaryCards.slice(i, i + 2);
-        cards.push({
-          type: 'horizontal-stack',
-          cards: rowCards,
-        });
-      }
-    }
-  }
+  appendSummaryCards(cards, config);
 
   // Favorites section
   const favoriteEntities = (config.favorite_entities || []).filter((entityId) => hass.states[entityId] !== undefined);

@@ -1503,6 +1503,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
         return (this._config.custom_cards || []).length === 0;
       case 'custom_sections':
         return (this._config.custom_sections || []).length === 0;
+      case 'summaries':
+        return this._config.show_light_summary === false
+          && this._config.show_covers_summary === false
+          && this._config.show_security_summary === false
+          && this._config.show_battery_summary === false
+          && this._config.show_climate_summary !== true;
       default:
         return false;
     }
@@ -1511,6 +1517,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private static _weatherStartBlockMeta = new Map<WeatherStartKey, { icon: string; labelKey: string }>([
     ['clock', { icon: 'mdi:clock-outline', labelKey: 'weather_start_blocks.clock' }],
     ['date', { icon: 'mdi:calendar-today', labelKey: 'weather_start_blocks.date' }],
+    ['summaries', { icon: 'mdi:view-dashboard-outline', labelKey: 'weather_start_blocks.summaries' }],
     ['weather_current', { icon: 'mdi:weather-partly-cloudy', labelKey: 'weather_start_blocks.weather_current' }],
     ['weather_hourly', { icon: 'mdi:clock-time-four-outline', labelKey: 'weather_start_blocks.weather_hourly' }],
     ['weather_daily', { icon: 'mdi:calendar-week', labelKey: 'weather_start_blocks.weather_daily' }],
@@ -1834,6 +1841,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
     if (item.type === 'floor') {
       return !this._getWeatherStartAreaOptions().some((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+    }
+    if (item.type === 'summaries') {
+      return this._isWeatherStartBlockDisabled('summaries');
     }
     return false;
   }
@@ -2287,8 +2297,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const selectedTheme = this._config.theme || '';
     const themeNames = this._getThemeNames();
     const overviewLayout = this._config.overview_layout || 'default';
-    const clockSize = this._config.clock_size ?? 120;
-    const dateSize = this._config.date_size ?? 72;
 
     return html`
       <div class="section">
@@ -2332,25 +2340,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </select>
         </div>
         <div class="description">${localize('editor.weather_entity_desc')}</div>
-
-        ${overviewLayout === 'weather_start' ? html`
-        <div class="form-row">
-          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.clock_size')}</label>
-          <input type="number" min="20" max="300" step="4"
-            .value=${String(clockSize)}
-            style="width: 80px;"
-            @change=${this._clockSizeChanged} />
-          <span style="margin-left: 6px; color: var(--secondary-text-color);">px</span>
-        </div>
-        <div class="form-row">
-          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.date_size')}</label>
-          <input type="number" min="12" max="200" step="4"
-            .value=${String(dateSize)}
-            style="width: 80px;"
-            @change=${this._dateSizeChanged} />
-          <span style="margin-left: 6px; color: var(--secondary-text-color);">px</span>
-        </div>
-        ` : ''}
 
         ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
 
@@ -3553,24 +3542,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
       delete newConfig.weather_entity;
     }
 
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _clockSizeChanged(e: Event): void {
-    const val = parseInt((e.target as HTMLInputElement).value, 10);
-    if (isNaN(val) || val < 1) return;
-    const newConfig: Simon42StrategyConfig = { ...this._config, clock_size: val };
-    if (val === 120) delete newConfig.clock_size;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _dateSizeChanged(e: Event): void {
-    const val = parseInt((e.target as HTMLInputElement).value, 10);
-    if (isNaN(val) || val < 1) return;
-    const newConfig: Simon42StrategyConfig = { ...this._config, date_size: val };
-    if (val === 72) delete newConfig.date_size;
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }

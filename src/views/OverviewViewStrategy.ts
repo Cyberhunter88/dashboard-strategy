@@ -14,7 +14,7 @@ import { Registry } from '../Registry';
 import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/entity-filter';
 import { getVisibleAreas } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
-import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray } from '../sections/OverviewSection';
+import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createSummariesSection } from '../sections/OverviewSection';
 import { buildAreaCard, createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
 import { createOverviewView } from '../utils/view-builder';
@@ -61,7 +61,7 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
   return result;
 }
 
-function createLargeTimeCard(_sizePx: number): LovelaceCardConfig {
+function createLargeTimeCard(): LovelaceCardConfig {
   // Native clock card — DOMPurify strips style in markdown cards in recent HA versions.
   return {
     type: 'clock',
@@ -77,7 +77,7 @@ function createLargeTimeCard(_sizePx: number): LovelaceCardConfig {
   };
 }
 
-function createLargeDateCard(sizePx: number): LovelaceCardConfig {
+function createLargeDateCard(): LovelaceCardConfig {
   // custom:button-card injects CSS into its own shadow DOM, bypassing DOMPurify.
   // Uses HA CSS variables so the card background matches the native clock card style.
   return {
@@ -94,7 +94,7 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
     double_tap_action: { action: 'none' },
     grid_options: {
       columns: 'full',
-      rows: 2,
+      rows: 1,
     },
     styles: {
       card: [
@@ -103,7 +103,7 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
         { 'box-shadow': 'var(--ha-card-box-shadow, none)' },
         { border: 'var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, transparent)' },
         { height: '100%' },
-        { 'min-height': '80px' },
+        { 'min-height': '56px' },
         { display: 'flex' },
         { 'align-items': 'center' },
         { 'justify-content': 'center' },
@@ -116,7 +116,7 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
         { 'justify-content': 'center' },
       ],
       name: [
-        { 'font-size': `${sizePx}px` },
+        { 'font-size': '32px' },
         { 'font-weight': '600' },
         { 'line-height': '1' },
         { color: 'var(--primary-text-color)' },
@@ -130,7 +130,7 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
 
 function normalizeWeatherStartOrder(order: WeatherStartKey[]): WeatherStartKey[] {
   const validKeys = new Set<WeatherStartKey>([
-    'clock', 'date', 'weather_current', 'weather_hourly', 'weather_daily',
+    'clock', 'date', 'summaries', 'weather_current', 'weather_hourly', 'weather_daily',
     'areas', 'custom_cards', 'custom_sections',
   ]);
   const seen = new Set<WeatherStartKey>();
@@ -210,8 +210,6 @@ function createWeatherStartSectionsFromItems(
   weatherEntity: string | null,
   visibleAreas: ReturnType<typeof getVisibleAreas>,
   dashboardConfig: Simon42StrategyConfig,
-  clockSize: number,
-  dateSize: number,
   hass: HomeAssistant
 ): LovelaceSectionConfig[] {
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
@@ -239,10 +237,13 @@ function createWeatherStartSectionsFromItems(
     let section: LovelaceSectionConfig | null = null;
     switch (item.type) {
       case 'clock':
-        section = { type: 'grid', cards: [createLargeTimeCard(clockSize)] };
+        section = { type: 'grid', cards: [createLargeTimeCard()] };
         break;
       case 'date':
-        section = { type: 'grid', cards: [createLargeDateCard(dateSize)] };
+        section = { type: 'grid', cards: [createLargeDateCard()] };
+        break;
+      case 'summaries':
+        section = createSummariesSection(dashboardConfig, true);
         break;
       case 'weather_current':
         section = weatherEntity ? {
@@ -316,8 +317,7 @@ function createWeatherStartSections(
   areasSections: LovelaceSectionConfig | LovelaceSectionConfig[],
   customCardsSection: LovelaceSectionConfig | null,
   customSections: LovelaceSectionConfig[],
-  clockSize: number,
-  dateSize: number,
+  dashboardConfig: Simon42StrategyConfig,
   order: WeatherStartKey[],
   blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {}
 ): LovelaceSectionConfig[] {
@@ -327,13 +327,18 @@ function createWeatherStartSections(
 
   blockMap.set('clock', withBlockOverride('clock', {
     type: 'grid',
-    cards: [createLargeTimeCard(clockSize)],
+    cards: [createLargeTimeCard()],
   }, blocksConfig));
 
   blockMap.set('date', withBlockOverride('date', {
     type: 'grid',
-    cards: [createLargeDateCard(dateSize)],
+    cards: [createLargeDateCard()],
   }, blocksConfig));
+
+  blockMap.set('summaries', withBlockOverride('summaries',
+    createSummariesSection(dashboardConfig, true),
+    blocksConfig
+  ));
 
   blockMap.set('weather_current', withBlockOverride('weather_current', weatherEntity ? {
     type: 'grid',
@@ -463,8 +468,6 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           weatherEntity ?? null,
           visibleAreas,
           dashboardConfig,
-          dashboardConfig.clock_size ?? 120,
-          dashboardConfig.date_size ?? 72,
           hass
         )
         : createWeatherStartSections(
@@ -476,8 +479,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
             dashboardConfig.custom_cards_icon
           ),
           createCustomSectionsArray(dashboardConfig.custom_sections || []),
-          dashboardConfig.clock_size ?? 120,
-          dashboardConfig.date_size ?? 72,
+          dashboardConfig,
           dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
           dashboardConfig.weather_start_blocks_config ?? {}
         );

@@ -299,6 +299,7 @@
   "weather_start_blocks": {
     "clock": "Uhrzeit",
     "date": "Datum",
+    "summaries": "Zusammenfassungen",
     "weather_current": "Aktuelles Wetter",
     "weather_hourly": "Stundenvorhersage",
     "weather_daily": "Tagesvorhersage",

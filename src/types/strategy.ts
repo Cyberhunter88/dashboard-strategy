@@ -26,6 +26,7 @@ export type OverviewLayout = 'default' | 'weather_start';
 export type WeatherStartKey =
   | 'clock'
   | 'date'
+  | 'summaries'
   | 'weather_current'
   | 'weather_hourly'
   | 'weather_daily'
@@ -36,6 +37,7 @@ export type WeatherStartKey =
 export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'clock',
   'date',
+  'summaries',
   'weather_current',
   'weather_hourly',
   'weather_daily',
@@ -164,7 +166,7 @@ export interface Simon42StrategyConfig {
   room_pins_show_state?: boolean; // default: false
   room_pins_hide_last_changed?: boolean; // default: false
 
-  // Weather-start layout font sizes (px, defaults: clock=120, date=72)
+  // Legacy weather-start layout font sizes (kept for backwards-compatible YAML)
   clock_size?: number;
   date_size?: number;
 
