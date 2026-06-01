@@ -85,6 +85,9 @@
     "idle": "Bereitschaft",
     "off": "Aus"
   },
+  "ups": {
+    "battery": "Akku"
+  },
   "room": {
     "cameras": "Kameras",
     "lighting": "Beleuchtung",
@@ -164,6 +167,8 @@
     "show_automations_in_rooms_desc": "Zeigt dem Bereich zugeordnete Automationen in den jeweiligen Raum-Ansichten an.",
     "show_scripts_in_rooms": "Skripte in Raum-Ansichten anzeigen",
     "show_scripts_in_rooms_desc": "Zeigt dem Bereich zugeordnete Skripte in den jeweiligen Raum-Ansichten an.",
+    "show_ups_in_rooms": "USV/UPS in Raum-Ansichten anzeigen",
+    "show_ups_in_rooms_desc": "Erkennt USV-/UPS-Geräte (z.B. über NUT oder SNMP) automatisch und zeigt pro Gerät einen Block mit Akku-Ladestand und zugehörigen Sensoren in der jeweiligen Raum-Ansicht. Sensoren, die per Label 'no_dboard' oder über die Entitäts-Optionen ausgeblendet sind, werden nicht berücksichtigt.",
     "show_window_contacts_in_rooms": "Fensterkontakte in Raum-Ansichten anzeigen",
     "show_window_contacts_in_rooms_desc": "Zeigt Fensterkontakte als Badges in den jeweiligen Raum-Ansichten an.",
     "show_door_contacts_in_rooms": "Türkontakte in Raum-Ansichten anzeigen",
