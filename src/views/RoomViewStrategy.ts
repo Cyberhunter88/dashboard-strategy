@@ -711,15 +711,38 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: 'last_changed',
     }));
 
-    domainSection('climate', roomEntities.climate, localize('room.climate'), 'mdi:thermostat', (e) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      features: [{ type: 'climate-hvac-modes' }],
-      features_position: 'inline',
-      vertical: false,
-      state_content: ['hvac_action', 'current_temperature'],
-    }));
+    const climateCards: LovelaceCardConfig[] = [];
+    for (const e of roomEntities.climate)
+      climateCards.push({
+        type: 'tile',
+        entity: e,
+        name: stripAreaName(e, area, hass),
+        features: [{ type: 'climate-hvac-modes' }],
+        features_position: 'inline',
+        vertical: false,
+        state_content: ['hvac_action', 'current_temperature'],
+      });
+    for (const e of roomEntities.fan) {
+      const state = hass.states[e];
+      const hasSpeed = state && fanSupportsSpeed(state);
+      climateCards.push({
+        type: 'tile',
+        entity: e,
+        name: stripAreaName(e, area, hass),
+        ...(hasSpeed ? { features: [{ type: 'fan-speed' }], features_position: 'inline' } : {}),
+        vertical: false,
+        state_content: 'last_changed',
+      });
+    }
+    if (climateCards.length > 0) {
+      pushStack('climate', {
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('room.climate'), heading_style: 'title', icon: 'mdi:thermostat' },
+          ...climateCards,
+        ],
+      });
+    }
 
     domainSection('covers', roomEntities.covers, localize('room.covers'), 'mdi:window-shutter', (e) => ({
       type: 'tile',
@@ -772,7 +795,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: 'last_changed',
     }));
 
-    // Misc (vacuum, fan, switches)
+    // Misc (vacuum, switches)
     const miscCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.vacuum)
       miscCards.push({
@@ -784,18 +807,6 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         vertical: false,
         state_content: 'last_changed',
       });
-    for (const e of roomEntities.fan) {
-      const state = hass.states[e];
-      const hasSpeed = state && fanSupportsSpeed(state);
-      miscCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        ...(hasSpeed ? { features: [{ type: 'fan-speed' }], features_position: 'inline' } : {}),
-        vertical: false,
-        state_content: 'last_changed',
-      });
-    }
     for (const e of roomEntities.switches)
       miscCards.push({
         type: 'tile',

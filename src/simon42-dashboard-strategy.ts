@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.6.0';
+const STRATEGY_VERSION = '1.6.1';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -62,6 +62,11 @@ class Simon42DashboardStrategy extends HTMLElement {
     const showSecurity = config.show_security_summary !== false;
     const showBatteries = config.show_battery_summary !== false;
     const showClimate = config.show_climate_summary === true;
+    const selectedTheme = config.theme?.trim();
+    const withConfiguredTheme = (view: LovelaceViewConfig): LovelaceViewConfig => {
+      if (!selectedTheme || view.theme) return view;
+      return { ...view, theme: selectedTheme };
+    };
 
     // Pre-resolve ALL views upfront (like HA's Home Panel does)
     const overviewConfig = await getStrategy('ll-strategy-dashboard-strategy-view-overview').generate(
@@ -145,7 +150,7 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     return {
       title: localize('dashboard.title'),
-      views,
+      views: views.map(withConfiguredTheme),
     };
   }
 

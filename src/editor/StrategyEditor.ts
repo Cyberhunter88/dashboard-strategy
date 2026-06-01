@@ -167,6 +167,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  private _getThemeNames(): string[] {
+    if (!this._hass?.themes?.themes) return [];
+    return Object.keys(this._hass.themes.themes).sort((a, b) => a.localeCompare(b));
+  }
+
   private _getFilteredEntities(query: string, filterWithArea = false): EntitySelectOption[] {
     if (!this._hass || query.length < 2) return [];
     const q = query.toLowerCase();
@@ -1278,13 +1283,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     if (has('lights')) present.add('lights');
     if (has('locks')) present.add('locks');
-    if (has('climate')) present.add('climate');
+    if (has('climate') || has('fan')) present.add('climate');
     if (has('covers')) present.add('covers');
     if (has('covers_curtain')) present.add('covers_curtain');
     if (has('covers_window')) present.add('covers_window');
     if (has('media_player')) present.add('media');
     if (has('scenes')) present.add('scenes');
-    if (has('vacuum') || has('fan') || has('switches')) present.add('misc');
+    if (has('vacuum') || has('switches')) present.add('misc');
     if (has('automations')) present.add('automations');
     if (has('scripts')) present.add('scripts');
     if (has('ups')) present.add('ups');
@@ -1416,10 +1421,25 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
+    const selectedTheme = this._config.theme || '';
+    const themeNames = this._getThemeNames();
 
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_overview')}</div>
+
+        <div class="form-row">
+          <label for="dashboard-theme" style="margin-right: 8px; min-width: 120px;">${localize('editor.theme')}</label>
+          <select id="dashboard-theme"
+            style="flex: 1;"
+            @change=${this._themeChanged}>
+            <option value="" ?selected=${!selectedTheme}>${localize('editor.theme_default')}</option>
+            ${themeNames.map((theme) => html`
+              <option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option>
+            `)}
+          </select>
+        </div>
+        <div class="description">${localize('editor.theme_desc')}</div>
 
         ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
           (checked) => this._toggleChanged('show_clock_card', checked, true))}
@@ -2591,6 +2611,21 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
+
+  private _themeChanged = (e: Event): void => {
+    if (!this._hass) return;
+
+    const theme = (e.target as HTMLSelectElement).value.trim();
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (theme) {
+      newConfig.theme = theme;
+    } else {
+      delete newConfig.theme;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
 
   private _batteryCriticalChanged(e: Event): void {
     const value = parseInt((e.target as HTMLInputElement).value, 10);

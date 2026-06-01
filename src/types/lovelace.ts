@@ -50,6 +50,7 @@ export interface LovelaceViewConfig {
   title?: string;
   path?: string;
   icon?: string;
+  theme?: string;
   type?: string;
   subview?: boolean;
   max_columns?: number;

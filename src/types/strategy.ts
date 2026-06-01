@@ -57,6 +57,9 @@ export const DEFAULT_STACKS_ORDER: StackKey[] = [
 // -- Main Strategy Config ---------------------------------------------
 
 export interface Simon42StrategyConfig {
+  // Appearance
+  theme?: string; // default: Home Assistant/user default
+
   // Global toggles
   show_weather?: boolean; // default: true
   show_energy?: boolean; // default: true
