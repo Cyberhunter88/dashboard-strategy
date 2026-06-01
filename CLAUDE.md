@@ -306,6 +306,7 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] Bugfix (8 Findings): `weather_start` custom_sections-Routing, Registry-Reinit bei HA-Registry-Änderungen, `hass.floors`-Null-Guard, binary_sensor Batterie-Erkennung via `device_class`, `SummaryCard.setConfig()` requestUpdate, `LightsGroupCard` Cache-Invalidierung, `_addCustomView` i18n, `dataTransfer` Firefox-Fix (branch `fix/code-review-findings`, v1.6.6)
 - [x] `weather_start` clock/date font size enlarged (clock 120 px, date 72 px); editor `weather_entity` dropdown — manual weather entity override, falls back to auto-detect (v1.6.6)
 - [x] `clock_size` / `date_size` config options: freely configurable font sizes for clock and date in weather_start layout; editor number inputs (visible only in weather_start mode); defaults omitted from YAML (v1.6.7)
+- [x] Bugfix: `<style>`-Blöcke in Markdown-Karten durch inline-Styles (clock/date) bzw. native `heading`-Karte (Spalten-Spacer) ersetzt — HA sanitiert `<style>`-Blöcke via DOMPurify seit neueren Versionen (v1.6.10)
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)
