@@ -1,10 +1,10 @@
-import path from 'path';
+﻿import path from 'path';
 import webpack from 'webpack';
 
 const config: webpack.Configuration = {
   mode: 'development',
   devtool: 'source-map',
-  entry: './src/simon42-dashboard-strategy.ts',
+  entry: './src/dashboard-strategy.ts',
   output: {
     clean: true,
     filename: 'dashboard-strategy.js',

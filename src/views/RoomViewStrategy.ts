@@ -36,43 +36,6 @@ function mediaPlayerSupportsPlayback(state: HassEntity): boolean {
   return (f & (MEDIA_PAUSE | MEDIA_PLAY | MEDIA_STOP)) !== 0;
 }
 
-// === UPS/USV signal vocabulary (single source of truth) ===
-// device_class values typical of a UPS, beyond the mandatory battery sensor.
-const UPS_SIGNAL_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
-// entity-id patterns, anchored on segment boundaries (start/end or `.`/`_`) so we
-// only match whole id tokens. This avoids false positives like a phone's
-// "download" sensor (would match a bare /load/) or "battery_status" text sensors.
-// Bare "status"/"state" are deliberately NOT detection signals (too common
-// outside UPS); they only influence sort order via upsSensorRole().
-const UPS_RUNTIME_PATTERN = /(^|[._])(runtime|time_left|load_runtime)([._]|$)/;
-const UPS_LOAD_PATTERN = /(^|[._])load([._]|$)/;
-const UPS_VOLTAGE_PATTERN = /(^|[._])(voltage|input_voltage|input)([._]|$)/;
-const UPS_STATUS_PATTERN = /(^|[._])(status|state)([._]|$)/;
-// Detection-only: id tokens strong enough to confirm a UPS (excludes bare status/state).
-const UPS_DETECT_ID_PATTERN = /(^|[._])(load|runtime|time_left|input_voltage|input)([._]|$)/;
-
-/** Returns a sort priority for a UPS sensor entity (lower = more prominent) */
-function upsSensorRole(entityId: string, state: HassEntity): number {
-  const dc = state.attributes?.device_class as string | undefined;
-  if (dc === 'duration' || UPS_RUNTIME_PATTERN.test(entityId)) return 1;
-  if (dc === 'power' || dc === 'apparent_power' || UPS_LOAD_PATTERN.test(entityId)) return 2;
-  if (dc === 'voltage' || UPS_VOLTAGE_PATTERN.test(entityId)) return 3;
-  if (UPS_STATUS_PATTERN.test(entityId)) return 4;
-  return 5;
-}
-
-interface UpsDeviceRender {
-  name: string;
-  batteryId: string;
-  sensorIds: string[];
-}
-
-interface UpsCandidateEntity {
-  entityId: string;
-  state: HassEntity;
-  platform?: string;
-}
-
 /**
  * Baut aus den AreaCustomCard-Einträgen einer Position (top/bottom) genau
  * eine grid-Sammel-Section. Gibt [] zurück, wenn keine gültige Karte vorliegt.
@@ -193,80 +156,8 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // (no hidden, no_dboard, config/diagnostic, config-hidden)
     const visibleEntities = Registry.getVisibleEntitiesForArea(area.area_id);
 
-    // === UPS/USV Detection ===
-    // Runs before the main loop so matched entities can be skipped there.
-    // Works exclusively on visibleEntities (already filtered — no_dboard, hidden, disabled, config/diagnostic).
-    const showUps = dashboardConfig.show_ups_in_rooms !== false; // default: true (Opt-out)
-    const usedByUps = new Set<string>();
-    const upsDevices: UpsDeviceRender[] = [];
-
-    if (showUps) {
-      // Group visible sensor/binary_sensor entities by device
-      const byDevice = new Map<string, string[]>();
-      for (const entity of visibleEntities) {
-        const domain = entity.entity_id.split('.')[0];
-        if (domain !== 'sensor' && domain !== 'binary_sensor') continue;
-        if (!entity.device_id) continue;
-        const list = byDevice.get(entity.device_id);
-        if (list) list.push(entity.entity_id);
-        else byDevice.set(entity.device_id, [entity.entity_id]);
-      }
-
-      for (const [deviceId, entityIds] of byDevice) {
-        const batteryId = entityIds.find((id) => {
-          const attrs = hass.states[id]?.attributes;
-          // Require a percentage battery sensor — filters odd "battery" device_class
-          // sensors (e.g. battery-type strings) that aren't a state-of-charge reading.
-          return attrs?.device_class === 'battery' && attrs?.unit_of_measurement === '%';
-        });
-        if (!batteryId) continue; // no battery (%) sensor → not a UPS
-
-        const isNut = entityIds.some((id) => {
-          const entry = Registry.getEntity(id);
-          return entry?.platform === 'nut';
-        });
-
-        let isUps = false;
-        if (isNut) {
-          // NUT platform: battery alone is sufficient proof
-          isUps = true;
-        } else {
-          // Non-NUT: battery + at least one UPS-typical sensor (device_class or anchored id token)
-          isUps = entityIds.some((id) => {
-            if (id === batteryId) return false;
-            const dc = hass.states[id]?.attributes?.device_class as string | undefined;
-            return (dc !== undefined && UPS_SIGNAL_CLASSES.has(dc)) || UPS_DETECT_ID_PATTERN.test(id);
-          });
-        }
-
-        if (!isUps) continue;
-
-        const device = Registry.getDevice(deviceId);
-        const deviceName = device?.name_by_user ?? device?.name ?? 'UPS';
-
-        // All entities for this device are claimed by UPS rendering
-        for (const id of entityIds) usedByUps.add(id);
-
-        // Schwartzian transform: compute each role once, then sort (avoids
-        // re-reading hass.states inside the comparator on every comparison).
-        const sensorIds = entityIds
-          .filter((id) => id !== batteryId && hass.states[id])
-          .map((id) => ({ id, role: upsSensorRole(id, hass) }))
-          .sort((a, b) => a.role - b.role)
-          .map((entry) => entry.id);
-
-        upsDevices.push({ name: deviceName, batteryId, sensorIds });
-      }
-    }
-
-    // Populate roomEntities.ups with battery IDs so groups_options.ups.hidden can suppress per device
-    for (const d of upsDevices) roomEntities.ups.push(d.batteryId);
-
     for (const entity of visibleEntities) {
       const entityId = entity.entity_id;
-
-      // USV-Entitäten werden separat gerendert — hier überspringen
-      if (usedByUps.has(entityId)) continue;
 
       // State check
       const state = hass.states[entityId];
@@ -529,62 +420,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     const areaOptions = dashboardConfig.areas_options?.[area.area_id];
     const stacksOrder = mergeStacksOrder(areaOptions?.stacks_order);
     const stacks = new Map<StackKey, LovelaceSectionConfig[]>();
-    const pushStack = (key: StackKey, section: LovelaceSectionConfig): void => {
+
+    function pushStack(key: StackKey, section: LovelaceSectionConfig): void {
       const arr = stacks.get(key) ?? [];
       arr.push(section);
       stacks.set(key, arr);
-    };
-
-    // UPS/USV — filter by groups_options.ups.hidden (applyGroupFilter already ran)
-    const _visibleUpsBatteries = new Set(roomEntities.ups);
-    const visibleUpsDevices = upsDevices.filter(d => _visibleUpsBatteries.has(d.batteryId));
-
-    // UPS/USV — one section per detected device
-    if (visibleUpsDevices.length > 0) {
-      const critThreshold = typeof dashboardConfig.battery_critical_threshold === 'number'
-        ? dashboardConfig.battery_critical_threshold : 20;
-      const lowThreshold = typeof dashboardConfig.battery_low_threshold === 'number'
-        ? dashboardConfig.battery_low_threshold : 50;
-
-      for (const ups of visibleUpsDevices) {
-        const upsCards: LovelaceCardConfig[] = [];
-
-        upsCards.push({
-          type: 'heading',
-          heading: ups.name,
-          heading_style: 'title',
-          icon: 'mdi:power-plug-battery',
-        });
-
-        // Battery gauge
-        upsCards.push({
-          type: 'gauge',
-          entity: ups.batteryId,
-          name: localize('ups.battery'),
-          min: 0,
-          max: 100,
-          needle: false,
-          severity: {
-            red: 0,
-            yellow: critThreshold,
-            green: lowThreshold,
-          },
-          tap_action: { action: 'more-info' },
-        });
-
-        // Additional UPS sensors as tiles
-        for (const sensorId of ups.sensorIds) {
-          upsCards.push({
-            type: 'tile',
-            entity: sensorId,
-            name: stripAreaName(sensorId, area, hass),
-            vertical: false,
-            tap_action: { action: 'more-info' },
-          });
-        }
-
-        pushStack('ups', { type: 'grid', cards: upsCards });
-      }
     }
 
     if (roomEntities.energy.length > 0) {

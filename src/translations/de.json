@@ -19,10 +19,11 @@
     "areas": "Bereiche",
     "areas_other": "Weitere Bereiche",
     "weather": "Wetter",
+    "weather_today": "Vorschau heute",
+    "weather_next_days": "Nächste Tage",
     "energy": "Energie"
   },
   "stacks": {
-    "ups": "USV",
     "energy": "Energie",
     "cameras": "Kameras",
     "lights": "Lichter",
@@ -103,9 +104,6 @@
     "idle": "Bereitschaft",
     "off": "Aus"
   },
-  "ups": {
-    "battery": "Akku"
-  },
   "room": {
     "cameras": "Kameras",
     "lighting": "Beleuchtung",
@@ -138,6 +136,10 @@
     "theme": "Theme:",
     "theme_default": "Home Assistant Standard",
     "theme_desc": "Wähle ein Theme für alle automatisch erzeugten Dashboard-Views. Eigene Views mit eigenem YAML-Theme behalten ihre Einstellung.",
+    "overview_layout": "Startseiten-Layout:",
+    "overview_layout_default": "Standard",
+    "overview_layout_weather_start": "Wetter-Startseite",
+    "overview_layout_desc": "Wähle die normale Übersicht oder eine wetterzentrierte Startseite mit großer Uhr, Datum, Wettervorschau und Bereichen.",
     "show_clock_card": "Uhrzeit-Karte anzeigen",
     "show_clock_card_desc": "Zeigt die Uhrzeit-Karte in der Übersicht an.",
     "alarm_entity": "Alarm-Entität:",
@@ -196,8 +198,6 @@
     "show_automations_in_rooms_desc": "Zeigt dem Bereich zugeordnete Automationen in den jeweiligen Raum-Ansichten an.",
     "show_scripts_in_rooms": "Skripte in Raum-Ansichten anzeigen",
     "show_scripts_in_rooms_desc": "Zeigt dem Bereich zugeordnete Skripte in den jeweiligen Raum-Ansichten an.",
-    "show_ups_in_rooms": "USV/UPS in Raum-Ansichten anzeigen",
-    "show_ups_in_rooms_desc": "Erkennt USV-/UPS-Geräte (z.B. über NUT oder SNMP) automatisch und zeigt pro Gerät einen Block mit Akku-Ladestand und zugehörigen Sensoren in der jeweiligen Raum-Ansicht. Sensoren, die per Label 'no_dboard' oder über die Entitäts-Optionen ausgeblendet sind, werden nicht berücksichtigt.",
     "show_window_contacts_in_rooms": "Fensterkontakte in Raum-Ansichten anzeigen",
     "show_window_contacts_in_rooms_desc": "Zeigt Fensterkontakte als Badges in den jeweiligen Raum-Ansichten an.",
     "show_door_contacts_in_rooms": "Türkontakte in Raum-Ansichten anzeigen",
@@ -273,7 +273,6 @@
     "domain_fan": "Ventilatoren",
     "domain_switches": "Schalter",
     "domain_locks": "Schlösser",
-    "domain_ups": "USV / UPS",
     "domain_badges": "Raum-Badges",
     "badges_additional": "Zusätzliche Badges",
     "badges_add": "Hinzufügen",

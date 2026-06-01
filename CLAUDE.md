@@ -1,8 +1,8 @@
-# Simon42 Dashboard Strategy
+﻿# Simon42 Dashboard Strategy
 
 Custom Lovelace Dashboard Strategy for Home Assistant. Generates dynamic dashboards from area/device/entity metadata with flexible user configuration. This project is actively used by Simons loved YouTube viewers — clean, stable code is top priority.
 
-> **Fork-Rename (ab v1.3.4-beta.10):** Dieser Fork (`Cyberhunter88/dashboard-strategy`) registriert eigene globale Custom-Element-Namen, damit er **nicht** mit dem Original (`TheRealSimon42/simon42-dashboard-strategy`) kollidiert, wenn beide gleichzeitig in HA installiert sind. Geänderte öffentliche Bezeichner:
+> **Fork-Rename (ab v1.3.4-beta.10):** Dieser Fork (`Cyberhunter88/dashboard-strategy`) registriert eigene globale Custom-Element-Namen, damit er **nicht** mit dem Original (`TheRealSimon42/dashboard-strategy`) kollidiert, wenn beide gleichzeitig in HA installiert sind. Geänderte öffentliche Bezeichner:
 > - Dashboard-Config-Typ: `custom:dashboard-strategy` (vorher `custom:simon42-dashboard`)
 > - Haupt-Strategy-Element: `ll-strategy-dashboard-strategy`
 > - View-Strategien: `ll-strategy-dashboard-strategy-view-{overview,lights,covers,security,batteries,climate,room}`
@@ -11,7 +11,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. Generates dynamic dashboa
 > - Build-Output / HACS-`filename`: `dashboard-strategy.js`; `publicPath` / Resource-URL: `/hacsfiles/dashboard-strategy/`
 > - HACS-Anzeigename (`hacs.json` `name`): `Dashboard Strategy`
 >
-> **Quelldateinamen unter `src/` bleiben unverändert** (`simon42-dashboard-strategy.ts` usw.) — sie sind für HA/HACS unsichtbar. Interne JS-Klassennamen (`Simon42DashboardStrategy` etc.) bleiben ebenfalls (rein JS-intern, keine globale Kollision).
+> **Quelldateinamen unter `src/` sind auf den Fork-Namen angepasst** (`dashboard-strategy.ts` usw.) — sie sind für HA/HACS unsichtbar. Interne JS-Klassennamen (`Simon42DashboardStrategy` etc.) bleiben weiterhin rein JS-intern und erzeugen keine globale Kollision.
 >
 > **Breaking Change für bestehende Dashboards:** YAML-Konfigs mit `type: custom:simon42-dashboard` müssen auf `type: custom:dashboard-strategy` umgestellt werden.
 
@@ -19,13 +19,13 @@ Custom Lovelace Dashboard Strategy for Home Assistant. Generates dynamic dashboa
 
 **Language:** TypeScript (ES2020, strict mode)
 **Build:** Webpack → code-split chunks (main + lit + core + views + editor on-demand)
-**Distribution:** HACS-compatible (Custom Repository), deployed to `/config/www/community/simon42-dashboard-strategy/`
+**Distribution:** HACS-compatible (Custom Repository), deployed to `/config/www/community/dashboard-strategy/`
 
 ### Module Overview
 
 ```
 src/
-├── simon42-dashboard-strategy.ts    # Entry point: generate(config, hass) → {title, views[]}
+├── dashboard-strategy.ts    # Entry point: generate(config, hass) → {title, views[]}
 ├── Registry.ts                      # Singleton registry (synchronous init from hass object, pre-computed Maps)
 ├── types/                           # Type definitions
 │   ├── homeassistant.ts             #   HA interfaces (hass object, callWS, formatters)
@@ -139,9 +139,10 @@ Many entity properties exist ONLY in the Entity Registry, NOT in state attribute
 
 ### Config Hierarchy
 
-- **Global toggles**: show_weather, show_energy, show_summary_views, show_room_views, group_by_floors, show_covers_summary, show_clock_card, show_light_summary, show_security_summary, show_battery_summary, show_climate_summary, show_search_card, show_locks_in_rooms, hide_mobile_app_batteries, group_lights_by_floors, use_default_area_sort, show_switches_on_areas, show_alerts_on_areas, show_ups_in_rooms
-- **Layout**: summaries_columns (2 | 4)
+- **Global toggles**: show_weather, show_energy, show_summary_views, show_room_views, group_by_floors, show_covers_summary, show_clock_card, show_light_summary, show_security_summary, show_battery_summary, show_climate_summary, show_search_card, show_locks_in_rooms, hide_mobile_app_batteries, group_lights_by_floors, use_default_area_sort, show_switches_on_areas, show_alerts_on_areas, show_ups_in_rooms, nested_light_groups
+- **Layout**: overview_layout ('default' | 'weather_start'), summaries_columns (2 | 4)
 - **Area-level**: areas_display.hidden, areas_display.order
+- **Area-level stack order**: areas_options.{areaId}.stacks_order (per-room ordering of RoomViewStrategy blocks)
 - **Entity-level**: areas_options.{areaId}.groups_options.{domain}.hidden
 - **Per-area custom cards**: areas_options.{areaId}.custom_cards[] (per-card `mode` yaml|tile, `position` top|bottom, optional `title`; rendered in the room detail view in addition to the auto-sections)
 - **Custom overview sections**: custom_sections[] (each section has `title?`, `icon?`, `cards[]`; rendered as separate grid sections at the `custom_sections` position in `sections_order`)
@@ -160,7 +161,7 @@ These files require extra care — changes here most likely cause regressions:
 
 1. Create a feature branch from `main` (e.g. `feature/climate-summary-view`)
 2. Build: `npm run build` (production) or `npm run build-dev` (with source maps)
-3. Deploy: copy `dist/` contents to `/Volumes/config/www/community/simon42-dashboard-strategy/`
+3. Deploy: copy `dist/` contents to `/Volumes/config/www/community/dashboard-strategy/`
 4. Delete stale `.gz` and `.br` files after copying (HA serves compressed over `.js` if present)
 5. Hard-refresh browser (Cmd+Shift+R). HA restart only needed for structural changes, not logic changes
 6. **Test on the live system** — always before pushing to GitHub!
@@ -200,7 +201,7 @@ The following locations must be updated for a new version:
 | File | Field | Example |
 |------|-------|---------|
 | `package.json` | `"version"` | `"1.3.4-beta.10"` |
-| `src/simon42-dashboard-strategy.ts` | `STRATEGY_VERSION` | `'1.3.4-beta.10'` |
+| `src/dashboard-strategy.ts` | `STRATEGY_VERSION` | `'1.3.4-beta.10'` |
 | `package-lock.json` | updated automatically via `npm install` | — |
 | **Git tag** | create on release | `v1.3.4-beta.10` or `v1.3.4` |
 
@@ -230,7 +231,7 @@ The bundle is deliberately split into 5 chunks:
 
 **Why:** Without code splitting, the entry point was a single large bundle. HA has a fixed 5-second timeout for custom element registration. On slow connections (Slow 4G), the JS file competes with all other HA chunks and custom cards for max. 6 browser connections. With the tiny entry point, the element registers instantly while the rest loads in the background.
 
-**Content-Hash Chunk Filenames:** Chunks include a `[contenthash:8]` in their filename (e.g. `simon42-dashboard-strategy-core.c6a1e2e6.js`). HACS only sets its cache-busting `hacstag` on the entry file — without content hashes, browsers would serve stale cached chunks after a HACS update.
+**Content-Hash Chunk Filenames:** Chunks include a `[contenthash:8]` in their filename (e.g. `dashboard-strategy-core.c6a1e2e6.js`). HACS only sets its cache-busting `hacstag` on the entry file — without content hashes, browsers would serve stale cached chunks after a HACS update.
 
 ### No Auto-Detection for Temperature/Humidity on Area Cards
 The overview area cards only show `sensor_classes` (temperature, humidity) when the user has explicitly assigned an entity in the **HA area settings** (`area.temperature_entity_id`, `area.humidity_entity_id`). No auto-detection because:
@@ -298,7 +299,10 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] Security view headings: emojis replaced with MDI icons
 - [x] UPS/USV auto-detection in room views: device-based grouping (battery % + UPS signal, NUT shortcut), gauge + sorted tiles, opt-out via `show_ups_in_rooms`; operates only on pre-filtered visible entities so `no_dboard` stays effective
 - [x] Per-area custom cards in room views: `areas_options.{areaId}.custom_cards[]` — free YAML or guided entity-tile mode, per-card top/bottom placement, optional heading; editor subsection inside each area's expandable section (native `<select>`), DE/EN i18n
+- [x] RoomViewStrategy stack ordering per area: `areas_options.{areaId}.stacks_order`, Keyed-Map emit order, and editor Drag & Drop panel inside each area's expandable section
 - [x] Custom overview sections: `custom_sections[]` — multiple full grid sections with title, icon, and YAML cards; appear at configurable position in `sections_order`; full editor UI with section/card add/remove/edit
+- [x] Nested light groups: `nested_light_groups` toggle — optional sub-grouping within LightsGroupCard and LightsViewStrategy; editor checkbox
+- [x] `overview_layout` option (`'default'` | `'weather_start'`): weather-start layout renders large clock + date, current weather forecast + hourly/daily forecast, then areas; editor dropdown; DE/EN i18n (v1.6.5)
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)

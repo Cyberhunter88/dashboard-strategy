@@ -18,6 +18,7 @@ import { createOverviewSection, createCustomCardsSection, createCustomSectionsAr
 import { createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
 import { createOverviewView } from '../utils/view-builder';
+import { localize } from '../utils/localize';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 
 /**
@@ -58,6 +59,105 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
     }
   }
   return result;
+}
+
+function createLargeTimeCard(): LovelaceCardConfig {
+  return {
+    type: 'markdown',
+    content: '<div style="text-align:center;font-size:56px;font-weight:600;line-height:1.2;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>',
+    grid_options: {
+      columns: 'full',
+    },
+  };
+}
+
+function createLargeDateCard(): LovelaceCardConfig {
+  return {
+    type: 'markdown',
+    content: '<div style="text-align:center;font-size:42px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>',
+    grid_options: {
+      columns: 'full',
+    },
+  };
+}
+
+function createWeatherStartSections(
+  weatherEntity: string | null,
+  areasSections: LovelaceSectionConfig | LovelaceSectionConfig[],
+  customCardsSection: LovelaceSectionConfig | null,
+  customSections: LovelaceSectionConfig[]
+): LovelaceSectionConfig[] {
+  const overviewCards: LovelaceCardConfig[] = [
+    {
+      type: 'heading',
+      heading: localize('sections.overview'),
+      heading_style: 'title',
+      icon: 'mdi:view-dashboard-outline',
+    },
+    createLargeTimeCard(),
+    createLargeDateCard(),
+  ];
+
+  if (weatherEntity) {
+    overviewCards.push({
+      type: 'weather-forecast',
+      entity: weatherEntity,
+      show_current: true,
+      show_forecast: false,
+      grid_options: {
+        columns: 'full',
+      },
+    });
+  }
+
+  const sections: LovelaceSectionConfig[] = [
+    {
+      type: 'grid',
+      cards: overviewCards,
+    },
+  ];
+
+  if (weatherEntity) {
+    sections.push({
+      type: 'grid',
+      cards: [
+        {
+          type: 'heading',
+          heading: localize('sections.weather_today'),
+          heading_style: 'title',
+          icon: 'mdi:clock-outline',
+        },
+        {
+          type: 'weather-forecast',
+          entity: weatherEntity,
+          forecast_type: 'hourly',
+          show_current: false,
+          show_forecast: true,
+        },
+        {
+          type: 'heading',
+          heading: localize('sections.weather_next_days'),
+          heading_style: 'title',
+          icon: 'mdi:calendar-outline',
+        },
+        {
+          type: 'weather-forecast',
+          entity: weatherEntity,
+          forecast_type: 'daily',
+          show_current: false,
+          show_forecast: true,
+        },
+      ],
+    });
+  }
+
+  if (customCardsSection) {
+    sections.push(customCardsSection);
+  }
+  sections.push(...customSections);
+  sections.push(...(Array.isArray(areasSections) ? areasSections : [areasSections]));
+
+  return sections;
 }
 
 class Simon42ViewOverviewStrategy extends HTMLElement {
@@ -103,6 +203,28 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       dashboardConfig.custom_cards_icon
     );
     const areasSections = createAreasSection(visibleAreas, groupByFloors, hass);
+
+    if (dashboardConfig.overview_layout === 'weather_start') {
+      const overviewSections = createWeatherStartSections(
+        weatherEntity ?? null,
+        areasSections,
+        createCustomCardsSection(
+          allCustomCards,
+          dashboardConfig.custom_cards_heading,
+          dashboardConfig.custom_cards_icon
+        ),
+        createCustomSectionsArray(dashboardConfig.custom_sections || [])
+      );
+      const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
+      timeEnd('overview-generate');
+      debugLog(`Weather start: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`);
+
+      const customBadges = (dashboardConfig.custom_badges || [])
+        .filter((b) => b.parsed_config)
+        .map((b) => b.parsed_config as LovelaceBadgeConfig);
+
+      return createOverviewView(overviewSections, [...personBadges, ...customBadges]);
+    }
 
     // Section map: key → section(s) or null
     const sectionMap = new Map<SectionKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>([

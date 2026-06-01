@@ -19,10 +19,11 @@
     "areas": "Areas",
     "areas_other": "Other Areas",
     "weather": "Weather",
+    "weather_today": "Forecast today",
+    "weather_next_days": "Next days",
     "energy": "Energy"
   },
   "stacks": {
-    "ups": "UPS",
     "energy": "Energy",
     "cameras": "Cameras",
     "lights": "Lights",
@@ -103,9 +104,6 @@
     "idle": "Idle",
     "off": "Off"
   },
-  "ups": {
-    "battery": "Battery"
-  },
   "room": {
     "cameras": "Cameras",
     "lighting": "Lighting",
@@ -138,6 +136,10 @@
     "theme": "Theme:",
     "theme_default": "Home Assistant default",
     "theme_desc": "Select a theme for all automatically generated dashboard views. Custom views with their own YAML theme keep that setting.",
+    "overview_layout": "Start page layout:",
+    "overview_layout_default": "Default",
+    "overview_layout_weather_start": "Weather start page",
+    "overview_layout_desc": "Choose the normal overview or a weather-focused start page with a large clock, date, forecast, and areas.",
     "show_clock_card": "Show clock card",
     "show_clock_card_desc": "Shows the clock card on the overview.",
     "alarm_entity": "Alarm entity:",
@@ -196,8 +198,6 @@
     "show_automations_in_rooms_desc": "Shows automations assigned to the area in the respective room views.",
     "show_scripts_in_rooms": "Show scripts in room views",
     "show_scripts_in_rooms_desc": "Shows scripts assigned to the area in the respective room views.",
-    "show_ups_in_rooms": "Show UPS in room views",
-    "show_ups_in_rooms_desc": "Automatically detects UPS devices (e.g. via NUT or SNMP) and shows a block per device with battery level and related sensors in the respective room view. Sensors hidden via the 'no_dboard' label or entity options are not included.",
     "show_window_contacts_in_rooms": "Show window contacts in room views",
     "show_window_contacts_in_rooms_desc": "Shows window contacts as badges in the respective room views.",
     "show_door_contacts_in_rooms": "Show door contacts in room views",
@@ -273,7 +273,6 @@
     "domain_fan": "Fans",
     "domain_switches": "Switches",
     "domain_locks": "Locks",
-    "domain_ups": "UPS / USV",
     "domain_badges": "Room Badges",
     "badges_additional": "Additional Badges",
     "badges_add": "Add",

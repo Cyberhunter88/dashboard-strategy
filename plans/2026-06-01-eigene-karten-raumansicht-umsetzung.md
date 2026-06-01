@@ -1,4 +1,4 @@
-# Eigene Karten & Kacheln in Raum-Detailansichten — Umsetzungsplan
+﻿# Eigene Karten & Kacheln in Raum-Detailansichten — Umsetzungsplan
 
 > **Für agentische Worker:** ERFORDERLICHE SUB-SKILL: Nutze superpowers:subagent-driven-development (empfohlen) oder superpowers:executing-plans, um diesen Plan Aufgabe für Aufgabe umzusetzen. Schritte verwenden Checkbox-Syntax (`- [ ]`) zur Nachverfolgung.
 
@@ -8,7 +8,7 @@
 
 **Tech-Stack:** TypeScript (ES2020, strict), Webpack Code-Splitting, LitElement, js-yaml, HA Lovelace Sections-View.
 
-**Verifikation (kein Test-Framework vorhanden):** Jede Aufgabe wird über `npm run build-dev` (ts-loader Typecheck via Webpack) **und** `npm run lint` (eslint) abgesichert. Manuelles Live-Testen erfolgt am Ende gemäß CLAUDE.md-Workflow (Deploy nach `/config/www/community/simon42-dashboard-strategy/`).
+**Verifikation (kein Test-Framework vorhanden):** Jede Aufgabe wird über `npm run build-dev` (ts-loader Typecheck via Webpack) **und** `npm run lint` (eslint) abgesichert. Manuelles Live-Testen erfolgt am Ende gemäß CLAUDE.md-Workflow (Deploy nach `/config/www/community/dashboard-strategy/`).
 
 **Referenz-Designdokument:** `plans/2026-06-01-eigene-karten-raumansicht-design.md`
 
@@ -20,7 +20,7 @@
 |-------|--------------------------|
 | `src/types/strategy.ts` | Neuer Typ `AreaCustomCard`; `AreaOptions.custom_cards?` |
 | `src/views/RoomViewStrategy.ts` | Hilfsfunktion + Top-/Bottom-Sammel-Section-Injektion |
-| `src/simon42-dashboard-strategy.ts` | `custom_cards` durchreichen + Versions-Bump |
+| `src/dashboard-strategy.ts` | `custom_cards` durchreichen + Versions-Bump |
 | `src/editor/StrategyEditor.ts` | Subsektion „Eigene Karten" pro Bereich + area-scoped Handler |
 | `src/translations/de.json` / `en.json` | Editor-Labels |
 | `package.json` | Versions-Bump (Minor) |
@@ -207,7 +207,7 @@ git commit -m "feat(room-view): inject top/bottom custom card sections"
 ## Task 3: Custom-Cards im Entry-Point durchreichen
 
 **Files:**
-- Modify: `src/simon42-dashboard-strategy.ts:93-105` (room-config loop)
+- Modify: `src/dashboard-strategy.ts:93-105` (room-config loop)
 
 - [ ] **Step 1: `custom_cards` an die Room-Strategy übergeben**
 
@@ -249,7 +249,7 @@ Expected: keine neuen Fehler.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/simon42-dashboard-strategy.ts
+git add src/dashboard-strategy.ts
 git commit -m "feat(entry): pass area custom_cards to room view strategy"
 ```
 
@@ -599,7 +599,7 @@ git commit -m "feat(i18n): labels for per-area custom cards"
 ## Task 7: Versions-Bump + Doku
 
 **Files:**
-- Modify: `package.json` (`version`), `src/simon42-dashboard-strategy.ts:13` (`STRATEGY_VERSION`), `CLAUDE.md` (Roadmap „Completed")
+- Modify: `package.json` (`version`), `src/dashboard-strategy.ts:13` (`STRATEGY_VERSION`), `CLAUDE.md` (Roadmap „Completed")
 
 - [ ] **Step 1: Minor-Bump festlegen**
 
@@ -611,7 +611,7 @@ Neues Feature → Minor-Bump. Aktuelle Version ist `1.3.4-beta.11`. Bestimme die
 
 - [ ] **Step 3: `STRATEGY_VERSION` aktualisieren**
 
-`src/simon42-dashboard-strategy.ts` Zeile 13 auf denselben Wert setzen.
+`src/dashboard-strategy.ts` Zeile 13 auf denselben Wert setzen.
 
 - [ ] **Step 4: `package-lock.json` synchronisieren**
 
@@ -636,7 +636,7 @@ Expected: erfolgreicher Production-Build (Chunks mit Content-Hash in `dist/`).
 - [ ] **Step 7: Commit**
 
 ```bash
-git add package.json package-lock.json src/simon42-dashboard-strategy.ts CLAUDE.md dist/
+git add package.json package-lock.json src/dashboard-strategy.ts CLAUDE.md dist/
 git commit -m "chore(release): bump version for per-area custom cards"
 ```
 
@@ -648,7 +648,7 @@ git commit -m "chore(release): bump version for per-area custom cards"
 
 - [ ] **Step 1: Deploy**
 
-`dist/`-Inhalt nach `/config/www/community/simon42-dashboard-strategy/` kopieren. Stale `.gz`/`.br` löschen. Browser hart neu laden (Cmd/Strg+Shift+R).
+`dist/`-Inhalt nach `/config/www/community/dashboard-strategy/` kopieren. Stale `.gz`/`.br` löschen. Browser hart neu laden (Cmd/Strg+Shift+R).
 
 - [ ] **Step 2: Editor — YAML-Modus**
 

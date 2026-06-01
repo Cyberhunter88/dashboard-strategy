@@ -1,4 +1,4 @@
-# Design: Eigene Karten & Kacheln in den Raum-Detailansichten
+﻿# Design: Eigene Karten & Kacheln in den Raum-Detailansichten
 
 **Datum:** 2026-06-01
 **Status:** Entwurf (genehmigt – bereit für Umsetzungsplan)
@@ -65,7 +65,7 @@ export interface AreaOptions {
 - Reihenfolge innerhalb einer Position = Array-Reihenfolge.
 - Leere/ungültige Einträge werden übersprungen (kein Crash bei YAML-Fehler).
 
-### 3. Übergabe im Entry-Point (`src/simon42-dashboard-strategy.ts`)
+### 3. Übergabe im Entry-Point (`src/dashboard-strategy.ts`)
 
 In der bestehenden Schleife (Zeilen ~93–105) wird `areaOptions?.custom_cards`
 zusätzlich zu `groups_options` an die RoomView-Strategy übergeben:
@@ -114,7 +114,7 @@ Neue Editor-Labels: Abschnittstitel „Eigene Karten", Position-Labels
 |-------|----------|
 | `src/types/strategy.ts` | `AreaCustomCard` + `AreaOptions.custom_cards` |
 | `src/views/RoomViewStrategy.ts` | Top-/Bottom-Sammel-Sections injizieren |
-| `src/simon42-dashboard-strategy.ts` | `custom_cards` durchreichen |
+| `src/dashboard-strategy.ts` | `custom_cards` durchreichen |
 | `src/editor/StrategyEditor.ts` | Subsektion + Handler pro Bereich |
 | `src/translations/de.json` / `en.json` | Labels |
 

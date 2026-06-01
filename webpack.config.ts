@@ -1,11 +1,11 @@
-import path from 'path';
+﻿import path from 'path';
 import zlib from 'zlib';
 import webpack from 'webpack';
 import CompressionPlugin from 'compression-webpack-plugin';
 
 const config: webpack.Configuration = {
   mode: 'production',
-  entry: './src/simon42-dashboard-strategy.ts',
+  entry: './src/dashboard-strategy.ts',
   output: {
     clean: true,
     filename: 'dashboard-strategy.js',

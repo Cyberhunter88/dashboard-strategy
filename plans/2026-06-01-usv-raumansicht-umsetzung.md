@@ -1,4 +1,4 @@
-# USV/UPS-Erkennung in Raum-Ansichten — Umsetzungsplan
+﻿# USV/UPS-Erkennung in Raum-Ansichten — Umsetzungsplan
 
 > **Für agentische Bearbeiter:** ERFORDERLICHE SUB-SKILL: Nutze superpowers:subagent-driven-development (empfohlen) oder superpowers:executing-plans, um diesen Plan Aufgabe für Aufgabe umzusetzen. Schritte verwenden Checkbox-Syntax (`- [ ]`) zur Nachverfolgung.
 
@@ -330,7 +330,7 @@ Erwartung: Keine Fehler.
 
 **Dateien:**
 - Modify: `package.json:3` (`version`)
-- Modify: `src/simon42-dashboard-strategy.ts` (`STRATEGY_VERSION`)
+- Modify: `src/dashboard-strategy.ts` (`STRATEGY_VERSION`)
 - Modify: `dist/` (durch Build erzeugt)
 
 - [ ] **Schritt 1: Version in package.json erhöhen**
@@ -339,7 +339,7 @@ Erwartung: Keine Fehler.
 
 - [ ] **Schritt 2: STRATEGY_VERSION angleichen**
 
-In `src/simon42-dashboard-strategy.ts` `STRATEGY_VERSION` auf `'1.3.4-beta.11'` setzen (muss exakt zur package.json passen — wird in die Browser-Konsole geloggt).
+In `src/dashboard-strategy.ts` `STRATEGY_VERSION` auf `'1.3.4-beta.11'` setzen (muss exakt zur package.json passen — wird in die Browser-Konsole geloggt).
 
 - [ ] **Schritt 3: package-lock.json aktualisieren**
 
@@ -359,7 +359,7 @@ Erwartung: `dist/` neu erzeugt, inkl. Content-Hash-Chunks und `.gz`/`.br`.
 
 - [ ] **Schritt 1: Deploy**
 
-`dist/`-Inhalt nach `/config/www/community/simon42-dashboard-strategy/` kopieren. Anschließend veraltete `.gz`/`.br` löschen (HA bevorzugt komprimierte Varianten). Hard-Refresh (Strg+Shift+R).
+`dist/`-Inhalt nach `/config/www/community/dashboard-strategy/` kopieren. Anschließend veraltete `.gz`/`.br` löschen (HA bevorzugt komprimierte Varianten). Hard-Refresh (Strg+Shift+R).
 
 - [ ] **Schritt 2: USV-Gerät prüfen**
 

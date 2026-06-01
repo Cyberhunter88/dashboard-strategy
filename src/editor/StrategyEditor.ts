@@ -18,6 +18,7 @@ import type {
   CustomSection,
   AreaCustomCard,
   RoomEntities,
+  OverviewLayout,
   SectionKey,
   StackKey,
 } from '../types/strategy';
@@ -1320,7 +1321,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private static _stackMeta = new Map<StackKey, { icon: string; labelKey: string }>([
-    ['ups', { icon: 'mdi:power-plug-battery', labelKey: 'stacks.ups' }],
     ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'stacks.energy' }],
     ['cameras', { icon: 'mdi:cctv', labelKey: 'stacks.cameras' }],
     ['lights', { icon: 'mdi:lightbulb', labelKey: 'stacks.lights' }],
@@ -1349,7 +1349,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (has('media_player')) present.add('media');
     if (has('scenes') || has('automations') || has('scripts')) present.add('scenes');
     if (has('vacuum') || has('switches')) present.add('misc');
-    if (has('ups')) present.add('ups');
     if (has('energy')) present.add('energy');
 
     // These stacks are not reliably represented in the editor's area cache.
@@ -1498,6 +1497,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const alarmEntities = this._getAlarmEntities();
     const selectedTheme = this._config.theme || '';
     const themeNames = this._getThemeNames();
+    const overviewLayout = this._config.overview_layout || 'default';
 
     return html`
       <div class="section">
@@ -1515,6 +1515,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </select>
         </div>
         <div class="description">${localize('editor.theme_desc')}</div>
+
+        <div class="form-row">
+          <label for="overview-layout" style="margin-right: 8px; min-width: 120px;">${localize('editor.overview_layout')}</label>
+          <select id="overview-layout"
+            style="flex: 1;"
+            @change=${this._overviewLayoutChanged}>
+            <option value="default" ?selected=${overviewLayout === 'default'}>${localize('editor.overview_layout_default')}</option>
+            <option value="weather_start" ?selected=${overviewLayout === 'weather_start'}>${localize('editor.overview_layout_weather_start')}</option>
+          </select>
+        </div>
+        <div class="description">${localize('editor.overview_layout_desc')}</div>
 
         ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
           (checked) => this._toggleChanged('show_clock_card', checked, true))}
@@ -1717,7 +1728,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showLocksInRooms = this._config.show_locks_in_rooms === true;
     const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
     const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
-    const showUpsInRooms = this._config.show_ups_in_rooms !== false; // default: true (Opt-out)
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -1763,10 +1773,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
               (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox('show-ups-in-rooms', localize('editor.show_ups_in_rooms'), showUpsInRooms,
-              (checked) => this._toggleChanged('show_ups_in_rooms', checked, true))}
-            <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
           </div>
 
           <div class="option-group">
@@ -1899,7 +1905,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="section">
         <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_cards')}
-          <a href="https://github.com/TheRealSimon42/simon42-dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
+          <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
             target="_blank" rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
             title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
@@ -1960,7 +1966,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="section">
         <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_badges')}
-          <a href="https://github.com/TheRealSimon42/simon42-dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
+          <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
             target="_blank" rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
             title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
@@ -1987,7 +1993,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="section">
         <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_views')}
-          <a href="https://github.com/TheRealSimon42/simon42-dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
+          <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
             target="_blank" rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
             title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
@@ -2274,7 +2280,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
       { key: 'fan', label: localize('editor.domain_fan'), icon: 'mdi:fan' },
       { key: 'switches', label: localize('editor.domain_switches'), icon: 'mdi:light-switch' },
       { key: 'locks', label: localize('editor.domain_locks'), icon: 'mdi:lock' },
-      { key: 'ups', label: localize('editor.domain_ups'), icon: 'mdi:battery-charging' },
       { key: 'energy', label: localize('stacks.energy'), icon: 'mdi:lightning-bolt' },
     ];
 
@@ -2717,6 +2722,21 @@ class Simon42DashboardStrategyEditor extends LitElement {
       newConfig.theme = theme;
     } else {
       delete newConfig.theme;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _overviewLayoutChanged = (e: Event): void => {
+    if (!this._hass) return;
+
+    const layout = (e.target as HTMLSelectElement).value as OverviewLayout;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (layout === 'weather_start') {
+      newConfig.overview_layout = layout;
+    } else {
+      delete newConfig.overview_layout;
     }
 
     this._config = newConfig;
@@ -3931,45 +3951,6 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     ) {
       roomEntities.energy.push(entity.entity_id);
     }
-  }
-
-  // UPS detection: group sensor/binary_sensor entities by device, find UPS devices,
-  // add batteryId to roomEntities.ups so the editor can show/hide the UPS group.
-  const UPS_SIGNAL_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
-  const UPS_DETECT_ID_PATTERN = /(?:^|\.)(?:ups|usv|nut)(?:\.|_|$)/i;
-  const byDevice = new Map<string, string[]>();
-  for (const entity of entities) {
-    let belongsToArea = false;
-    if (entity.area_id) belongsToArea = entity.area_id === areaId;
-    else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
-    if (!belongsToArea) continue;
-    if (!hass.states[entity.entity_id]) continue;
-    const domain = entity.entity_id.split('.')[0];
-    if (domain !== 'sensor' && domain !== 'binary_sensor') continue;
-    if (!entity.device_id) continue;
-    const list = byDevice.get(entity.device_id);
-    if (list) list.push(entity.entity_id);
-    else byDevice.set(entity.device_id, [entity.entity_id]);
-  }
-  for (const [, entityIds] of byDevice) {
-    const batteryId = entityIds.find((id) => {
-      const attrs = hass.states[id]?.attributes;
-      return attrs?.device_class === 'battery' && attrs?.unit_of_measurement === '%';
-    });
-    if (!batteryId) continue;
-    const isNut = entityIds.some((id) => (hass.entities?.[id] as any)?.platform === 'nut');
-    let isUps = false;
-    if (isNut) {
-      isUps = true;
-    } else {
-      isUps = entityIds.some((id) => {
-        if (id === batteryId) return false;
-        const dc = hass.states[id]?.attributes?.device_class as string | undefined;
-        return (dc !== undefined && UPS_SIGNAL_CLASSES.has(dc)) || UPS_DETECT_ID_PATTERN.test(id);
-      });
-    }
-    if (!isUps) continue;
-    roomEntities.ups.push(batteryId);
   }
 
   return roomEntities;

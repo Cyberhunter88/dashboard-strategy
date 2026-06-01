@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
@@ -40,4 +40,4 @@ A list of unreleased changes can be found [here]({{ .Info.RepositoryURL }}/compa
 {{ end -}}
 {{ end -}}
 {{ end -}}
-[0.1]: https://github.com/TheRealSimon42/simon42-dashboard-strategy/releases/tag/0.1
+[0.1]: https://github.com/TheRealSimon42/dashboard-strategy/releases/tag/0.1

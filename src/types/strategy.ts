@@ -19,6 +19,8 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
   'energy',
 ];
 
+export type OverviewLayout = 'default' | 'weather_start';
+
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -89,6 +91,7 @@ export interface Simon42StrategyConfig {
   energy_link_dashboard?: boolean; // default: true
 
   // Layout
+  overview_layout?: OverviewLayout; // default: 'default'
   sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
   summaries_columns?: 2 | 4; // default: 2
 

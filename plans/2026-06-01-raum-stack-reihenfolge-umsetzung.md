@@ -1,4 +1,4 @@
-# Raum-Stack-Reihenfolge – Implementierungsplan
+﻿# Raum-Stack-Reihenfolge – Implementierungsplan
 
 > **Für agentische Worker:** ERFORDERLICHE SUB-SKILL: Nutze superpowers:subagent-driven-development (empfohlen) oder superpowers:executing-plans, um diesen Plan Aufgabe für Aufgabe umzusetzen. Schritte verwenden Checkbox-Syntax (`- [ ]`) zur Nachverfolgung.
 
@@ -23,7 +23,7 @@
 | `src/translations/de.json` | Modify | `editor.stack_*` + `stacks.*`-Labels (Deutsch) |
 | `src/translations/en.json` | Modify | `editor.stack_*` + `stacks.*`-Labels (Englisch) |
 | `package.json` | Modify | Version → `1.3.4-beta.12` |
-| `src/simon42-dashboard-strategy.ts` | Modify | `STRATEGY_VERSION` → `1.3.4-beta.12` |
+| `src/dashboard-strategy.ts` | Modify | `STRATEGY_VERSION` → `1.3.4-beta.12` |
 | `CLAUDE.md` | Modify | Roadmap "Completed" + Config-Hierarchie `stacks_order` |
 
 ---
@@ -670,7 +670,7 @@ git commit -m "feat(editor): Pro-Bereich Drag&Drop für Raum-Stack-Reihenfolge"
 
 **Dateien:**
 - Modify: `package.json` (Zeile 3)
-- Modify: `src/simon42-dashboard-strategy.ts` (Zeile 13)
+- Modify: `src/dashboard-strategy.ts` (Zeile 13)
 - Modify: `package-lock.json` (automatisch via `npm install`)
 - Modify: `CLAUDE.md` (Roadmap + Config-Hierarchie)
 
@@ -680,7 +680,7 @@ git commit -m "feat(editor): Pro-Bereich Drag&Drop für Raum-Stack-Reihenfolge"
 
 - [ ] **Schritt 2: STRATEGY_VERSION bumpen**
 
-In `src/simon42-dashboard-strategy.ts` Zeile 13:
+In `src/dashboard-strategy.ts` Zeile 13:
 `const STRATEGY_VERSION = '1.3.4-beta.11';` → `const STRATEGY_VERSION = '1.3.4-beta.12';`
 
 - [ ] **Schritt 3: package-lock.json aktualisieren**
@@ -713,13 +713,13 @@ In der "Config Hierarchy"-Sektion bei den Area-/Entity-Level-Einträgen ergänze
 - [ ] **Schritt 6: Commit (src + dist + Doku)**
 
 ```bash
-git add package.json package-lock.json src/simon42-dashboard-strategy.ts dist CLAUDE.md
+git add package.json package-lock.json src/dashboard-strategy.ts dist CLAUDE.md
 git commit -m "chore(release): v1.3.4-beta.12 – Raum-Stack-Reihenfolge"
 ```
 
 - [ ] **Schritt 7: Live-Test (manuell, vor Push)**
 
-`dist/`-Inhalte nach `/config/www/community/simon42-dashboard-strategy/` kopieren, stale `.gz`/`.br` löschen, Browser hart neu laden. Editor öffnen → Bereich aufklappen → "Reihenfolge der Raum-Blöcke" sichtbar; Drag&Drop ändert Reihenfolge; nicht vorhandene Blöcke ausgegraut mit "(nicht vorhanden)". Raumansicht zeigt Blöcke in neuer Reihenfolge. `no_dboard`-Sensoren bleiben ausgeblendet.
+`dist/`-Inhalte nach `/config/www/community/dashboard-strategy/` kopieren, stale `.gz`/`.br` löschen, Browser hart neu laden. Editor öffnen → Bereich aufklappen → "Reihenfolge der Raum-Blöcke" sichtbar; Drag&Drop ändert Reihenfolge; nicht vorhandene Blöcke ausgegraut mit "(nicht vorhanden)". Raumansicht zeigt Blöcke in neuer Reihenfolge. `no_dboard`-Sensoren bleiben ausgeblendet.
 
 - [ ] **Schritt 8: Push & PR**
 
