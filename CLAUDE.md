@@ -140,7 +140,7 @@ Many entity properties exist ONLY in the Entity Registry, NOT in state attribute
 ### Config Hierarchy
 
 - **Global toggles**: show_weather, show_energy, show_summary_views, show_room_views, group_by_floors, show_covers_summary, show_clock_card, show_light_summary, show_security_summary, show_battery_summary, show_climate_summary, show_search_card, show_locks_in_rooms, hide_mobile_app_batteries, group_lights_by_floors, use_default_area_sort, show_switches_on_areas, show_alerts_on_areas, show_ups_in_rooms, nested_light_groups
-- **Layout**: overview_layout ('default' | 'weather_start'), summaries_columns (2 | 4)
+- **Layout**: overview_layout ('default' | 'weather_start'), summaries_columns (2 | 4), clock_size (px, default 120), date_size (px, default 72)
 - **Area-level**: areas_display.hidden, areas_display.order
 - **Area-level stack order**: areas_options.{areaId}.stacks_order (per-room ordering of RoomViewStrategy blocks)
 - **Entity-level**: areas_options.{areaId}.groups_options.{domain}.hidden
@@ -305,6 +305,7 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] `overview_layout` option (`'default'` | `'weather_start'`): weather-start layout renders large clock + date, current weather forecast + hourly/daily forecast, then areas; editor dropdown; DE/EN i18n (v1.6.5)
 - [x] Bugfix (8 Findings): `weather_start` custom_sections-Routing, Registry-Reinit bei HA-Registry-Änderungen, `hass.floors`-Null-Guard, binary_sensor Batterie-Erkennung via `device_class`, `SummaryCard.setConfig()` requestUpdate, `LightsGroupCard` Cache-Invalidierung, `_addCustomView` i18n, `dataTransfer` Firefox-Fix (branch `fix/code-review-findings`, v1.6.6)
 - [x] `weather_start` clock/date font size enlarged (clock 120 px, date 72 px); editor `weather_entity` dropdown — manual weather entity override, falls back to auto-detect (v1.6.6)
+- [x] `clock_size` / `date_size` config options: freely configurable font sizes for clock and date in weather_start layout; editor number inputs (visible only in weather_start mode); defaults omitted from YAML (v1.6.7)
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)
