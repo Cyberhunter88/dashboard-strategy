@@ -1,4 +1,4 @@
-# simon42 Dashboard Strategy
+#  Dashboard Strategy
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/v/release/TheRealSimon42/simon42-dashboard-strategy?style=for-the-badge&color=green)](https://github.com/TheRealSimon42/simon42-dashboard-strategy/releases)
@@ -8,43 +8,9 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/simon42-dashboard-strategy/main/assets/Screenshot-simon42-strategy.png" alt="simon42 Dashboard Strategy — Übersicht" width="800" />
-</p>
-
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TheRealSimon42&repository=simon42-dashboard-strategy&category=plugin)
 
 ---
 
-## Video-Anleitung
-
-<p align="center">
-  <a href="https://youtu.be/XU7DfQrfJ2w">
-    <img src="https://raw.githubusercontent.com/TheRealSimon42/simon42-dashboard-strategy/main/assets/video-thumbnail.png" alt="simon42 Dashboard Strategy — Video Tutorial" width="600" />
-  </a>
-  <br/>
-  <em>Schritt-für-Schritt Anleitung auf YouTube ansehen</em>
-</p>
-
----
-
-## Unterstütze dieses Projekt
-
-Wenn dir die simon42 Dashboard Strategy hilft, unterstütze die Weiterentwicklung:
-
-<p align="center">
-  <a href="https://youtube.com/@simon42/join">
-    <img src="https://img.shields.io/badge/YouTube-Kanalmitglied_werden-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube Kanalmitglied werden" />
-  </a>
-  <br/>
-  <em>Bevorzugte Unterstützung: Werde Kanalmitglied auf YouTube!</em>
-  <br/><br/>
-  <a href="https://www.buymeacoffee.com/simon42official">
-    <img src="https://img.shields.io/badge/Buy_Me_A_Coffee-Spende_einen_Kaffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" />
-  </a>
-</p>
-
----
 
 ## Features
 
