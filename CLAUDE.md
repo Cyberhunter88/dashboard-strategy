@@ -307,6 +307,7 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] `weather_start` clock/date font size enlarged (clock 120 px, date 72 px); editor `weather_entity` dropdown — manual weather entity override, falls back to auto-detect (v1.6.6)
 - [x] `clock_size` / `date_size` config options: freely configurable font sizes for clock and date in weather_start layout; editor number inputs (visible only in weather_start mode); defaults omitted from YAML (v1.6.7)
 - [x] Bugfix: `<style>`-Blöcke in Markdown-Karten durch inline-Styles (clock/date) bzw. native `heading`-Karte (Spalten-Spacer) ersetzt — HA sanitiert `<style>`-Blöcke via DOMPurify seit neueren Versionen (v1.6.10)
+- [x] Bugfix: `weather_start` Uhrzeit und Datum — HA sanitiert auch `style=`-Inline-Attribute via DOMPurify; Uhrzeit jetzt native `type: clock` (digital, markers, rows:2), Datum `custom:button-card` (CSS in eigenem Shadow DOM, DOMPurify-sicher, `date_size`-Wert + `navigator.language`); `weather_start` benötigt jetzt button-card (v1.6.11)
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)
