@@ -22,6 +22,7 @@ import type {
   SectionKey,
   StackKey,
   WeatherStartKey,
+  WeatherStartBlockConfig,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
@@ -65,6 +66,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     _config: { state: true },
     _expandedAreas: { state: true },
     _expandedGroups: { state: true },
+    _expandedWeatherBlocks: { state: true },
   };
 
   // hass is set externally by HA — use a setter, not a Lit property
@@ -74,6 +76,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   _config: Simon42StrategyConfig = {};
   _expandedAreas = new Set<string>();
   _expandedGroups = new Map<string, Set<string>>();
+  _expandedWeatherBlocks = new Set<WeatherStartKey>();
 
   // Entity search state (NOT @state — we call requestUpdate manually)
   private _favoriteSearch = '';
@@ -441,6 +444,34 @@ class Simon42DashboardStrategyEditor extends LitElement {
     .btn-remove:hover {
       color: var(--error-color, #db4437);
       border-color: var(--error-color, #db4437);
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      padding: 4px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.15s ease;
+    }
+    .icon-btn:hover {
+      color: var(--primary-text-color);
+    }
+    .text-btn {
+      background: none;
+      border: 1px solid var(--divider-color);
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .text-btn:hover {
+      color: var(--primary-text-color);
+      border-color: var(--primary-color);
     }
 
     /* -- Area list ----------------------------------------------------- */
@@ -1275,8 +1306,50 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'weather_start_blocks.custom_sections' }],
   ]);
 
+  private _toggleWeatherBlockExpanded(key: WeatherStartKey): void {
+    const expanded = new Set(this._expandedWeatherBlocks);
+    if (expanded.has(key)) { expanded.delete(key); } else { expanded.add(key); }
+    this._expandedWeatherBlocks = expanded;
+  }
+
+  private _handleWeatherBlockYamlChange(key: WeatherStartKey, value: string): void {
+    const trimmed = value.trim();
+    const blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {
+      ...(this._config.weather_start_blocks_config || {}),
+    };
+    if (!trimmed) {
+      delete blocksConfig[key];
+    } else {
+      let parsed: Record<string, any>[] | null = null;
+      let _yaml_error: string | undefined;
+      try {
+        const raw = yaml.load(trimmed);
+        if (Array.isArray(raw)) { parsed = raw as Record<string, any>[]; }
+        else if (raw && typeof raw === 'object') { parsed = [raw as Record<string, any>]; }
+        else { _yaml_error = 'YAML must be a card object or list of cards'; }
+      } catch (e: any) { _yaml_error = e.message as string; }
+      blocksConfig[key] = { yaml: trimmed, parsed_config: parsed, _yaml_error };
+    }
+    const newConfig = { ...this._config };
+    if (Object.keys(blocksConfig).length === 0) { delete newConfig.weather_start_blocks_config; }
+    else { newConfig.weather_start_blocks_config = blocksConfig; }
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _resetWeatherBlockYaml(key: WeatherStartKey): void {
+    const blocksConfig = { ...(this._config.weather_start_blocks_config || {}) };
+    delete blocksConfig[key];
+    const newConfig = { ...this._config };
+    if (Object.keys(blocksConfig).length === 0) { delete newConfig.weather_start_blocks_config; }
+    else { newConfig.weather_start_blocks_config = blocksConfig; }
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
   private _renderWeatherStartOrderPanel(): TemplateResult {
     const order = this._getWeatherStartOrder();
+    const overridableBlocks: WeatherStartKey[] = ['clock', 'date', 'weather_current', 'weather_hourly', 'weather_daily'];
 
     return html`
       <div class="section">
@@ -1289,19 +1362,53 @@ class Simon42DashboardStrategyEditor extends LitElement {
             const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(key);
             if (!meta) return nothing;
             const disabled = this._isWeatherStartBlockDisabled(key);
+            const canOverride = overridableBlocks.includes(key);
+            const isExpanded = this._expandedWeatherBlocks.has(key);
+            const blockCfg = this._config.weather_start_blocks_config?.[key];
+            const hasOverride = !!(blockCfg?.yaml);
             return html`
-              <div class="section-order-item ${disabled ? 'disabled' : ''}"
-                data-ws-key=${key}
-                draggable="true"
-                @dragstart=${this._handleWeatherStartDragStart}
-                @dragend=${this._handleWeatherStartDragEnd}
-                @dragover=${this._handleWeatherStartDragOver}
-                @dragleave=${this._handleWeatherStartDragLeave}
-                @drop=${this._handleWeatherStartDrop}>
-                <span class="drag-handle" draggable="true">&#x2630;</span>
-                <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
-                <span class="section-label">${localize(meta.labelKey)}</span>
-                ${disabled ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
+              <div>
+                <div class="section-order-item ${disabled ? 'disabled' : ''}"
+                  data-ws-key=${key}
+                  draggable="true"
+                  @dragstart=${this._handleWeatherStartDragStart}
+                  @dragend=${this._handleWeatherStartDragEnd}
+                  @dragover=${this._handleWeatherStartDragOver}
+                  @dragleave=${this._handleWeatherStartDragLeave}
+                  @drop=${this._handleWeatherStartDrop}>
+                  <span class="drag-handle" draggable="true">&#x2630;</span>
+                  <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
+                  <span class="section-label">${localize(meta.labelKey)}</span>
+                  ${disabled ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
+                  ${hasOverride ? html`<span class="section-hidden-tag" style="background:var(--primary-color);color:#fff;margin-left:4px;">✎</span>` : nothing}
+                  ${canOverride ? html`
+                    <button class="icon-btn" style="margin-left:auto;"
+                      title=${localize('editor.weather_start_block_expand')}
+                      @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(key); }}>
+                      <ha-icon icon=${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                    </button>
+                  ` : nothing}
+                </div>
+                ${canOverride && isExpanded ? html`
+                  <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
+                    <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_block_yaml_desc')}</div>
+                    <textarea
+                      rows="6"
+                      style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
+                      placeholder=${localize('editor.yaml_placeholder')}
+                      .value=${blockCfg?.yaml || ''}
+                      @change=${(e: Event) => this._handleWeatherBlockYamlChange(key, (e.target as HTMLTextAreaElement).value)}
+                    ></textarea>
+                    ${blockCfg?._yaml_error ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">${blockCfg._yaml_error}</div>` : nothing}
+                    ${blockCfg?.parsed_config ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">${localize('editor.yaml_valid')}</div>` : nothing}
+                    ${hasOverride ? html`
+                      <button class="text-btn" style="margin-top:8px;"
+                        @click=${() => this._resetWeatherBlockYaml(key)}>
+                        ${localize('editor.weather_start_block_reset')}
+                      </button>
+                    ` : nothing}
+                  </div>
+                ` : nothing}
               </div>
             `;
           })}
