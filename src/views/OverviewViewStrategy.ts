@@ -217,10 +217,22 @@ function createWeatherStartSectionsFromItems(
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
   const sections: LovelaceSectionConfig[] = [];
 
+  const appendSection = (section: LovelaceSectionConfig | null, stackWithPrevious: boolean | undefined): void => {
+    if (!section) return;
+    const lastSection = sections[sections.length - 1];
+    if (stackWithPrevious && lastSection?.cards && section.cards) {
+      lastSection.cards.push(...section.cards);
+      return;
+    }
+    sections.push(section);
+  };
+
   for (const item of items) {
     if (item._yaml_error) continue;
     if (item.parsed_config) {
-      sections.push(...parsedConfigToSections(item.parsed_config));
+      for (const section of parsedConfigToSections(item.parsed_config)) {
+        appendSection(section, item.stack_with_previous);
+      }
       continue;
     }
 
@@ -264,6 +276,25 @@ function createWeatherStartSectionsFromItems(
         section = area ? { type: 'grid', cards: [buildAreaCard(area, hass)] } : null;
         break;
       }
+      case 'floor': {
+        const floorAreas = visibleAreas.filter((area) => (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id));
+        if (floorAreas.length > 0) {
+          const floor = item.floor_id ? hass.floors?.[item.floor_id] : undefined;
+          section = {
+            type: 'grid',
+            cards: [
+              {
+                type: 'heading',
+                heading_style: 'title',
+                heading: item.title || floor?.name || localize('sections.areas_other'),
+                icon: floor?.icon || 'mdi:floor-plan',
+              },
+              ...floorAreas.map((area) => buildAreaCard(area, hass)),
+            ],
+          };
+        }
+        break;
+      }
       case 'custom_card':
         section = renderCustomCardAsSection(findCustomCard(dashboardConfig, item));
         break;
@@ -274,7 +305,7 @@ function createWeatherStartSectionsFromItems(
         section = null;
     }
 
-    if (section) sections.push(section);
+    appendSection(section, item.stack_with_previous);
   }
 
   return sections;

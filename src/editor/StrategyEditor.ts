@@ -51,6 +51,12 @@ interface DomainGroup {
   icon: string;
 }
 
+interface WeatherStartFloorOption {
+  floor_id: string | null;
+  name: string;
+  icon?: string | null;
+}
+
 declare global {
   interface Window {
     customCards?: Array<{ type: string; name: string; description: string }>;
@@ -1532,6 +1538,32 @@ class Simon42DashboardStrategyEditor extends LitElement {
       });
   }
 
+  private _getWeatherStartFloorOptions(): WeatherStartFloorOption[] {
+    if (!this._hass) return [];
+    const areas = this._getWeatherStartAreaOptions();
+    const floorIds = new Set<string>();
+    let hasFloorlessAreas = false;
+    for (const area of areas) {
+      if (area.floor_id) floorIds.add(area.floor_id);
+      else hasFloorlessAreas = true;
+    }
+
+    const floors: WeatherStartFloorOption[] = Object.values(this._hass.floors || {})
+      .filter((floor) => floorIds.has(floor.floor_id))
+      .sort((a, b) => {
+        const aLevel = a.level ?? 9999;
+        const bLevel = b.level ?? 9999;
+        return aLevel - bLevel || a.name.localeCompare(b.name);
+      })
+      .map((floor) => ({ floor_id: floor.floor_id, name: floor.name, icon: floor.icon }));
+
+    if (hasFloorlessAreas) {
+      floors.push({ floor_id: null, name: localize('sections.areas_other'), icon: 'mdi:home-outline' });
+    }
+
+    return floors;
+  }
+
   private _getCustomCardRef(card: CustomCard, index: number): string {
     return card.id || `legacy-custom-card-${index}`;
   }
@@ -1550,8 +1582,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
     for (const key of order) {
       const blockCfg = this._config.weather_start_blocks_config?.[key];
       if (key === 'areas') {
-        for (const area of this._getWeatherStartAreaOptions()) {
-          items.push({ id: `area-${area.area_id}`, type: 'area', area_id: area.area_id });
+        if (this._config.group_by_floors === true) {
+          for (const floor of this._getWeatherStartFloorOptions()) {
+            items.push({ id: `floor-${floor.floor_id || 'none'}`, type: 'floor', floor_id: floor.floor_id, title: floor.name });
+          }
+        } else {
+          for (const area of this._getWeatherStartAreaOptions()) {
+            items.push({ id: `area-${area.area_id}`, type: 'area', area_id: area.area_id });
+          }
         }
       } else if (key === 'custom_cards') {
         (this._config.custom_cards || []).forEach((card, index) => {
@@ -1693,6 +1731,33 @@ class Simon42DashboardStrategyEditor extends LitElement {
     (e.target as HTMLSelectElement).value = '';
   }
 
+  private _addWeatherStartFloor(e: Event): void {
+    const value = (e.target as HTMLSelectElement).value;
+    if (!value) return;
+    const floorId = value === '__none__' ? null : value;
+    const floor = this._getWeatherStartFloorOptions().find((entry) => entry.floor_id === floorId);
+    const items = this._getWeatherStartLayoutItems();
+    items.push({
+      id: this._createWeatherStartItemId(`floor-${floorId || 'none'}`),
+      type: 'floor',
+      floor_id: floorId,
+      title: floor?.name,
+    });
+    this._saveWeatherStartLayoutItems(items);
+    (e.target as HTMLSelectElement).value = '';
+  }
+
+  private _toggleWeatherStartItemStack(itemId: string, stackWithPrevious: boolean): void {
+    const items = this._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      const updated = { ...item };
+      if (stackWithPrevious) updated.stack_with_previous = true;
+      else delete updated.stack_with_previous;
+      return updated;
+    });
+    this._saveWeatherStartLayoutItems(items);
+  }
+
   private _addWeatherStartSection(): void {
     const id = this._createWeatherStartItemId('section');
     const customSections: CustomSection[] = [
@@ -1737,6 +1802,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const area = areas.find((entry) => entry.area_id === item.area_id);
       return { icon: area?.icon || 'mdi:home-outline', label: area?.name || item.area_id || localize('sections.areas') };
     }
+    if (item.type === 'floor') {
+      const floor = this._getWeatherStartFloorOptions().find((entry) => entry.floor_id === (item.floor_id ?? null));
+      return { icon: floor?.icon || 'mdi:floor-plan', label: item.title || floor?.name || localize('sections.areas') };
+    }
     if (item.type === 'custom_card') {
       const card = customCards.find((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
       return { icon: 'mdi:cards', label: card?.title || localize('editor.new_card') };
@@ -1763,12 +1832,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (item.type === 'custom_section') {
       return !customSections.some((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id && (entry.cards || []).some((card) => card.parsed_config));
     }
+    if (item.type === 'floor') {
+      return !this._getWeatherStartAreaOptions().some((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+    }
     return false;
   }
 
   private _renderWeatherStartOrderPanel(): TemplateResult {
     const items = this._getWeatherStartLayoutItems();
     const areas = this._getWeatherStartAreaOptions();
+    const floors = this._getWeatherStartFloorOptions();
     const customCards = this._config.custom_cards || [];
     const customSections = this._config.custom_sections || [];
 
@@ -1812,6 +1885,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </div>
                 ${isExpanded ? html`
                   <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
+                    <label class="form-row" style="margin: 0 0 8px 0;">
+                      <input type="checkbox"
+                        ?checked=${item.stack_with_previous === true}
+                        @change=${(e: Event) => this._toggleWeatherStartItemStack(item.id, (e.target as HTMLInputElement).checked)} />
+                      <span>${localize('editor.weather_start_stack_with_previous')}</span>
+                    </label>
                     <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_block_yaml_desc')}</div>
                     <textarea
                       rows="6"
@@ -1844,6 +1923,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartArea}>
             <option value="">${localize('editor.weather_start_add_area')}</option>
             ${areas.map((area) => html`<option value=${area.area_id}>${area.name}</option>`)}
+          </select>
+          <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartFloor}>
+            <option value="">${localize('editor.weather_start_add_floor')}</option>
+            ${floors.map((floor) => html`<option value=${floor.floor_id || '__none__'}>${floor.name}</option>`)}
           </select>
         </div>
       </div>

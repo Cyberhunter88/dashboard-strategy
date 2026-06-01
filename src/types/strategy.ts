@@ -55,7 +55,7 @@ export interface WeatherStartBlockConfig {
   _yaml_error?: string;
 }
 
-export type WeatherStartLayoutItemType = WeatherStartKey | 'area' | 'custom_card' | 'custom_section';
+export type WeatherStartLayoutItemType = WeatherStartKey | 'area' | 'floor' | 'custom_card' | 'custom_section';
 
 export interface WeatherStartLayoutItem {
   /** Stable item id for drag/drop and references */
@@ -64,12 +64,16 @@ export interface WeatherStartLayoutItem {
   type: WeatherStartLayoutItemType;
   /** Area id for type=area */
   area_id?: string;
+  /** Floor id for type=floor. Use null/undefined for areas without a floor. */
+  floor_id?: string | null;
   /** Custom card id for type=custom_card */
   custom_card_id?: string;
   /** Custom section id for type=custom_section */
   custom_section_id?: string;
   /** Optional editor/display title */
   title?: string;
+  /** Render this item below the previous item in the same dashboard section */
+  stack_with_previous?: boolean;
   /** Raw YAML override for built-in and area items */
   yaml?: string;
   /** Parsed card/section config generated from yaml */

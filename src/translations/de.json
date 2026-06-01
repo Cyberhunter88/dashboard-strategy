@@ -291,6 +291,8 @@
     "weather_start_block_yaml": "Eigenes YAML (ersetzt Standard-Inhalt)",
     "weather_start_block_yaml_desc": "Eine oder mehrere Karten als YAML eingeben. Ersetzt den automatisch generierten Inhalt dieses Blocks.",
     "weather_start_add_area": "Bereich hinzufuegen...",
+    "weather_start_add_floor": "Etage hinzufuegen...",
+    "weather_start_stack_with_previous": "Unter vorherigem Block in derselben Spalte anzeigen",
     "remove": "Entfernen",
     "weather_start_block_reset": "Auf Standard zurücksetzen"
   },

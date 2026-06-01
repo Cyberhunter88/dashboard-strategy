@@ -291,6 +291,8 @@
     "weather_start_block_yaml": "Custom YAML (replaces default content)",
     "weather_start_block_yaml_desc": "Enter one or more card configs as YAML. If set, replaces the auto-generated content of this block.",
     "weather_start_add_area": "Add area...",
+    "weather_start_add_floor": "Add floor...",
+    "weather_start_stack_with_previous": "Show below previous block in the same column",
     "remove": "Remove",
     "weather_start_block_reset": "Reset to default"
   },
