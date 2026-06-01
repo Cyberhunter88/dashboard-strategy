@@ -1892,8 +1892,35 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const hasEntities = domainGroups.some((g) => (groupedEntities[g.key]?.length ?? 0) > 0);
     const hasBadges = (badgeCandidates?.length ?? 0) > 0 || (additionalBadges?.length ?? 0) > 0;
 
+    // Build a deduplicated entity list for the guided tile picker (all area entities)
+    const areaPickerEntities: Array<{ entity_id: string; name: string }> = [];
+    const seenPickerEntities = new Set<string>();
+    const pushPickerEntity = (entityId: string): void => {
+      if (!entityId || seenPickerEntities.has(entityId)) return;
+      seenPickerEntities.add(entityId);
+      const stateObj = hass.states[entityId];
+      const name = stateObj?.attributes.friendly_name
+        || entityId.split('.')[1]?.replace(/_/g, ' ')
+        || entityId;
+      areaPickerEntities.push({ entity_id: entityId, name });
+    };
+    for (const group of domainGroups) {
+      for (const entityId of (groupedEntities[group.key] as string[] | undefined) || []) {
+        pushPickerEntity(entityId);
+      }
+    }
+    for (const entityId of badgeCandidates || []) pushPickerEntity(entityId);
+    for (const entityId of additionalBadges || []) pushPickerEntity(entityId);
+    for (const e of availableEntities || []) pushPickerEntity(e.entity_id);
+    areaPickerEntities.sort((a, b) => a.name.localeCompare(b.name));
+
+    const customCardsSection = this._renderAreaCustomCardsSection(areaId, areaPickerEntities);
+
     if (!hasEntities && !hasBadges) {
-      return html`<div class="empty-state">${localize('editor.no_entities_in_area')}</div>`;
+      return html`
+        <div class="empty-state">${localize('editor.no_entities_in_area')}</div>
+        ${customCardsSection}
+      `;
     }
 
     const expandedGroups = this._expandedGroups.get(areaId) || new Set<string>();
@@ -1958,6 +1985,99 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${hasBadges
           ? this._renderBadgeGroup(areaId, badgeCandidates, additionalBadges, availableEntities, hiddenEntities, defaultShowNames, namesVisible, namesHidden, expandedGroups)
           : nothing}
+      </div>
+      ${customCardsSection}
+    `;
+  }
+
+  // -- Area Custom Cards Renderers --------------------------------------
+
+  private _renderAreaCustomCardItem(
+    areaId: string,
+    card: AreaCustomCard,
+    index: number,
+    availableEntities: Array<{ entity_id: string; name: string }>
+  ): TemplateResult {
+    const mode = card.mode || 'yaml';
+    const position = card.position || 'bottom';
+
+    const validationMsg = card._yaml_error
+      ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
+      : card.yaml
+        ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+        : nothing;
+
+    return html`
+      <div class="custom-item" data-index=${index}>
+        <div class="custom-item-header">
+          <strong>${card.title || localize('editor.area_custom_card_new')}</strong>
+          <button class="btn-remove" @click=${() => this._removeAreaCustomCard(areaId, index)}>&#x2715;</button>
+        </div>
+        <div class="custom-item-fields">
+          <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
+            @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'title', (e.target as HTMLInputElement).value)} />
+          <div class="custom-card-target">
+            <label>${localize('editor.area_custom_card_position')}:</label>
+            <select
+              @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'position', (e.target as HTMLSelectElement).value)}>
+              <option value="top" ?selected=${position === 'top'}>${localize('editor.area_custom_card_position_top')}</option>
+              <option value="bottom" ?selected=${position === 'bottom'}>${localize('editor.area_custom_card_position_bottom')}</option>
+            </select>
+          </div>
+          <div class="custom-card-target">
+            <label>${localize('editor.area_custom_card_mode')}:</label>
+            <select
+              @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'mode', (e.target as HTMLSelectElement).value)}>
+              <option value="yaml" ?selected=${mode === 'yaml'}>${localize('editor.area_custom_card_mode_yaml')}</option>
+              <option value="tile" ?selected=${mode === 'tile'}>${localize('editor.area_custom_card_mode_tile')}</option>
+            </select>
+          </div>
+          ${mode === 'tile'
+            ? html`
+              <div class="custom-card-target">
+                <label>${localize('editor.area_custom_card_entity')}:</label>
+                <select
+                  @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'entity', (e.target as HTMLSelectElement).value)}>
+                  <option value="">${localize('editor.area_custom_card_entity_select')}</option>
+                  ${availableEntities.map((e) => html`
+                    <option value=${e.entity_id} ?selected=${card.entity === e.entity_id}>${e.name} (${e.entity_id})</option>
+                  `)}
+                </select>
+              </div>
+            `
+            : html`
+              <textarea rows="6" placeholder=${localize('editor.yaml_placeholder')}
+                .value=${card.yaml || ''}
+                style="width: 100%;"
+                @change=${(e: Event) => this._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}></textarea>
+              <div class="custom-item-validation">
+                ${validationMsg}
+              </div>
+            `}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderAreaCustomCardsSection(
+    areaId: string,
+    availableEntities: Array<{ entity_id: string; name: string }>
+  ): TemplateResult {
+    const cards = this._getAreaCustomCards(areaId);
+
+    return html`
+      <div class="area-custom-cards">
+        <div class="area-custom-cards-header">
+          <ha-icon icon="mdi:card-plus-outline"></ha-icon>
+          <span class="group-name">${localize('editor.area_custom_cards_title')}</span>
+        </div>
+        <div class="area-custom-cards-help">${localize('editor.area_custom_cards_help')}</div>
+        ${cards.length === 0
+          ? nothing
+          : cards.map((card, index) => this._renderAreaCustomCardItem(areaId, card, index, availableEntities))}
+        <button class="btn-add" @click=${() => this._addAreaCustomCard(areaId)}>
+          ${localize('editor.area_custom_card_add')}
+        </button>
       </div>
     `;
   }
