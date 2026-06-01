@@ -23,6 +23,7 @@ import type {
   StackKey,
   WeatherStartKey,
   WeatherStartBlockConfig,
+  WeatherStartLayoutItem,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
@@ -109,7 +110,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   _config: Simon42StrategyConfig = {};
   _expandedAreas = new Set<string>();
   _expandedGroups = new Map<string, Set<string>>();
-  _expandedWeatherBlocks = new Set<WeatherStartKey>();
+  _expandedWeatherBlocks = new Set<string>();
 
   // Entity search state (NOT @state — we call requestUpdate manually)
   private _favoriteSearch = '';
@@ -1512,7 +1513,83 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'weather_start_blocks.custom_sections' }],
   ]);
 
-  private _toggleWeatherBlockExpanded(key: WeatherStartKey): void {
+  private _createWeatherStartItemId(prefix: string): string {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private _getWeatherStartAreaOptions(): AreaRegistryEntry[] {
+    if (!this._hass) return [];
+    const hidden = new Set(this._config.areas_display?.hidden || []);
+    const order = this._config.areas_display?.order || [];
+    return Object.values(this._hass.areas || {})
+      .filter((area) => !hidden.has(area.area_id))
+      .sort((a, b) => {
+        const ai = order.indexOf(a.area_id);
+        const bi = order.indexOf(b.area_id);
+        const ae = ai >= 0 ? ai : 9999;
+        const be = bi >= 0 ? bi : 9999;
+        return ae - be || a.name.localeCompare(b.name);
+      });
+  }
+
+  private _getCustomCardRef(card: CustomCard, index: number): string {
+    return card.id || `legacy-custom-card-${index}`;
+  }
+
+  private _getCustomSectionRef(section: CustomSection, index: number): string {
+    return section.id || `legacy-custom-section-${index}`;
+  }
+
+  private _getWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
+    if (this._config.weather_start_layout_items?.length) {
+      return this._config.weather_start_layout_items.map((item) => ({ ...item }));
+    }
+
+    const order = this._getWeatherStartOrder();
+    const items: WeatherStartLayoutItem[] = [];
+    for (const key of order) {
+      const blockCfg = this._config.weather_start_blocks_config?.[key];
+      if (key === 'areas') {
+        for (const area of this._getWeatherStartAreaOptions()) {
+          items.push({ id: `area-${area.area_id}`, type: 'area', area_id: area.area_id });
+        }
+      } else if (key === 'custom_cards') {
+        (this._config.custom_cards || []).forEach((card, index) => {
+          items.push({
+            id: `custom-card-${this._getCustomCardRef(card, index)}`,
+            type: 'custom_card',
+            custom_card_id: this._getCustomCardRef(card, index),
+          });
+        });
+      } else if (key === 'custom_sections') {
+        (this._config.custom_sections || []).forEach((section, index) => {
+          items.push({
+            id: `custom-section-${this._getCustomSectionRef(section, index)}`,
+            type: 'custom_section',
+            custom_section_id: this._getCustomSectionRef(section, index),
+          });
+        });
+      } else {
+        items.push({
+          id: key,
+          type: key,
+          ...(blockCfg?.yaml ? { yaml: blockCfg.yaml, parsed_config: blockCfg.parsed_config, _yaml_error: blockCfg._yaml_error } : {}),
+        });
+      }
+    }
+    return items;
+  }
+
+  private _saveWeatherStartLayoutItems(items: WeatherStartLayoutItem[]): void {
+    const newConfig: Simon42StrategyConfig = {
+      ...this._config,
+      weather_start_layout_items: items,
+    };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _toggleWeatherBlockExpanded(key: string): void {
     const expanded = new Set(this._expandedWeatherBlocks);
     if (expanded.has(key)) { expanded.delete(key); } else { expanded.add(key); }
     this._expandedWeatherBlocks = expanded;
@@ -1553,9 +1630,147 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _parseWeatherStartItemYaml(yamlString: string): Pick<WeatherStartLayoutItem, 'parsed_config' | '_yaml_error'> {
+    const trimmed = yamlString.trim();
+    if (!trimmed) return { parsed_config: undefined, _yaml_error: undefined };
+
+    try {
+      const raw = yaml.load(trimmed);
+      if (Array.isArray(raw)) return { parsed_config: raw as Record<string, any>[] };
+      if (raw && typeof raw === 'object') return { parsed_config: raw as Record<string, any> };
+      return { parsed_config: undefined, _yaml_error: 'YAML must be a card, section, view with sections, or list of cards' };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message.split('\n')[0] : 'Invalid YAML';
+      return { parsed_config: undefined, _yaml_error: message || 'Invalid YAML' };
+    }
+  }
+
+  private _updateWeatherStartItemYaml(itemId: string, yamlString: string): void {
+    const items = this._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      const updated: WeatherStartLayoutItem = { ...item, yaml: yamlString };
+      const parsed = this._parseWeatherStartItemYaml(yamlString);
+      updated.parsed_config = parsed.parsed_config;
+      updated._yaml_error = parsed._yaml_error;
+      if (!yamlString.trim()) {
+        delete updated.yaml;
+        delete updated.parsed_config;
+        delete updated._yaml_error;
+      }
+      return updated;
+    });
+    const invalidItem = items.find((item) => item.id === itemId && item._yaml_error);
+    if (invalidItem) {
+      this._config = { ...this._config, weather_start_layout_items: items };
+      this.requestUpdate();
+      return;
+    }
+    this._saveWeatherStartLayoutItems(items);
+  }
+
+  private _resetWeatherStartItemYaml(itemId: string): void {
+    const items = this._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      const updated = { ...item };
+      delete updated.yaml;
+      delete updated.parsed_config;
+      delete updated._yaml_error;
+      return updated;
+    });
+    this._saveWeatherStartLayoutItems(items);
+  }
+
+  private _removeWeatherStartItem(itemId: string): void {
+    this._saveWeatherStartLayoutItems(this._getWeatherStartLayoutItems().filter((item) => item.id !== itemId));
+  }
+
+  private _addWeatherStartArea(e: Event): void {
+    const areaId = (e.target as HTMLSelectElement).value;
+    if (!areaId) return;
+    const items = this._getWeatherStartLayoutItems();
+    items.push({ id: this._createWeatherStartItemId(`area-${areaId}`), type: 'area', area_id: areaId });
+    this._saveWeatherStartLayoutItems(items);
+    (e.target as HTMLSelectElement).value = '';
+  }
+
+  private _addWeatherStartSection(): void {
+    const id = this._createWeatherStartItemId('section');
+    const customSections: CustomSection[] = [
+      ...(this._config.custom_sections || []),
+      { id, title: '', icon: '', cards: [] },
+    ];
+    const items = [
+      ...this._getWeatherStartLayoutItems(),
+      { id: `custom-section-${id}`, type: 'custom_section', custom_section_id: id } as WeatherStartLayoutItem,
+    ];
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections, weather_start_layout_items: items };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+    this._expandedWeatherBlocks = new Set([...this._expandedWeatherBlocks, `custom-section-${id}`]);
+  }
+
+  private _openCardPickerForWeatherStartCard = (): void => {
+    this._openCardPicker((config) => {
+      const id = this._createWeatherStartItemId('card');
+      const yamlStr = yaml.dump(config).trim();
+      const customCards: CustomCard[] = [
+        ...(this._config.custom_cards || []),
+        { id, title: '', yaml: yamlStr, parsed_config: config },
+      ];
+      const items = [
+        ...this._getWeatherStartLayoutItems(),
+        { id: `custom-card-${id}`, type: 'custom_card', custom_card_id: id } as WeatherStartLayoutItem,
+      ];
+      const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards, weather_start_layout_items: items };
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+    });
+  };
+
+  private _getWeatherStartItemMeta(
+    item: WeatherStartLayoutItem,
+    areas: AreaRegistryEntry[],
+    customCards: CustomCard[],
+    customSections: CustomSection[]
+  ): { icon: string; label: string } {
+    if (item.type === 'area') {
+      const area = areas.find((entry) => entry.area_id === item.area_id);
+      return { icon: area?.icon || 'mdi:home-outline', label: area?.name || item.area_id || localize('sections.areas') };
+    }
+    if (item.type === 'custom_card') {
+      const card = customCards.find((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
+      return { icon: 'mdi:cards', label: card?.title || localize('editor.new_card') };
+    }
+    if (item.type === 'custom_section') {
+      const section = customSections.find((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id);
+      return { icon: section?.icon || 'mdi:view-grid-plus-outline', label: section?.title || localize('editor.section_custom_sections') };
+    }
+
+    const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(item.type);
+    return { icon: meta?.icon || 'mdi:view-dashboard-outline', label: meta ? localize(meta.labelKey) : item.type };
+  }
+
+  private _isWeatherStartItemDisabled(
+    item: WeatherStartLayoutItem,
+    customCards: CustomCard[],
+    customSections: CustomSection[]
+  ): boolean {
+    if (item.parsed_config) return false;
+    if (item._yaml_error) return true;
+    if (item.type === 'custom_card') {
+      return !customCards.some((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id && entry.parsed_config);
+    }
+    if (item.type === 'custom_section') {
+      return !customSections.some((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id && (entry.cards || []).some((card) => card.parsed_config));
+    }
+    return false;
+  }
+
   private _renderWeatherStartOrderPanel(): TemplateResult {
-    const order = this._getWeatherStartOrder();
-    const overridableBlocks: WeatherStartKey[] = ['clock', 'date', 'weather_current', 'weather_hourly', 'weather_daily'];
+    const items = this._getWeatherStartLayoutItems();
+    const areas = this._getWeatherStartAreaOptions();
+    const customCards = this._config.custom_cards || [];
+    const customSections = this._config.custom_sections || [];
 
     return html`
       <div class="section">
@@ -1564,18 +1779,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${localize('editor.weather_start_order_desc')}
         </div>
         <div class="section-order-list" id="weather-start-order-list">
-          ${order.map((key) => {
-            const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(key);
-            if (!meta) return nothing;
-            const disabled = this._isWeatherStartBlockDisabled(key);
-            const canOverride = overridableBlocks.includes(key);
-            const isExpanded = this._expandedWeatherBlocks.has(key);
-            const blockCfg = this._config.weather_start_blocks_config?.[key];
-            const hasOverride = !!(blockCfg?.yaml);
+          ${items.map((item) => {
+            const meta = this._getWeatherStartItemMeta(item, areas, customCards, customSections);
+            const disabled = this._isWeatherStartItemDisabled(item, customCards, customSections);
+            const isExpanded = this._expandedWeatherBlocks.has(item.id);
+            const hasOverride = !!item.yaml;
             return html`
               <div>
                 <div class="section-order-item ${disabled ? 'disabled' : ''}"
-                  data-ws-key=${key}
+                  data-ws-id=${item.id}
                   draggable="true"
                   @dragstart=${this._handleWeatherStartDragStart}
                   @dragend=${this._handleWeatherStartDragEnd}
@@ -1584,32 +1796,35 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   @drop=${this._handleWeatherStartDrop}>
                   <span class="drag-handle" draggable="true">&#x2630;</span>
                   <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
-                  <span class="section-label">${localize(meta.labelKey)}</span>
+                  <span class="section-label">${meta.label}</span>
                   ${disabled ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
                   ${hasOverride ? html`<span class="section-hidden-tag" style="background:var(--primary-color);color:#fff;margin-left:4px;">✎</span>` : nothing}
-                  ${canOverride ? html`
-                    <button class="icon-btn" style="margin-left:auto;"
-                      title=${localize('editor.weather_start_block_expand')}
-                      @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(key); }}>
-                      <ha-icon icon=${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
-                    </button>
-                  ` : nothing}
+                  <button class="icon-btn" style="margin-left:auto;"
+                    title=${localize('editor.weather_start_block_expand')}
+                    @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(item.id); }}>
+                    <ha-icon icon=${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
+                  </button>
+                  <button class="icon-btn"
+                    title=${localize('editor.remove')}
+                    @click=${(e: Event) => { e.stopPropagation(); this._removeWeatherStartItem(item.id); }}>
+                    <ha-icon icon="mdi:delete-outline"></ha-icon>
+                  </button>
                 </div>
-                ${canOverride && isExpanded ? html`
+                ${isExpanded ? html`
                   <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
                     <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_block_yaml_desc')}</div>
                     <textarea
                       rows="6"
                       style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
                       placeholder=${localize('editor.yaml_placeholder')}
-                      .value=${blockCfg?.yaml || ''}
-                      @change=${(e: Event) => this._handleWeatherBlockYamlChange(key, (e.target as HTMLTextAreaElement).value)}
+                      .value=${item.yaml || ''}
+                      @change=${(e: Event) => this._updateWeatherStartItemYaml(item.id, (e.target as HTMLTextAreaElement).value)}
                     ></textarea>
-                    ${blockCfg?._yaml_error ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">${blockCfg._yaml_error}</div>` : nothing}
-                    ${blockCfg?.parsed_config ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">${localize('editor.yaml_valid')}</div>` : nothing}
+                    ${item._yaml_error ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">${item._yaml_error}</div>` : nothing}
+                    ${item.parsed_config ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">${localize('editor.yaml_valid')}</div>` : nothing}
                     ${hasOverride ? html`
                       <button class="text-btn" style="margin-top:8px;"
-                        @click=${() => this._resetWeatherBlockYaml(key)}>
+                        @click=${() => this._resetWeatherStartItemYaml(item.id)}>
                         ${localize('editor.weather_start_block_reset')}
                       </button>
                     ` : nothing}
@@ -1618,6 +1833,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
               </div>
             `;
           })}
+        </div>
+        <div class="custom-item-row" style="margin-top: 10px; align-items: center;">
+          <button class="btn-primary" @click=${this._openCardPickerForWeatherStartCard}>
+            ${localize('editor.add_custom_card')}
+          </button>
+          <button class="btn-primary" @click=${this._addWeatherStartSection}>
+            ${localize('editor.add_custom_section')}
+          </button>
+          <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartArea}>
+            <option value="">${localize('editor.weather_start_add_area')}</option>
+            ${areas.map((area) => html`<option value=${area.area_id}>${area.name}</option>`)}
+          </select>
         </div>
       </div>
     `;
@@ -1635,7 +1862,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     item.classList.add('dragging');
     if (ev.dataTransfer) {
       ev.dataTransfer.effectAllowed = 'move';
-      ev.dataTransfer.setData('text/plain', item.dataset.wsKey || '');
+      ev.dataTransfer.setData('text/plain', item.dataset.wsId || '');
     }
     this._weatherStartDraggedElement = item;
   };
@@ -1676,20 +1903,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     if (!this._weatherStartDraggedElement || this._weatherStartDraggedElement === dropTarget) return;
 
-    const draggedKey = this._weatherStartDraggedElement.dataset.wsKey as WeatherStartKey | undefined;
-    const dropKey = dropTarget.dataset.wsKey as WeatherStartKey | undefined;
-    if (!draggedKey || !dropKey) return;
+    const draggedId = this._weatherStartDraggedElement.dataset.wsId;
+    const dropId = dropTarget.dataset.wsId;
+    if (!draggedId || !dropId) return;
 
-    const currentOrder = this._getWeatherStartOrder();
-    const draggedIndex = currentOrder.indexOf(draggedKey);
-    const dropIndex = currentOrder.indexOf(dropKey);
+    const currentOrder = this._getWeatherStartLayoutItems();
+    const draggedIndex = currentOrder.findIndex((item) => item.id === draggedId);
+    const dropIndex = currentOrder.findIndex((item) => item.id === dropId);
     if (draggedIndex === -1 || dropIndex === -1) return;
 
     const newOrder = [...currentOrder];
     newOrder.splice(draggedIndex, 1);
-    newOrder.splice(dropIndex, 0, draggedKey);
+    newOrder.splice(dropIndex, 0, currentOrder[draggedIndex]);
 
-    this._updateWeatherStartOrder(newOrder);
+    this._saveWeatherStartLayoutItems(newOrder);
   };
 
   // -- Section order drag & drop -----------------------------------------
@@ -4373,6 +4600,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
           return clean;
         }),
       }));
+    }
+    if (cleanConfig.weather_start_layout_items) {
+      cleanConfig.weather_start_layout_items = cleanConfig.weather_start_layout_items.map((item) => {
+        const clean = { ...item };
+        delete clean._yaml_error;
+        return clean;
+      });
     }
     if (cleanConfig.areas_options) {
       cleanConfig.areas_options = Object.fromEntries(

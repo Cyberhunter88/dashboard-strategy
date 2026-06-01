@@ -7,7 +7,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { Simon42StrategyConfig, SectionKey, WeatherStartKey, CustomCard, WeatherStartBlockConfig } from '../types/strategy';
+import type { Simon42StrategyConfig, SectionKey, WeatherStartKey, CustomCard, WeatherStartBlockConfig, WeatherStartLayoutItem, CustomSection } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { LovelaceViewConfig, LovelaceSectionConfig, LovelaceBadgeConfig, LovelaceCardConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
@@ -15,7 +15,7 @@ import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/ent
 import { getVisibleAreas } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
 import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray } from '../sections/OverviewSection';
-import { createAreasSection } from '../sections/AreasSection';
+import { buildAreaCard, createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
@@ -157,6 +157,127 @@ function withBlockOverride(
     return { type: 'grid', cards: cfg.parsed_config as LovelaceCardConfig[] };
   }
   return defaultSection;
+}
+
+function parsedConfigToSections(parsed: Record<string, any> | Record<string, any>[] | null | undefined): LovelaceSectionConfig[] {
+  if (!parsed) return [];
+  if (Array.isArray(parsed)) {
+    return [{ type: 'grid', cards: parsed as LovelaceCardConfig[] }];
+  }
+  if (Array.isArray(parsed.sections)) {
+    return parsed.sections as LovelaceSectionConfig[];
+  }
+  if (Array.isArray(parsed.cards)) {
+    return [parsed as LovelaceSectionConfig];
+  }
+  return [{ type: 'grid', cards: [parsed as LovelaceCardConfig] }];
+}
+
+function renderCustomCardAsSection(card: CustomCard | undefined): LovelaceSectionConfig | null {
+  if (!card?.parsed_config) return null;
+  const cards: LovelaceCardConfig[] = [];
+  if (Array.isArray(card.parsed_config)) {
+    cards.push(...card.parsed_config as LovelaceCardConfig[]);
+  } else {
+    if (card.title) {
+      cards.push({ type: 'heading', heading: card.title, heading_style: 'subtitle' });
+    }
+    cards.push(card.parsed_config as LovelaceCardConfig);
+  }
+  return cards.length > 0 ? { type: 'grid', cards } : null;
+}
+
+function renderCustomSection(section: CustomSection | undefined): LovelaceSectionConfig | null {
+  if (!section) return null;
+  const rendered = createCustomSectionsArray([section]);
+  return rendered[0] ?? null;
+}
+
+function findCustomCard(config: Simon42StrategyConfig, item: WeatherStartLayoutItem): CustomCard | undefined {
+  const cards = config.custom_cards || [];
+  return cards.find((card) => card.id === item.custom_card_id)
+    || cards[Number(item.custom_card_id?.replace(/^legacy-custom-card-/, ''))];
+}
+
+function findCustomSection(config: Simon42StrategyConfig, item: WeatherStartLayoutItem): CustomSection | undefined {
+  const sections = config.custom_sections || [];
+  return sections.find((section) => section.id === item.custom_section_id)
+    || sections[Number(item.custom_section_id?.replace(/^legacy-custom-section-/, ''))];
+}
+
+function createWeatherStartSectionsFromItems(
+  items: WeatherStartLayoutItem[],
+  weatherEntity: string | null,
+  visibleAreas: ReturnType<typeof getVisibleAreas>,
+  dashboardConfig: Simon42StrategyConfig,
+  clockSize: number,
+  dateSize: number,
+  hass: HomeAssistant
+): LovelaceSectionConfig[] {
+  const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
+  const sections: LovelaceSectionConfig[] = [];
+
+  for (const item of items) {
+    if (item._yaml_error) continue;
+    if (item.parsed_config) {
+      sections.push(...parsedConfigToSections(item.parsed_config));
+      continue;
+    }
+
+    let section: LovelaceSectionConfig | null = null;
+    switch (item.type) {
+      case 'clock':
+        section = { type: 'grid', cards: [createLargeTimeCard(clockSize)] };
+        break;
+      case 'date':
+        section = { type: 'grid', cards: [createLargeDateCard(dateSize)] };
+        break;
+      case 'weather_current':
+        section = weatherEntity ? {
+          type: 'grid',
+          cards: [
+            { type: 'heading', heading: localize('sections.weather'), heading_style: 'title', icon: 'mdi:weather-partly-cloudy' },
+            { type: 'weather-forecast', entity: weatherEntity, show_current: true, show_forecast: false, grid_options: { columns: 'full' } },
+          ],
+        } : null;
+        break;
+      case 'weather_hourly':
+        section = weatherEntity ? {
+          type: 'grid',
+          cards: [
+            { type: 'heading', heading: localize('sections.weather_today'), heading_style: 'title', icon: 'mdi:clock-outline' },
+            { type: 'weather-forecast', entity: weatherEntity, forecast_type: 'hourly', show_current: false, show_forecast: true, grid_options: { columns: 'full' } },
+          ],
+        } : null;
+        break;
+      case 'weather_daily':
+        section = weatherEntity ? {
+          type: 'grid',
+          cards: [
+            { type: 'heading', heading: localize('sections.weather_next_days'), heading_style: 'title', icon: 'mdi:calendar-outline' },
+            { type: 'weather-forecast', entity: weatherEntity, forecast_type: 'daily', show_current: false, show_forecast: true, grid_options: { columns: 'full' } },
+          ],
+        } : null;
+        break;
+      case 'area': {
+        const area = item.area_id ? areasById.get(item.area_id) : undefined;
+        section = area ? { type: 'grid', cards: [buildAreaCard(area, hass)] } : null;
+        break;
+      }
+      case 'custom_card':
+        section = renderCustomCardAsSection(findCustomCard(dashboardConfig, item));
+        break;
+      case 'custom_section':
+        section = renderCustomSection(findCustomSection(dashboardConfig, item));
+        break;
+      default:
+        section = null;
+    }
+
+    if (section) sections.push(section);
+  }
+
+  return sections;
 }
 
 function createWeatherStartSections(
@@ -305,20 +426,30 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const areasSections = createAreasSection(visibleAreas, groupByFloors, hass);
 
     if (dashboardConfig.overview_layout === 'weather_start') {
-      const overviewSections = createWeatherStartSections(
-        weatherEntity ?? null,
-        areasSections,
-        createCustomCardsSection(
-          customCardsBySection.get('custom_cards') || [],
-          dashboardConfig.custom_cards_heading,
-          dashboardConfig.custom_cards_icon
-        ),
-        createCustomSectionsArray(dashboardConfig.custom_sections || []),
-        dashboardConfig.clock_size ?? 120,
-        dashboardConfig.date_size ?? 72,
-        dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
-        dashboardConfig.weather_start_blocks_config ?? {}
-      );
+      const overviewSections = dashboardConfig.weather_start_layout_items?.length
+        ? createWeatherStartSectionsFromItems(
+          dashboardConfig.weather_start_layout_items,
+          weatherEntity ?? null,
+          visibleAreas,
+          dashboardConfig,
+          dashboardConfig.clock_size ?? 120,
+          dashboardConfig.date_size ?? 72,
+          hass
+        )
+        : createWeatherStartSections(
+          weatherEntity ?? null,
+          areasSections,
+          createCustomCardsSection(
+            customCardsBySection.get('custom_cards') || [],
+            dashboardConfig.custom_cards_heading,
+            dashboardConfig.custom_cards_icon
+          ),
+          createCustomSectionsArray(dashboardConfig.custom_sections || []),
+          dashboardConfig.clock_size ?? 120,
+          dashboardConfig.date_size ?? 72,
+          dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
+          dashboardConfig.weather_start_blocks_config ?? {}
+        );
       const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
       timeEnd('overview-generate');
       debugLog(`Weather start: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`);

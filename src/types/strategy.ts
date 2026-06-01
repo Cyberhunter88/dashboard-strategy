@@ -55,6 +55,29 @@ export interface WeatherStartBlockConfig {
   _yaml_error?: string;
 }
 
+export type WeatherStartLayoutItemType = WeatherStartKey | 'area' | 'custom_card' | 'custom_section';
+
+export interface WeatherStartLayoutItem {
+  /** Stable item id for drag/drop and references */
+  id: string;
+  /** Built-in block type or a free-layout item type */
+  type: WeatherStartLayoutItemType;
+  /** Area id for type=area */
+  area_id?: string;
+  /** Custom card id for type=custom_card */
+  custom_card_id?: string;
+  /** Custom section id for type=custom_section */
+  custom_section_id?: string;
+  /** Optional editor/display title */
+  title?: string;
+  /** Raw YAML override for built-in and area items */
+  yaml?: string;
+  /** Parsed card/section config generated from yaml */
+  parsed_config?: Record<string, any> | Record<string, any>[] | null;
+  /** YAML parse error message, if any */
+  _yaml_error?: string;
+}
+
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -128,6 +151,7 @@ export interface Simon42StrategyConfig {
   overview_layout?: OverviewLayout; // default: 'default'
   sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
+  weather_start_layout_items?: WeatherStartLayoutItem[];
   summaries_columns?: 2 | 4; // default: 2
 
   // Favorites display
@@ -222,6 +246,8 @@ export interface CustomBadge {
 // -- Custom Cards -----------------------------------------------------
 
 export interface CustomCard {
+  /** Stable id used by free weather-start layout items */
+  id?: string;
   /** Optional title shown as heading above the card */
   title?: string;
   /** Target section where this card appears (default: 'custom_cards') */
@@ -237,6 +263,8 @@ export interface CustomCard {
 // -- Custom Sections (multiple complete sections on overview) ---------
 
 export interface CustomSection {
+  /** Stable id used by free weather-start layout items */
+  id?: string;
   /** Heading text for this section */
   title?: string;
   /** MDI icon for this section */

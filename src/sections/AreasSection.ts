@@ -135,7 +135,7 @@ function getAreaExcludedEntities(areaId: string, hass: HomeAssistant): string[] 
  * Pre-filters controls and sensor_classes like HA does — the card
  * only gets what actually exists, avoiding expensive entity scanning at render.
  */
-function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCardConfig {
+export function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCardConfig {
   const controls = getAreaControls(area.area_id, hass);
   const sensorClasses = getAreaSensorClasses(area, hass);
   const excludeEntities = getAreaExcludedEntities(area.area_id, hass);
