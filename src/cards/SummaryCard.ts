@@ -92,6 +92,7 @@ class Simon42SummaryCard extends LitElement {
   setConfig(config: SummaryCardConfig): void {
     this._config = config;
     this._relevantEntityIds = null;
+    this.requestUpdate();
   }
 
   protected willUpdate(changedProps: PropertyValues): void {

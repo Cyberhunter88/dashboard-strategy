@@ -88,7 +88,10 @@ export function getBatteryEntities(hass: HomeAssistant, config: Simon42StrategyC
       if (entry?.platform === 'mobile_app') return false;
     }
 
-    if (entityId.startsWith('binary_sensor.') && entityId.includes('battery')) return true;
+    // Use device_class from state attributes for correct battery detection.
+    // binary_sensor batteries have device_class='battery' but no unit_of_measurement.
+    // Avoid name-substring matching — it wrongly catches e.g. binary_sensor.device_battery_door.
+    if (entityId.startsWith('binary_sensor.') && state.attributes?.device_class === 'battery') return true;
     if (state.attributes?.device_class === 'battery' && state.attributes?.unit_of_measurement === '%') return true;
     return false;
   });

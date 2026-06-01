@@ -168,6 +168,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  private _getWeatherEntities(): { entity_id: string; name: string }[] {
+    if (!this._hass) return [];
+    return Object.keys(this._hass.states)
+      .filter((entityId) => entityId.startsWith('weather.'))
+      .map((entityId) => {
+        const stateObj = this._hass!.states[entityId];
+        return {
+          entity_id: entityId,
+          name: stateObj.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '),
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   private _getThemeNames(): string[] {
     if (!this._hass?.themes?.themes) return [];
     return Object.keys(this._hass.themes.themes).sort((a, b) => a.localeCompare(b));
@@ -1495,6 +1509,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
+    const weatherEntitySelected = this._config.weather_entity || '';
+    const weatherEntities = this._getWeatherEntities();
     const selectedTheme = this._config.theme || '';
     const themeNames = this._getThemeNames();
     const overviewLayout = this._config.overview_layout || 'default';
@@ -1526,6 +1542,21 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </select>
         </div>
         <div class="description">${localize('editor.overview_layout_desc')}</div>
+
+        <div class="form-row">
+          <label for="weather-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_entity')}</label>
+          <select id="weather-entity"
+            style="flex: 1;"
+            @change=${this._weatherEntityChanged}>
+            <option value="" ?selected=${!weatherEntitySelected}>${localize('editor.weather_entity_auto')}</option>
+            ${weatherEntities.map((entity) => html`
+              <option value=${entity.entity_id} ?selected=${entity.entity_id === weatherEntitySelected}>
+                ${entity.name}
+              </option>
+            `)}
+          </select>
+        </div>
+        <div class="description">${localize('editor.weather_entity_desc')}</div>
 
         ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
           (checked) => this._toggleChanged('show_clock_card', checked, true))}
@@ -2713,6 +2744,23 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _weatherEntityChanged(e: Event): void {
+    if (!this._hass) return;
+
+    const entityId = (e.target as HTMLSelectElement).value;
+    const newConfig: Simon42StrategyConfig = {
+      ...this._config,
+      weather_entity: entityId,
+    };
+
+    if (!entityId || entityId === '') {
+      delete newConfig.weather_entity;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
   private _themeChanged = (e: Event): void => {
     if (!this._hass) return;
 
@@ -2848,7 +2896,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _addCustomView(): void {
     const customViews: CustomView[] = [...(this._config.custom_views || [])];
     customViews.push({
-      title: 'Neue View',
+      title: localize('editor.new_view'),
       path: `custom-view-${customViews.length + 1}`,
       icon: 'mdi:card-text-outline',
       yaml: '',
@@ -3658,7 +3706,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _handleDragOver = (ev: DragEvent): void => {
     ev.preventDefault();
-    ev.dataTransfer!.dropEffect = 'move';
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
 
     const item = (ev.currentTarget as HTMLElement);
     if (item !== this._draggedElement) {

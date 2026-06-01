@@ -145,6 +145,9 @@ class Simon42LightsGroupCard extends LitElement {
       throw new Error('You need to define group_type (on/off/all)');
     }
     this._config = config;
+    // Invalidate cache so new config (e.g. toggled group_by_floors) takes effect immediately
+    this._cachedSourceIds = null;
+    this._cachedAreaForEntity = null;
   }
 
   protected willUpdate(changedProps: PropertyValues): void {

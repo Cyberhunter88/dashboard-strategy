@@ -103,6 +103,7 @@ export interface Simon42StrategyConfig {
 
   // Special entities
   alarm_entity?: string;
+  weather_entity?: string;
   favorite_entities?: string[];
   room_pin_entities?: string[];
 
