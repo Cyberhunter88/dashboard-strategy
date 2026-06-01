@@ -79,7 +79,7 @@ function createLargeTimeCard(_sizePx: number): LovelaceCardConfig {
 
 function createLargeDateCard(sizePx: number): LovelaceCardConfig {
   // custom:button-card injects CSS into its own shadow DOM, bypassing DOMPurify.
-  // Requires button-card to be installed (common HACS card).
+  // Uses HA CSS variables so the card background matches the native clock card style.
   return {
     type: 'custom:button-card',
     name: `[[[
@@ -98,12 +98,12 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
     },
     styles: {
       card: [
+        { background: 'var(--ha-card-background, var(--card-background-color, white))' },
+        { 'border-radius': 'var(--ha-card-border-radius, 12px)' },
+        { 'box-shadow': 'var(--ha-card-box-shadow, none)' },
+        { border: 'var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, transparent)' },
         { height: '100%' },
         { 'min-height': '80px' },
-        { 'border-radius': '12px' },
-        { background: 'rgba(255,255,255,0.04)' },
-        { border: '1px solid rgba(255,255,255,0.10)' },
-        { 'box-shadow': 'none' },
         { display: 'flex' },
         { 'align-items': 'center' },
         { 'justify-content': 'center' },
@@ -117,7 +117,7 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
       ],
       name: [
         { 'font-size': `${sizePx}px` },
-        { 'font-weight': '400' },
+        { 'font-weight': '600' },
         { 'line-height': '1' },
         { color: 'var(--primary-text-color)' },
         { 'text-align': 'center' },
