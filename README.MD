@@ -44,8 +44,8 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 <summary>Alternative zum Button</summary>
 
 1. Gehe zu HACS → **Custom repositories**
-2. Füge das Repository hinzu: `https://github.com/TheRealSimon42/simon42-dashboard-strategy`
-3. Lade die "Simon42 Dashboard Strategy" herunter
+2. Füge das Repository hinzu: `https://github.com/Cyberhunter88/dashboard-strategy`
+3. Lade die "Dashboard Strategy" herunter
 4. Klicke nach dem Download in HACS auf die Meldung "Neu laden", um die Installation abzuschließen
 
 </details>
