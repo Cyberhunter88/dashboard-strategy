@@ -61,20 +61,20 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
   return result;
 }
 
-function createLargeTimeCard(): LovelaceCardConfig {
+function createLargeTimeCard(sizePx: number): LovelaceCardConfig {
   return {
     type: 'markdown',
-    content: '<div style="text-align:center;font-size:120px;font-weight:600;line-height:1.1;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>',
+    content: `<div style="text-align:center;font-size:${sizePx}px;font-weight:600;line-height:1.1;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>`,
     grid_options: {
       columns: 'full',
     },
   };
 }
 
-function createLargeDateCard(): LovelaceCardConfig {
+function createLargeDateCard(sizePx: number): LovelaceCardConfig {
   return {
     type: 'markdown',
-    content: '<div style="text-align:center;font-size:72px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>',
+    content: `<div style="text-align:center;font-size:${sizePx}px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>`,
     grid_options: {
       columns: 'full',
     },
@@ -85,7 +85,9 @@ function createWeatherStartSections(
   weatherEntity: string | null,
   areasSections: LovelaceSectionConfig | LovelaceSectionConfig[],
   customCardsSection: LovelaceSectionConfig | null,
-  customSections: LovelaceSectionConfig[]
+  customSections: LovelaceSectionConfig[],
+  clockSize: number,
+  dateSize: number
 ): LovelaceSectionConfig[] {
   const overviewCards: LovelaceCardConfig[] = [
     {
@@ -94,8 +96,8 @@ function createWeatherStartSections(
       heading_style: 'title',
       icon: 'mdi:view-dashboard-outline',
     },
-    createLargeTimeCard(),
-    createLargeDateCard(),
+    createLargeTimeCard(clockSize),
+    createLargeDateCard(dateSize),
   ];
 
   if (weatherEntity) {
@@ -110,46 +112,45 @@ function createWeatherStartSections(
     });
   }
 
+  if (weatherEntity) {
+    overviewCards.push(
+      {
+        type: 'heading',
+        heading: localize('sections.weather_today'),
+        heading_style: 'title',
+        icon: 'mdi:clock-outline',
+      },
+      {
+        type: 'weather-forecast',
+        entity: weatherEntity,
+        forecast_type: 'hourly',
+        show_current: false,
+        show_forecast: true,
+        grid_options: { columns: 'full' },
+      },
+      {
+        type: 'heading',
+        heading: localize('sections.weather_next_days'),
+        heading_style: 'title',
+        icon: 'mdi:calendar-outline',
+      },
+      {
+        type: 'weather-forecast',
+        entity: weatherEntity,
+        forecast_type: 'daily',
+        show_current: false,
+        show_forecast: true,
+        grid_options: { columns: 'full' },
+      }
+    );
+  }
+
   const sections: LovelaceSectionConfig[] = [
     {
       type: 'grid',
       cards: overviewCards,
     },
   ];
-
-  if (weatherEntity) {
-    sections.push({
-      type: 'grid',
-      cards: [
-        {
-          type: 'heading',
-          heading: localize('sections.weather_today'),
-          heading_style: 'title',
-          icon: 'mdi:clock-outline',
-        },
-        {
-          type: 'weather-forecast',
-          entity: weatherEntity,
-          forecast_type: 'hourly',
-          show_current: false,
-          show_forecast: true,
-        },
-        {
-          type: 'heading',
-          heading: localize('sections.weather_next_days'),
-          heading_style: 'title',
-          icon: 'mdi:calendar-outline',
-        },
-        {
-          type: 'weather-forecast',
-          entity: weatherEntity,
-          forecast_type: 'daily',
-          show_current: false,
-          show_forecast: true,
-        },
-      ],
-    });
-  }
 
   if (customCardsSection) {
     sections.push(customCardsSection);
@@ -213,7 +214,9 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           dashboardConfig.custom_cards_heading,
           dashboardConfig.custom_cards_icon
         ),
-        createCustomSectionsArray(dashboardConfig.custom_sections || [])
+        createCustomSectionsArray(dashboardConfig.custom_sections || []),
+        dashboardConfig.clock_size ?? 120,
+        dashboardConfig.date_size ?? 72
       );
       const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
       timeEnd('overview-generate');

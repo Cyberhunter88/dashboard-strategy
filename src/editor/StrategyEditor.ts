@@ -1514,6 +1514,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const selectedTheme = this._config.theme || '';
     const themeNames = this._getThemeNames();
     const overviewLayout = this._config.overview_layout || 'default';
+    const clockSize = this._config.clock_size ?? 120;
+    const dateSize = this._config.date_size ?? 72;
 
     return html`
       <div class="section">
@@ -1557,6 +1559,25 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </select>
         </div>
         <div class="description">${localize('editor.weather_entity_desc')}</div>
+
+        ${overviewLayout === 'weather_start' ? html`
+        <div class="form-row">
+          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.clock_size')}</label>
+          <input type="number" min="20" max="300" step="4"
+            .value=${String(clockSize)}
+            style="width: 80px;"
+            @change=${this._clockSizeChanged} />
+          <span style="margin-left: 6px; color: var(--secondary-text-color);">px</span>
+        </div>
+        <div class="form-row">
+          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.date_size')}</label>
+          <input type="number" min="12" max="200" step="4"
+            .value=${String(dateSize)}
+            style="width: 80px;"
+            @change=${this._dateSizeChanged} />
+          <span style="margin-left: 6px; color: var(--secondary-text-color);">px</span>
+        </div>
+        ` : ''}
 
         ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
           (checked) => this._toggleChanged('show_clock_card', checked, true))}
@@ -2757,6 +2778,24 @@ class Simon42DashboardStrategyEditor extends LitElement {
       delete newConfig.weather_entity;
     }
 
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _clockSizeChanged(e: Event): void {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    if (isNaN(val) || val < 1) return;
+    const newConfig: Simon42StrategyConfig = { ...this._config, clock_size: val };
+    if (val === 120) delete newConfig.clock_size;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _dateSizeChanged(e: Event): void {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    if (isNaN(val) || val < 1) return;
+    const newConfig: Simon42StrategyConfig = { ...this._config, date_size: val };
+    if (val === 72) delete newConfig.date_size;
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }

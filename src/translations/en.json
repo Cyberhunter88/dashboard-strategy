@@ -143,6 +143,8 @@
     "weather_entity": "Weather entity:",
     "weather_entity_auto": "Auto-detect",
     "weather_entity_desc": "Manually select a weather entity. If nothing is selected, the first available weather entity is used automatically.",
+    "clock_size": "Clock size:",
+    "date_size": "Date size:",
     "show_clock_card": "Show clock card",
     "show_clock_card_desc": "Shows the clock card on the overview.",
     "alarm_entity": "Alarm entity:",

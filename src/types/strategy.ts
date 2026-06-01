@@ -101,6 +101,10 @@ export interface Simon42StrategyConfig {
   room_pins_show_state?: boolean; // default: false
   room_pins_hide_last_changed?: boolean; // default: false
 
+  // Weather-start layout font sizes (px, defaults: clock=120, date=72)
+  clock_size?: number;
+  date_size?: number;
+
   // Special entities
   alarm_entity?: string;
   weather_entity?: string;
