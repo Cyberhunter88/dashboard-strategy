@@ -286,7 +286,11 @@
     "badges_show_name": "Entity-Name auf Badge anzeigen",
     "badges_name_short": "Name",
     "weather_start_order": "Reihenfolge der Wetter-Startseite",
-    "weather_start_order_desc": "Ziehe die Blöcke per Drag & Drop in die gewünschte Reihenfolge. Ausgeblendete Blöcke werden trotzdem gespeichert."
+    "weather_start_order_desc": "Ziehe die Blöcke per Drag & Drop in die gewünschte Reihenfolge. Ausgeblendete Blöcke werden trotzdem gespeichert.",
+    "weather_start_block_expand": "Block anpassen",
+    "weather_start_block_yaml": "Eigenes YAML (ersetzt Standard-Inhalt)",
+    "weather_start_block_yaml_desc": "Eine oder mehrere Karten als YAML eingeben. Ersetzt den automatisch generierten Inhalt dieses Blocks.",
+    "weather_start_block_reset": "Auf Standard zurücksetzen"
   },
   "weather_start_blocks": {
     "clock": "Uhrzeit",

@@ -44,6 +44,17 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'areas',
 ];
 
+// -- Weather-Start Block Config (per-block YAML override) --------------
+
+export interface WeatherStartBlockConfig {
+  /** Raw YAML string entered by the user in the editor */
+  yaml?: string;
+  /** Parsed cards array (list of Lovelace card configs) */
+  parsed_config?: Record<string, any>[] | null;
+  /** YAML parse error message, if any */
+  _yaml_error?: string;
+}
+
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -134,6 +145,9 @@ export interface Simon42StrategyConfig {
   weather_entity?: string;
   favorite_entities?: string[];
   room_pin_entities?: string[];
+
+  // Per-block YAML overrides for weather_start layout blocks
+  weather_start_blocks_config?: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>>;
 
   // Area management
   use_default_area_sort?: boolean; // default: false

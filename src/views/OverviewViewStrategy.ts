@@ -7,7 +7,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { Simon42StrategyConfig, SectionKey, WeatherStartKey, CustomCard } from '../types/strategy';
+import type { Simon42StrategyConfig, SectionKey, WeatherStartKey, CustomCard, WeatherStartBlockConfig } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { LovelaceViewConfig, LovelaceSectionConfig, LovelaceBadgeConfig, LovelaceCardConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
@@ -147,6 +147,18 @@ function normalizeWeatherStartOrder(order: WeatherStartKey[]): WeatherStartKey[]
   return result;
 }
 
+function withBlockOverride(
+  key: WeatherStartKey,
+  defaultSection: LovelaceSectionConfig | null,
+  blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>>
+): LovelaceSectionConfig | null {
+  const cfg = blocksConfig[key];
+  if (cfg?.parsed_config && cfg.parsed_config.length > 0) {
+    return { type: 'grid', cards: cfg.parsed_config as LovelaceCardConfig[] };
+  }
+  return defaultSection;
+}
+
 function createWeatherStartSections(
   weatherEntity: string | null,
   areasSections: LovelaceSectionConfig | LovelaceSectionConfig[],
@@ -154,23 +166,24 @@ function createWeatherStartSections(
   customSections: LovelaceSectionConfig[],
   clockSize: number,
   dateSize: number,
-  order: WeatherStartKey[]
+  order: WeatherStartKey[],
+  blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {}
 ): LovelaceSectionConfig[] {
   const normalizedOrder = normalizeWeatherStartOrder(order);
 
   const blockMap = new Map<WeatherStartKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>();
 
-  blockMap.set('clock', {
+  blockMap.set('clock', withBlockOverride('clock', {
     type: 'grid',
     cards: [createLargeTimeCard(clockSize)],
-  });
+  }, blocksConfig));
 
-  blockMap.set('date', {
+  blockMap.set('date', withBlockOverride('date', {
     type: 'grid',
     cards: [createLargeDateCard(dateSize)],
-  });
+  }, blocksConfig));
 
-  blockMap.set('weather_current', weatherEntity ? {
+  blockMap.set('weather_current', withBlockOverride('weather_current', weatherEntity ? {
     type: 'grid',
     cards: [
       {
@@ -187,9 +200,9 @@ function createWeatherStartSections(
         grid_options: { columns: 'full' },
       },
     ],
-  } : null);
+  } : null, blocksConfig));
 
-  blockMap.set('weather_hourly', weatherEntity ? {
+  blockMap.set('weather_hourly', withBlockOverride('weather_hourly', weatherEntity ? {
     type: 'grid',
     cards: [
       {
@@ -207,9 +220,9 @@ function createWeatherStartSections(
         grid_options: { columns: 'full' },
       },
     ],
-  } : null);
+  } : null, blocksConfig));
 
-  blockMap.set('weather_daily', weatherEntity ? {
+  blockMap.set('weather_daily', withBlockOverride('weather_daily', weatherEntity ? {
     type: 'grid',
     cards: [
       {
@@ -227,7 +240,7 @@ function createWeatherStartSections(
         grid_options: { columns: 'full' },
       },
     ],
-  } : null);
+  } : null, blocksConfig));
 
   blockMap.set('custom_cards', customCardsSection);
   blockMap.set('custom_sections', customSections.length > 0 ? customSections : null);
@@ -303,7 +316,8 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
         createCustomSectionsArray(dashboardConfig.custom_sections || []),
         dashboardConfig.clock_size ?? 120,
         dashboardConfig.date_size ?? 72,
-        dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER]
+        dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
+        dashboardConfig.weather_start_blocks_config ?? {}
       );
       const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
       timeEnd('overview-generate');
