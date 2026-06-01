@@ -8,7 +8,7 @@
 import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
-import type { AreasDisplay } from '../types/strategy';
+import { DEFAULT_STACKS_ORDER, type StackKey, type AreasDisplay } from '../types/strategy';
 
 // -- Module-level RegExp caches (shared across all calls) -------------
 
@@ -192,4 +192,18 @@ export function sortByLastChanged(a: string, b: string, hass: HomeAssistant): nu
   const dateA = new Date(stateA.last_changed).getTime();
   const dateB = new Date(stateB.last_changed).getTime();
   return dateB - dateA; // Newest first
+}
+
+/**
+ * Merges a stored stack order with the default stacks order.
+ * Implements forward-compatible ordering: configured/known keys first (in stored order),
+ * then any missing default keys appended in DEFAULT order; unknown keys are dropped.
+ */
+export function mergeStacksOrder(stored?: StackKey[]): StackKey[] {
+  if (!stored || stored.length === 0) {
+    return [...DEFAULT_STACKS_ORDER];
+  }
+  const known = stored.filter((key) => DEFAULT_STACKS_ORDER.includes(key));
+  const missing = DEFAULT_STACKS_ORDER.filter((key) => !known.includes(key));
+  return [...known, ...missing];
 }

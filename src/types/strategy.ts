@@ -8,14 +8,50 @@
 
 // -- Section Ordering -------------------------------------------------
 
-export type SectionKey = 'overview' | 'custom_cards' | 'areas' | 'weather' | 'energy';
+export type SectionKey = 'overview' | 'custom_cards' | 'custom_sections' | 'areas' | 'weather' | 'energy';
 
 export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
   'overview',
   'custom_cards',
+  'custom_sections',
   'areas',
   'weather',
   'energy',
+];
+
+// -- Stack Ordering (per-area room view) ------------------------------
+
+export type StackKey =
+  | 'ups'
+  | 'cameras'
+  | 'lights'
+  | 'locks'
+  | 'climate'
+  | 'covers'
+  | 'covers_curtain'
+  | 'covers_window'
+  | 'media'
+  | 'scenes'
+  | 'misc'
+  | 'automations'
+  | 'scripts'
+  | 'room_pins';
+
+export const DEFAULT_STACKS_ORDER: StackKey[] = [
+  'ups',
+  'cameras',
+  'lights',
+  'locks',
+  'climate',
+  'covers',
+  'covers_curtain',
+  'covers_window',
+  'media',
+  'scenes',
+  'misc',
+  'automations',
+  'scripts',
+  'room_pins',
 ];
 
 // -- Main Strategy Config ---------------------------------------------
@@ -78,6 +114,9 @@ export interface Simon42StrategyConfig {
   custom_cards_heading?: string;
   custom_cards_icon?: string;
 
+  // Custom sections (multiple complete sections on overview, each with own heading + cards)
+  custom_sections?: CustomSection[];
+
   // Custom badges (shown in header next to person chips)
   custom_badges?: CustomBadge[];
 }
@@ -92,6 +131,7 @@ export interface AreasDisplay {
 export interface AreaOptions {
   groups_options?: Record<string, GroupOptions>;
   custom_cards?: AreaCustomCard[];
+  stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
 }
 
 export interface GroupOptions {
@@ -146,6 +186,17 @@ export interface CustomCard {
   _yaml_error?: string;
 }
 
+// -- Custom Sections (multiple complete sections on overview) ---------
+
+export interface CustomSection {
+  /** Heading text for this section */
+  title?: string;
+  /** MDI icon for this section */
+  icon?: string;
+  /** Cards within this section */
+  cards?: CustomCard[];
+}
+
 // -- Area Custom Cards (per-area room view) ---------------------------
 
 export interface AreaCustomCard {
@@ -184,6 +235,7 @@ export interface RoomEntities {
   automations: string[];
   scripts: string[];
   cameras: string[];
+  ups: string[];
   [key: string]: string[];
 }
 
