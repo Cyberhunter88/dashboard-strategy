@@ -98,7 +98,14 @@ class Registry {
    * Idempotent: skips if already initialized.
    */
   static initialize(hass: HomeAssistant, config: Simon42StrategyConfig): void {
-    if (Registry._initialized) return;
+    // Re-initialize when HA entity or area registry changes (new object reference).
+    // State-only updates keep the same reference → skipped for performance.
+    if (
+      Registry._initialized &&
+      hass.entities === Registry._hass?.entities &&
+      hass.areas === Registry._hass?.areas
+    ) return;
+    Registry._initialized = false;
 
     timeStart('registry-init');
     Registry._hass = hass;
@@ -398,7 +405,8 @@ class Registry {
 
   /** All floor registry entries (from hass — no WS endpoint needed). */
   static get floors(): FloorRegistryEntry[] {
-    return Object.values(Registry._hass.floors);
+    // hass.floors was introduced in HA 2024.4 — guard against older instances
+    return Object.values(Registry._hass.floors ?? {});
   }
 
   // =====================================================================

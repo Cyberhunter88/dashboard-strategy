@@ -64,7 +64,7 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
 function createLargeTimeCard(): LovelaceCardConfig {
   return {
     type: 'markdown',
-    content: '<div style="text-align:center;font-size:56px;font-weight:600;line-height:1.2;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>',
+    content: '<div style="text-align:center;font-size:120px;font-weight:600;line-height:1.1;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>',
     grid_options: {
       columns: 'full',
     },
@@ -74,7 +74,7 @@ function createLargeTimeCard(): LovelaceCardConfig {
 function createLargeDateCard(): LovelaceCardConfig {
   return {
     type: 'markdown',
-    content: '<div style="text-align:center;font-size:42px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>',
+    content: '<div style="text-align:center;font-size:72px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>',
     grid_options: {
       columns: 'full',
     },
@@ -173,7 +173,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
 
     // Collect data for overview
     const persons = collectPersons(hass, dashboardConfig);
-    const weatherEntity = findWeatherEntity(hass);
+    const weatherEntity = dashboardConfig.weather_entity || findWeatherEntity(hass);
     const someSensorId = findDummySensor(hass);
 
     // Person badges
@@ -209,7 +209,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
         weatherEntity ?? null,
         areasSections,
         createCustomCardsSection(
-          allCustomCards,
+          customCardsBySection.get('custom_cards') || [],
           dashboardConfig.custom_cards_heading,
           dashboardConfig.custom_cards_icon
         ),
