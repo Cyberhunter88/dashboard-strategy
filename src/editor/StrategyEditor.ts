@@ -1579,11 +1579,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return section.id || `legacy-custom-section-${index}`;
   }
 
-  private _getWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
-    if (this._config.weather_start_layout_items?.length) {
-      return this._config.weather_start_layout_items.map((item) => ({ ...item }));
-    }
-
+  private _getLegacyWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
     const order = this._getWeatherStartOrder();
     const items: WeatherStartLayoutItem[] = [];
     for (const key of order) {
@@ -1625,10 +1621,75 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return items;
   }
 
+  private _normalizeWeatherStartLayoutItems(items: WeatherStartLayoutItem[]): WeatherStartLayoutItem[] {
+    const areas = this._getWeatherStartAreaOptions();
+    const visibleAreaIds = new Set(areas.map((area) => area.area_id));
+    const representedAreaIds = new Set<string>();
+    const result: WeatherStartLayoutItem[] = [];
+
+    const addAreaItem = (areaId: string, item?: WeatherStartLayoutItem): void => {
+      if (!visibleAreaIds.has(areaId) || representedAreaIds.has(areaId)) return;
+      representedAreaIds.add(areaId);
+      result.push({
+        ...(item || {}),
+        id: item?.id || `area-${areaId}`,
+        type: 'area',
+        area_id: areaId,
+      });
+    };
+
+    const addFloorItem = (item: WeatherStartLayoutItem): void => {
+      const floorAreas = areas.filter((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+      if (floorAreas.length === 0) return;
+      for (const area of floorAreas) representedAreaIds.add(area.area_id);
+      result.push({ ...item });
+    };
+
+    for (const item of items) {
+      if (item.type === 'area') {
+        if (item.area_id) addAreaItem(item.area_id, item);
+        continue;
+      }
+
+      if (item.type === 'floor') {
+        addFloorItem(item);
+        continue;
+      }
+
+      if (item.type === 'areas') {
+        if (this._config.group_by_floors === true) {
+          for (const floor of this._getWeatherStartFloorOptions()) {
+            addFloorItem({ id: `floor-${floor.floor_id || 'none'}`, type: 'floor', floor_id: floor.floor_id, title: floor.name });
+          }
+        } else {
+          for (const area of areas) addAreaItem(area.area_id);
+        }
+        continue;
+      }
+
+      result.push({ ...item });
+    }
+
+    for (const area of areas) {
+      addAreaItem(area.area_id);
+    }
+
+    return result;
+  }
+
+  private _getWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
+    const items = this._config.weather_start_layout_items?.length
+      ? this._config.weather_start_layout_items.map((item) => ({ ...item }))
+      : this._getLegacyWeatherStartLayoutItems();
+
+    return this._normalizeWeatherStartLayoutItems(items);
+  }
+
   private _saveWeatherStartLayoutItems(items: WeatherStartLayoutItem[]): void {
+    const normalizedItems = this._normalizeWeatherStartLayoutItems(items);
     const newConfig: Simon42StrategyConfig = {
       ...this._config,
-      weather_start_layout_items: items,
+      weather_start_layout_items: normalizedItems,
     };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
@@ -1854,6 +1915,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const floors = this._getWeatherStartFloorOptions();
     const customCards = this._config.custom_cards || [];
     const customSections = this._config.custom_sections || [];
+    const placedAreaIds = new Set(items
+      .filter((item) => item.type === 'area' && item.area_id)
+      .map((item) => item.area_id as string));
+    for (const item of items) {
+      if (item.type !== 'floor') continue;
+      for (const area of areas) {
+        if (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id) {
+          placedAreaIds.add(area.area_id);
+        }
+      }
+    }
+    const unplacedAreas = areas.filter((area) => !placedAreaIds.has(area.area_id));
 
     return html`
       <div class="section">
@@ -1867,6 +1940,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
             const disabled = this._isWeatherStartItemDisabled(item, customCards, customSections);
             const isExpanded = this._expandedWeatherBlocks.has(item.id);
             const hasOverride = !!item.yaml;
+            const canRemove = item.type !== 'area' && item.type !== 'floor';
             return html`
               <div>
                 <div class="section-order-item ${disabled ? 'disabled' : ''}"
@@ -1887,11 +1961,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
                     @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(item.id); }}>
                     <ha-icon icon=${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
                   </button>
-                  <button class="icon-btn"
-                    title=${localize('editor.remove')}
-                    @click=${(e: Event) => { e.stopPropagation(); this._removeWeatherStartItem(item.id); }}>
-                    <ha-icon icon="mdi:delete-outline"></ha-icon>
-                  </button>
+                  ${canRemove ? html`
+                    <button class="icon-btn"
+                      title=${localize('editor.remove')}
+                      @click=${(e: Event) => { e.stopPropagation(); this._removeWeatherStartItem(item.id); }}>
+                      <ha-icon icon="mdi:delete-outline"></ha-icon>
+                    </button>
+                  ` : nothing}
                 </div>
                 ${isExpanded ? html`
                   <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
@@ -1932,7 +2008,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </button>
           <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartArea}>
             <option value="">${localize('editor.weather_start_add_area')}</option>
-            ${areas.map((area) => html`<option value=${area.area_id}>${area.name}</option>`)}
+            ${unplacedAreas.map((area) => html`<option value=${area.area_id}>${area.name}</option>`)}
           </select>
           <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartFloor}>
             <option value="">${localize('editor.weather_start_add_floor')}</option>

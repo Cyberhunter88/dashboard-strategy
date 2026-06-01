@@ -205,6 +205,73 @@ function findCustomSection(config: Simon42StrategyConfig, item: WeatherStartLayo
     || sections[Number(item.custom_section_id?.replace(/^legacy-custom-section-/, ''))];
 }
 
+function normalizeWeatherStartLayoutItemsForRender(
+  items: WeatherStartLayoutItem[],
+  visibleAreas: ReturnType<typeof getVisibleAreas>,
+  dashboardConfig: Simon42StrategyConfig,
+  hass: HomeAssistant
+): WeatherStartLayoutItem[] {
+  const visibleAreaIds = new Set(visibleAreas.map((area) => area.area_id));
+  const representedAreaIds = new Set<string>();
+  const result: WeatherStartLayoutItem[] = [];
+
+  const addAreaItem = (areaId: string, item?: WeatherStartLayoutItem): void => {
+    if (!visibleAreaIds.has(areaId) || representedAreaIds.has(areaId)) return;
+    representedAreaIds.add(areaId);
+    result.push({
+      ...(item || {}),
+      id: item?.id || `area-${areaId}`,
+      type: 'area',
+      area_id: areaId,
+    });
+  };
+
+  const addFloorItem = (item: WeatherStartLayoutItem): void => {
+    const floorAreas = visibleAreas.filter((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+    if (floorAreas.length === 0) return;
+    for (const area of floorAreas) representedAreaIds.add(area.area_id);
+    result.push({ ...item });
+  };
+
+  for (const item of items) {
+    if (item.type === 'area') {
+      if (item.area_id) addAreaItem(item.area_id, item);
+      continue;
+    }
+
+    if (item.type === 'floor') {
+      addFloorItem(item);
+      continue;
+    }
+
+    if (item.type === 'areas') {
+      if (dashboardConfig.group_by_floors === true) {
+        const floorIds = new Set<string>();
+        let hasFloorlessAreas = false;
+        for (const area of visibleAreas) {
+          if (area.floor_id) floorIds.add(area.floor_id);
+          else hasFloorlessAreas = true;
+        }
+        for (const floorId of Object.keys(hass.floors || {})) {
+          if (floorIds.has(floorId)) addFloorItem({ id: `floor-${floorId}`, type: 'floor', floor_id: floorId });
+        }
+        if (hasFloorlessAreas) addFloorItem({ id: 'floor-none', type: 'floor', floor_id: null });
+      } else {
+        for (const area of visibleAreas) addAreaItem(area.area_id);
+      }
+      continue;
+    }
+
+    result.push({ ...item });
+  }
+
+  for (const area of visibleAreas) {
+    addAreaItem(area.area_id);
+  }
+
+  return result;
+}
+
 function createWeatherStartSectionsFromItems(
   items: WeatherStartLayoutItem[],
   weatherEntity: string | null,
@@ -213,6 +280,7 @@ function createWeatherStartSectionsFromItems(
   hass: HomeAssistant
 ): LovelaceSectionConfig[] {
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
+  const normalizedItems = normalizeWeatherStartLayoutItemsForRender(items, visibleAreas, dashboardConfig, hass);
   const sections: LovelaceSectionConfig[] = [];
 
   const appendSection = (section: LovelaceSectionConfig | null, stackWithPrevious: boolean | undefined): void => {
@@ -225,7 +293,7 @@ function createWeatherStartSectionsFromItems(
     sections.push(section);
   };
 
-  for (const item of items) {
+  for (const item of normalizedItems) {
     if (item._yaml_error) continue;
     if (item.parsed_config) {
       for (const section of parsedConfigToSections(item.parsed_config)) {
