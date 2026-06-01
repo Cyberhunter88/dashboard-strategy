@@ -213,48 +213,97 @@ export function createAreasSection(
     }
   }
 
-  // Build sections per floor
-  const sections: LovelaceSectionConfig[] = [];
-
-  // Use HA's floor order from the registry. The hass.floors object preserves
-  // the user-defined order from HA's "Reorder areas and floors" dialog via
-  // Object.keys() insertion order — no separate sort_order field needed.
   const floorOrder = Object.keys(hass.floors);
   const sortedFloors = floorOrder.filter((id) => areasByFloor.has(id));
 
-  for (const floorId of sortedFloors) {
+  // Helper functions to build cards for floors and floorless areas
+  const buildFloorCards = (floorId: string): LovelaceCardConfig[] => {
     const areas = areasByFloor.get(floorId) ?? [];
     const floor = hass.floors[floorId] as (typeof hass.floors)[string] | undefined;
     const floorName = floor?.name || floorId;
     const floorIcon = floor?.icon || getFloorIcon(floor?.level);
 
-    sections.push({
-      type: 'grid',
-      cards: [
-        {
-          type: 'heading',
-          heading_style: 'title',
-          heading: floorName,
-          icon: floorIcon,
-        },
-        ...areas.map((area) => buildAreaCard(area, hass)),
-      ],
-    });
+    return [
+      {
+        type: 'heading',
+        heading_style: 'title',
+        heading: floorName,
+        icon: floorIcon,
+      },
+      ...areas.map((area) => buildAreaCard(area, hass)),
+    ];
+  };
+
+  const buildOtherAreasCards = (): LovelaceCardConfig[] => {
+    return [
+      {
+        type: 'heading',
+        heading_style: 'title',
+        heading: localize('sections.areas_other'),
+        icon: 'mdi:home-outline',
+      },
+      ...areasWithoutFloor.map((area) => buildAreaCard(area, hass)),
+    ];
+  };
+
+  // Classify floors into left column (upper floors, basements) and right column (ground floor)
+  const leftFloors: string[] = [];
+  const kellerFloors: string[] = [];
+  const rightFloors: string[] = [];
+
+  for (const floorId of sortedFloors) {
+    const floor = hass.floors[floorId] as (typeof hass.floors)[string] | undefined;
+    const name = (floor?.name || floorId).toLowerCase();
+    const id = floorId.toLowerCase();
+
+    const isKeller = id.includes('keller') || name.includes('keller') ||
+                     id.includes('ug') || name.includes('ug') ||
+                     id.includes('basement') || name.includes('basement') ||
+                     id.includes('untergeschoss') || name.includes('untergeschoss');
+
+    const isEg = id.includes('eg') || name.includes('eg') ||
+                 id.includes('erdgeschoss') || name.includes('erdgeschoss') ||
+                 id.includes('ground') || name.includes('ground');
+
+    if (isKeller) {
+      kellerFloors.push(floorId);
+    } else if (isEg) {
+      rightFloors.push(floorId);
+    } else {
+      leftFloors.push(floorId);
+    }
   }
 
-  // Areas without a floor
+  const leftColCards: LovelaceCardConfig[] = [];
+  const rightColCards: LovelaceCardConfig[] = [];
+
+  // Assemble Left Column: upper floors (like 1.OG, DG) first, then basements (Keller)
+  for (const floorId of leftFloors) {
+    leftColCards.push(...buildFloorCards(floorId));
+  }
+  for (const floorId of kellerFloors) {
+    leftColCards.push(...buildFloorCards(floorId));
+  }
+
+  // Assemble Right Column: ground floors (EG) first, then floorless areas (Weitere Bereiche)
+  for (const floorId of rightFloors) {
+    rightColCards.push(...buildFloorCards(floorId));
+  }
   if (areasWithoutFloor.length > 0) {
+    rightColCards.push(...buildOtherAreasCards());
+  }
+
+  const sections: LovelaceSectionConfig[] = [];
+  if (leftColCards.length > 0) {
     sections.push({
       type: 'grid',
-      cards: [
-        {
-          type: 'heading',
-          heading_style: 'title',
-          heading: localize('sections.areas_other'),
-          icon: 'mdi:home-outline',
-        },
-        ...areasWithoutFloor.map((area) => buildAreaCard(area, hass)),
-      ],
+      cards: leftColCards,
+    });
+  }
+  if (rightColCards.length > 0) {
+    sections.push({
+      type: 'grid',
+      cards: rightColCards,
     });
   }
 
