@@ -58,6 +58,33 @@ declare global {
 }
 
 // ====================================================================
+// Card Type Registry (for visual card picker)
+// ====================================================================
+
+const CARD_TYPES: Array<{ type: string; name: string; icon: string; template: string }> = [
+  { type: 'tile',              name: 'Kachel',             icon: 'mdi:square-rounded',          template: 'type: tile\nentity: ""\n' },
+  { type: 'entities',         name: 'Entitätsliste',      icon: 'mdi:format-list-bulleted',     template: 'type: entities\nentities:\n  - entity: ""\n' },
+  { type: 'glance',           name: 'Glance',             icon: 'mdi:eye',                      template: 'type: glance\nentities:\n  - entity: ""\n' },
+  { type: 'button',           name: 'Button',             icon: 'mdi:gesture-tap-button',       template: 'type: button\nentity: ""\ntap_action:\n  action: toggle\n' },
+  { type: 'markdown',         name: 'Text / Markdown',    icon: 'mdi:language-markdown',        template: 'type: markdown\ncontent: "**Text**"\n' },
+  { type: 'heading',          name: 'Überschrift',        icon: 'mdi:format-header-1',          template: 'type: heading\nheading: "Überschrift"\nheading_style: title\nicon: mdi:home\n' },
+  { type: 'weather-forecast', name: 'Wettervorhersage',   icon: 'mdi:weather-partly-cloudy',    template: 'type: weather-forecast\nentity: ""\nshow_current: true\nshow_forecast: true\nforecast_type: daily\n' },
+  { type: 'gauge',            name: 'Messanzeige',        icon: 'mdi:gauge',                    template: 'type: gauge\nentity: ""\nmin: 0\nmax: 100\n' },
+  { type: 'thermostat',       name: 'Thermostat',         icon: 'mdi:thermostat',               template: 'type: thermostat\nentity: ""\n' },
+  { type: 'media-control',    name: 'Mediensteuerung',    icon: 'mdi:play-circle',              template: 'type: media-control\nentity: ""\n' },
+  { type: 'history-graph',    name: 'Verlaufsgraph',      icon: 'mdi:chart-line',               template: 'type: history-graph\nentities:\n  - entity: ""\nhours_to_show: 24\n' },
+  { type: 'statistics-graph', name: 'Statistikgraph',     icon: 'mdi:chart-bar',                template: 'type: statistics-graph\nentities:\n  - entity: ""\nstat_types:\n  - mean\nchart_type: line\nperiod: 5minute\n' },
+  { type: 'picture',          name: 'Bild',               icon: 'mdi:image',                    template: 'type: picture\nimage: ""\n' },
+  { type: 'picture-entity',   name: 'Entity-Bild',        icon: 'mdi:image-outline',            template: 'type: picture-entity\nentity: ""\n' },
+  { type: 'map',              name: 'Karte',              icon: 'mdi:map',                      template: 'type: map\nentities:\n  - entity: ""\n' },
+  { type: 'todo-list',        name: 'Aufgabenliste',      icon: 'mdi:checkbox-marked-circle',   template: 'type: todo-list\nentity: ""\n' },
+  { type: 'logbook',          name: 'Logbuch',            icon: 'mdi:history',                  template: 'type: logbook\nentity: ""\nhours_to_show: 24\n' },
+  { type: 'alarm-panel',      name: 'Alarmanlage',        icon: 'mdi:shield-home',              template: 'type: alarm-panel\nentity: ""\n' },
+  { type: 'energy-distribution', name: 'Energieverteilung', icon: 'mdi:lightning-bolt',         template: 'type: energy-distribution\n' },
+  { type: 'grid',             name: 'Raster',             icon: 'mdi:grid',                     template: 'type: grid\ncards: []\n' },
+];
+
+// ====================================================================
 // Editor Class
 // ====================================================================
 
@@ -67,6 +94,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     _expandedAreas: { state: true },
     _expandedGroups: { state: true },
     _expandedWeatherBlocks: { state: true },
+    _cardPickerOpen: { state: true },
+    _cardPickerStep: { state: true },
+    _cardPickerSearch: { state: true },
+    _cardPickerSelectedType: { state: true },
+    _cardPickerYaml: { state: true },
+    _cardPickerHasVisualEditor: { state: true },
   };
 
   // hass is set externally by HA — use a setter, not a Lit property
@@ -100,6 +133,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _sectionDraggedElement: HTMLElement | null = null;
   private _stackDraggedElement: HTMLElement | null = null;
   private _weatherStartDraggedElement: HTMLElement | null = null;
+
+  // Card picker state (reactive via static properties)
+  _cardPickerOpen = false;
+  _cardPickerStep: 'type' | 'editor' = 'type';
+  _cardPickerSearch = '';
+  _cardPickerSelectedType = '';
+  _cardPickerYaml = '';
+  _cardPickerHasVisualEditor = false;
+  private _cardPickerCallback: ((config: Record<string, any>) => void) | null = null;
+  private _cardPickerConfig: Record<string, any> | null = null;
 
   // -- Lifecycle --------------------------------------------------------
 
@@ -1115,6 +1158,168 @@ class Simon42DashboardStrategyEditor extends LitElement {
         font-size: 13px;
       }
     }
+
+    /* -- Card Picker Overlay -------------------------------------------- */
+    .card-picker-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .card-picker-dialog {
+      background: var(--card-background-color, #fff);
+      border-radius: var(--ha-card-border-radius, 12px);
+      width: 100%;
+      max-width: 560px;
+      max-height: 82vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .card-picker-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--divider-color);
+      flex-shrink: 0;
+    }
+    .card-picker-header-title {
+      flex: 1;
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--primary-text-color);
+    }
+    .card-picker-icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      padding: 4px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      transition: color 0.15s ease;
+    }
+    .card-picker-icon-btn:hover {
+      color: var(--primary-text-color);
+    }
+    .card-picker-search-row {
+      padding: 10px 16px 6px;
+      flex-shrink: 0;
+    }
+    .card-picker-search-row input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+    .card-picker-search-row input:focus {
+      border-color: var(--primary-color);
+    }
+    .card-type-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .card-type-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 6px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      cursor: pointer;
+      gap: 6px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      font-family: inherit;
+      min-height: 72px;
+    }
+    .card-type-btn:hover {
+      border-color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color));
+    }
+    .card-type-btn ha-icon {
+      color: var(--primary-color);
+    }
+    .card-type-btn span {
+      font-size: 11px;
+      color: var(--primary-text-color);
+      text-align: center;
+      line-height: 1.3;
+    }
+    .card-editor-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card-editor-visual-host {
+      display: block;
+    }
+    .card-editor-yaml-label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+    }
+    .card-editor-yaml-area {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 160px;
+      padding: 10px 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      font-size: 12px;
+      font-family: monospace;
+      resize: vertical;
+      outline: none;
+    }
+    .card-editor-yaml-area:focus {
+      border-color: var(--primary-color);
+    }
+    .card-picker-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--divider-color);
+      flex-shrink: 0;
+    }
+    .btn-secondary {
+      padding: 10px 20px;
+      border-radius: var(--ha-card-border-radius, 12px);
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-weight: 500;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    .btn-secondary:hover {
+      border-color: var(--primary-color);
+    }
   `;
 
   // -- Main render ------------------------------------------------------
@@ -1150,6 +1355,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${this._renderCustomBadgesSection()}
         ${this._renderCustomViewsSection()}
       </div>
+      ${this._cardPickerOpen ? this._renderCardPickerOverlay() : nothing}
     `;
   }
 
@@ -2241,7 +2447,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
             : customCards.map((card, index) => this._renderCustomCardItem(card, index))}
         </div>
 
-        <button class="btn-primary" style="margin-top: 8px;" @click=${this._addCustomCard}>
+        <button class="btn-primary" style="margin-top: 8px;" @click=${this._openCardPickerForCustomCard}>
           ${localize('editor.add_custom_card')}
         </button>
         <div class="description">${localize('editor.custom_cards_help')}</div>
@@ -2464,7 +2670,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </div>
               `;
             })}
-            <button class="btn-primary" style="margin-top: 4px;" @click=${() => this._addCardToSection(sectionIndex)}>
+            <button class="btn-primary" style="margin-top: 4px;" @click=${() => this._openCardPickerForSection(sectionIndex)}>
               ${localize('editor.add_card_to_section')}
             </button>
           </div>
@@ -2783,7 +2989,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${cards.length === 0
           ? nothing
           : cards.map((card, index) => this._renderAreaCustomCardItem(areaId, card, index, availableEntities))}
-        <button class="btn-add" @click=${() => this._addAreaCustomCard(areaId)}>
+        <button class="btn-primary" @click=${() => this._openCardPickerForAreaCustomCard(areaId)}>
           ${localize('editor.area_custom_card_add')}
         </button>
       </div>
@@ -4202,6 +4408,216 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._isUpdatingConfig = false;
     }, 0);
   }
+
+  // -- Card Picker -------------------------------------------------------
+
+  private _openCardPickerForCustomCard = () => {
+    this._openCardPicker((config) => {
+      const yamlStr = yaml.dump(config).trim();
+      const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
+      customCards.push({ title: '', yaml: yamlStr, parsed_config: config });
+      const newConfig = { ...this._config, custom_cards: customCards };
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+    });
+  };
+
+  private _openCardPickerForSection(sectionIndex: number): void {
+    this._openCardPicker((config) => {
+      const yamlStr = yaml.dump(config).trim();
+      const customSections = [...(this._config.custom_sections || [])];
+      if (!customSections[sectionIndex]) return;
+      const section = { ...customSections[sectionIndex] };
+      section.cards = [...(section.cards || []), { title: '', yaml: yamlStr, parsed_config: config }];
+      customSections[sectionIndex] = section;
+      const newConfig = { ...this._config, custom_sections: customSections };
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+    });
+  }
+
+  private _openCardPickerForAreaCustomCard(areaId: string): void {
+    this._openCardPicker((config) => {
+      const yamlStr = yaml.dump(config).trim();
+      const cards = this._getAreaCustomCards(areaId);
+      cards.push({ mode: 'yaml', position: 'bottom', title: '', yaml: yamlStr, parsed_config: config } as AreaCustomCard);
+      this._writeAreaCustomCards(areaId, cards);
+    });
+  }
+
+  private _openCardPicker(callback: (config: Record<string, any>) => void): void {
+    this._cardPickerCallback = callback;
+    this._cardPickerConfig = null;
+    this._cardPickerOpen = true;
+    this._cardPickerStep = 'type';
+    this._cardPickerSearch = '';
+    this._cardPickerSelectedType = '';
+    this._cardPickerYaml = '';
+    this._cardPickerHasVisualEditor = false;
+  }
+
+  private _closeCardPicker(): void {
+    this._cardPickerOpen = false;
+    this._cardPickerCallback = null;
+    this._cardPickerConfig = null;
+    const host = this.shadowRoot?.querySelector('.card-editor-visual-host') as HTMLElement | null;
+    if (host) host.innerHTML = '';
+  }
+
+  private _selectCardType(type: string): void {
+    this._cardPickerSelectedType = type;
+    this._cardPickerStep = 'editor';
+    const cardType = CARD_TYPES.find(t => t.type === type);
+    if (cardType) {
+      this._cardPickerYaml = cardType.template;
+      try {
+        const parsed = yaml.load(cardType.template);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          this._cardPickerConfig = parsed as Record<string, any>;
+        }
+      } catch { /* ignore */ }
+    } else {
+      this._cardPickerYaml = `type: ${type}\n`;
+      this._cardPickerConfig = { type };
+    }
+    this._cardPickerHasVisualEditor = false;
+  }
+
+  private _cardPickerYamlChanged(e: Event): void {
+    const yamlStr = (e.target as HTMLTextAreaElement).value;
+    this._cardPickerYaml = yamlStr;
+    try {
+      const parsed = yaml.load(yamlStr);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        this._cardPickerConfig = parsed as Record<string, any>;
+      }
+    } catch { /* ignore — user still typing */ }
+  }
+
+  private _confirmCardPicker(): void {
+    if (!this._cardPickerConfig || !this._cardPickerCallback) return;
+    this._cardPickerCallback(this._cardPickerConfig);
+    this._closeCardPicker();
+  }
+
+  private _handlePickerOverlayClick = (e: Event) => {
+    if (e.target === e.currentTarget) this._closeCardPicker();
+  };
+
+  override updated(changedProps: Map<string, unknown>): void {
+    super.updated(changedProps);
+    if (this._cardPickerOpen && this._cardPickerStep === 'editor' && !this._cardPickerHasVisualEditor) {
+      this._tryMountVisualCardEditor();
+    }
+  }
+
+  private _tryMountVisualCardEditor(): void {
+    const host = this.shadowRoot?.querySelector('.card-editor-visual-host') as HTMLElement | null;
+    if (!host || host.firstChild) return;
+    if (!customElements.get('hui-card-element-editor')) return;
+    try {
+      const el = document.createElement('hui-card-element-editor');
+      (el as any).hass = this._hass;
+      (el as any).value = this._cardPickerConfig || { type: this._cardPickerSelectedType };
+      el.addEventListener('config-changed', (ev: Event) => {
+        const config = (ev as CustomEvent).detail?.config;
+        if (config && typeof config === 'object') {
+          this._cardPickerConfig = config;
+          this._cardPickerYaml = yaml.dump(config).trim();
+          this.requestUpdate('_cardPickerYaml');
+        }
+      });
+      host.appendChild(el);
+      this._cardPickerHasVisualEditor = true;
+    } catch { /* visual editor unavailable — YAML fallback shown */ }
+  }
+
+  private _renderCardPickerOverlay(): TemplateResult {
+    if (this._cardPickerStep === 'type') return this._renderCardTypePicker();
+    return this._renderCardEditor();
+  }
+
+  private _renderCardTypePicker(): TemplateResult {
+    const search = this._cardPickerSearch.toLowerCase();
+    const filteredBuiltIn = CARD_TYPES.filter(
+      t => !search || t.type.includes(search) || t.name.toLowerCase().includes(search)
+    );
+    const customCardTypes = (window.customCards || []).filter(
+      c => !search || c.type.includes(search) || (c.name || '').toLowerCase().includes(search)
+    );
+    return html`
+      <div class="card-picker-overlay" @click=${this._handlePickerOverlayClick}>
+        <div class="card-picker-dialog" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="card-picker-header">
+            <span class="card-picker-header-title">Karte hinzufügen</span>
+            <button class="card-picker-icon-btn" @click=${this._closeCardPicker} title="Schließen">
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+          <div class="card-picker-search-row">
+            <input type="text" placeholder="Kartentyp suchen…"
+              .value=${this._cardPickerSearch}
+              @input=${(e: Event) => { this._cardPickerSearch = (e.target as HTMLInputElement).value; this.requestUpdate(); }} />
+          </div>
+          <div class="card-type-grid">
+            ${filteredBuiltIn.map(t => html`
+              <button class="card-type-btn" @click=${() => this._selectCardType(t.type)}>
+                <ha-icon icon=${t.icon}></ha-icon>
+                <span>${t.name}</span>
+              </button>
+            `)}
+            ${customCardTypes.map(c => html`
+              <button class="card-type-btn" @click=${() => this._selectCardType(c.type)}>
+                <ha-icon icon="mdi:puzzle"></ha-icon>
+                <span>${c.name || c.type}</span>
+              </button>
+            `)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderCardEditor(): TemplateResult {
+    const typeName = CARD_TYPES.find(t => t.type === this._cardPickerSelectedType)?.name
+      || this._cardPickerSelectedType;
+    return html`
+      <div class="card-picker-overlay" @click=${this._handlePickerOverlayClick}>
+        <div class="card-picker-dialog" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="card-picker-header">
+            <button class="card-picker-icon-btn"
+              @click=${() => {
+                this._cardPickerStep = 'type';
+                const host = this.shadowRoot?.querySelector('.card-editor-visual-host') as HTMLElement | null;
+                if (host) host.innerHTML = '';
+                this._cardPickerHasVisualEditor = false;
+              }}
+              title="Zurück">
+              <ha-icon icon="mdi:arrow-left"></ha-icon>
+            </button>
+            <span class="card-picker-header-title">${typeName}</span>
+            <button class="card-picker-icon-btn" @click=${this._closeCardPicker} title="Schließen">
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+          <div class="card-editor-content">
+            <div class="card-editor-visual-host"></div>
+            ${!this._cardPickerHasVisualEditor ? html`
+              <div class="card-editor-yaml-label">YAML-Konfiguration:</div>
+              <textarea class="card-editor-yaml-area"
+                .value=${this._cardPickerYaml}
+                @input=${this._cardPickerYamlChanged}
+                spellcheck="false"></textarea>
+            ` : nothing}
+          </div>
+          <div class="card-picker-footer">
+            <button class="btn-secondary" @click=${this._closeCardPicker}>Abbrechen</button>
+            <button class="btn-primary" @click=${this._confirmCardPicker}>Speichern</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 }
 
 // ====================================================================
@@ -4439,3 +4855,4 @@ function getEntityOrdersForArea(areaId: string, config: Simon42StrategyConfig): 
 
 // Register custom element
 customElements.define('dashboard-strategy-editor', Simon42DashboardStrategyEditor);
+
