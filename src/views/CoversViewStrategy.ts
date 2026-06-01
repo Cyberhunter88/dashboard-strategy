@@ -21,7 +21,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
     // Rollos & Vorhänge
     const cards: any[] = [
       {
-        type: 'custom:simon42-covers-group-card',
+        type: 'custom:dashboard-strategy-covers-group-card',
         ...baseConfig,
         device_classes: coverClasses,
         group_type: 'open',
@@ -31,7 +31,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
 
     if (showPartiallyOpen) {
       cards.push({
-        type: 'custom:simon42-covers-group-card',
+        type: 'custom:dashboard-strategy-covers-group-card',
         ...baseConfig,
         device_classes: coverClasses,
         group_type: 'partially_open',
@@ -40,7 +40,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
     }
 
     cards.push({
-      type: 'custom:simon42-covers-group-card',
+      type: 'custom:dashboard-strategy-covers-group-card',
       ...baseConfig,
       device_classes: coverClasses,
       group_type: 'closed',
@@ -60,7 +60,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
       };
 
       cards.push({
-        type: 'custom:simon42-covers-group-card',
+        type: 'custom:dashboard-strategy-covers-group-card',
         ...awningConfig,
         group_type: 'open',
         show_partially_open: showPartiallyOpen,
@@ -68,7 +68,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
 
       if (showPartiallyOpen) {
         cards.push({
-          type: 'custom:simon42-covers-group-card',
+          type: 'custom:dashboard-strategy-covers-group-card',
           ...awningConfig,
           group_type: 'partially_open',
           show_partially_open: true,
@@ -76,7 +76,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
       }
 
       cards.push({
-        type: 'custom:simon42-covers-group-card',
+        type: 'custom:dashboard-strategy-covers-group-card',
         ...awningConfig,
         group_type: 'closed',
         show_partially_open: showPartiallyOpen,
@@ -96,7 +96,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
       };
 
       cards.push({
-        type: 'custom:simon42-covers-group-card',
+        type: 'custom:dashboard-strategy-covers-group-card',
         ...windowConfig,
         group_type: 'open',
         show_partially_open: showPartiallyOpen,
@@ -104,7 +104,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
 
       if (showPartiallyOpen) {
         cards.push({
-          type: 'custom:simon42-covers-group-card',
+          type: 'custom:dashboard-strategy-covers-group-card',
           ...windowConfig,
           group_type: 'partially_open',
           show_partially_open: true,
@@ -112,7 +112,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
       }
 
       cards.push({
-        type: 'custom:simon42-covers-group-card',
+        type: 'custom:dashboard-strategy-covers-group-card',
         ...windowConfig,
         group_type: 'closed',
         show_partially_open: showPartiallyOpen,
@@ -126,4 +126,4 @@ class Simon42ViewCoversStrategy extends HTMLElement {
   }
 }
 
-customElements.define('ll-strategy-simon42-view-covers', Simon42ViewCoversStrategy);
+customElements.define('ll-strategy-dashboard-strategy-view-covers', Simon42ViewCoversStrategy);

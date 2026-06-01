@@ -450,7 +450,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         type: 'grid',
         cards: [
           {
-            type: 'custom:simon42-lights-group-card',
+            type: 'custom:dashboard-strategy-lights-group-card',
             entities: roomEntities.lights,
             group_type: 'all',
             heading_label: localize('room.lighting'),
@@ -641,4 +641,4 @@ class Simon42ViewRoomStrategy extends HTMLElement {
   }
 }
 
-customElements.define('ll-strategy-simon42-view-room', Simon42ViewRoomStrategy);
+customElements.define('ll-strategy-dashboard-strategy-view-room', Simon42ViewRoomStrategy);

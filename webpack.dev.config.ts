@@ -7,7 +7,7 @@ const config: webpack.Configuration = {
   entry: './src/simon42-dashboard-strategy.ts',
   output: {
     clean: true,
-    filename: 'simon42-dashboard-strategy.js',
+    filename: 'dashboard-strategy.js',
     path: path.resolve(__dirname, 'dist'),
   },
   resolve: {

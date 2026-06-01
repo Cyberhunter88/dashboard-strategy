@@ -3266,4 +3266,4 @@ function getEntityOrdersForArea(areaId: string, config: Simon42StrategyConfig): 
 }
 
 // Register custom element
-customElements.define('simon42-dashboard-strategy-editor', Simon42DashboardStrategyEditor);
+customElements.define('dashboard-strategy-editor', Simon42DashboardStrategyEditor);
