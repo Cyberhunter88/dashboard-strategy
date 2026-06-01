@@ -15,6 +15,7 @@ import type {
   CustomView,
   CustomCard,
   CustomBadge,
+  AreaCustomCard,
   RoomEntities,
   SectionKey,
 } from '../types/strategy';
@@ -2461,6 +2462,110 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  // -- Area Custom Cards (per-area room view) ---------------------------
+
+  /** Liest die custom_cards-Liste einer Area (immer eine neue Kopie). */
+  private _getAreaCustomCards(areaId: string): AreaCustomCard[] {
+    return [...(this._config.areas_options?.[areaId]?.custom_cards || [])];
+  }
+
+  /**
+   * Schreibt die custom_cards-Liste einer Area zurück in die Config.
+   * Räumt leere Verschachtelungen auf (Delete-when-empty), damit die
+   * gespeicherte Config minimal bleibt — analog zu _updateEntityConfig.
+   */
+  private _writeAreaCustomCards(areaId: string, cards: AreaCustomCard[]): void {
+    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
+
+    const newAreaOptions: Record<string, any> = { ...currentAreaOptions };
+    if (cards.length === 0) {
+      delete newAreaOptions.custom_cards;
+    } else {
+      newAreaOptions.custom_cards = cards;
+    }
+
+    const newAreasOptions: Record<string, any> = {
+      ...this._config.areas_options,
+      [areaId]: newAreaOptions,
+    };
+
+    if (Object.keys(newAreasOptions[areaId]).length === 0) {
+      delete newAreasOptions[areaId];
+    }
+
+    const newConfig: Simon42StrategyConfig = {
+      ...this._config,
+      areas_options: newAreasOptions,
+    };
+
+    if (newConfig.areas_options && Object.keys(newConfig.areas_options).length === 0) {
+      delete newConfig.areas_options;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _addAreaCustomCard(areaId: string): void {
+    const cards = this._getAreaCustomCards(areaId);
+    cards.push({
+      mode: 'yaml',
+      position: 'bottom',
+      title: '',
+      yaml: '',
+      parsed_config: undefined,
+    } as AreaCustomCard);
+    this._writeAreaCustomCards(areaId, cards);
+  }
+
+  private _removeAreaCustomCard(areaId: string, index: number): void {
+    const cards = this._getAreaCustomCards(areaId);
+    if (index < 0 || index >= cards.length) return;
+    cards.splice(index, 1);
+    this._writeAreaCustomCards(areaId, cards);
+  }
+
+  private _updateAreaCustomCardField(
+    areaId: string,
+    index: number,
+    field: string,
+    value: string
+  ): void {
+    const cards = this._getAreaCustomCards(areaId);
+    if (!cards[index]) return;
+    cards[index] = { ...cards[index], [field]: value };
+    this._writeAreaCustomCards(areaId, cards);
+  }
+
+  private _updateAreaCustomCardYaml(areaId: string, index: number, yamlString: string): void {
+    const cards = this._getAreaCustomCards(areaId);
+    if (!cards[index]) return;
+
+    const updated: AreaCustomCard = { ...cards[index], yaml: yamlString };
+    delete updated._yaml_error;
+
+    if (yamlString.trim()) {
+      try {
+        const parsed = yaml.load(yamlString);
+        if (parsed && typeof parsed === 'object') {
+          updated.parsed_config = parsed as Record<string, any>;
+        } else {
+          updated._yaml_error = 'YAML muss ein Objekt oder Array ergeben';
+          updated.parsed_config = undefined;
+        }
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message.split('\n')[0] : 'Ungültiges YAML';
+        updated._yaml_error = message || 'Ungültiges YAML';
+        updated.parsed_config = undefined;
+      }
+    } else {
+      updated.parsed_config = undefined;
+    }
+
+    cards[index] = updated;
+    this._writeAreaCustomCards(areaId, cards);
   }
 
   // -- Custom Badges ----------------------------------------------------
