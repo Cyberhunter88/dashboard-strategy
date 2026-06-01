@@ -46,6 +46,9 @@ const IMPORTANT_SENSOR_CLASSES = [
 
 const IMPORTANT_SENSOR_CLASS_SET = new Set<string>(IMPORTANT_SENSOR_CLASSES);
 
+const AREA_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
+const AREA_ENERGY_SENSOR_CLASS_SET = new Set<string>(AREA_ENERGY_SENSOR_CLASSES);
+
 /**
  * Pre-computes which area-controls actually have entities in this area.
  * This avoids the area card having to scan all entities at render time.
@@ -161,6 +164,41 @@ function getAreaExcludedEntities(areaId: string, hass: HomeAssistant): string[] 
     .map((entity) => entity.entity_id);
 }
 
+function getAreaEnergyEntities(areaId: string, hass: HomeAssistant): string[] {
+  const energyEntities: Array<{ entityId: string; order: number }> = [];
+
+  for (const entity of Registry.getVisibleEntitiesForArea(areaId)) {
+    const domain = entity.entity_id.split('.')[0];
+    if (domain !== 'sensor') continue;
+
+    const state = hass.states[entity.entity_id];
+    const deviceClass = state?.attributes?.device_class as string | undefined;
+    if (!deviceClass || !AREA_ENERGY_SENSOR_CLASS_SET.has(deviceClass)) continue;
+
+    energyEntities.push({
+      entityId: entity.entity_id,
+      order: AREA_ENERGY_SENSOR_CLASSES.indexOf(deviceClass as (typeof AREA_ENERGY_SENSOR_CLASSES)[number]),
+    });
+  }
+
+  return energyEntities
+    .sort((a, b) => a.order - b.order || a.entityId.localeCompare(b.entityId))
+    .map((entry) => entry.entityId);
+}
+
+function buildAreaEnergyCard(areaId: string, hass: HomeAssistant): LovelaceCardConfig | null {
+  const entities = getAreaEnergyEntities(areaId, hass);
+  if (entities.length === 0) return null;
+
+  return {
+    type: 'history-graph',
+    title: localize('sections.energy'),
+    entities,
+    hours_to_show: 24,
+    grid_options: { columns: 'full' },
+  };
+}
+
 /**
  * Builds a single area card config for use in area sections.
  * Pre-filters controls and sensor_classes like HA does — the card
@@ -189,6 +227,13 @@ function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCa
     vertical: false,
     grid_options: { columns: 'full' },
   };
+}
+
+function buildAreaCards(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCardConfig[] {
+  const cards = [buildAreaCard(area, hass)];
+  const energyCard = buildAreaEnergyCard(area.area_id, hass);
+  if (energyCard) cards.push(energyCard);
+  return cards;
 }
 
 /**
@@ -224,7 +269,7 @@ export function createAreasSection(
           heading_style: 'title',
           heading: localize('sections.areas'),
         },
-        ...visibleAreas.map((area) => buildAreaCard(area, hass as HomeAssistant)),
+        ...visibleAreas.flatMap((area) => buildAreaCards(area, hass as HomeAssistant)),
       ],
     };
   }
@@ -268,7 +313,7 @@ export function createAreasSection(
           heading: floorName,
           icon: floorIcon,
         },
-        ...areas.map((area) => buildAreaCard(area, hass)),
+        ...areas.flatMap((area) => buildAreaCards(area, hass)),
       ],
     });
   }
@@ -284,7 +329,7 @@ export function createAreasSection(
           heading: localize('sections.areas_other'),
           icon: 'mdi:home-outline',
         },
-        ...areasWithoutFloor.map((area) => buildAreaCard(area, hass)),
+        ...areasWithoutFloor.flatMap((area) => buildAreaCards(area, hass)),
       ],
     });
   }
