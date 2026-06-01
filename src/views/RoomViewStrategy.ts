@@ -74,33 +74,61 @@ function buildAreaCustomCardSection(
   cards: AreaCustomCard[],
   position: 'top' | 'bottom'
 ): LovelaceSectionConfig[] {
+  const sections: LovelaceSectionConfig[] = [];
   const built: LovelaceCardConfig[] = [];
+  const flushCards = (): void => {
+    if (built.length === 0) return;
+    sections.push({ type: 'grid', cards: built.splice(0) });
+  };
 
   for (const card of cards) {
     if ((card.position || 'bottom') !== position) continue;
 
-    let cardConfig: LovelaceCardConfig | null = null;
-    if ((card.mode || 'yaml') === 'tile') {
+    const mode = card.mode || 'yaml';
+    if (mode === 'section') {
+      if (!card.parsed_config || card._yaml_error) continue;
+      const parsedSections = Array.isArray(card.parsed_config) ? card.parsed_config : [card.parsed_config];
+      const validSections = parsedSections.filter((section) =>
+        section && typeof section === 'object' && Array.isArray((section as LovelaceSectionConfig).cards)
+      ) as LovelaceSectionConfig[];
+
+      if (validSections.length === 0) continue;
+      flushCards();
+
+      validSections.forEach((section, index) => {
+        const sectionConfig: LovelaceSectionConfig = { ...section };
+        if (card.title && index === 0) {
+          sectionConfig.cards = [
+            { type: 'heading', heading: card.title },
+            ...((sectionConfig.cards || []) as LovelaceCardConfig[]),
+          ];
+        }
+        sections.push(sectionConfig);
+      });
+      continue;
+    }
+
+    if (mode === 'tile') {
       if (card.entity) {
-        cardConfig = { type: 'tile', entity: card.entity };
+        if (card.title) {
+          built.push({ type: 'heading', heading: card.title });
+        }
+        built.push({ type: 'tile', entity: card.entity });
       }
     } else {
       // YAML-Modus: nur fehlerfreie, geparste Configs verwenden
       if (card.parsed_config && !card._yaml_error && typeof card.parsed_config === 'object') {
-        cardConfig = card.parsed_config as LovelaceCardConfig;
+        const cardConfigs = Array.isArray(card.parsed_config) ? card.parsed_config : [card.parsed_config];
+        if (card.title) {
+          built.push({ type: 'heading', heading: card.title });
+        }
+        built.push(...(cardConfigs as LovelaceCardConfig[]));
       }
     }
-
-    if (!cardConfig) continue;
-
-    if (card.title) {
-      built.push({ type: 'heading', heading: card.title });
-    }
-    built.push(cardConfig);
   }
 
-  if (built.length === 0) return [];
-  return [{ type: 'grid', cards: built }];
+  flushCards();
+  return sections;
 }
 
 class Simon42ViewRoomStrategy extends HTMLElement {
