@@ -303,6 +303,7 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] Custom overview sections: `custom_sections[]` — multiple full grid sections with title, icon, and YAML cards; appear at configurable position in `sections_order`; full editor UI with section/card add/remove/edit
 - [x] Nested light groups: `nested_light_groups` toggle — optional sub-grouping within LightsGroupCard and LightsViewStrategy; editor checkbox
 - [x] `overview_layout` option (`'default'` | `'weather_start'`): weather-start layout renders large clock + date, current weather forecast + hourly/daily forecast, then areas; editor dropdown; DE/EN i18n (v1.6.5)
+- [x] Bugfix (8 Findings): `weather_start` custom_sections-Routing, Registry-Reinit bei HA-Registry-Änderungen, `hass.floors`-Null-Guard, binary_sensor Batterie-Erkennung via `device_class`, `SummaryCard.setConfig()` requestUpdate, `LightsGroupCard` Cache-Invalidierung, `_addCustomView` i18n, `dataTransfer` Firefox-Fix (branch `fix/code-review-findings`)
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)
