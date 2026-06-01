@@ -18,6 +18,41 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
   'energy',
 ];
 
+// -- Stack Ordering (per-area room view) ------------------------------
+
+export type StackKey =
+  | 'ups'
+  | 'cameras'
+  | 'lights'
+  | 'locks'
+  | 'climate'
+  | 'covers'
+  | 'covers_curtain'
+  | 'covers_window'
+  | 'media'
+  | 'scenes'
+  | 'misc'
+  | 'automations'
+  | 'scripts'
+  | 'room_pins';
+
+export const DEFAULT_STACKS_ORDER: StackKey[] = [
+  'ups',
+  'cameras',
+  'lights',
+  'locks',
+  'climate',
+  'covers',
+  'covers_curtain',
+  'covers_window',
+  'media',
+  'scenes',
+  'misc',
+  'automations',
+  'scripts',
+  'room_pins',
+];
+
 // -- Main Strategy Config ---------------------------------------------
 
 export interface Simon42StrategyConfig {
@@ -92,6 +127,7 @@ export interface AreasDisplay {
 export interface AreaOptions {
   groups_options?: Record<string, GroupOptions>;
   custom_cards?: AreaCustomCard[];
+  stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
 }
 
 export interface GroupOptions {
