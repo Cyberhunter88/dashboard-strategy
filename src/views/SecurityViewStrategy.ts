@@ -237,4 +237,4 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
   }
 }
 
-customElements.define('ll-strategy-simon42-view-security', Simon42ViewSecurityStrategy);
+customElements.define('ll-strategy-dashboard-strategy-view-security', Simon42ViewSecurityStrategy);

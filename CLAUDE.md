@@ -2,6 +2,19 @@
 
 Custom Lovelace Dashboard Strategy for Home Assistant. Generates dynamic dashboards from area/device/entity metadata with flexible user configuration. This project is actively used by Simons loved YouTube viewers — clean, stable code is top priority.
 
+> **Fork-Rename (ab v1.3.4-beta.10):** Dieser Fork (`Cyberhunter88/dashboard-strategy`) registriert eigene globale Custom-Element-Namen, damit er **nicht** mit dem Original (`TheRealSimon42/simon42-dashboard-strategy`) kollidiert, wenn beide gleichzeitig in HA installiert sind. Geänderte öffentliche Bezeichner:
+> - Dashboard-Config-Typ: `custom:dashboard-strategy` (vorher `custom:simon42-dashboard`)
+> - Haupt-Strategy-Element: `ll-strategy-dashboard-strategy`
+> - View-Strategien: `ll-strategy-dashboard-strategy-view-{overview,lights,covers,security,batteries,climate,room}`
+> - Cards: `dashboard-strategy-{summary,lights-group,covers-group}-card`
+> - Editor: `dashboard-strategy-editor`
+> - Build-Output / HACS-`filename`: `dashboard-strategy.js`; `publicPath` / Resource-URL: `/hacsfiles/dashboard-strategy/`
+> - HACS-Anzeigename (`hacs.json` `name`): `Dashboard Strategy`
+>
+> **Quelldateinamen unter `src/` bleiben unverändert** (`simon42-dashboard-strategy.ts` usw.) — sie sind für HA/HACS unsichtbar. Interne JS-Klassennamen (`Simon42DashboardStrategy` etc.) bleiben ebenfalls (rein JS-intern, keine globale Kollision).
+>
+> **Breaking Change für bestehende Dashboards:** YAML-Konfigs mit `type: custom:simon42-dashboard` müssen auf `type: custom:dashboard-strategy` umgestellt werden.
+
 ## Architecture
 
 **Language:** TypeScript (ES2020, strict mode)
@@ -49,11 +62,11 @@ src/
 Output:
 ```
 dist/
-├── simon42-dashboard-strategy.js                        # Entry point (instant custom element registration)
-├── simon42-dashboard-strategy-core.<hash>.js            # Registry, cards, utils
-├── simon42-dashboard-strategy-lit.<hash>.js             # Lit framework (shared)
-├── simon42-dashboard-strategy-views.<hash>.js           # All view strategies
-├── simon42-dashboard-strategy-editor.<hash>.js          # Editor (lazy-loaded on demand)
+├── dashboard-strategy.js                        # Entry point (instant custom element registration)
+├── dashboard-strategy-core.<hash>.js            # Registry, cards, utils
+├── dashboard-strategy-lit.<hash>.js             # Lit framework (shared)
+├── dashboard-strategy-views.<hash>.js           # All view strategies
+├── dashboard-strategy-editor.<hash>.js          # Editor (lazy-loaded on demand)
 ├── *.js.gz / *.js.br                                    # Pre-compressed variants
 └── *.LICENSE.txt                                        # License files
 ```
@@ -184,10 +197,10 @@ The following locations must be updated for a new version:
 
 | File | Field | Example |
 |------|-------|---------|
-| `package.json` | `"version"` | `"1.3.0"` |
-| `src/simon42-dashboard-strategy.ts` | `STRATEGY_VERSION` | `'1.3.0-beta.5'` |
+| `package.json` | `"version"` | `"1.3.4-beta.10"` |
+| `src/simon42-dashboard-strategy.ts` | `STRATEGY_VERSION` | `'1.3.4-beta.10'` |
 | `package-lock.json` | updated automatically via `npm install` | — |
-| **Git tag** | create on release | `v1.3.0-beta.5` or `v1.3.0` |
+| **Git tag** | create on release | `v1.3.4-beta.10` or `v1.3.4` |
 
 **Important:** `STRATEGY_VERSION` is logged to the browser console — useful for asking users which version they have installed.
 

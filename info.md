@@ -1,4 +1,4 @@
-# Simon42 Dashboard Strategy
+# Dashboard Strategy
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
@@ -26,7 +26,7 @@ Nach der Installation über HACS:
 2. Erstelle ein neues Dashboard mit der Strategy:
    ```yaml
    strategy:
-     type: custom:simon42-dashboard
+     type: custom:dashboard-strategy
    ```
 
 Für detaillierte Anweisungen siehe das README.

@@ -17,7 +17,7 @@ class Simon42ViewLightsStrategy extends HTMLElement {
           type: 'grid',
           cards: [
             {
-              type: 'custom:simon42-lights-group-card',
+              type: 'custom:dashboard-strategy-lights-group-card',
               entities: config.entities,
               config: config.config,
               group_type: 'on',
@@ -25,7 +25,7 @@ class Simon42ViewLightsStrategy extends HTMLElement {
               nested_groups: nestedGroups,
             },
             {
-              type: 'custom:simon42-lights-group-card',
+              type: 'custom:dashboard-strategy-lights-group-card',
               entities: config.entities,
               config: config.config,
               group_type: 'off',
@@ -39,4 +39,4 @@ class Simon42ViewLightsStrategy extends HTMLElement {
   }
 }
 
-customElements.define('ll-strategy-simon42-view-lights', Simon42ViewLightsStrategy);
+customElements.define('ll-strategy-dashboard-strategy-view-lights', Simon42ViewLightsStrategy);

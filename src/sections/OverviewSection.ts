@@ -101,7 +101,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   if (showLightSummary) {
     summaryCards.push({
-      type: 'custom:simon42-summary-card',
+      type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'lights',
       areas_options: config.areas_options || {},
     });
@@ -109,7 +109,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   if (showCoversSummary) {
     summaryCards.push({
-      type: 'custom:simon42-summary-card',
+      type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'covers',
       areas_options: config.areas_options || {},
     });
@@ -117,7 +117,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   if (showSecuritySummary) {
     summaryCards.push({
-      type: 'custom:simon42-summary-card',
+      type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'security',
       areas_options: config.areas_options || {},
     });
@@ -125,7 +125,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   if (showBatterySummary) {
     summaryCards.push({
-      type: 'custom:simon42-summary-card',
+      type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'batteries',
       areas_options: config.areas_options || {},
       hide_mobile_app_batteries: config.hide_mobile_app_batteries,
@@ -135,7 +135,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   if (showClimateSummary) {
     summaryCards.push({
-      type: 'custom:simon42-summary-card',
+      type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'climate',
       areas_options: config.areas_options || {},
     });

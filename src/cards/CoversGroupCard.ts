@@ -369,4 +369,4 @@ class Simon42CoversGroupCard extends LitElement {
   }
 }
 
-customElements.define('simon42-covers-group-card', Simon42CoversGroupCard);
+customElements.define('dashboard-strategy-covers-group-card', Simon42CoversGroupCard);

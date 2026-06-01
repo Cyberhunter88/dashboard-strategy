@@ -153,4 +153,4 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
   }
 }
 
-customElements.define('ll-strategy-simon42-view-overview', Simon42ViewOverviewStrategy);
+customElements.define('ll-strategy-dashboard-strategy-view-overview', Simon42ViewOverviewStrategy);

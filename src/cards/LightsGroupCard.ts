@@ -677,4 +677,4 @@ class Simon42LightsGroupCard extends LitElement {
   }
 }
 
-customElements.define('simon42-lights-group-card', Simon42LightsGroupCard);
+customElements.define('dashboard-strategy-lights-group-card', Simon42LightsGroupCard);

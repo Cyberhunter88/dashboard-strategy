@@ -335,11 +335,11 @@ class Simon42SummaryCard extends LitElement {
   }
 }
 
-customElements.define('simon42-summary-card', Simon42SummaryCard);
+customElements.define('dashboard-strategy-summary-card', Simon42SummaryCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: 'simon42-summary-card',
+  type: 'dashboard-strategy-summary-card',
   name: 'Simon42 Summary Card',
   description: 'Reactive summary card that counts entities dynamically',
 });
