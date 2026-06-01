@@ -5,7 +5,7 @@
 // vanilla HTMLElement + innerHTML pattern.
 // ====================================================================
 
-import { LitElement, html, css, nothing, type TemplateResult, type PropertyValues } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import yaml from 'js-yaml';
 
@@ -19,11 +19,13 @@ import type {
   AreaCustomCard,
   RoomEntities,
   SectionKey,
+  StackKey,
 } from '../types/strategy';
-import { DEFAULT_SECTIONS_ORDER } from '../types/strategy';
+import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isBadgeCandidate, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
+import { mergeStacksOrder } from '../utils/name-utils';
 
 // -- Supporting types for the editor ------------------------------------
 
@@ -91,6 +93,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   // Drag state (not reactive — no render needed)
   private _draggedElement: HTMLElement | null = null;
   private _sectionDraggedElement: HTMLElement | null = null;
+  private _stackDraggedElement: HTMLElement | null = null;
 
   // -- Lifecycle --------------------------------------------------------
 
@@ -1213,6 +1216,198 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._updateSectionsOrder(newOrder);
   };
 
+  // -- Room stack order panel -------------------------------------------
+
+  private _getStacksOrder(areaId: string): StackKey[] {
+    return mergeStacksOrder(this._config.areas_options?.[areaId]?.stacks_order);
+  }
+
+  private _updateStacksOrder(areaId: string, newOrder: StackKey[]): void {
+    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
+    const newAreaOptions: Record<string, any> = { ...currentAreaOptions };
+
+    if (newOrder.join('|') === DEFAULT_STACKS_ORDER.join('|')) {
+      delete newAreaOptions.stacks_order;
+    } else {
+      newAreaOptions.stacks_order = newOrder;
+    }
+
+    const newAreasOptions: Record<string, any> = {
+      ...this._config.areas_options,
+      [areaId]: newAreaOptions,
+    };
+
+    if (Object.keys(newAreasOptions[areaId]).length === 0) {
+      delete newAreasOptions[areaId];
+    }
+
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (Object.keys(newAreasOptions).length === 0) {
+      delete newConfig.areas_options;
+    } else {
+      newConfig.areas_options = newAreasOptions;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private static _stackMeta = new Map<StackKey, { icon: string; labelKey: string }>([
+    ['ups', { icon: 'mdi:power-plug-battery', labelKey: 'stacks.ups' }],
+    ['cameras', { icon: 'mdi:cctv', labelKey: 'stacks.cameras' }],
+    ['lights', { icon: 'mdi:lightbulb', labelKey: 'stacks.lights' }],
+    ['locks', { icon: 'mdi:lock', labelKey: 'stacks.locks' }],
+    ['climate', { icon: 'mdi:thermostat', labelKey: 'stacks.climate' }],
+    ['covers', { icon: 'mdi:window-shutter', labelKey: 'stacks.covers' }],
+    ['covers_curtain', { icon: 'mdi:curtains', labelKey: 'stacks.covers_curtain' }],
+    ['covers_window', { icon: 'mdi:window-open-variant', labelKey: 'stacks.covers_window' }],
+    ['media', { icon: 'mdi:speaker', labelKey: 'stacks.media' }],
+    ['scenes', { icon: 'mdi:palette', labelKey: 'stacks.scenes' }],
+    ['misc', { icon: 'mdi:dots-horizontal', labelKey: 'stacks.misc' }],
+    ['automations', { icon: 'mdi:robot', labelKey: 'stacks.automations' }],
+    ['scripts', { icon: 'mdi:script-text', labelKey: 'stacks.scripts' }],
+    ['room_pins', { icon: 'mdi:pin', labelKey: 'stacks.room_pins' }],
+  ]);
+
+  private _presentStackKeys(
+    data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>
+  ): Set<StackKey> {
+    const g = data.groupedEntities;
+    const present = new Set<StackKey>();
+    const has = (key: string): boolean => (g[key]?.length ?? 0) > 0;
+
+    if (has('lights')) present.add('lights');
+    if (has('locks')) present.add('locks');
+    if (has('climate')) present.add('climate');
+    if (has('covers')) present.add('covers');
+    if (has('covers_curtain')) present.add('covers_curtain');
+    if (has('covers_window')) present.add('covers_window');
+    if (has('media_player')) present.add('media');
+    if (has('scenes')) present.add('scenes');
+    if (has('vacuum') || has('fan') || has('switches')) present.add('misc');
+    if (has('automations')) present.add('automations');
+    if (has('scripts')) present.add('scripts');
+    if (has('ups')) present.add('ups');
+
+    // These stacks are not reliably represented in the editor's area cache.
+    present.add('cameras');
+    present.add('room_pins');
+
+    return present;
+  }
+
+  private _renderStackOrderPanel(
+    areaId: string,
+    data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>
+  ): TemplateResult {
+    const order = this._getStacksOrder(areaId);
+    const present = this._presentStackKeys(data);
+
+    return html`
+      <div class="entity-group" data-group="stack_order">
+        <div class="entity-group-header">
+          <ha-icon icon="mdi:sort"></ha-icon>
+          <span class="group-name">${localize('editor.stack_order')}</span>
+        </div>
+        <div class="entity-list">
+          <div class="description" style="margin-left: 0; margin-bottom: 8px;">
+            ${localize('editor.stack_order_desc')}
+          </div>
+          <div class="section-order-list" data-area-id=${areaId}>
+            ${order.map((key) => {
+              const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
+              if (!meta) return nothing;
+              const isPresent = present.has(key);
+              return html`
+                <div class="section-order-item ${isPresent ? '' : 'disabled'}"
+                  data-area-id=${areaId}
+                  data-stack-key=${key}
+                  draggable="true"
+                  @dragstart=${this._handleStackDragStart}
+                  @dragend=${this._handleStackDragEnd}
+                  @dragover=${this._handleStackDragOver}
+                  @dragleave=${this._handleStackDragLeave}
+                  @drop=${this._handleStackDrop}>
+                  <span class="drag-handle" draggable="true">&#x2630;</span>
+                  <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
+                  <span class="section-label">${localize(meta.labelKey)}</span>
+                  ${!isPresent
+                    ? html`<span class="section-hidden-tag">${localize('editor.stack_not_present')}</span>`
+                    : nothing}
+                </div>
+              `;
+            })}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _handleStackDragStart = (ev: DragEvent): void => {
+    const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
+    if (!dragHandle) { ev.preventDefault(); return; }
+
+    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
+    if (!item) { ev.preventDefault(); return; }
+
+    item.classList.add('dragging');
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', item.dataset.stackKey || '');
+    }
+    this._stackDraggedElement = item;
+  };
+
+  private _handleStackDragEnd = (ev: DragEvent): void => {
+    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
+    if (item) item.classList.remove('dragging');
+
+    this.shadowRoot
+      ?.querySelectorAll('.section-order-item.drag-over')
+      .forEach((el) => el.classList.remove('drag-over'));
+    this._stackDraggedElement = null;
+  };
+
+  private _handleStackDragOver = (ev: DragEvent): void => {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+
+    const item = ev.currentTarget as HTMLElement;
+    if (item !== this._stackDraggedElement) {
+      item.classList.add('drag-over');
+    }
+  };
+
+  private _handleStackDragLeave = (ev: DragEvent): void => {
+    (ev.currentTarget as HTMLElement).classList.remove('drag-over');
+  };
+
+  private _handleStackDrop = (ev: DragEvent): void => {
+    ev.stopPropagation();
+    ev.preventDefault();
+
+    const dropTarget = ev.currentTarget as HTMLElement;
+    dropTarget.classList.remove('drag-over');
+
+    if (!this._stackDraggedElement || this._stackDraggedElement === dropTarget) return;
+
+    const draggedKey = this._stackDraggedElement.dataset.stackKey as StackKey | undefined;
+    const dropKey = dropTarget.dataset.stackKey as StackKey | undefined;
+    const areaId = dropTarget.dataset.areaId;
+    if (!draggedKey || !dropKey || !areaId) return;
+
+    const currentOrder = this._getStacksOrder(areaId);
+    const draggedIndex = currentOrder.indexOf(draggedKey);
+    const dropIndex = currentOrder.indexOf(dropKey);
+    if (draggedIndex === -1 || dropIndex === -1) return;
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(dropIndex, 0, draggedKey);
+
+    this._updateStacksOrder(areaId, newOrder);
+  };
+
   // -- Overview section --------------------------------------------------
 
   private _renderOverviewSection(): TemplateResult {
@@ -1997,6 +2192,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!hasEntities && !hasBadges) {
       return html`
         <div class="empty-state">${localize('editor.no_entities_in_area')}</div>
+        ${this._renderStackOrderPanel(areaId, data)}
         ${customCardsSection}
       `;
     }
@@ -2063,6 +2259,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${hasBadges
           ? this._renderBadgeGroup(areaId, badgeCandidates, additionalBadges, availableEntities, hiddenEntities, defaultShowNames, namesVisible, namesHidden, expandedGroups)
           : nothing}
+        ${this._renderStackOrderPanel(areaId, data)}
       </div>
       ${customCardsSection}
     `;
@@ -2108,6 +2305,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
               @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'mode', (e.target as HTMLSelectElement).value)}>
               <option value="yaml" ?selected=${mode === 'yaml'}>${localize('editor.area_custom_card_mode_yaml')}</option>
               <option value="tile" ?selected=${mode === 'tile'}>${localize('editor.area_custom_card_mode_tile')}</option>
+              <option value="section" ?selected=${mode === 'section'}>${localize('editor.area_custom_card_mode_section')}</option>
             </select>
           </div>
           ${mode === 'tile'
@@ -2839,22 +3037,37 @@ class Simon42DashboardStrategyEditor extends LitElement {
   ): void {
     const cards = this._getAreaCustomCards(areaId);
     if (!cards[index]) return;
-    cards[index] = { ...cards[index], [field]: value };
+    const updated: AreaCustomCard = { ...cards[index], [field]: value };
+    if (field === 'mode' && value !== 'tile') {
+      this._parseAreaCustomCardYamlConfig(updated, updated.yaml || '');
+    }
+    if (field === 'mode' && value === 'tile') {
+      delete updated._yaml_error;
+    }
+    cards[index] = updated;
     this._writeAreaCustomCards(areaId, cards);
   }
 
-  private _updateAreaCustomCardYaml(areaId: string, index: number, yamlString: string): void {
-    const cards = this._getAreaCustomCards(areaId);
-    if (!cards[index]) return;
-
-    const updated: AreaCustomCard = { ...cards[index], yaml: yamlString };
+  private _parseAreaCustomCardYamlConfig(updated: AreaCustomCard, yamlString: string): void {
+    updated.yaml = yamlString;
     delete updated._yaml_error;
 
     if (yamlString.trim()) {
       try {
         const parsed = yaml.load(yamlString);
         if (parsed && typeof parsed === 'object') {
-          updated.parsed_config = parsed as Record<string, any>;
+          if (updated.mode === 'section') {
+            const sections = Array.isArray(parsed) ? parsed : [parsed];
+            const hasOnlySections = sections.every((section) =>
+              section && typeof section === 'object' && Array.isArray((section as Record<string, any>).cards)
+            );
+            if (!hasOnlySections) {
+              updated._yaml_error = 'Section-YAML muss ein Objekt oder Array mit cards enthalten';
+              updated.parsed_config = undefined;
+              return;
+            }
+          }
+          updated.parsed_config = parsed as Record<string, any> | Record<string, any>[];
         } else {
           updated._yaml_error = 'YAML muss ein Objekt oder Array ergeben';
           updated.parsed_config = undefined;
@@ -2867,6 +3080,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
     } else {
       updated.parsed_config = undefined;
     }
+  }
+
+  private _updateAreaCustomCardYaml(areaId: string, index: number, yamlString: string): void {
+    const cards = this._getAreaCustomCards(areaId);
+    if (!cards[index]) return;
+
+    const updated: AreaCustomCard = { ...cards[index] };
+    this._parseAreaCustomCardYamlConfig(updated, yamlString);
 
     cards[index] = updated;
     this._writeAreaCustomCards(areaId, cards);
@@ -3450,6 +3671,25 @@ class Simon42DashboardStrategyEditor extends LitElement {
         }),
       }));
     }
+    if (cleanConfig.areas_options) {
+      cleanConfig.areas_options = Object.fromEntries(
+        Object.entries(cleanConfig.areas_options).map(([areaId, areaOptions]) => [
+          areaId,
+          {
+            ...areaOptions,
+            ...(areaOptions.custom_cards
+              ? {
+                custom_cards: areaOptions.custom_cards.map((cc) => {
+                  const clean = { ...cc };
+                  delete clean._yaml_error;
+                  return clean;
+                }),
+              }
+              : {}),
+          },
+        ])
+      );
+    }
 
     this._config = cleanConfig;
 
@@ -3549,6 +3789,10 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
       roomEntities.switches.push(entity.entity_id);
     } else if (domain === 'lock') {
       roomEntities.locks.push(entity.entity_id);
+    } else if (domain === 'automation') {
+      roomEntities.automations.push(entity.entity_id);
+    } else if (domain === 'script') {
+      roomEntities.scripts.push(entity.entity_id);
     }
   }
 

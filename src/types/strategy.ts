@@ -201,7 +201,7 @@ export interface CustomSection {
 
 export interface AreaCustomCard {
   /** Eingabemodus: freies YAML oder geführte Entity-Kachel */
-  mode?: 'yaml' | 'tile'; // default: 'yaml'
+  mode?: 'yaml' | 'tile' | 'section'; // default: 'yaml'
   /** Platzierung relativ zu den Auto-Sektionen der Raumansicht */
   position?: 'top' | 'bottom'; // default: 'bottom'
   /** Optionale Überschrift (rendert als heading-Card davor) */
@@ -210,7 +210,7 @@ export interface AreaCustomCard {
   /** Roh-YAML-String aus dem Editor */
   yaml?: string;
   /** Geparste Lovelace-Card-Config (aus yaml erzeugt) */
-  parsed_config?: Record<string, any> | null;
+  parsed_config?: Record<string, any> | Record<string, any>[] | null;
   /** YAML-Parse-Fehlermeldung, falls vorhanden */
   _yaml_error?: string;
   // --- Geführter Kachel-Modus ---
