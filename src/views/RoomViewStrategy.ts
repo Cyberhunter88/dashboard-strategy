@@ -10,7 +10,7 @@ import type {
   LovelaceBadgeConfig,
 } from '../types/lovelace';
 import type { AreaRegistryEntry } from '../types/registries';
-import type { RoomEntities, SensorEntities } from '../types/strategy';
+import type { RoomEntities, SensorEntities, AreaCustomCard } from '../types/strategy';
 import { stripAreaName, sortByLastChanged } from '../utils/name-utils';
 import { Registry } from '../Registry';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
@@ -65,6 +65,44 @@ interface UpsDeviceRender {
   sensorIds: string[];
 }
 
+/**
+ * Baut aus den AreaCustomCard-Einträgen einer Position (top/bottom) genau
+ * eine grid-Sammel-Section. Gibt [] zurück, wenn keine gültige Karte vorliegt.
+ * Defensiv: ungültige/leere Einträge werden übersprungen (kein Crash).
+ */
+function buildAreaCustomCardSection(
+  cards: AreaCustomCard[],
+  position: 'top' | 'bottom'
+): LovelaceSectionConfig[] {
+  const built: LovelaceCardConfig[] = [];
+
+  for (const card of cards) {
+    if ((card.position || 'bottom') !== position) continue;
+
+    let cardConfig: LovelaceCardConfig | null = null;
+    if ((card.mode || 'yaml') === 'tile') {
+      if (card.entity) {
+        cardConfig = { type: 'tile', entity: card.entity };
+      }
+    } else {
+      // YAML-Modus: nur fehlerfreie, geparste Configs verwenden
+      if (card.parsed_config && !card._yaml_error && typeof card.parsed_config === 'object') {
+        cardConfig = card.parsed_config as LovelaceCardConfig;
+      }
+    }
+
+    if (!cardConfig) continue;
+
+    if (card.title) {
+      built.push({ type: 'heading', heading: card.title });
+    }
+    built.push(cardConfig);
+  }
+
+  if (built.length === 0) return [];
+  return [{ type: 'grid', cards: built }];
+}
+
 class Simon42ViewRoomStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     const area: AreaRegistryEntry = config.area;
@@ -75,6 +113,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // Ensure Registry is initialized (idempotent — no-op if already done)
     Registry.initialize(hass, dashboardConfig);
     const groupsOptions: Record<string, any> = config.groups_options || {};
+    const customCards: AreaCustomCard[] = config.custom_cards || [];
 
     const roomEntities: RoomEntities = {
       lights: [],
@@ -434,7 +473,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     }
 
     // === SECTIONS ===
-    const sections: LovelaceSectionConfig[] = [];
+    const sections: LovelaceSectionConfig[] = [
+      ...buildAreaCustomCardSection(customCards, 'top'),
+    ];
 
     // UPS/USV — one section per detected device
     if (upsDevices.length > 0) {
@@ -780,6 +821,8 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         ],
       });
     }
+
+    sections.push(...buildAreaCustomCardSection(customCards, 'bottom'));
 
     debugLog(
       `Room ${area.area_id}: ${visibleEntities.length} visible entities, ${sections.length} sections, ${badges.length} badges`
