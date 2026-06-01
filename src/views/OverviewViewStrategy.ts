@@ -61,20 +61,23 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
   return result;
 }
 
-function createLargeTimeCard(sizePx: number): LovelaceCardConfig {
+function createLargeTimeCard(_sizePx: number): LovelaceCardConfig {
+  // Use HA's native clock card — markdown+style is sanitized away by DOMPurify in recent HA versions.
   return {
-    type: 'markdown',
-    content: `<div style="text-align:center;font-size:${sizePx}px;font-weight:600;line-height:1.1;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>`,
+    type: 'clock',
+    clock_size: 'large',
+    show_seconds: false,
     grid_options: {
       columns: 'full',
     },
   };
 }
 
-function createLargeDateCard(sizePx: number): LovelaceCardConfig {
+function createLargeDateCard(_sizePx: number): LovelaceCardConfig {
+  // Use align attribute instead of inline style — DOMPurify strips style but allows align.
   return {
     type: 'markdown',
-    content: `<div style="text-align:center;font-size:${sizePx}px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>`,
+    content: `<h2 align="center">{{ now().strftime("%d.%m.%Y") }}</h2>`,
     grid_options: {
       columns: 'full',
     },
