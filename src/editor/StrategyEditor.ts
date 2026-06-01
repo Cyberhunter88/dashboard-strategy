@@ -21,8 +21,9 @@ import type {
   OverviewLayout,
   SectionKey,
   StackKey,
+  WeatherStartKey,
 } from '../types/strategy';
-import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER } from '../types/strategy';
+import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isBadgeCandidate, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
@@ -95,6 +96,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _draggedElement: HTMLElement | null = null;
   private _sectionDraggedElement: HTMLElement | null = null;
   private _stackDraggedElement: HTMLElement | null = null;
+  private _weatherStartDraggedElement: HTMLElement | null = null;
 
   // -- Lifecycle --------------------------------------------------------
 
@@ -1229,6 +1231,154 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
+  // -- Weather-start block order panel -----------------------------------
+
+  private _getWeatherStartOrder(): WeatherStartKey[] {
+    return this._config.weather_start_order || [...DEFAULT_WEATHER_START_ORDER];
+  }
+
+  private _updateWeatherStartOrder(newOrder: WeatherStartKey[]): void {
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (newOrder.join('|') === DEFAULT_WEATHER_START_ORDER.join('|')) {
+      delete newConfig.weather_start_order;
+    } else {
+      newConfig.weather_start_order = newOrder;
+    }
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _isWeatherStartBlockDisabled(key: WeatherStartKey): boolean {
+    const hasWeather = !!(this._config.weather_entity || true); // weather entity auto-detected if not set
+    switch (key) {
+      case 'weather_current':
+      case 'weather_hourly':
+      case 'weather_daily':
+        return !hasWeather;
+      case 'custom_cards':
+        return (this._config.custom_cards || []).length === 0;
+      case 'custom_sections':
+        return (this._config.custom_sections || []).length === 0;
+      default:
+        return false;
+    }
+  }
+
+  private static _weatherStartBlockMeta = new Map<WeatherStartKey, { icon: string; labelKey: string }>([
+    ['clock', { icon: 'mdi:clock-outline', labelKey: 'weather_start_blocks.clock' }],
+    ['date', { icon: 'mdi:calendar-today', labelKey: 'weather_start_blocks.date' }],
+    ['weather_current', { icon: 'mdi:weather-partly-cloudy', labelKey: 'weather_start_blocks.weather_current' }],
+    ['weather_hourly', { icon: 'mdi:clock-time-four-outline', labelKey: 'weather_start_blocks.weather_hourly' }],
+    ['weather_daily', { icon: 'mdi:calendar-week', labelKey: 'weather_start_blocks.weather_daily' }],
+    ['areas', { icon: 'mdi:floor-plan', labelKey: 'weather_start_blocks.areas' }],
+    ['custom_cards', { icon: 'mdi:cards', labelKey: 'weather_start_blocks.custom_cards' }],
+    ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'weather_start_blocks.custom_sections' }],
+  ]);
+
+  private _renderWeatherStartOrderPanel(): TemplateResult {
+    const order = this._getWeatherStartOrder();
+
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.weather_start_order')}</div>
+        <div class="description" style="margin-left: 0; margin-bottom: 12px;">
+          ${localize('editor.weather_start_order_desc')}
+        </div>
+        <div class="section-order-list" id="weather-start-order-list">
+          ${order.map((key) => {
+            const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(key);
+            if (!meta) return nothing;
+            const disabled = this._isWeatherStartBlockDisabled(key);
+            return html`
+              <div class="section-order-item ${disabled ? 'disabled' : ''}"
+                data-ws-key=${key}
+                draggable="true"
+                @dragstart=${this._handleWeatherStartDragStart}
+                @dragend=${this._handleWeatherStartDragEnd}
+                @dragover=${this._handleWeatherStartDragOver}
+                @dragleave=${this._handleWeatherStartDragLeave}
+                @drop=${this._handleWeatherStartDrop}>
+                <span class="drag-handle" draggable="true">&#x2630;</span>
+                <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
+                <span class="section-label">${localize(meta.labelKey)}</span>
+                ${disabled ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  // -- Weather-start block order drag & drop -----------------------------
+
+  private _handleWeatherStartDragStart = (ev: DragEvent): void => {
+    const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
+    if (!dragHandle) { ev.preventDefault(); return; }
+
+    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
+    if (!item) { ev.preventDefault(); return; }
+
+    item.classList.add('dragging');
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', item.dataset.wsKey || '');
+    }
+    this._weatherStartDraggedElement = item;
+  };
+
+  private _handleWeatherStartDragEnd = (ev: DragEvent): void => {
+    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
+    if (item) item.classList.remove('dragging');
+
+    const list = this.shadowRoot?.querySelector('#weather-start-order-list');
+    if (list) {
+      list.querySelectorAll('.section-order-item').forEach((el) => {
+        el.classList.remove('drag-over');
+      });
+    }
+    this._weatherStartDraggedElement = null;
+  };
+
+  private _handleWeatherStartDragOver = (ev: DragEvent): void => {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+
+    const item = ev.currentTarget as HTMLElement;
+    if (item !== this._weatherStartDraggedElement) {
+      item.classList.add('drag-over');
+    }
+  };
+
+  private _handleWeatherStartDragLeave = (ev: DragEvent): void => {
+    (ev.currentTarget as HTMLElement).classList.remove('drag-over');
+  };
+
+  private _handleWeatherStartDrop = (ev: DragEvent): void => {
+    ev.stopPropagation();
+    ev.preventDefault();
+
+    const dropTarget = ev.currentTarget as HTMLElement;
+    dropTarget.classList.remove('drag-over');
+
+    if (!this._weatherStartDraggedElement || this._weatherStartDraggedElement === dropTarget) return;
+
+    const draggedKey = this._weatherStartDraggedElement.dataset.wsKey as WeatherStartKey | undefined;
+    const dropKey = dropTarget.dataset.wsKey as WeatherStartKey | undefined;
+    if (!draggedKey || !dropKey) return;
+
+    const currentOrder = this._getWeatherStartOrder();
+    const draggedIndex = currentOrder.indexOf(draggedKey);
+    const dropIndex = currentOrder.indexOf(dropKey);
+    if (draggedIndex === -1 || dropIndex === -1) return;
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(dropIndex, 0, draggedKey);
+
+    this._updateWeatherStartOrder(newOrder);
+  };
+
   // -- Section order drag & drop -----------------------------------------
 
   private _handleSectionDragStart = (ev: DragEvent): void => {
@@ -1578,6 +1728,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <span style="margin-left: 6px; color: var(--secondary-text-color);">px</span>
         </div>
         ` : ''}
+
+        ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
 
         ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
           (checked) => this._toggleChanged('show_clock_card', checked, true))}

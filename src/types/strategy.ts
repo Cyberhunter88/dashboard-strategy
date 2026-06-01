@@ -21,6 +21,29 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
 
 export type OverviewLayout = 'default' | 'weather_start';
 
+// -- Weather-Start Block Ordering --------------------------------------
+
+export type WeatherStartKey =
+  | 'clock'
+  | 'date'
+  | 'weather_current'
+  | 'weather_hourly'
+  | 'weather_daily'
+  | 'areas'
+  | 'custom_cards'
+  | 'custom_sections';
+
+export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
+  'clock',
+  'date',
+  'weather_current',
+  'weather_hourly',
+  'weather_daily',
+  'custom_cards',
+  'custom_sections',
+  'areas',
+];
+
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -93,6 +116,7 @@ export interface Simon42StrategyConfig {
   // Layout
   overview_layout?: OverviewLayout; // default: 'default'
   sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
+  weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   summaries_columns?: 2 | 4; // default: 2
 
   // Favorites display

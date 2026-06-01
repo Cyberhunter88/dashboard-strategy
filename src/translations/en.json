@@ -284,6 +284,18 @@
     "badges_select_entity": "Select entity...",
     "badges_remove": "Remove",
     "badges_show_name": "Show entity name on badge",
-    "badges_name_short": "Name"
+    "badges_name_short": "Name",
+    "weather_start_order": "Weather Start Layout Order",
+    "weather_start_order_desc": "Drag and drop the blocks to set their order on the weather start page. Hidden blocks are preserved."
+  },
+  "weather_start_blocks": {
+    "clock": "Clock",
+    "date": "Date",
+    "weather_current": "Current Weather",
+    "weather_hourly": "Hourly Forecast",
+    "weather_daily": "Daily Forecast",
+    "areas": "Areas",
+    "custom_cards": "Custom Cards",
+    "custom_sections": "Custom Sections"
   }
 }

@@ -7,8 +7,8 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { Simon42StrategyConfig, SectionKey, CustomCard } from '../types/strategy';
-import { DEFAULT_SECTIONS_ORDER } from '../types/strategy';
+import type { Simon42StrategyConfig, SectionKey, WeatherStartKey, CustomCard } from '../types/strategy';
+import { DEFAULT_SECTIONS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { LovelaceViewConfig, LovelaceSectionConfig, LovelaceBadgeConfig, LovelaceCardConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
 import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/entity-filter';
@@ -128,39 +128,70 @@ function createLargeDateCard(sizePx: number): LovelaceCardConfig {
   };
 }
 
+function normalizeWeatherStartOrder(order: WeatherStartKey[]): WeatherStartKey[] {
+  const validKeys = new Set<WeatherStartKey>([
+    'clock', 'date', 'weather_current', 'weather_hourly', 'weather_daily',
+    'areas', 'custom_cards', 'custom_sections',
+  ]);
+  const seen = new Set<WeatherStartKey>();
+  const result: WeatherStartKey[] = [];
+  for (const key of order) {
+    if (validKeys.has(key) && !seen.has(key)) {
+      result.push(key);
+      seen.add(key);
+    }
+  }
+  for (const key of DEFAULT_WEATHER_START_ORDER) {
+    if (!seen.has(key)) result.push(key);
+  }
+  return result;
+}
+
 function createWeatherStartSections(
   weatherEntity: string | null,
   areasSections: LovelaceSectionConfig | LovelaceSectionConfig[],
   customCardsSection: LovelaceSectionConfig | null,
   customSections: LovelaceSectionConfig[],
   clockSize: number,
-  dateSize: number
+  dateSize: number,
+  order: WeatherStartKey[]
 ): LovelaceSectionConfig[] {
-  const overviewCards: LovelaceCardConfig[] = [
-    {
-      type: 'heading',
-      heading: localize('sections.overview'),
-      heading_style: 'title',
-      icon: 'mdi:view-dashboard-outline',
-    },
-    createLargeTimeCard(clockSize),
-    createLargeDateCard(dateSize),
-  ];
+  const normalizedOrder = normalizeWeatherStartOrder(order);
 
-  if (weatherEntity) {
-    overviewCards.push({
-      type: 'weather-forecast',
-      entity: weatherEntity,
-      show_current: true,
-      show_forecast: false,
-      grid_options: {
-        columns: 'full',
+  const blockMap = new Map<WeatherStartKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>();
+
+  blockMap.set('clock', {
+    type: 'grid',
+    cards: [createLargeTimeCard(clockSize)],
+  });
+
+  blockMap.set('date', {
+    type: 'grid',
+    cards: [createLargeDateCard(dateSize)],
+  });
+
+  blockMap.set('weather_current', weatherEntity ? {
+    type: 'grid',
+    cards: [
+      {
+        type: 'heading',
+        heading: localize('sections.weather'),
+        heading_style: 'title',
+        icon: 'mdi:weather-partly-cloudy',
       },
-    });
-  }
+      {
+        type: 'weather-forecast',
+        entity: weatherEntity,
+        show_current: true,
+        show_forecast: false,
+        grid_options: { columns: 'full' },
+      },
+    ],
+  } : null);
 
-  if (weatherEntity) {
-    overviewCards.push(
+  blockMap.set('weather_hourly', weatherEntity ? {
+    type: 'grid',
+    cards: [
       {
         type: 'heading',
         heading: localize('sections.weather_today'),
@@ -175,6 +206,12 @@ function createWeatherStartSections(
         show_forecast: true,
         grid_options: { columns: 'full' },
       },
+    ],
+  } : null);
+
+  blockMap.set('weather_daily', weatherEntity ? {
+    type: 'grid',
+    cards: [
       {
         type: 'heading',
         heading: localize('sections.weather_next_days'),
@@ -188,22 +225,24 @@ function createWeatherStartSections(
         show_current: false,
         show_forecast: true,
         grid_options: { columns: 'full' },
-      }
-    );
-  }
+      },
+    ],
+  } : null);
 
-  const sections: LovelaceSectionConfig[] = [
-    {
-      type: 'grid',
-      cards: overviewCards,
-    },
-  ];
+  blockMap.set('custom_cards', customCardsSection);
+  blockMap.set('custom_sections', customSections.length > 0 ? customSections : null);
+  blockMap.set('areas', areasSections);
 
-  if (customCardsSection) {
-    sections.push(customCardsSection);
+  const sections: LovelaceSectionConfig[] = [];
+  for (const key of normalizedOrder) {
+    const block = blockMap.get(key);
+    if (!block) continue;
+    if (Array.isArray(block)) {
+      sections.push(...block);
+    } else {
+      sections.push(block);
+    }
   }
-  sections.push(...customSections);
-  sections.push(...(Array.isArray(areasSections) ? areasSections : [areasSections]));
 
   return sections;
 }
@@ -263,7 +302,8 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
         ),
         createCustomSectionsArray(dashboardConfig.custom_sections || []),
         dashboardConfig.clock_size ?? 120,
-        dashboardConfig.date_size ?? 72
+        dashboardConfig.date_size ?? 72,
+        dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER]
       );
       const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
       timeEnd('overview-generate');
