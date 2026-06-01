@@ -91,6 +91,7 @@ export interface AreasDisplay {
 
 export interface AreaOptions {
   groups_options?: Record<string, GroupOptions>;
+  custom_cards?: AreaCustomCard[];
 }
 
 export interface GroupOptions {
@@ -143,6 +144,27 @@ export interface CustomCard {
   parsed_config?: Record<string, any> | null;
   /** YAML parse error message, if any */
   _yaml_error?: string;
+}
+
+// -- Area Custom Cards (per-area room view) ---------------------------
+
+export interface AreaCustomCard {
+  /** Eingabemodus: freies YAML oder geführte Entity-Kachel */
+  mode?: 'yaml' | 'tile'; // default: 'yaml'
+  /** Platzierung relativ zu den Auto-Sektionen der Raumansicht */
+  position?: 'top' | 'bottom'; // default: 'bottom'
+  /** Optionale Überschrift (rendert als heading-Card davor) */
+  title?: string;
+  // --- YAML-Modus ---
+  /** Roh-YAML-String aus dem Editor */
+  yaml?: string;
+  /** Geparste Lovelace-Card-Config (aus yaml erzeugt) */
+  parsed_config?: Record<string, any> | null;
+  /** YAML-Parse-Fehlermeldung, falls vorhanden */
+  _yaml_error?: string;
+  // --- Geführter Kachel-Modus ---
+  /** Entity-ID für `{ type: 'tile', entity }` */
+  entity?: string;
 }
 
 // -- Room Entities (entity collections per area) ----------------------

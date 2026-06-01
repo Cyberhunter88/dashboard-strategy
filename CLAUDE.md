@@ -143,6 +143,7 @@ Many entity properties exist ONLY in the Entity Registry, NOT in state attribute
 - **Layout**: summaries_columns (2 | 4)
 - **Area-level**: areas_display.hidden, areas_display.order
 - **Entity-level**: areas_options.{areaId}.groups_options.{domain}.hidden
+- **Per-area custom cards**: areas_options.{areaId}.custom_cards[] (per-card `mode` yaml|tile, `position` top|bottom, optional `title`; rendered in the room detail view in addition to the auto-sections)
 - **Special**: room_pin_entities, alarm_entity, favorite_entities, custom_views
 
 ## Complexity Hotspots
@@ -295,6 +296,7 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] Smoke/gas detectors in SecurityView, SummaryCard count, and room badges (#104)
 - [x] Security view headings: emojis replaced with MDI icons
 - [x] UPS/USV auto-detection in room views: device-based grouping (battery % + UPS signal, NUT shortcut), gauge + sorted tiles, opt-out via `show_ups_in_rooms`; operates only on pre-filtered visible entities so `no_dboard` stays effective
+- [x] Per-area custom cards in room views: `areas_options.{areaId}.custom_cards[]` — free YAML or guided entity-tile mode, per-card top/bottom placement, optional heading; editor subsection inside each area's expandable section (native `<select>`), DE/EN i18n
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)

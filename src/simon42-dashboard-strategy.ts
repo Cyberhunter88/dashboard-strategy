@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.3.4-beta.11';
+const STRATEGY_VERSION = '1.4.0';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -97,6 +97,7 @@ class Simon42DashboardStrategy extends HTMLElement {
           {
             area,
             groups_options: areaOptions?.groups_options || {},
+            custom_cards: areaOptions?.custom_cards || [],
             dashboardConfig: config,
           },
           hass
