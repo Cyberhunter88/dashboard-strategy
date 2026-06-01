@@ -274,11 +274,13 @@ export function createAreasSection(
     }
   }
 
-  // Spacer card helper to add vertical spacing between floor groups in the same column
-  const buildSpacerCard = (heightPx: number): LovelaceCardConfig => {
+  // Spacer card helper to add vertical spacing between floor groups in the same column.
+  // Uses heading card (transparent, no ha-card background) instead of markdown+<style> hacks
+  // which HA sanitizes away in recent versions.
+  const buildSpacerCard = (_heightPx: number): LovelaceCardConfig => {
     return {
-      type: 'markdown',
-      content: `<style>ha-card{background:none!important;border:none!important;box-shadow:none!important;margin:0!important;padding:0!important;}</style><div style="height:${heightPx}px;"></div>`,
+      type: 'heading',
+      heading: '',
       grid_options: {
         columns: 'full',
       },

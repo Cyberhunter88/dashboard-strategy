@@ -64,7 +64,7 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
 function createLargeTimeCard(sizePx: number): LovelaceCardConfig {
   return {
     type: 'markdown',
-    content: `<style>.large-time{text-align:center;font-size:${sizePx}px;font-weight:600;line-height:1.1;padding:14px 0;}</style><div class="large-time">{{ now().strftime("%H:%M") }}</div>`,
+    content: `<div style="text-align:center;font-size:${sizePx}px;font-weight:600;line-height:1.1;padding:14px 0;">{{ now().strftime("%H:%M") }}</div>`,
     grid_options: {
       columns: 'full',
     },
@@ -74,7 +74,7 @@ function createLargeTimeCard(sizePx: number): LovelaceCardConfig {
 function createLargeDateCard(sizePx: number): LovelaceCardConfig {
   return {
     type: 'markdown',
-    content: `<style>.large-date{text-align:center;font-size:${sizePx}px;font-weight:400;line-height:1.2;padding:12px 0;}</style><div class="large-date">{{ now().strftime("%d.%m.%Y") }}</div>`,
+    content: `<div style="text-align:center;font-size:${sizePx}px;font-weight:400;line-height:1.2;padding:12px 0;">{{ now().strftime("%d.%m.%Y") }}</div>`,
     grid_options: {
       columns: 'full',
     },
