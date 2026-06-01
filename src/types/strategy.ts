@@ -23,6 +23,7 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
 
 export type StackKey =
   | 'ups'
+  | 'energy'
   | 'cameras'
   | 'lights'
   | 'locks'
@@ -39,6 +40,7 @@ export type StackKey =
 
 export const DEFAULT_STACKS_ORDER: StackKey[] = [
   'ups',
+  'energy',
   'cameras',
   'lights',
   'locks',
@@ -239,6 +241,7 @@ export interface RoomEntities {
   scripts: string[];
   cameras: string[];
   ups: string[];
+  energy: string[];
   [key: string]: string[];
 }
 

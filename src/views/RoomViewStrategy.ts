@@ -22,6 +22,8 @@ const FAN_SET_SPEED = 1;
 const MEDIA_PAUSE = 1;
 const MEDIA_PLAY = 16384;
 const MEDIA_STOP = 4096;
+const ROOM_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
+const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
 
 /** Check if a fan supports speed control */
 function fanSupportsSpeed(state: HassEntity): boolean {
@@ -159,6 +161,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       scripts: [],
       cameras: [],
       ups: [],
+      energy: [],
     };
 
     const sensorEntities: SensorEntities = {
@@ -320,6 +323,10 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
       // Sensors for badges
       if (domain === 'sensor') {
+        if (deviceClass && ROOM_ENERGY_SENSOR_CLASS_SET.has(deviceClass)) {
+          roomEntities.energy.push(entityId);
+          continue;
+        }
         if (entityId.includes('battery') || deviceClass === 'battery') {
           const val = parseFloat(state.state);
           if (!isNaN(val) && val < 20) sensorEntities.battery.push(entityId);
@@ -571,6 +578,34 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
         pushStack('ups', { type: 'grid', cards: upsCards });
       }
+    }
+
+    if (roomEntities.energy.length > 0) {
+      const energyEntities = roomEntities.energy
+        .map((entityId) => {
+          const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
+          return {
+            entityId,
+            order: ROOM_ENERGY_SENSOR_CLASSES.indexOf(deviceClass as (typeof ROOM_ENERGY_SENSOR_CLASSES)[number]),
+          };
+        })
+        .sort((a, b) => a.order - b.order || a.entityId.localeCompare(b.entityId))
+        .map((entry) => entry.entityId);
+
+      pushStack('energy', {
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('sections.energy'), heading_style: 'title', icon: 'mdi:lightning-bolt' },
+          ...energyEntities.map((entityId) => ({
+            type: 'tile',
+            entity: entityId,
+            name: stripAreaName(entityId, area, hass),
+            vertical: false,
+            state_content: 'state',
+            tap_action: { action: 'more-info' },
+          })),
+        ],
+      });
     }
 
     // Cameras

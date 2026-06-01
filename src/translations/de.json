@@ -23,6 +23,7 @@
   },
   "stacks": {
     "ups": "USV",
+    "energy": "Energie",
     "cameras": "Kameras",
     "lights": "Lichter",
     "locks": "Schlösser",

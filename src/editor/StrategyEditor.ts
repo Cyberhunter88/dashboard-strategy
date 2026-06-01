@@ -1259,6 +1259,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private static _stackMeta = new Map<StackKey, { icon: string; labelKey: string }>([
     ['ups', { icon: 'mdi:power-plug-battery', labelKey: 'stacks.ups' }],
+    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'stacks.energy' }],
     ['cameras', { icon: 'mdi:cctv', labelKey: 'stacks.cameras' }],
     ['lights', { icon: 'mdi:lightbulb', labelKey: 'stacks.lights' }],
     ['locks', { icon: 'mdi:lock', labelKey: 'stacks.locks' }],
@@ -1293,6 +1294,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (has('automations')) present.add('automations');
     if (has('scripts')) present.add('scripts');
     if (has('ups')) present.add('ups');
+    if (has('energy')) present.add('energy');
 
     // These stacks are not reliably represented in the editor's area cache.
     present.add('cameras');
@@ -2180,6 +2182,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       { key: 'switches', label: localize('editor.domain_switches'), icon: 'mdi:light-switch' },
       { key: 'locks', label: localize('editor.domain_locks'), icon: 'mdi:lock' },
       { key: 'ups', label: localize('editor.domain_ups'), icon: 'mdi:battery-charging' },
+      { key: 'energy', label: localize('stacks.energy'), icon: 'mdi:lightning-bolt' },
     ];
 
     const hasEntities = domainGroups.some((g) => (groupedEntities[g.key]?.length ?? 0) > 0);
@@ -3773,6 +3776,7 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     scripts: [],
     cameras: [],
     ups: [],
+    energy: [],
   };
 
   const excludeLabels = entities
@@ -3828,6 +3832,11 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
       roomEntities.automations.push(entity.entity_id);
     } else if (domain === 'script') {
       roomEntities.scripts.push(entity.entity_id);
+    } else if (
+      domain === 'sensor' &&
+      ['power', 'energy', 'water', 'gas'].includes(deviceClass as string)
+    ) {
+      roomEntities.energy.push(entity.entity_id);
     }
   }
 

@@ -31,24 +31,6 @@ const CONTROL_DOMAINS = [
 
 type ControlDomain = (typeof CONTROL_DOMAINS)[number];
 
-const IMPORTANT_SENSOR_CLASSES = [
-  'carbon_dioxide',
-  'volatile_organic_compounds',
-  'pm25',
-  'pm10',
-  'pressure',
-  'illuminance',
-  'power',
-  'energy',
-  'water',
-  'gas',
-] as const;
-
-const IMPORTANT_SENSOR_CLASS_SET = new Set<string>(IMPORTANT_SENSOR_CLASSES);
-
-const AREA_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
-const AREA_ENERGY_SENSOR_CLASS_SET = new Set<string>(AREA_ENERGY_SENSOR_CLASSES);
-
 /**
  * Pre-computes which area-controls actually have entities in this area.
  * This avoids the area card having to scan all entities at render time.
@@ -135,23 +117,7 @@ function getAreaSensorClasses(area: AreaRegistryEntry, hass: HomeAssistant): str
     found.add('humidity');
   }
 
-  if (areaEntities.length === 0) return [...found];
-
-  for (const entity of areaEntities) {
-    const domain = entity.entity_id.split('.')[0];
-    if (domain !== 'sensor') continue;
-
-    const state = hass.states[entity.entity_id];
-    const deviceClass = state?.attributes?.device_class as string | undefined;
-    if (deviceClass && IMPORTANT_SENSOR_CLASS_SET.has(deviceClass)) {
-      found.add(deviceClass);
-    }
-  }
-
-  return [
-    ...(['temperature', 'humidity'] as const).filter((sensorClass) => found.has(sensorClass)),
-    ...IMPORTANT_SENSOR_CLASSES.filter((sensorClass) => found.has(sensorClass)),
-  ];
+  return (['temperature', 'humidity'] as const).filter((sensorClass) => found.has(sensorClass));
 }
 
 function getAreaExcludedEntities(areaId: string, hass: HomeAssistant): string[] {
@@ -162,41 +128,6 @@ function getAreaExcludedEntities(areaId: string, hass: HomeAssistant): string[] 
   return Registry.getEntitiesForArea(areaId)
     .filter((entity) => hass.states[entity.entity_id] && !visibleEntityIds.has(entity.entity_id))
     .map((entity) => entity.entity_id);
-}
-
-function getAreaEnergyEntities(areaId: string, hass: HomeAssistant): string[] {
-  const energyEntities: Array<{ entityId: string; order: number }> = [];
-
-  for (const entity of Registry.getVisibleEntitiesForArea(areaId)) {
-    const domain = entity.entity_id.split('.')[0];
-    if (domain !== 'sensor') continue;
-
-    const state = hass.states[entity.entity_id];
-    const deviceClass = state?.attributes?.device_class as string | undefined;
-    if (!deviceClass || !AREA_ENERGY_SENSOR_CLASS_SET.has(deviceClass)) continue;
-
-    energyEntities.push({
-      entityId: entity.entity_id,
-      order: AREA_ENERGY_SENSOR_CLASSES.indexOf(deviceClass as (typeof AREA_ENERGY_SENSOR_CLASSES)[number]),
-    });
-  }
-
-  return energyEntities
-    .sort((a, b) => a.order - b.order || a.entityId.localeCompare(b.entityId))
-    .map((entry) => entry.entityId);
-}
-
-function buildAreaEnergyCard(areaId: string, hass: HomeAssistant): LovelaceCardConfig | null {
-  const entities = getAreaEnergyEntities(areaId, hass);
-  if (entities.length === 0) return null;
-
-  return {
-    type: 'history-graph',
-    title: localize('sections.energy'),
-    entities,
-    hours_to_show: 24,
-    grid_options: { columns: 'full' },
-  };
 }
 
 /**
@@ -227,13 +158,6 @@ function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCa
     vertical: false,
     grid_options: { columns: 'full' },
   };
-}
-
-function buildAreaCards(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCardConfig[] {
-  const cards = [buildAreaCard(area, hass)];
-  const energyCard = buildAreaEnergyCard(area.area_id, hass);
-  if (energyCard) cards.push(energyCard);
-  return cards;
 }
 
 /**
@@ -269,7 +193,7 @@ export function createAreasSection(
           heading_style: 'title',
           heading: localize('sections.areas'),
         },
-        ...visibleAreas.flatMap((area) => buildAreaCards(area, hass as HomeAssistant)),
+        ...visibleAreas.map((area) => buildAreaCard(area, hass as HomeAssistant)),
       ],
     };
   }
@@ -313,7 +237,7 @@ export function createAreasSection(
           heading: floorName,
           icon: floorIcon,
         },
-        ...areas.flatMap((area) => buildAreaCards(area, hass)),
+        ...areas.map((area) => buildAreaCard(area, hass)),
       ],
     });
   }
@@ -329,7 +253,7 @@ export function createAreasSection(
           heading: localize('sections.areas_other'),
           icon: 'mdi:home-outline',
         },
-        ...areasWithoutFloor.flatMap((area) => buildAreaCards(area, hass)),
+        ...areasWithoutFloor.map((area) => buildAreaCard(area, hass)),
       ],
     });
   }
