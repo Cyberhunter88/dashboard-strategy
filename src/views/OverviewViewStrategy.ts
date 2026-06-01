@@ -62,24 +62,68 @@ function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
 }
 
 function createLargeTimeCard(_sizePx: number): LovelaceCardConfig {
-  // Use HA's native clock card — markdown+style is sanitized away by DOMPurify in recent HA versions.
+  // Native clock card — DOMPurify strips style in markdown cards in recent HA versions.
   return {
     type: 'clock',
+    clock_style: 'digital',
     clock_size: 'large',
     show_seconds: false,
+    no_background: false,
+    face_style: 'markers',
     grid_options: {
       columns: 'full',
+      rows: 2,
     },
   };
 }
 
-function createLargeDateCard(_sizePx: number): LovelaceCardConfig {
-  // Use align attribute instead of inline style — DOMPurify strips style but allows align.
+function createLargeDateCard(sizePx: number): LovelaceCardConfig {
+  // custom:button-card injects CSS into its own shadow DOM, bypassing DOMPurify.
+  // Requires button-card to be installed (common HACS card).
   return {
-    type: 'markdown',
-    content: `<h2 align="center">{{ now().strftime("%d.%m.%Y") }}</h2>`,
+    type: 'custom:button-card',
+    name: `[[[
+  const d = new Date();
+  return d.toLocaleDateString(navigator.language, { day: '2-digit', month: '2-digit', year: 'numeric' });
+]]]`,
+    show_icon: false,
+    show_state: false,
+    show_name: true,
+    tap_action: { action: 'none' },
+    hold_action: { action: 'none' },
+    double_tap_action: { action: 'none' },
     grid_options: {
       columns: 'full',
+      rows: 2,
+    },
+    styles: {
+      card: [
+        { height: '100%' },
+        { 'min-height': '80px' },
+        { 'border-radius': '12px' },
+        { background: 'rgba(255,255,255,0.04)' },
+        { border: '1px solid rgba(255,255,255,0.10)' },
+        { 'box-shadow': 'none' },
+        { display: 'flex' },
+        { 'align-items': 'center' },
+        { 'justify-content': 'center' },
+        { padding: '0' },
+      ],
+      grid: [
+        { height: '100%' },
+        { display: 'flex' },
+        { 'align-items': 'center' },
+        { 'justify-content': 'center' },
+      ],
+      name: [
+        { 'font-size': `${sizePx}px` },
+        { 'font-weight': '400' },
+        { 'line-height': '1' },
+        { color: 'var(--primary-text-color)' },
+        { 'text-align': 'center' },
+        { width: '100%' },
+        { 'white-space': 'nowrap' },
+      ],
     },
   };
 }
