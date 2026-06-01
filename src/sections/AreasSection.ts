@@ -274,6 +274,17 @@ export function createAreasSection(
     }
   }
 
+  // Spacer card helper to add vertical spacing between floor groups in the same column
+  const buildSpacerCard = (heightPx: number): LovelaceCardConfig => {
+    return {
+      type: 'markdown',
+      content: `<style>ha-card{background:none!important;border:none!important;box-shadow:none!important;margin:0!important;padding:0!important;}</style><div style="height:${heightPx}px;"></div>`,
+      grid_options: {
+        columns: 'full',
+      },
+    };
+  };
+
   const leftColCards: LovelaceCardConfig[] = [];
   const rightColCards: LovelaceCardConfig[] = [];
 
@@ -281,7 +292,14 @@ export function createAreasSection(
   for (const floorId of leftFloors) {
     leftColCards.push(...buildFloorCards(floorId));
   }
+  
+  // Add spacer before Keller if there are already cards in the left column
+  let firstKeller = true;
   for (const floorId of kellerFloors) {
+    if (firstKeller && leftColCards.length > 0) {
+      leftColCards.push(buildSpacerCard(32));
+      firstKeller = false;
+    }
     leftColCards.push(...buildFloorCards(floorId));
   }
 
@@ -289,7 +307,12 @@ export function createAreasSection(
   for (const floorId of rightFloors) {
     rightColCards.push(...buildFloorCards(floorId));
   }
+  
+  // Add spacer before Weitere Bereiche if there are already cards in the right column
   if (areasWithoutFloor.length > 0) {
+    if (rightColCards.length > 0) {
+      rightColCards.push(buildSpacerCard(32));
+    }
     rightColCards.push(...buildOtherAreasCards());
   }
 
