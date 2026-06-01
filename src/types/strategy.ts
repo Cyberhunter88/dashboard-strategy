@@ -46,13 +46,10 @@ export const DEFAULT_STACKS_ORDER: StackKey[] = [
   'locks',
   'climate',
   'covers',
-  'covers_curtain',
   'covers_window',
   'media',
   'scenes',
   'misc',
-  'automations',
-  'scripts',
   'room_pins',
 ];
 

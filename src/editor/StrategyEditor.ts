@@ -268,6 +268,36 @@ class Simon42DashboardStrategyEditor extends LitElement {
       font-weight: 600;
       color: var(--primary-text-color);
     }
+    .option-groups {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .option-group {
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--secondary-background-color);
+    }
+    .option-group-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
+    .option-group-title ha-icon {
+      --mdc-icon-size: 18px;
+      color: var(--secondary-text-color);
+    }
+    .option-group .description {
+      margin-bottom: 10px;
+    }
+    .option-group .description:last-child {
+      margin-bottom: 0;
+    }
 
     /* -- Native <select> — HA-like ------------------------------------- */
     select,
@@ -549,6 +579,38 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
     .section-order-sub label {
       cursor: pointer;
+    }
+    .section-order-compact {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px dashed var(--divider-color);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+    }
+    .compact-title {
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    .compact-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .compact-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--card-background-color);
+      color: var(--secondary-text-color);
+      font-size: 12px;
+      border: 1px solid var(--divider-color);
+    }
+    .compact-chip ha-icon {
+      --mdc-icon-size: 14px;
     }
 
     /* -- Entity groups ------------------------------------------------- */
@@ -1265,13 +1327,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ['locks', { icon: 'mdi:lock', labelKey: 'stacks.locks' }],
     ['climate', { icon: 'mdi:thermostat', labelKey: 'stacks.climate' }],
     ['covers', { icon: 'mdi:window-shutter', labelKey: 'stacks.covers' }],
-    ['covers_curtain', { icon: 'mdi:curtains', labelKey: 'stacks.covers_curtain' }],
     ['covers_window', { icon: 'mdi:window-open-variant', labelKey: 'stacks.covers_window' }],
     ['media', { icon: 'mdi:speaker', labelKey: 'stacks.media' }],
     ['scenes', { icon: 'mdi:palette', labelKey: 'stacks.scenes' }],
-    ['misc', { icon: 'mdi:dots-horizontal', labelKey: 'stacks.misc' }],
-    ['automations', { icon: 'mdi:robot', labelKey: 'stacks.automations' }],
-    ['scripts', { icon: 'mdi:script-text', labelKey: 'stacks.scripts' }],
+    ['misc', { icon: 'mdi:light-switch', labelKey: 'stacks.misc' }],
     ['room_pins', { icon: 'mdi:pin', labelKey: 'stacks.room_pins' }],
   ]);
 
@@ -1285,14 +1344,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (has('lights')) present.add('lights');
     if (has('locks')) present.add('locks');
     if (has('climate') || has('fan')) present.add('climate');
-    if (has('covers')) present.add('covers');
-    if (has('covers_curtain')) present.add('covers_curtain');
+    if (has('covers') || has('covers_curtain')) present.add('covers');
     if (has('covers_window')) present.add('covers_window');
     if (has('media_player')) present.add('media');
-    if (has('scenes')) present.add('scenes');
+    if (has('scenes') || has('automations') || has('scripts')) present.add('scenes');
     if (has('vacuum') || has('switches')) present.add('misc');
-    if (has('automations')) present.add('automations');
-    if (has('scripts')) present.add('scripts');
     if (has('ups')) present.add('ups');
     if (has('energy')) present.add('energy');
 
@@ -1309,6 +1365,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
   ): TemplateResult {
     const order = this._getStacksOrder(areaId);
     const present = this._presentStackKeys(data);
+    const visibleOrder = order.filter((key) => present.has(key));
+    const inactiveOrder = order.filter((key) => !present.has(key));
 
     return html`
       <div class="entity-group" data-group="stack_order">
@@ -1321,12 +1379,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${localize('editor.stack_order_desc')}
           </div>
           <div class="section-order-list" data-area-id=${areaId}>
-            ${order.map((key) => {
+            ${visibleOrder.map((key) => {
               const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
               if (!meta) return nothing;
-              const isPresent = present.has(key);
               return html`
-                <div class="section-order-item ${isPresent ? '' : 'disabled'}"
+                <div class="section-order-item"
                   data-area-id=${areaId}
                   data-stack-key=${key}
                   draggable="true"
@@ -1338,13 +1395,29 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   <span class="drag-handle" draggable="true">&#x2630;</span>
                   <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
                   <span class="section-label">${localize(meta.labelKey)}</span>
-                  ${!isPresent
-                    ? html`<span class="section-hidden-tag">${localize('editor.stack_not_present')}</span>`
-                    : nothing}
                 </div>
               `;
             })}
           </div>
+          ${inactiveOrder.length > 0
+            ? html`
+              <div class="section-order-compact">
+                <div class="compact-title">${localize('editor.stack_order_inactive')}</div>
+                <div class="compact-chip-list">
+                  ${inactiveOrder.map((key) => {
+                    const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
+                    if (!meta) return nothing;
+                    return html`
+                      <span class="compact-chip">
+                        <ha-icon icon=${meta.icon}></ha-icon>
+                        ${localize(meta.labelKey)}
+                      </span>
+                    `;
+                  })}
+                </div>
+              </div>
+            `
+            : nothing}
         </div>
       </div>
     `;
@@ -1655,37 +1728,57 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="section">
         <div class="section-title">${localize('editor.section_areas')}</div>
 
-        ${this._renderCheckbox('group-by-floors', localize('editor.group_by_floors'), groupByFloors,
-          (checked) => this._toggleChanged('group_by_floors', checked, false))}
-        <div class="description">${localize('editor.group_by_floors_desc')}</div>
+        <div class="option-groups">
+          <div class="option-group">
+            <div class="option-group-title">
+              <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
+              <span>${localize('editor.area_overview_options')}</span>
+            </div>
+            ${this._renderCheckbox('group-by-floors', localize('editor.group_by_floors'), groupByFloors,
+              (checked) => this._toggleChanged('group_by_floors', checked, false))}
+            <div class="description">${localize('editor.group_by_floors_desc')}</div>
 
-        ${this._renderCheckbox('show-switches-on-areas', localize('editor.show_switches_on_areas'), showSwitchesOnAreas,
-          (checked) => this._toggleChanged('show_switches_on_areas', checked, false))}
-        <div class="description">${localize('editor.show_switches_on_areas_desc')}</div>
+            ${this._renderCheckbox('show-switches-on-areas', localize('editor.show_switches_on_areas'), showSwitchesOnAreas,
+              (checked) => this._toggleChanged('show_switches_on_areas', checked, false))}
+            <div class="description">${localize('editor.show_switches_on_areas_desc')}</div>
 
-        ${this._renderCheckbox('show-alerts-on-areas', localize('editor.show_alerts_on_areas'), showAlertsOnAreas,
-          (checked) => this._toggleChanged('show_alerts_on_areas', checked, false))}
-        <div class="description">${localize('editor.show_alerts_on_areas_desc')}</div>
+            ${this._renderCheckbox('show-alerts-on-areas', localize('editor.show_alerts_on_areas'), showAlertsOnAreas,
+              (checked) => this._toggleChanged('show_alerts_on_areas', checked, false))}
+            <div class="description">${localize('editor.show_alerts_on_areas_desc')}</div>
+          </div>
 
-        ${this._renderCheckbox('show-locks-in-rooms', localize('editor.show_locks_in_rooms'), showLocksInRooms,
-          (checked) => this._toggleChanged('show_locks_in_rooms', checked, false))}
-        <div class="description">${localize('editor.show_locks_in_rooms_desc')}</div>
+          <div class="option-group">
+            <div class="option-group-title">
+              <ha-icon icon="mdi:door-open"></ha-icon>
+              <span>${localize('editor.room_view_options')}</span>
+            </div>
+            ${this._renderCheckbox('show-locks-in-rooms', localize('editor.show_locks_in_rooms'), showLocksInRooms,
+              (checked) => this._toggleChanged('show_locks_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_locks_in_rooms_desc')}</div>
 
-        ${this._renderCheckbox('show-automations-in-rooms', localize('editor.show_automations_in_rooms'), showAutomationsInRooms,
-          (checked) => this._toggleChanged('show_automations_in_rooms', checked, false))}
-        <div class="description">${localize('editor.show_automations_in_rooms_desc')}</div>
+            ${this._renderCheckbox('show-automations-in-rooms', localize('editor.show_automations_in_rooms'), showAutomationsInRooms,
+              (checked) => this._toggleChanged('show_automations_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_automations_in_rooms_desc')}</div>
 
-        ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
-          (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
-        <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
+            ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
+              (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
 
-        ${this._renderCheckbox('show-ups-in-rooms', localize('editor.show_ups_in_rooms'), showUpsInRooms,
-          (checked) => this._toggleChanged('show_ups_in_rooms', checked, true))}
-        <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
+            ${this._renderCheckbox('show-ups-in-rooms', localize('editor.show_ups_in_rooms'), showUpsInRooms,
+              (checked) => this._toggleChanged('show_ups_in_rooms', checked, true))}
+            <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
+          </div>
 
-        ${this._renderCheckbox('use-default-area-sort', localize('editor.use_default_area_sort'), useDefaultAreaSort,
-          (checked) => this._toggleChanged('use_default_area_sort', checked, false))}
-        <div class="description">${localize('editor.use_default_area_sort_desc')}</div>
+          <div class="option-group">
+            <div class="option-group-title">
+              <ha-icon icon="mdi:sort-alphabetical-ascending"></ha-icon>
+              <span>${localize('editor.area_management_options')}</span>
+            </div>
+            ${this._renderCheckbox('use-default-area-sort', localize('editor.use_default_area_sort'), useDefaultAreaSort,
+              (checked) => this._toggleChanged('use_default_area_sort', checked, false))}
+            <div class="description">${localize('editor.use_default_area_sort_desc')}</div>
+          </div>
+        </div>
 
         <div class="description" style="margin-left: 0; margin-top: 16px; margin-bottom: 12px;">
           ${localize('editor.areas_manage_desc')}

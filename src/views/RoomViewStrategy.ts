@@ -52,8 +52,8 @@ const UPS_STATUS_PATTERN = /(^|[._])(status|state)([._]|$)/;
 const UPS_DETECT_ID_PATTERN = /(^|[._])(load|runtime|time_left|input_voltage|input)([._]|$)/;
 
 /** Returns a sort priority for a UPS sensor entity (lower = more prominent) */
-function upsSensorRole(entityId: string, hass: HomeAssistant): number {
-  const dc = hass.states[entityId]?.attributes?.device_class as string | undefined;
+function upsSensorRole(entityId: string, state: HassEntity): number {
+  const dc = state.attributes?.device_class as string | undefined;
   if (dc === 'duration' || UPS_RUNTIME_PATTERN.test(entityId)) return 1;
   if (dc === 'power' || dc === 'apparent_power' || UPS_LOAD_PATTERN.test(entityId)) return 2;
   if (dc === 'voltage' || UPS_VOLTAGE_PATTERN.test(entityId)) return 3;
@@ -67,6 +67,12 @@ interface UpsDeviceRender {
   sensorIds: string[];
 }
 
+interface UpsCandidateEntity {
+  entityId: string;
+  state: HassEntity;
+  platform?: string;
+}
+
 /**
  * Baut aus den AreaCustomCard-Einträgen einer Position (top/bottom) genau
  * eine grid-Sammel-Section. Gibt [] zurück, wenn keine gültige Karte vorliegt.
@@ -78,10 +84,11 @@ function buildAreaCustomCardSection(
 ): LovelaceSectionConfig[] {
   const sections: LovelaceSectionConfig[] = [];
   const built: LovelaceCardConfig[] = [];
-  const flushCards = (): void => {
+
+  function flushCards(): void {
     if (built.length === 0) return;
     sections.push({ type: 'grid', cards: built.splice(0) });
-  };
+  }
 
   for (const card of cards) {
     if ((card.position || 'bottom') !== position) continue;
@@ -779,17 +786,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    domainSection('covers', roomEntities.covers, localize('room.covers'), 'mdi:window-shutter', (e) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      features: [{ type: 'cover-open-close' }],
-      vertical: false,
-      features_position: 'inline',
-      state_content: ['current_position', 'last_changed'],
-    }));
-
-    domainSection('covers_curtain', roomEntities.covers_curtain, localize('room.curtains'), 'mdi:curtains', (e) => ({
+    domainSection('covers', [...roomEntities.covers, ...roomEntities.covers_curtain], localize('room.covers'), 'mdi:window-shutter', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -822,15 +819,47 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       };
     });
 
-    domainSection('scenes', roomEntities.scenes, localize('room.scenes'), 'mdi:palette', (e) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      vertical: false,
-      state_content: 'last_changed',
-    }));
+    const sceneAutomationCards: LovelaceCardConfig[] = [];
+    for (const e of roomEntities.scenes)
+      sceneAutomationCards.push({
+        type: 'tile',
+        entity: e,
+        name: stripAreaName(e, area, hass),
+        vertical: false,
+        state_content: 'last_changed',
+      });
+    for (const e of roomEntities.automations)
+      sceneAutomationCards.push({
+        type: 'tile',
+        entity: e,
+        name: stripAreaName(e, area, hass),
+        vertical: false,
+        state_content: 'last_changed',
+      });
+    for (const e of roomEntities.scripts)
+      sceneAutomationCards.push({
+        type: 'tile',
+        entity: e,
+        name: stripAreaName(e, area, hass),
+        vertical: false,
+      });
 
-    // Misc (vacuum, switches)
+    if (sceneAutomationCards.length > 0) {
+      pushStack('scenes', {
+        type: 'grid',
+        cards: [
+          {
+            type: 'heading',
+            heading: localize('room.scenes_automations'),
+            heading_style: 'title',
+            icon: 'mdi:script-text-play',
+          },
+          ...sceneAutomationCards,
+        ],
+      });
+    }
+
+    // Switches block (keeps vacuum tiles for backward-compatible grouping).
     const miscCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.vacuum)
       miscCards.push({
@@ -862,26 +891,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       pushStack('misc', {
         type: 'grid',
         cards: [
-          { type: 'heading', heading: localize('room.misc'), heading_style: 'title', icon: 'mdi:dots-horizontal' },
+          { type: 'heading', heading: localize('room.misc'), heading_style: 'title', icon: 'mdi:light-switch' },
           ...miscCards,
         ],
       });
     }
-
-    domainSection('automations', roomEntities.automations, localize('room.automations'), 'mdi:robot', (e: string) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      vertical: false,
-      state_content: 'last_changed',
-    }));
-
-    domainSection('scripts', roomEntities.scripts, localize('room.scripts'), 'mdi:script-text', (e: string) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      vertical: false,
-    }));
 
     // Room Pins
     const roomPinEntities: string[] = dashboardConfig.room_pin_entities || [];
