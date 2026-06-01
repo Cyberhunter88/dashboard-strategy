@@ -8,7 +8,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { Simon42StrategyConfig, CustomCard } from '../types/strategy';
+import type { Simon42StrategyConfig, CustomCard, CustomSection } from '../types/strategy';
 import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
 import { localize } from '../utils/localize';
 
@@ -232,4 +232,41 @@ export function createCustomCardsSection(
   }
 
   return { type: 'grid', cards };
+}
+
+/**
+ * Creates an array of sections for user-defined custom sections (from YAML config).
+ * Each CustomSection becomes its own grid section with a heading card + its cards.
+ * Returns an empty array if no valid custom sections are configured.
+ */
+export function createCustomSectionsArray(customSections: CustomSection[]): LovelaceSectionConfig[] {
+  const result: LovelaceSectionConfig[] = [];
+
+  for (const section of customSections) {
+    const cards: LovelaceCardConfig[] = [];
+
+    cards.push({
+      type: 'heading',
+      heading: section.title || localize('sections.custom_sections'),
+      ...(section.icon ? { icon: section.icon } : {}),
+    });
+
+    for (const card of section.cards || []) {
+      if (!card.parsed_config) continue;
+      if (Array.isArray(card.parsed_config)) {
+        cards.push(...card.parsed_config);
+      } else {
+        if (card.title) {
+          cards.push({ type: 'heading', heading: card.title, heading_style: 'subtitle' });
+        }
+        cards.push(card.parsed_config as LovelaceCardConfig);
+      }
+    }
+
+    if (cards.length > 1) {
+      result.push({ type: 'grid', cards });
+    }
+  }
+
+  return result;
 }

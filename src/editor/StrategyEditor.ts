@@ -15,6 +15,7 @@ import type {
   CustomView,
   CustomCard,
   CustomBadge,
+  CustomSection,
   AreaCustomCard,
   RoomEntities,
   SectionKey,
@@ -1026,6 +1027,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
 
         ${this._renderSectionOrderPanel()}
+        ${this._renderCustomSectionsSection()}
         ${this._renderCustomCardsSection()}
         ${this._renderCustomBadgesSection()}
         ${this._renderCustomViewsSection()}
@@ -1056,6 +1058,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     switch (key) {
       case 'custom_cards':
         return (this._config.custom_cards || []).length === 0;
+      case 'custom_sections':
+        return (this._config.custom_sections || []).length === 0;
       case 'weather':
         return this._config.show_weather === false;
       case 'energy':
@@ -1068,6 +1072,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private static _sectionMeta = new Map<SectionKey, { icon: string; labelKey: string }>([
     ['overview', { icon: 'mdi:home-outline', labelKey: 'sections.overview' }],
     ['custom_cards', { icon: 'mdi:cards', labelKey: 'sections.custom_cards' }],
+    ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'sections.custom_sections' }],
     ['areas', { icon: 'mdi:floor-plan', labelKey: 'sections.areas' }],
     ['weather', { icon: 'mdi:weather-partly-cloudy', labelKey: 'sections.weather' }],
     ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'sections.energy' }],
@@ -1617,6 +1622,27 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
+  private _renderCustomSectionsSection(): TemplateResult {
+    const customSections = this._config.custom_sections || [];
+
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.section_custom_sections')}</div>
+        <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_sections_help')}</div>
+
+        <div id="custom-sections-list">
+          ${customSections.length === 0
+            ? html`<div class="empty-state">${localize('editor.no_custom_sections')}</div>`
+            : customSections.map((section, sectionIndex) => this._renderCustomSectionItem(section, sectionIndex))}
+        </div>
+
+        <button class="btn-primary" style="margin-top: 8px;" @click=${this._addCustomSection}>
+          ${localize('editor.add_custom_section')}
+        </button>
+      </div>
+    `;
+  }
+
   private _renderCustomBadgesSection(): TemplateResult {
     const customBadges = this._config.custom_badges || [];
 
@@ -1769,6 +1795,57 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
+  private _renderCustomSectionItem(section: CustomSection, sectionIndex: number): TemplateResult {
+    const cards = section.cards || [];
+    return html`
+      <div class="custom-item" data-index=${sectionIndex} style="margin-bottom: 12px;">
+        <div class="custom-item-header">
+          <strong>${section.title || `${localize('editor.section_custom_sections')} ${sectionIndex + 1}`}</strong>
+          <button class="btn-remove" @click=${() => this._removeCustomSection(sectionIndex)}>&#x2715;</button>
+        </div>
+        <div class="custom-item-fields">
+          <div class="custom-item-row">
+            <input type="text" .value=${section.title || ''} placeholder=${localize('editor.custom_section_title_placeholder')}
+              style="flex: 2;"
+              @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)} />
+            <input type="text" .value=${section.icon || ''} placeholder=${localize('editor.custom_section_icon_placeholder')}
+              style="flex: 1;"
+              @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)} />
+          </div>
+          <div style="margin-top: 8px; padding-left: 8px; border-left: 2px solid var(--divider-color, #e0e0e0);">
+            ${cards.map((card, cardIndex) => {
+              const validationMsg = card._yaml_error
+                ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
+                : card.yaml
+                  ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+                  : nothing;
+              return html`
+                <div class="custom-item" data-index=${cardIndex} style="margin-bottom: 8px;">
+                  <div class="custom-item-header">
+                    <strong>${card.title || `${localize('editor.new_card')} ${cardIndex + 1}`}</strong>
+                    <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>&#x2715;</button>
+                  </div>
+                  <div class="custom-item-fields">
+                    <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
+                      @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'title', (e.target as HTMLInputElement).value)} />
+                    <textarea rows="5" placeholder=${localize('editor.yaml_placeholder')}
+                      .value=${card.yaml || ''}
+                      style="width: 100%;"
+                      @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+                    <div class="custom-item-validation">${validationMsg}</div>
+                  </div>
+                </div>
+              `;
+            })}
+            <button class="btn-primary" style="margin-top: 4px;" @click=${() => this._addCardToSection(sectionIndex)}>
+              ${localize('editor.add_card_to_section')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private _renderCustomBadgeItem(badge: CustomBadge, index: number): TemplateResult {
     const validationMsg = badge._yaml_error
       ? html`<span style="color: var(--error-color);">&#x274C; ${badge._yaml_error}</span>`
@@ -1887,6 +1964,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       { key: 'fan', label: localize('editor.domain_fan'), icon: 'mdi:fan' },
       { key: 'switches', label: localize('editor.domain_switches'), icon: 'mdi:light-switch' },
       { key: 'locks', label: localize('editor.domain_locks'), icon: 'mdi:lock' },
+      { key: 'ups', label: localize('editor.domain_ups'), icon: 'mdi:battery-charging' },
     ];
 
     const hasEntities = domainGroups.some((g) => (groupedEntities[g.key]?.length ?? 0) > 0);
@@ -2584,6 +2662,112 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  // -- Custom Sections (overview) ------------------------------------------
+
+  private _addCustomSection(): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    customSections.push({ title: '', icon: '', cards: [] });
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _removeCustomSection(sectionIndex: number): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    customSections.splice(sectionIndex, 1);
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (customSections.length === 0) {
+      delete newConfig.custom_sections;
+    } else {
+      newConfig.custom_sections = customSections;
+    }
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _updateCustomSectionField(sectionIndex: number, field: string, value: string): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    customSections[sectionIndex] = { ...customSections[sectionIndex], [field]: value };
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _addCardToSection(sectionIndex: number): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    const section = { ...customSections[sectionIndex] };
+    section.cards = [...(section.cards || []), { title: '', yaml: '', parsed_config: undefined } as CustomCard];
+    customSections[sectionIndex] = section;
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _removeCardFromSection(sectionIndex: number, cardIndex: number): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    const section = { ...customSections[sectionIndex] };
+    const cards = [...(section.cards || [])];
+    cards.splice(cardIndex, 1);
+    section.cards = cards;
+    customSections[sectionIndex] = section;
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _updateSectionCardField(sectionIndex: number, cardIndex: number, field: string, value: string): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    const section = { ...customSections[sectionIndex] };
+    const cards = [...(section.cards || [])];
+    if (!cards[cardIndex]) return;
+    cards[cardIndex] = { ...cards[cardIndex], [field]: value };
+    section.cards = cards;
+    customSections[sectionIndex] = section;
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _updateSectionCardYaml(sectionIndex: number, cardIndex: number, yamlString: string): void {
+    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    const section = { ...customSections[sectionIndex] };
+    const cards = [...(section.cards || [])];
+    if (!cards[cardIndex]) return;
+
+    const updated: CustomCard = { ...cards[cardIndex], yaml: yamlString };
+    delete updated._yaml_error;
+
+    if (yamlString.trim()) {
+      try {
+        const parsed = yaml.load(yamlString);
+        if (parsed && typeof parsed === 'object') {
+          updated.parsed_config = parsed as Record<string, any>;
+        } else {
+          updated._yaml_error = 'YAML muss ein Objekt oder Array ergeben';
+          updated.parsed_config = undefined;
+        }
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message.split('\n')[0] : 'Ungültiges YAML';
+        updated._yaml_error = message || 'Ungültiges YAML';
+        updated.parsed_config = undefined;
+      }
+    } else {
+      updated.parsed_config = undefined;
+    }
+
+    cards[cardIndex] = updated;
+    section.cards = cards;
+    customSections[sectionIndex] = section;
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
   // -- Area Custom Cards (per-area room view) ---------------------------
 
   /** Liest die custom_cards-Liste einer Area (immer eine neue Kopie). */
@@ -3256,6 +3440,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
         return clean;
       });
     }
+    if (cleanConfig.custom_sections) {
+      cleanConfig.custom_sections = cleanConfig.custom_sections.map((cs) => ({
+        ...cs,
+        cards: (cs.cards || []).map((cc) => {
+          const clean = { ...cc };
+          delete clean._yaml_error;
+          return clean;
+        }),
+      }));
+    }
 
     this._config = cleanConfig;
 
@@ -3303,6 +3497,7 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     automations: [],
     scripts: [],
     cameras: [],
+    ups: [],
   };
 
   const excludeLabels = entities
@@ -3355,6 +3550,45 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     } else if (domain === 'lock') {
       roomEntities.locks.push(entity.entity_id);
     }
+  }
+
+  // UPS detection: group sensor/binary_sensor entities by device, find UPS devices,
+  // add batteryId to roomEntities.ups so the editor can show/hide the UPS group.
+  const UPS_SIGNAL_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
+  const UPS_DETECT_ID_PATTERN = /(?:^|\.)(?:ups|usv|nut)(?:\.|_|$)/i;
+  const byDevice = new Map<string, string[]>();
+  for (const entity of entities) {
+    let belongsToArea = false;
+    if (entity.area_id) belongsToArea = entity.area_id === areaId;
+    else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
+    if (!belongsToArea) continue;
+    if (!hass.states[entity.entity_id]) continue;
+    const domain = entity.entity_id.split('.')[0];
+    if (domain !== 'sensor' && domain !== 'binary_sensor') continue;
+    if (!entity.device_id) continue;
+    const list = byDevice.get(entity.device_id);
+    if (list) list.push(entity.entity_id);
+    else byDevice.set(entity.device_id, [entity.entity_id]);
+  }
+  for (const [, entityIds] of byDevice) {
+    const batteryId = entityIds.find((id) => {
+      const attrs = hass.states[id]?.attributes;
+      return attrs?.device_class === 'battery' && attrs?.unit_of_measurement === '%';
+    });
+    if (!batteryId) continue;
+    const isNut = entityIds.some((id) => (hass.entities?.[id] as any)?.platform === 'nut');
+    let isUps = false;
+    if (isNut) {
+      isUps = true;
+    } else {
+      isUps = entityIds.some((id) => {
+        if (id === batteryId) return false;
+        const dc = hass.states[id]?.attributes?.device_class as string | undefined;
+        return (dc !== undefined && UPS_SIGNAL_CLASSES.has(dc)) || UPS_DETECT_ID_PATTERN.test(id);
+      });
+    }
+    if (!isUps) continue;
+    roomEntities.ups.push(batteryId);
   }
 
   return roomEntities;

@@ -144,6 +144,7 @@ Many entity properties exist ONLY in the Entity Registry, NOT in state attribute
 - **Area-level**: areas_display.hidden, areas_display.order
 - **Entity-level**: areas_options.{areaId}.groups_options.{domain}.hidden
 - **Per-area custom cards**: areas_options.{areaId}.custom_cards[] (per-card `mode` yaml|tile, `position` top|bottom, optional `title`; rendered in the room detail view in addition to the auto-sections)
+- **Custom overview sections**: custom_sections[] (each section has `title?`, `icon?`, `cards[]`; rendered as separate grid sections at the `custom_sections` position in `sections_order`)
 - **Special**: room_pin_entities, alarm_entity, favorite_entities, custom_views
 
 ## Complexity Hotspots
@@ -297,6 +298,7 @@ Gradual alignment with the official HA Home Strategy. Reference: `../references/
 - [x] Security view headings: emojis replaced with MDI icons
 - [x] UPS/USV auto-detection in room views: device-based grouping (battery % + UPS signal, NUT shortcut), gauge + sorted tiles, opt-out via `show_ups_in_rooms`; operates only on pre-filtered visible entities so `no_dboard` stays effective
 - [x] Per-area custom cards in room views: `areas_options.{areaId}.custom_cards[]` — free YAML or guided entity-tile mode, per-card top/bottom placement, optional heading; editor subsection inside each area's expandable section (native `<select>`), DE/EN i18n
+- [x] Custom overview sections: `custom_sections[]` — multiple full grid sections with title, icon, and YAML cards; appear at configurable position in `sections_order`; full editor UI with section/card add/remove/edit
 
 ### Open: Evaluate
 - SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)

@@ -10,8 +10,8 @@ import type {
   LovelaceBadgeConfig,
 } from '../types/lovelace';
 import type { AreaRegistryEntry } from '../types/registries';
-import type { RoomEntities, SensorEntities, AreaCustomCard } from '../types/strategy';
-import { stripAreaName, sortByLastChanged } from '../utils/name-utils';
+import type { RoomEntities, SensorEntities, AreaCustomCard, StackKey } from '../types/strategy';
+import { stripAreaName, sortByLastChanged, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { localize } from '../utils/localize';
@@ -130,6 +130,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       automations: [],
       scripts: [],
       cameras: [],
+      ups: [],
     };
 
     const sensorEntities: SensorEntities = {
@@ -219,6 +220,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         upsDevices.push({ name: deviceName, batteryId, sensorIds });
       }
     }
+
+    // Populate roomEntities.ups with battery IDs so groups_options.ups.hidden can suppress per device
+    for (const d of upsDevices) roomEntities.ups.push(d.batteryId);
 
     for (const entity of visibleEntities) {
       const entityId = entity.entity_id;
@@ -473,18 +477,34 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     }
 
     // === SECTIONS ===
+    // Custom cards (position 'top') always come first, before all auto-stacks.
     const sections: LovelaceSectionConfig[] = [
       ...buildAreaCustomCardSection(customCards, 'top'),
     ];
 
+    // Per-area stack ordering: collect each auto-section under a StackKey,
+    // then emit them in the user-configured order (areas_options.{areaId}.stacks_order).
+    const areaOptions = dashboardConfig.areas_options?.[area.area_id];
+    const stacksOrder = mergeStacksOrder(areaOptions?.stacks_order);
+    const stacks = new Map<StackKey, LovelaceSectionConfig[]>();
+    const pushStack = (key: StackKey, section: LovelaceSectionConfig): void => {
+      const arr = stacks.get(key) ?? [];
+      arr.push(section);
+      stacks.set(key, arr);
+    };
+
+    // UPS/USV — filter by groups_options.ups.hidden (applyGroupFilter already ran)
+    const _visibleUpsBatteries = new Set(roomEntities.ups);
+    const visibleUpsDevices = upsDevices.filter(d => _visibleUpsBatteries.has(d.batteryId));
+
     // UPS/USV — one section per detected device
-    if (upsDevices.length > 0) {
+    if (visibleUpsDevices.length > 0) {
       const critThreshold = typeof dashboardConfig.battery_critical_threshold === 'number'
         ? dashboardConfig.battery_critical_threshold : 20;
       const lowThreshold = typeof dashboardConfig.battery_low_threshold === 'number'
         ? dashboardConfig.battery_low_threshold : 50;
 
-      for (const ups of upsDevices) {
+      for (const ups of visibleUpsDevices) {
         const upsCards: LovelaceCardConfig[] = [];
 
         upsCards.push({
@@ -521,7 +541,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           });
         }
 
-        sections.push({ type: 'grid', cards: upsCards });
+        pushStack('ups', { type: 'grid', cards: upsCards });
       }
     }
 
@@ -608,7 +628,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         }
       }
       if (cameraCards.length > 0) {
-        sections.push({
+        pushStack('cameras', {
           type: 'grid',
           cards: [{ type: 'heading', heading: localize('room.cameras'), heading_style: 'title', icon: 'mdi:cctv' }, ...cameraCards],
         });
@@ -622,20 +642,21 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // Helper: create a domain section
     const domainSection = (
+      key: StackKey,
       entities: string[],
       heading: string,
       icon: string,
       tileConfig: (e: string) => LovelaceCardConfig
     ): void => {
       if (entities.length === 0) return;
-      sections.push({
+      pushStack(key, {
         type: 'grid',
         cards: [{ type: 'heading', heading, heading_style: 'title', icon }, ...entities.map(tileConfig)],
       });
     };
 
     if (roomEntities.lights.length > 0) {
-      sections.push({
+      pushStack('lights', {
         type: 'grid',
         cards: [
           {
@@ -652,7 +673,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    domainSection(roomEntities.locks, localize('room.locks'), 'mdi:lock', (e) => ({
+    domainSection('locks', roomEntities.locks, localize('room.locks'), 'mdi:lock', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -662,7 +683,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: 'last_changed',
     }));
 
-    domainSection(roomEntities.climate, localize('room.climate'), 'mdi:thermostat', (e) => ({
+    domainSection('climate', roomEntities.climate, localize('room.climate'), 'mdi:thermostat', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -672,7 +693,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: ['hvac_action', 'current_temperature'],
     }));
 
-    domainSection(roomEntities.covers, localize('room.covers'), 'mdi:window-shutter', (e) => ({
+    domainSection('covers', roomEntities.covers, localize('room.covers'), 'mdi:window-shutter', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -682,7 +703,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: ['current_position', 'last_changed'],
     }));
 
-    domainSection(roomEntities.covers_curtain, localize('room.curtains'), 'mdi:curtains', (e) => ({
+    domainSection('covers_curtain', roomEntities.covers_curtain, localize('room.curtains'), 'mdi:curtains', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -692,7 +713,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: ['current_position', 'last_changed'],
     }));
 
-    domainSection(roomEntities.covers_window, localize('room.windows'), 'mdi:window-open-variant', (e) => ({
+    domainSection('covers_window', roomEntities.covers_window, localize('room.windows'), 'mdi:window-open-variant', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -702,7 +723,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: ['current_position', 'last_changed'],
     }));
 
-    domainSection(roomEntities.media_player, localize('room.media'), 'mdi:speaker', (e) => {
+    domainSection('media', roomEntities.media_player, localize('room.media'), 'mdi:speaker', (e) => {
       const state = hass.states[e];
       const hasPlayback = state && mediaPlayerSupportsPlayback(state);
       return {
@@ -715,7 +736,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       };
     });
 
-    domainSection(roomEntities.scenes, localize('room.scenes'), 'mdi:palette', (e) => ({
+    domainSection('scenes', roomEntities.scenes, localize('room.scenes'), 'mdi:palette', (e) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -764,7 +785,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     });
 
     if (miscCards.length > 0) {
-      sections.push({
+      pushStack('misc', {
         type: 'grid',
         cards: [
           { type: 'heading', heading: localize('room.misc'), heading_style: 'title', icon: 'mdi:dots-horizontal' },
@@ -773,7 +794,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    domainSection(roomEntities.automations, localize('room.automations'), 'mdi:robot', (e) => ({
+    domainSection('automations', roomEntities.automations, localize('room.automations'), 'mdi:robot', (e: string) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -781,7 +802,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       state_content: 'last_changed',
     }));
 
-    domainSection(roomEntities.scripts, localize('room.scripts'), 'mdi:script-text', (e) => ({
+    domainSection('scripts', roomEntities.scripts, localize('room.scripts'), 'mdi:script-text', (e: string) => ({
       type: 'tile',
       entity: e,
       name: stripAreaName(e, area, hass),
@@ -802,7 +823,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     });
 
     if (pinsForArea.length > 0) {
-      sections.push({
+      pushStack('room_pins', {
         type: 'grid',
         cards: [
           { type: 'heading', heading: localize('room.room_pins'), heading_style: 'title', icon: 'mdi:pin' },
@@ -820,6 +841,12 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           }),
         ],
       });
+    }
+
+    // Emit all collected auto-stacks in the per-area configured order.
+    for (const key of stacksOrder) {
+      const blocks = stacks.get(key);
+      if (blocks) sections.push(...blocks);
     }
 
     sections.push(...buildAreaCustomCardSection(customCards, 'bottom'));
