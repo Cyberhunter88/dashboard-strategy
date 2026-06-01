@@ -1,6 +1,6 @@
 {
   "name": "dashboard-strategy",
-  "version": "1.3.4-beta.11",
+  "version": "1.4.0-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
