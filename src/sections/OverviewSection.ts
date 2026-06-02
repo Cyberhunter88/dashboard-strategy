@@ -121,8 +121,11 @@ export function createSummariesSection(
   return cards.length > 0 ? { type: 'grid', cards } : null;
 }
 
-export function createWeatherStartSummariesSection(config: Simon42StrategyConfig): LovelaceSectionConfig | null {
-  return createSummariesSection(config, true);
+export function createWeatherStartSummariesSection(
+  config: Simon42StrategyConfig,
+  size: 'mini' | 'normal' = 'mini'
+): LovelaceSectionConfig | null {
+  return createSummariesSection(config, size === 'mini');
 }
 
 /**

@@ -1626,13 +1626,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const visibleAreaIds = new Set(areas.map((area) => area.area_id));
     const representedAreaIds = new Set<string>();
     const result: WeatherStartLayoutItem[] = [];
-    const shouldMigrateSummaries = this._config.weather_start_summaries_migrated !== true
-      && !items.some((item) => item.type === 'summaries');
-
-    const appendMissingSummaries = (): void => {
-      if (!shouldMigrateSummaries || result.some((item) => item.type === 'summaries')) return;
-      result.push({ id: 'summaries', type: 'summaries' });
-    };
 
     const addAreaItem = (areaId: string, item?: WeatherStartLayoutItem): void => {
       if (!visibleAreaIds.has(areaId) || representedAreaIds.has(areaId)) return;
@@ -1664,7 +1657,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
 
       if (item.type === 'areas') {
-        appendMissingSummaries();
         if (this._config.group_by_floors === true) {
           for (const floor of this._getWeatherStartFloorOptions()) {
             addFloorItem({ id: `floor-${floor.floor_id || 'none'}`, type: 'floor', floor_id: floor.floor_id, title: floor.name });
@@ -1676,10 +1668,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
 
       result.push({ ...item });
-      if (item.type === 'date') appendMissingSummaries();
     }
-
-    appendMissingSummaries();
 
     for (const area of areas) {
       addAreaItem(area.area_id);
@@ -1701,7 +1690,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const newConfig: Simon42StrategyConfig = {
       ...this._config,
       weather_start_layout_items: normalizedItems,
-      weather_start_summaries_migrated: true,
     };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
@@ -1802,6 +1790,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._saveWeatherStartLayoutItems(this._getWeatherStartLayoutItems().filter((item) => item.id !== itemId));
   }
 
+  private _addWeatherStartSummaries(): void {
+    const items = this._getWeatherStartLayoutItems();
+    if (items.some((item) => item.type === 'summaries')) return;
+    items.push({ id: this._createWeatherStartItemId('summaries'), type: 'summaries', summary_size: 'mini' });
+    this._saveWeatherStartLayoutItems(items);
+    this._expandedWeatherBlocks = new Set([...this._expandedWeatherBlocks, items[items.length - 1].id]);
+  }
+
   private _addWeatherStartArea(e: Event): void {
     const areaId = (e.target as HTMLSelectElement).value;
     if (!areaId) return;
@@ -1834,6 +1830,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
       if (stackWithPrevious) updated.stack_with_previous = true;
       else delete updated.stack_with_previous;
       return updated;
+    });
+    this._saveWeatherStartLayoutItems(items);
+  }
+
+  private _weatherStartSummarySizeChanged(itemId: string, size: 'mini' | 'normal'): void {
+    const items = this._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      return { ...item, summary_size: size };
     });
     this._saveWeatherStartLayoutItems(items);
   }
@@ -1927,6 +1931,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const floors = this._getWeatherStartFloorOptions();
     const customCards = this._config.custom_cards || [];
     const customSections = this._config.custom_sections || [];
+    const hasSummariesBlock = items.some((item) => item.type === 'summaries');
     const placedAreaIds = new Set(items
       .filter((item) => item.type === 'area' && item.area_id)
       .map((item) => item.area_id as string));
@@ -1983,6 +1988,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </div>
                 ${isExpanded ? html`
                   <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
+                    ${item.type === 'summaries' ? html`
+                      <label class="form-row" style="margin: 0 0 8px 0;">
+                        <span style="min-width: 120px;">${localize('editor.weather_start_summary_size')}</span>
+                        <select
+                          style="flex:1;"
+                          .value=${item.summary_size || 'mini'}
+                          @change=${(e: Event) => this._weatherStartSummarySizeChanged(item.id, (e.target as HTMLSelectElement).value as 'mini' | 'normal')}>
+                          <option value="mini">${localize('editor.weather_start_summary_size_mini')}</option>
+                          <option value="normal">${localize('editor.weather_start_summary_size_normal')}</option>
+                        </select>
+                      </label>
+                    ` : nothing}
                     <label class="form-row" style="margin: 0 0 8px 0;">
                       <input type="checkbox"
                         ?checked=${item.stack_with_previous === true}
@@ -2015,6 +2032,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <button class="btn-primary" @click=${this._openCardPickerForWeatherStartCard}>
             ${localize('editor.add_custom_card')}
           </button>
+          ${!hasSummariesBlock ? html`
+            <button class="btn-primary" @click=${this._addWeatherStartSummaries}>
+              ${localize('editor.weather_start_add_summaries')}
+            </button>
+          ` : nothing}
           <button class="btn-primary" @click=${this._addWeatherStartSection}>
             ${localize('editor.add_custom_section')}
           </button>

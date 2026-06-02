@@ -74,6 +74,8 @@ export interface WeatherStartLayoutItem {
   custom_section_id?: string;
   /** Optional editor/display title */
   title?: string;
+  /** Summary card size for type=summaries on the weather start page */
+  summary_size?: 'mini' | 'normal';
   /** Render this item below the previous item in the same dashboard section */
   stack_with_previous?: boolean;
   /** Raw YAML override for built-in and area items */
@@ -158,7 +160,6 @@ export interface Simon42StrategyConfig {
   sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   weather_start_layout_items?: WeatherStartLayoutItem[];
-  weather_start_summaries_migrated?: boolean;
   summaries_columns?: 2 | 4; // default: 2
 
   // Favorites display

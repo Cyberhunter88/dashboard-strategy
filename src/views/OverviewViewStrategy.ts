@@ -214,13 +214,6 @@ function normalizeWeatherStartLayoutItemsForRender(
   const visibleAreaIds = new Set(visibleAreas.map((area) => area.area_id));
   const representedAreaIds = new Set<string>();
   const result: WeatherStartLayoutItem[] = [];
-  const shouldMigrateSummaries = dashboardConfig.weather_start_summaries_migrated !== true
-    && !items.some((item) => item.type === 'summaries');
-
-  const appendMissingSummaries = (): void => {
-    if (!shouldMigrateSummaries || result.some((item) => item.type === 'summaries')) return;
-    result.push({ id: 'summaries', type: 'summaries' });
-  };
 
   const addAreaItem = (areaId: string, item?: WeatherStartLayoutItem): void => {
     if (!visibleAreaIds.has(areaId) || representedAreaIds.has(areaId)) return;
@@ -252,7 +245,6 @@ function normalizeWeatherStartLayoutItemsForRender(
     }
 
     if (item.type === 'areas') {
-      appendMissingSummaries();
       if (dashboardConfig.group_by_floors === true) {
         const floorIds = new Set<string>();
         let hasFloorlessAreas = false;
@@ -271,10 +263,7 @@ function normalizeWeatherStartLayoutItemsForRender(
     }
 
     result.push({ ...item });
-    if (item.type === 'date') appendMissingSummaries();
   }
-
-  appendMissingSummaries();
 
   for (const area of visibleAreas) {
     addAreaItem(area.area_id);
@@ -322,7 +311,7 @@ function createWeatherStartSectionsFromItems(
         section = { type: 'grid', cards: [createLargeDateCard()] };
         break;
       case 'summaries':
-        section = createWeatherStartSummariesSection(dashboardConfig);
+        section = createWeatherStartSummariesSection(dashboardConfig, item.summary_size || 'mini');
         break;
       case 'weather_current':
         section = weatherEntity ? {
