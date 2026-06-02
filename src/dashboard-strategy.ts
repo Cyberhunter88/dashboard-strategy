@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.9.13';
+const STRATEGY_VERSION = '1.10.0';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -57,6 +57,7 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     const showSummaryViews = config.show_summary_views === true;
     const showRoomViews = config.show_room_views === true;
+    const navItems = new Set(config.areas_display?.nav_items || []);
     const showLights = config.show_light_summary !== false;
     const showCovers = config.show_covers_summary !== false;
     const showSecurity = config.show_security_summary !== false;
@@ -129,7 +130,7 @@ class Simon42DashboardStrategy extends HTMLElement {
         title: area.name,
         path: area.area_id,
         icon: area.icon || 'mdi:floor-plan',
-        subview: !showRoomViews,
+        subview: !showRoomViews && !navItems.has(area.area_id),
         ...roomConfigs[i],
       })),
     ];
