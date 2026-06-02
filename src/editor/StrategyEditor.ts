@@ -1626,6 +1626,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const visibleAreaIds = new Set(areas.map((area) => area.area_id));
     const representedAreaIds = new Set<string>();
     const result: WeatherStartLayoutItem[] = [];
+    const shouldMigrateSummaries = this._config.weather_start_summaries_migrated !== true
+      && !items.some((item) => item.type === 'summaries');
+
+    const appendMissingSummaries = (): void => {
+      if (!shouldMigrateSummaries || result.some((item) => item.type === 'summaries')) return;
+      result.push({ id: 'summaries', type: 'summaries' });
+    };
 
     const addAreaItem = (areaId: string, item?: WeatherStartLayoutItem): void => {
       if (!visibleAreaIds.has(areaId) || representedAreaIds.has(areaId)) return;
@@ -1657,6 +1664,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
 
       if (item.type === 'areas') {
+        appendMissingSummaries();
         if (this._config.group_by_floors === true) {
           for (const floor of this._getWeatherStartFloorOptions()) {
             addFloorItem({ id: `floor-${floor.floor_id || 'none'}`, type: 'floor', floor_id: floor.floor_id, title: floor.name });
@@ -1668,7 +1676,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
 
       result.push({ ...item });
+      if (item.type === 'date') appendMissingSummaries();
     }
+
+    appendMissingSummaries();
 
     for (const area of areas) {
       addAreaItem(area.area_id);
@@ -1690,6 +1701,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const newConfig: Simon42StrategyConfig = {
       ...this._config,
       weather_start_layout_items: normalizedItems,
+      weather_start_summaries_migrated: true,
     };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);

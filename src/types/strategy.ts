@@ -158,6 +158,7 @@ export interface Simon42StrategyConfig {
   sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   weather_start_layout_items?: WeatherStartLayoutItem[];
+  weather_start_summaries_migrated?: boolean;
   summaries_columns?: 2 | 4; // default: 2
 
   // Favorites display
