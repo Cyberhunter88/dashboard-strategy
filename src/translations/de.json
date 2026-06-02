@@ -260,6 +260,8 @@
     "area_custom_cards_help": "Eigene Karten, Kacheln und komplette Sections für diese Raumansicht. Werden zusätzlich zu den automatischen Sektionen angezeigt.",
     "area_custom_card_new": "Neue Karte/Section",
     "area_custom_card_add": "+ Karte/Section hinzufügen",
+    "area_custom_card_add_yaml": "+ YAML/Section hinzufügen",
+    "area_custom_card_add_picker": "+ Karte auswählen",
     "area_custom_card_position": "Platzierung",
     "area_custom_card_position_top": "Oben (vor Auto-Sektionen)",
     "area_custom_card_position_bottom": "Unten (nach Auto-Sektionen)",

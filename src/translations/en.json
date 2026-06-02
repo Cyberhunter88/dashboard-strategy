@@ -260,6 +260,8 @@
     "area_custom_cards_help": "Custom cards, tiles, and complete sections for this room view. Shown in addition to the automatic sections.",
     "area_custom_card_new": "New card/section",
     "area_custom_card_add": "+ Add card/section",
+    "area_custom_card_add_yaml": "+ Add YAML/section",
+    "area_custom_card_add_picker": "+ Choose card",
     "area_custom_card_position": "Placement",
     "area_custom_card_position_top": "Top (before auto sections)",
     "area_custom_card_position_bottom": "Bottom (after auto sections)",

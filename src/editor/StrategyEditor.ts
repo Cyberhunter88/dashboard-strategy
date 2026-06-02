@@ -1088,6 +1088,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
       flex-direction: column;
       gap: 8px;
     }
+    .area-custom-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
     .custom-card-target {
       display: flex;
       align-items: center;
@@ -3546,9 +3551,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${cards.length === 0
           ? nothing
           : cards.map((card, index) => this._renderAreaCustomCardItem(areaId, card, index, availableEntities))}
-        <button class="btn-primary" @click=${() => this._openCardPickerForAreaCustomCard(areaId)}>
-          ${localize('editor.area_custom_card_add')}
-        </button>
+        <div class="area-custom-card-actions">
+          <button class="btn-primary" @click=${() => this._addAreaCustomCard(areaId)}>
+            ${localize('editor.area_custom_card_add_yaml')}
+          </button>
+          <button class="btn-primary" @click=${() => this._openCardPickerForAreaCustomCard(areaId)}>
+            ${localize('editor.area_custom_card_add_picker')}
+          </button>
+        </div>
       </div>
     `;
   }
