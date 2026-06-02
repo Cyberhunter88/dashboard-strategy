@@ -1946,6 +1946,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._saveWeatherStartLayoutItems(items);
   }
 
+  private _updateWeatherStartItemTitle(itemId: string, title: string): void {
+    const trimmed = title.trim();
+    const items = this._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      const updated = { ...item };
+      if (trimmed) updated.title = trimmed;
+      else delete updated.title;
+      return updated;
+    });
+    this._saveWeatherStartLayoutItems(items);
+  }
+
   private _removeWeatherStartItem(itemId: string): void {
     this._saveWeatherStartLayoutItems(this._getWeatherStartLayoutItems().filter((item) => item.id !== itemId));
   }
@@ -2063,11 +2075,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
     if (item.type === 'custom_card') {
       const card = customCards.find((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
-      return { icon: 'mdi:cards', label: card?.title || localize('editor.new_card') };
+      return { icon: 'mdi:cards', label: item.title || card?.title || localize('editor.new_card') };
     }
     if (item.type === 'custom_section') {
       const section = customSections.find((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id);
-      return { icon: section?.icon || 'mdi:view-grid-plus-outline', label: section?.title || localize('editor.section_custom_sections') };
+      return { icon: section?.icon || 'mdi:view-grid-plus-outline', label: item.title || section?.title || localize('editor.section_custom_sections') };
     }
 
     const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(item.type);
@@ -2173,9 +2185,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
                         <span style="min-width: 120px;">${localize('editor.weather_start_item_name')}</span>
                         <input type="text"
                           style="flex:1;"
-                          .value=${customCard?.title || ''}
+                          .value=${item.title || customCard?.title || ''}
                           placeholder=${localize('editor.card_title_placeholder')}
-                          @change=${(e: Event) => this._updateCustomCardField(customCardIndex, 'title', (e.target as HTMLInputElement).value)} />
+                          @change=${(e: Event) => this._updateWeatherStartItemTitle(item.id, (e.target as HTMLInputElement).value)} />
                       </label>
                       <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_card_yaml_desc')}</div>
                       <textarea
@@ -2192,9 +2204,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
                         <span style="min-width: 120px;">${localize('editor.weather_start_item_name')}</span>
                         <input type="text"
                           style="flex:1;"
-                          .value=${customSection?.title || ''}
+                          .value=${item.title || customSection?.title || ''}
                           placeholder=${localize('editor.custom_section_title_placeholder')}
-                          @change=${(e: Event) => this._updateCustomSectionField(customSectionIndex, 'title', (e.target as HTMLInputElement).value)} />
+                          @change=${(e: Event) => this._updateWeatherStartItemTitle(item.id, (e.target as HTMLInputElement).value)} />
                       </label>
                     ` : nothing}
                     ${item.type === 'summaries' ? html`

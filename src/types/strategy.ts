@@ -72,7 +72,7 @@ export interface WeatherStartLayoutItem {
   custom_card_id?: string;
   /** Custom section id for type=custom_section */
   custom_section_id?: string;
-  /** Optional editor/display title */
+  /** Optional editor-only label for the weather start layout list */
   title?: string;
   /** Summary card size for type=summaries on the weather start page */
   summary_size?: 'mini' | 'normal';

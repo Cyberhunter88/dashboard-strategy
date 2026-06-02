@@ -179,9 +179,6 @@ function renderCustomCardAsSection(card: CustomCard | undefined): LovelaceSectio
   if (Array.isArray(card.parsed_config)) {
     cards.push(...card.parsed_config as LovelaceCardConfig[]);
   } else {
-    if (card.title) {
-      cards.push({ type: 'heading', heading: card.title, heading_style: 'subtitle' });
-    }
     cards.push(card.parsed_config as LovelaceCardConfig);
   }
   return cards.length > 0 ? { type: 'grid', cards } : null;
