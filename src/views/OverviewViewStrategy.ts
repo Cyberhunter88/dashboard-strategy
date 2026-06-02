@@ -14,7 +14,7 @@ import { Registry } from '../Registry';
 import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/entity-filter';
 import { getVisibleAreas } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
-import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createSummariesSection } from '../sections/OverviewSection';
+import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createWeatherStartSummariesSection } from '../sections/OverviewSection';
 import { buildAreaCard, createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
 import { createOverviewView } from '../utils/view-builder';
@@ -311,7 +311,7 @@ function createWeatherStartSectionsFromItems(
         section = { type: 'grid', cards: [createLargeDateCard()] };
         break;
       case 'summaries':
-        section = createSummariesSection(dashboardConfig, true);
+        section = createWeatherStartSummariesSection(dashboardConfig);
         break;
       case 'weather_current':
         section = weatherEntity ? {
@@ -404,7 +404,7 @@ function createWeatherStartSections(
   }, blocksConfig));
 
   blockMap.set('summaries', withBlockOverride('summaries',
-    createSummariesSection(dashboardConfig, true),
+    createWeatherStartSummariesSection(dashboardConfig),
     blocksConfig
   ));
 

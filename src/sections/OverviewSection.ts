@@ -90,6 +90,7 @@ export function appendSummaryCards(
   cards.push({
     type: 'heading',
     heading: localize('sections.summaries'),
+    ...(compact ? { heading_style: 'subtitle' } : {}),
   });
 
   const summariesColumns = config.summaries_columns || 2;
@@ -97,6 +98,7 @@ export function appendSummaryCards(
     cards.push({
       type: 'horizontal-stack',
       cards: summaryCards,
+      ...(compact ? { grid_options: { columns: 'full', rows: 1 } } : {}),
     });
     return;
   }
@@ -105,6 +107,7 @@ export function appendSummaryCards(
     cards.push({
       type: 'horizontal-stack',
       cards: summaryCards.slice(i, i + 2),
+      ...(compact ? { grid_options: { columns: 'full', rows: 1 } } : {}),
     });
   }
 }
@@ -116,6 +119,10 @@ export function createSummariesSection(
   const cards: LovelaceCardConfig[] = [];
   appendSummaryCards(cards, config, compact);
   return cards.length > 0 ? { type: 'grid', cards } : null;
+}
+
+export function createWeatherStartSummariesSection(config: Simon42StrategyConfig): LovelaceSectionConfig | null {
+  return createSummariesSection(config, true);
 }
 
 /**

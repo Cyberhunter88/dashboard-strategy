@@ -89,16 +89,18 @@ class Simon42SummaryCard extends LitElement {
       color: var(--primary-text-color);
     }
     ha-card.compact {
-      padding: 8px;
-      gap: 4px;
-      min-height: 54px;
+      padding: 6px 8px;
+      gap: 3px;
+      min-height: 42px;
+      border-radius: 10px;
     }
     ha-card.compact .icon {
-      --mdc-icon-size: 22px;
+      --mdc-icon-size: 18px;
     }
     ha-card.compact .name {
-      font-size: 12px;
-      line-height: 1.15;
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 600;
     }
   `;
 
