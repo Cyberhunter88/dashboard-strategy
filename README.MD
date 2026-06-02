@@ -1,8 +1,8 @@
 ﻿#  Dashboard Strategy
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/v/release/TheRealSimon42/dashboard-strategy?style=for-the-badge&color=green)](https://github.com/TheRealSimon42/dashboard-strategy/releases)
-[![GitHub Stars](https://img.shields.io/github/stars/TheRealSimon42/dashboard-strategy?style=for-the-badge&color=yellow)](https://github.com/TheRealSimon42/dashboard-strategy/stargazers)
+[![GitHub Release](https://img.shields.io/github/v/release/Cyberhunter88/dashboard-strategy?style=for-the-badge&color=green)](https://github.com/Cyberhunter88/dashboard-strategy/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/Cyberhunter88/dashboard-strategy?style=for-the-badge&color=yellow)](https://github.com/Cyberhunter88/dashboard-strategy/stargazers)
 ![AI-Assisted](https://img.shields.io/badge/AI--Assisted-blue?style=for-the-badge)
 [![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-lightgrey?style=for-the-badge)](LICENSE)
 
@@ -38,7 +38,7 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 
 ### HACS (empfohlen)
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TheRealSimon42&repository=dashboard-strategy&category=plugin)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Cyberhunter88&repository=dashboard-strategy&category=plugin)
 
 <details>
 <summary>Alternative zum Button</summary>
@@ -55,14 +55,14 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 <details>
 <summary>Manuelle Installationsschritte</summary>
 
-1. Kopiere alle Dateien aus `dist/` nach `/config/www/simon42-strategy/`
+1. Kopiere alle Dateien aus `dist/` nach `/config/www/dashboard-strategy/`
 2. Füge in `configuration.yaml` hinzu:
 
 ```yaml
 lovelace:
   mode: storage
   resources:
-    - url: /local/simon42-strategy/dashboard-strategy.js
+    - url: /local/dashboard-strategy/dashboard-strategy.js
       type: module
 ```
 
@@ -77,7 +77,7 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
 **Bereiche & Etagen einrichten** — Lege in Home Assistant unter **Einstellungen → Bereiche & Zonen** deine Räume an und weise sie optional Etagen zu. Geräte müssen einem Bereich zugeordnet sein, damit sie im Dashboard erscheinen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Etagen-und-Bereiche.gif" alt="Etagen und Bereiche in Home Assistant einrichten" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Etagen-und-Bereiche.gif" alt="Etagen und Bereiche in Home Assistant einrichten" width="800" />
 </p>
 
 **Geräte zuweisen** — Weise deine Geräte (Lampen, Sensoren, Rollos etc.) in den HA-Einstellungen einem Bereich zu. Die Strategy erkennt automatisch, welche Entitäten in welchem Raum sind.
@@ -89,13 +89,13 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
 - **Entität nicht sichtbar schalten** (empfohlen) — Setze eine Entität in den HA-Einstellungen auf **"Nicht sichtbar"**. Diese Entitäten werden von allen auto-generierten Strategies ausgeblendet — nicht nur von dieser, sondern auch von HA's eigenen Strategies. Das ist der sauberste Weg, um Entitäten aus automatischen Dashboards zu entfernen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Entitaet-auf-nicht-sichtbar-stellen-via-entity-config.gif" alt="Entität auf nicht sichtbar stellen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Entitaet-auf-nicht-sichtbar-stellen-via-entity-config.gif" alt="Entität auf nicht sichtbar stellen" width="800" />
 </p>
 
 - **Label `no-dboard`** — Erstelle in Home Assistant unter **Einstellungen → Labels** ein Label `no-dboard` und weise es Entitäten zu. Die Entität wird aus allen simon42-Strategy-Dashboards global ausgeblendet, bleibt aber in anderen (manuellen) Dashboards sichtbar.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/no-dboard-label.png" alt="Label no-dboard in Home Assistant erstellen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/no-dboard-label.png" alt="Label no-dboard in Home Assistant erstellen" width="800" />
 </p>
 
 - **Im Strategy-Editor ausblenden** — Über das Konfigurationsmenü der Strategy können einzelne Entitäten pro Bereich und Domain individuell ein- und ausgeblendet werden. Das betrifft nur diese eine Strategy-Ansicht.
@@ -105,7 +105,7 @@ Mehr zur Filterung findest du im Abschnitt [Entity-Filterung](#entity-filterung)
 ## Dashboard erstellen
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/simon42-Strategy-Download-DashboardAnlegen-StrategyCodeEinfugen.gif" alt="Dashboard erstellen — Schritt für Schritt" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/simon42-Strategy-Download-DashboardAnlegen-StrategyCodeEinfugen.gif" alt="Dashboard erstellen — Schritt für Schritt" width="800" />
 </p>
 
 1. **Einstellungen** → **Dashboards** → **Dashboard hinzufügen**
@@ -116,7 +116,7 @@ Mehr zur Filterung findest du im Abschnitt [Entity-Filterung](#entity-filterung)
 
 ```yaml
 strategy:
-  type: custom:simon42-dashboard
+  type: custom:dashboard-strategy
 
 ```
 
@@ -136,7 +136,7 @@ Anschließend öffnet sich über das **Stift-Icon** oben rechts in dem Strategy-
 Alle Einstellungen lassen sich bequem über den **grafischen Editor** vornehmen (Stift-Icon → Drei Punkte → Dashboard bearbeiten). Die folgenden Abschnitte dokumentieren die verfügbaren Optionen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Editor-oeffnen.gif" alt="Editor öffnen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Editor-oeffnen.gif" alt="Editor öffnen" width="800" />
 </p>
 
 ### Übersicht
@@ -148,13 +148,13 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Zusammenfassungen** — Kacheln die den Status aller Lichter, Rollos, Sicherheits-Entitäten, Batterien und Klimageräte zusammenfassen. Jede Zusammenfassung kann einzeln ein- oder ausgeschaltet werden. Das Layout ist als 2-Spalten-Grid (Standard) oder 4-Spalten-Reihe konfigurierbar. Für Rollos kann optional eine **Teiloffen-Gruppe** aktiviert werden, die Rollos mit Position zwischen 1-99% separat anzeigt — inkl. Live-Übergängen während des Fahrens.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Klima-Zusammenfassung.gif" alt="Klima-Zusammenfassung aktivieren" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Klima-Zusammenfassung.gif" alt="Klima-Zusammenfassung aktivieren" width="800" />
 </p>
 
 **Batterie-Optionen** — Mobile-App-Batterien (Smartphones, Tablets) können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Nicht erreichbare Sensoren werden automatisch als kritisch eingestuft.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
 </p>
 
 **Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht.
@@ -162,7 +162,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Favoriten-entity-hinzufügen.gif" alt="Favoriten hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Favoriten-entity-hinzufügen.gif" alt="Favoriten hinzufügen" width="800" />
 </p>
 
 ### Bereiche & Räume
@@ -170,13 +170,13 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Etagen-Gruppierung** — Bereiche können nach Etagen gegliedert werden. Jede Etage bekommt eine eigene Section mit Überschrift.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Bereiche-nach-Etagen-Gliedern.gif" alt="Bereiche nach Etagen gliedern" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Bereiche-nach-Etagen-Gliedern.gif" alt="Bereiche nach Etagen gliedern" width="800" />
 </p>
 
 **Alert-Icons** — Optional können Alert-Icons auf den Bereichskarten angezeigt werden. Wenn aktiviert, zeigen die Karten ein oranges Icon, sobald ein relevanter Binärsensor im Bereich aktiv ist (z.B. Bewegung, Feuchtigkeit, Rauch, Wärme).
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Alert-Icons-Area-Card-Aktivieren.gif" alt="Alert-Icons auf Bereichskarten aktivieren" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Alert-Icons-Area-Card-Aktivieren.gif" alt="Alert-Icons auf Bereichskarten aktivieren" width="800" />
 </p>
 
 **Schlösser in Räumen** — Optional können Schlösser (z.B. Nuki) in den Raum-Views angezeigt werden. Unabhängig davon erscheinen sie immer in der Sicherheits-Übersicht.
@@ -184,7 +184,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Bereichssortierung** — Wahlweise die Reihenfolge aus Home Assistant verwenden oder im Editor per Drag & Drop festlegen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Home-Assistant-Bereichs-Sortierung-verwenden.gif" alt="HA-Bereichssortierung verwenden" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Home-Assistant-Bereichs-Sortierung-verwenden.gif" alt="HA-Bereichssortierung verwenden" width="800" />
 </p>
 
 **Bereichs-Verwaltung** — Bereiche ein-/ausblenden, Reihenfolge anpassen, Entitäten pro Bereich und Domain filtern — alles im Editor.
@@ -200,7 +200,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Lichter nach Etagen** — In der Lichter-View können Lichter nach Etagen gruppiert werden, mit Ein-/Ausschalt-Button pro Etage.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
 </p>
 
 ### Erweiterte Funktionen
@@ -217,7 +217,7 @@ content: "Willkommen zuhause!"
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Eigene-Karten-hinzufugen.gif" alt="Eigene Karten hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Eigene-Karten-hinzufugen.gif" alt="Eigene Karten hinzufügen" width="800" />
 </p>
 
 #### Eigene Badges
@@ -234,7 +234,7 @@ entity: sun.sun
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Custom-Badges-hinzufugen.gif" alt="Eigene Badges hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-Badges-hinzufugen.gif" alt="Eigene Badges hinzufügen" width="800" />
 </p>
 
 #### Custom Views
@@ -252,7 +252,7 @@ sections:
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/TheRealSimon42/dashboard-strategy/main/assets/Custom-View-hinzufugen.gif" alt="Custom View hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-View-hinzufugen.gif" alt="Custom View hinzufügen" width="800" />
 </p>
 
 ### Entity-Filterung
@@ -319,7 +319,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 |---------|---------|
 | Dashboard zeigt alte Version | **Hard-Refresh:** `Cmd+Shift+R` (Mac) / `Ctrl+Shift+R` (Windows) |
 | Änderungen werden nicht übernommen | In einem **Incognito-/Privat-Fenster** testen — wenn das Problem dort nicht auftritt, ist es ein Browser-Cache-Problem |
-| Welche Version ist installiert? | Browser-Konsole öffnen (F12) → Meldung `Simon42 Dashboard Strategy vX.Y.Z loaded` suchen |
+| Welche Version ist installiert? | Browser-Konsole öffnen (F12) → Meldung `Dashboard Strategy vX.Y.Z loaded` suchen |
 | Strategy-Timeout auf langsamen Verbindungen | Normal bei Slow 4G — HA hat ein festes 5-Sekunden-Limit für Custom Elements. Bei normalen Verbindungen kein Problem |
 
 <details>
@@ -327,11 +327,11 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 
 Wenn du die Strategy vorher **manuell installiert** hattest (ohne HACS) und jetzt auf HACS umsteigen willst, kann es zu einem Fehler kommen:
 
-> `Error: Failed to execute 'define' on 'CustomElementRegistry': the name "simon42-summary-card" has already been used`
+> `Error: Failed to execute 'define' on 'CustomElementRegistry': the name "dashboard-strategy-summary-card" has already been used`
 
 Das passiert, wenn die alte Resource-URL noch registriert ist und die JS-Datei dadurch doppelt geladen wird. So behebst du das:
 
-1. Manuell kopierte Dateien im Ordner `www` löschen (alles inklusive des Ordners `simon42-strategy` kann weg)
+1. Manuell kopierte Dateien im Ordner `www` löschen (alles inklusive des Ordners `dashboard-strategy` kann weg)
 2. Alte Resource entfernen: **Einstellungen → Dashboards → Drei Punkte (⋮) → Ressourcen** — die alte URL (ohne `hacsfiles` im Pfad) löschen
 3. Home Assistant neu starten
 4. HACS-Repo über den Button oben hinzufügen und installieren
@@ -387,8 +387,8 @@ Die Strategy folgt denselben Patterns wie HA's offizielle Home- und Areas-Strate
 **Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)**
 
 - **Teilen & Bearbeiten** erlaubt
-- **Namensnennung** erforderlich
-- **Nicht kommerziell** — Für kommerzielle Nutzung: **[Kontaktformular](https://www.simon42.com/contact/)**
+- **Namensnennung** erforderlich (Original: [TheRealSimon42/dashboard-strategy](https://github.com/TheRealSimon42/dashboard-strategy))
+- **Nicht kommerziell**
 - **Weitergabe unter gleichen Bedingungen**
 
 Siehe LICENSE-Datei für vollständige Details.
@@ -401,8 +401,7 @@ Siehe LICENSE-Datei für vollständige Details.
 
 ## Support
 
-- **[GitHub Issues](https://github.com/TheRealSimon42/dashboard-strategy/issues)**
-- **[simon42 Community](https://community.simon42.com/)**
+- **[GitHub Issues](https://github.com/Cyberhunter88/dashboard-strategy/issues)**
 
 ---
 
