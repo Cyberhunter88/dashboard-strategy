@@ -297,8 +297,6 @@
     "weather_start_block_yaml_desc": "Eine oder mehrere Karten als YAML eingeben. Ersetzt den automatisch generierten Inhalt dieses Blocks.",
     "weather_start_item_name": "Name",
     "weather_start_card_yaml_desc": "Karten-YAML bearbeiten, z.B. Entity-ID, Name, Icon, Farbe oder weitere Lovelace-Optionen.",
-    "weather_start_move_up": "Nach oben",
-    "weather_start_move_down": "Nach unten",
     "weather_start_add_card": "+ Karte im Startlayout",
     "weather_start_add_summaries": "+ Zusammenfassungen",
     "weather_start_add_section": "+ Abschnitt im Startlayout",

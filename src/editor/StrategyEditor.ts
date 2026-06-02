@@ -742,12 +742,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
       width: 16px;
       height: 16px;
     }
-    .section-order-actions {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      margin-left: auto;
-    }
     .section-order-sub {
       display: flex;
       align-items: center;
@@ -2008,22 +2002,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._saveWeatherStartLayoutItems(items);
   }
 
-  private _moveWeatherStartItem(itemId: string, direction: -1 | 1): void {
-    const items = this._getWeatherStartLayoutItems();
-    const index = items.findIndex((item) => item.id === itemId);
-    const targetIndex = index + direction;
-    if (index < 0 || targetIndex < 0 || targetIndex >= items.length) return;
-    this._reorderWeatherStartItems(items, index, targetIndex);
-  }
-
-  private _reorderWeatherStartItems(items: WeatherStartLayoutItem[], fromIndex: number, toIndex: number): void {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) return;
-    const newOrder = [...items];
-    const [moved] = newOrder.splice(fromIndex, 1);
-    newOrder.splice(toIndex, 0, moved);
-    this._saveWeatherStartLayoutItems(newOrder);
-  }
-
   private _getWeatherStartCustomCardIndex(item: WeatherStartLayoutItem, customCards: CustomCard[] = this._config.custom_cards || []): number {
     if (item.type !== 'custom_card') return -1;
     return customCards.findIndex((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
@@ -2145,7 +2123,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${localize('editor.weather_start_order_desc')}
         </div>
         <div class="section-order-list" id="weather-start-order-list">
-          ${items.map((item, index) => {
+          ${items.map((item) => {
             const meta = this._getWeatherStartItemMeta(item, areas, customCards, customSections);
             const disabled = this._isWeatherStartItemDisabled(item, customCards, customSections);
             const isExpanded = this._expandedWeatherBlocks.has(item.id);
@@ -2175,32 +2153,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   <span class="section-label">${meta.label}</span>
                   ${disabled ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
                   ${hasOverride ? html`<span class="section-hidden-tag" style="background:var(--primary-color);color:#fff;margin-left:4px;">✎</span>` : nothing}
-                  <div class="section-order-actions">
+                  <button class="icon-btn" style="margin-left:auto;"
+                    title=${localize('editor.weather_start_block_expand')}
+                    @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(item.id); }}>
+                    <ha-icon icon=${isExpanded ? 'mdi:menu-up' : 'mdi:menu-down'}></ha-icon>
+                  </button>
+                  ${canRemove ? html`
                     <button class="icon-btn"
-                      title=${localize('editor.weather_start_move_up')}
-                      ?disabled=${index === 0}
-                      @click=${(e: Event) => { e.stopPropagation(); this._moveWeatherStartItem(item.id, -1); }}>
-                      <ha-icon icon="mdi:chevron-up"></ha-icon>
+                      title=${localize('editor.remove')}
+                      @click=${(e: Event) => { e.stopPropagation(); this._removeWeatherStartItem(item.id); }}>
+                      <ha-icon icon="mdi:delete-outline"></ha-icon>
                     </button>
-                    <button class="icon-btn"
-                      title=${localize('editor.weather_start_move_down')}
-                      ?disabled=${index === items.length - 1}
-                      @click=${(e: Event) => { e.stopPropagation(); this._moveWeatherStartItem(item.id, 1); }}>
-                      <ha-icon icon="mdi:chevron-down"></ha-icon>
-                    </button>
-                    <button class="icon-btn"
-                      title=${localize('editor.weather_start_block_expand')}
-                      @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(item.id); }}>
-                      <ha-icon icon=${isExpanded ? 'mdi:menu-up' : 'mdi:menu-down'}></ha-icon>
-                    </button>
-                    ${canRemove ? html`
-                      <button class="icon-btn"
-                        title=${localize('editor.remove')}
-                        @click=${(e: Event) => { e.stopPropagation(); this._removeWeatherStartItem(item.id); }}>
-                        <ha-icon icon="mdi:delete-outline"></ha-icon>
-                      </button>
-                    ` : nothing}
-                  </div>
+                  ` : nothing}
                 </div>
                 ${isExpanded ? html`
                   <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
@@ -2362,7 +2326,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const dropIndex = currentOrder.findIndex((item) => item.id === dropId);
     if (draggedIndex === -1 || dropIndex === -1) return;
 
-    this._reorderWeatherStartItems(currentOrder, draggedIndex, dropIndex);
+    const newOrder = [...currentOrder];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(dropIndex, 0, currentOrder[draggedIndex]);
+
+    this._saveWeatherStartLayoutItems(newOrder);
   };
 
   // -- Section order drag & drop -----------------------------------------
