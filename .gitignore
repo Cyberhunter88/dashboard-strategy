@@ -6,3 +6,4 @@ dist/dashboard-strategy.js.map
 .DS_Store
 .codacy/
 .superpowers/
+.worktrees/

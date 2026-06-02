@@ -2,7 +2,16 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.10.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.10.1...HEAD).
+
+<a name="1.10.1"></a>
+## [1.10.1] - 2026-06-02
+### Bugfixes
+- update editor tutorial asset links to the fork repository
+
+### Chores
+- add Codex Security scan report with no reportable findings
+- ignore local `.worktrees/` directories
 
 <a name="1.10.0"></a>
 ## [1.10.0] - 2026-06-02

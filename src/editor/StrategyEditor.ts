@@ -3008,7 +3008,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class=${nested ? 'editor-subsection' : 'section'}>
         <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_cards')}
-          <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
+          <a href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
             target="_blank" rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
             title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
@@ -3069,7 +3069,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class=${nested ? 'editor-subsection' : 'section'}>
         <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_badges')}
-          <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
+          <a href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
             target="_blank" rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
             title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
@@ -3096,7 +3096,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class=${nested ? 'editor-subsection' : 'section'}>
         <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_views')}
-          <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
+          <a href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
             target="_blank" rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
             title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
