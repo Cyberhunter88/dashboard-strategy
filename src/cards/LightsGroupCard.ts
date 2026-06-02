@@ -10,12 +10,6 @@ import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { stripAreaName } from '../utils/name-utils';
 
-declare global {
-  interface Window {
-    customCards?: Array<{ type: string; name: string; description: string }>;
-    cardTools?: unknown;
-  }
-}
 
 interface LightsGroupConfig {
   config?: any;
@@ -212,10 +206,9 @@ class Simon42LightsGroupCard extends LitElement {
   }
 
   private _sortByLastChanged(a: string, b: string): number {
-    const stateA = this._getState(a);
-    const stateB = this._getState(b);
-    if (!stateA || !stateB) return 0;
-    return new Date(stateB.last_changed).getTime() - new Date(stateA.last_changed).getTime();
+    const lastA = this._getState(a)?.last_changed ?? '';
+    const lastB = this._getState(b)?.last_changed ?? '';
+    return lastB > lastA ? 1 : lastB < lastA ? -1 : 0;
   }
 
   private _getAreaForEntity(entityId: string): string | null {
@@ -320,7 +313,7 @@ class Simon42LightsGroupCard extends LitElement {
   private _groupByFloors(lights: string[]): FloorGroup[] {
     if (!this.hass) return [];
 
-    const areas: AreaRegistryEntry[] = Object.values(this.hass.areas);
+    const areas: AreaRegistryEntry[] = Registry.areas;
     const areaFloorMap = new Map<string, string | null>();
     for (const area of areas) {
       areaFloorMap.set(area.area_id, area.floor_id ?? null);
@@ -675,8 +668,7 @@ class Simon42LightsGroupCard extends LitElement {
   }
 
   getCardSize(): number {
-    const lights = this._getRelevantLights();
-    return Math.ceil(lights.length / 3) + 1;
+    return Math.ceil((this._cachedSourceIds?.size ?? 0) / 3) + 1;
   }
 }
 

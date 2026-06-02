@@ -8,11 +8,6 @@ import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 
-declare global {
-  interface Window {
-    customCards?: Array<{ type: string; name: string; description: string }>;
-  }
-}
 
 interface CoversGroupConfig {
   config?: any;
@@ -172,10 +167,9 @@ class Simon42CoversGroupCard extends LitElement {
     }
 
     relevant.sort((a, b) => {
-      const stateA = this.hass?.states[a];
-      const stateB = this.hass?.states[b];
-      if (!stateA || !stateB) return 0;
-      return new Date(stateB.last_changed).getTime() - new Date(stateA.last_changed).getTime();
+      const lastA = this.hass?.states[a]?.last_changed ?? '';
+      const lastB = this.hass?.states[b]?.last_changed ?? '';
+      return lastB > lastA ? 1 : lastB < lastA ? -1 : 0;
     });
 
     return relevant;
@@ -364,8 +358,7 @@ class Simon42CoversGroupCard extends LitElement {
   }
 
   getCardSize(): number {
-    const covers = this._getRelevantCovers();
-    return Math.ceil(covers.length / 3) + 1;
+    return Math.ceil((this._cachedFilteredIds?.size ?? 0) / 3) + 1;
   }
 }
 

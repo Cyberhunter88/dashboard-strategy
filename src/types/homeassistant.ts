@@ -95,3 +95,10 @@ export interface HomeAssistant {
 
 // Re-export commonly used websocket types for convenience
 export type { HassEntities, HassEntity, HassConfig, HassServices, Connection, Auth, MessageBase, HassServiceTarget };
+
+declare global {
+  interface Window {
+    customCards?: Array<{ type: string; name: string; description: string }>;
+    cardTools?: unknown;
+  }
+}

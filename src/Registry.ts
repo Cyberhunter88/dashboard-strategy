@@ -467,46 +467,6 @@ class Registry {
   }
 
   // =====================================================================
-  // Per-group hidden entities
-  // =====================================================================
-
-  /**
-   * Get set of entity IDs hidden for a specific group key across all areas.
-   *
-   * Used by summary cards that need per-domain/group filtering from
-   * areas_options.*.groups_options.{groupKey}.hidden.
-   */
-  static getHiddenForGroup(groupKey: string): Set<string> {
-    const hidden = new Set<string>();
-    const areasOptions = Registry._config.areas_options;
-    if (!areasOptions) return hidden;
-
-    for (const areaOpts of Object.values(areasOptions)) {
-      const groupOpts = areaOpts.groups_options?.[groupKey];
-      if (groupOpts?.hidden && Array.isArray(groupOpts.hidden)) {
-        for (const id of groupOpts.hidden) {
-          hidden.add(id);
-        }
-      }
-    }
-    return hidden;
-  }
-
-  /**
-   * Get set of entity IDs hidden for a specific group in a specific area.
-   *
-   * Used by room views for area-scoped entity filtering.
-   */
-  static getHiddenForAreaGroup(areaId: string, groupKey: string): Set<string> {
-    const hidden = new Set<string>();
-    const groupOpts = Registry._config.areas_options?.[areaId]?.groups_options?.[groupKey];
-    if (groupOpts?.hidden && Array.isArray(groupOpts.hidden)) {
-      for (const id of groupOpts.hidden) {
-        hidden.add(id);
-      }
-    }
-    return hidden;
-  }
 }
 
 export { Registry };

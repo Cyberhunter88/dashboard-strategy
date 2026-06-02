@@ -185,13 +185,9 @@ export function isEntityHiddenOrDisabled(entity: EntityRegistryEntry, _hass: Hom
  * most recently changed first.
  */
 export function sortByLastChanged(a: string, b: string, hass: HomeAssistant): number {
-  const stateA = hass.states[a];
-  const stateB = hass.states[b];
-  if (!stateA || !stateB) return 0;
-
-  const dateA = new Date(stateA.last_changed).getTime();
-  const dateB = new Date(stateB.last_changed).getTime();
-  return dateB - dateA; // Newest first
+  const lastA = hass.states[a]?.last_changed ?? '';
+  const lastB = hass.states[b]?.last_changed ?? '';
+  return lastB > lastA ? 1 : lastB < lastA ? -1 : 0;
 }
 
 /**

@@ -8,14 +8,7 @@ import { Registry } from '../Registry';
 import { trackHassUpdate, debugLog, timeStart, timeEnd } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { getBatteryEntities, SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
-
-declare global {
-  interface Window {
-    customCards?: Array<{ type: string; name: string; description: string }>;
-  }
-}
-
-type SummaryType = 'lights' | 'covers' | 'security' | 'batteries' | 'climate';
+import type { SummaryType } from '../types/strategy';
 
 interface SummaryCardConfig {
   summary_type: SummaryType;
@@ -276,41 +269,43 @@ class Simon42SummaryCard extends LitElement {
   private _getDisplayConfig(): DisplayConfig {
     const count = this._count;
     const hasItems = count > 0;
-
-    const configs: Record<SummaryType, DisplayConfig> = {
-      lights: {
-        icon: 'mdi:lamps',
-        name: hasItems ? `${count} ${count === 1 ? localize('summary.lights_on_one') : localize('summary.lights_on_many')}` : localize('summary.lights_off'),
-        color: hasItems ? 'orange' : 'grey',
-        path: 'lights',
-      },
-      covers: {
-        icon: 'mdi:blinds-horizontal',
-        name: hasItems ? `${count} ${count === 1 ? localize('summary.covers_open_one') : localize('summary.covers_open_many')}` : localize('summary.covers_closed'),
-        color: hasItems ? 'purple' : 'grey',
-        path: 'covers',
-      },
-      security: {
-        icon: 'mdi:security',
-        name: hasItems ? `${count} ${localize('summary.security_unsafe')}` : localize('summary.security_safe'),
-        color: hasItems ? 'yellow' : 'grey',
-        path: 'security',
-      },
-      batteries: {
-        icon: hasItems ? 'mdi:battery-alert' : 'mdi:battery-charging',
-        name: hasItems ? `${count} ${count === 1 ? localize('summary.batteries_critical_one') : localize('summary.batteries_critical_many')}` : localize('summary.batteries_ok'),
-        color: hasItems ? 'red' : 'grey',
-        path: 'batteries',
-      },
-      climate: {
-        icon: 'mdi:thermostat',
-        name: hasItems ? `${count} ${count === 1 ? localize('summary.climate_active_one') : localize('summary.climate_active_many')}` : localize('summary.climate_off'),
-        color: hasItems ? 'orange' : 'grey',
-        path: 'climate',
-      },
-    };
-
-    return configs[this._config.summary_type];
+    switch (this._config.summary_type) {
+      case 'lights':
+        return {
+          icon: 'mdi:lamps',
+          name: hasItems ? `${count} ${count === 1 ? localize('summary.lights_on_one') : localize('summary.lights_on_many')}` : localize('summary.lights_off'),
+          color: hasItems ? 'orange' : 'grey',
+          path: 'lights',
+        };
+      case 'covers':
+        return {
+          icon: 'mdi:blinds-horizontal',
+          name: hasItems ? `${count} ${count === 1 ? localize('summary.covers_open_one') : localize('summary.covers_open_many')}` : localize('summary.covers_closed'),
+          color: hasItems ? 'purple' : 'grey',
+          path: 'covers',
+        };
+      case 'security':
+        return {
+          icon: 'mdi:security',
+          name: hasItems ? `${count} ${localize('summary.security_unsafe')}` : localize('summary.security_safe'),
+          color: hasItems ? 'yellow' : 'grey',
+          path: 'security',
+        };
+      case 'batteries':
+        return {
+          icon: hasItems ? 'mdi:battery-alert' : 'mdi:battery-charging',
+          name: hasItems ? `${count} ${count === 1 ? localize('summary.batteries_critical_one') : localize('summary.batteries_critical_many')}` : localize('summary.batteries_ok'),
+          color: hasItems ? 'red' : 'grey',
+          path: 'batteries',
+        };
+      case 'climate':
+        return {
+          icon: 'mdi:thermostat',
+          name: hasItems ? `${count} ${count === 1 ? localize('summary.climate_active_one') : localize('summary.climate_active_many')}` : localize('summary.climate_off'),
+          color: hasItems ? 'orange' : 'grey',
+          path: 'climate',
+        };
+    }
   }
 
   private _handleClick(): void {
