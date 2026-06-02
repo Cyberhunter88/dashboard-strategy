@@ -63,9 +63,10 @@ class Simon42SummaryCard extends LitElement {
       gap: 8px;
       height: 100%;
       box-sizing: border-box;
-      --ha-card-border-width: 0;
-      background: var(--ha-card-background, var(--card-background-color, #fff));
+      background: var(--ha-card-background, var(--card-background-color));
+      border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color));
       border-radius: var(--ha-card-border-radius, 12px);
+      box-shadow: var(--ha-card-box-shadow, none);
     }
     ha-card:active {
       transform: scale(0.97);
@@ -351,6 +352,6 @@ customElements.define('dashboard-strategy-summary-card', Simon42SummaryCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'dashboard-strategy-summary-card',
-  name: 'Simon42 Summary Card',
-  description: 'Reactive summary card that counts entities dynamically',
+  name: 'Dashboard Strategy Summary Card',
+  description: 'Summary card that counts dashboard entities dynamically',
 });
