@@ -15,6 +15,7 @@ interface SummaryCardConfig {
   hide_mobile_app_batteries?: boolean;
   battery_critical_threshold?: number;
   compact?: boolean;
+  alignment?: 'start' | 'center';
 }
 
 interface DisplayConfig {
@@ -116,6 +117,13 @@ class Simon42SummaryCard extends LitElement {
     ha-card.compact .name {
       font-size: 13px;
       line-height: 18px;
+    }
+    ha-card.center {
+      justify-content: center;
+      text-align: center;
+    }
+    ha-card.center .content {
+      flex: 0 1 auto;
     }
   `;
 
@@ -356,7 +364,10 @@ class Simon42SummaryCard extends LitElement {
     const colorCss = COLOR_MAP[display.color] || COLOR_MAP.grey;
 
     return html`
-      <ha-card class=${this._config.compact ? 'compact' : ''} @click=${() => this._handleClick()}>
+      <ha-card class=${[
+        this._config.compact ? 'compact' : '',
+        this._config.alignment === 'center' ? 'center' : '',
+      ].filter(Boolean).join(' ')} @click=${() => this._handleClick()}>
         <div class="icon-wrap">
           <ha-icon class="icon" .icon=${display.icon} style="color: ${colorCss}"></ha-icon>
         </div>
