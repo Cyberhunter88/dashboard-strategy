@@ -54,47 +54,68 @@ class Simon42SummaryCard extends LitElement {
       cursor: pointer;
     }
     ha-card {
-      padding: 12px;
+      padding: 12px 16px;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 8px;
+      justify-content: flex-start;
+      text-align: left;
+      gap: 16px;
       height: 100%;
+      min-height: 72px;
       box-sizing: border-box;
       background: var(--ha-card-background, var(--card-background-color));
       border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color));
       border-radius: var(--ha-card-border-radius, 12px);
       box-shadow: var(--ha-card-box-shadow, none);
+      overflow: hidden;
     }
     ha-card:active {
       transform: scale(0.97);
       transition: transform 0.1s;
     }
+    .icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 40px;
+      width: 40px;
+      height: 40px;
+      color: var(--state-icon-color);
+    }
     .icon {
       --mdc-icon-size: 28px;
       transition: color 0.3s;
     }
+    .content {
+      min-width: 0;
+      flex: 1;
+    }
     .name {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
-      line-height: 1.2;
+      line-height: 20px;
       color: var(--primary-text-color);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     ha-card.compact {
-      padding: 6px 8px;
-      gap: 3px;
-      min-height: 42px;
-      border-radius: 10px;
+      padding: 8px 12px;
+      gap: 10px;
+      min-height: 52px;
+    }
+    ha-card.compact .icon-wrap {
+      flex-basis: 32px;
+      width: 32px;
+      height: 32px;
     }
     ha-card.compact .icon {
-      --mdc-icon-size: 18px;
+      --mdc-icon-size: 22px;
     }
     ha-card.compact .name {
-      font-size: 11px;
-      line-height: 1.1;
-      font-weight: 600;
+      font-size: 13px;
+      line-height: 18px;
     }
   `;
 
@@ -336,8 +357,12 @@ class Simon42SummaryCard extends LitElement {
 
     return html`
       <ha-card class=${this._config.compact ? 'compact' : ''} @click=${() => this._handleClick()}>
-        <ha-icon class="icon" .icon=${display.icon} style="color: ${colorCss}"></ha-icon>
-        <div class="name">${display.name}</div>
+        <div class="icon-wrap">
+          <ha-icon class="icon" .icon=${display.icon} style="color: ${colorCss}"></ha-icon>
+        </div>
+        <div class="content">
+          <div class="name">${display.name}</div>
+        </div>
       </ha-card>
     `;
   }

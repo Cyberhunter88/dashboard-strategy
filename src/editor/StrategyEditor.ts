@@ -134,6 +134,23 @@ class Simon42DashboardStrategyEditor extends LitElement {
     namesVisible: string[];
     namesHidden: string[];
   }>();
+  private _entitySelectOptionsCache: {
+    entities: HomeAssistant['entities'];
+    devices: HomeAssistant['devices'];
+    states: HomeAssistant['states'];
+    options: EntitySelectOption[];
+  } | null = null;
+  private _weatherStartAreaOptionsCache: {
+    areas: HomeAssistant['areas'];
+    hiddenKey: string;
+    orderKey: string;
+    options: AreaRegistryEntry[];
+  } | null = null;
+  private _weatherStartFloorOptionsCache: {
+    floors: HomeAssistant['floors'];
+    areas: AreaRegistryEntry[];
+    options: WeatherStartFloorOption[];
+  } | null = null;
 
   // Drag state (not reactive — no render needed)
   private _draggedElement: HTMLElement | null = null;
@@ -156,12 +173,33 @@ class Simon42DashboardStrategyEditor extends LitElement {
   set hass(hass: HomeAssistant) {
     const oldHass = this._hass;
     this._hass = hass;
+    if (
+      oldHass
+      && (oldHass.entities !== hass.entities || oldHass.devices !== hass.devices || oldHass.states !== hass.states)
+    ) {
+      this._entitySelectOptionsCache = null;
+    }
+    if (oldHass && (oldHass.areas !== hass.areas || oldHass.floors !== hass.floors)) {
+      this._weatherStartAreaOptionsCache = null;
+      this._weatherStartFloorOptionsCache = null;
+    }
     if (!oldHass) this.requestUpdate();
   }
 
   setConfig(config: Simon42StrategyConfig): void {
     if (this._isUpdatingConfig) return;
+    if (
+      this._config.areas_display?.hidden !== config.areas_display?.hidden
+      || this._config.areas_display?.order !== config.areas_display?.order
+    ) {
+      this._invalidateWeatherStartOptionsCaches();
+    }
     this._config = config;
+  }
+
+  private _invalidateWeatherStartOptionsCaches(): void {
+    this._weatherStartAreaOptionsCache = null;
+    this._weatherStartFloorOptionsCache = null;
   }
 
   // -- Dependency check -------------------------------------------------
@@ -176,9 +214,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _getAllEntitiesForSelect(): EntitySelectOption[] {
     if (!this._hass) return [];
+    if (
+      this._entitySelectOptionsCache
+      && this._entitySelectOptionsCache.entities === this._hass.entities
+      && this._entitySelectOptionsCache.devices === this._hass.devices
+      && this._entitySelectOptionsCache.states === this._hass.states
+    ) {
+      return this._entitySelectOptionsCache.options;
+    }
 
-    const entities = Object.values(this._hass.entities);
-    const devices = Object.values(this._hass.devices);
+    const entityMap = this._hass.entities || {};
+    const devices = Object.values(this._hass.devices || {});
 
     // Build device-to-area lookup
     const deviceAreaMap = new Map<string, string>();
@@ -189,10 +235,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     });
 
     const hass = this._hass;
-    return Object.keys(hass.states)
+    const options = Object.keys(hass.states)
       .map((entityId) => {
         const stateObj = hass.states[entityId];
-        const entity = entities.find((e) => e.entity_id === entityId);
+        const entity = entityMap[entityId];
 
         let areaId = entity?.area_id;
         if (!areaId && entity?.device_id) {
@@ -207,6 +253,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
+    this._entitySelectOptionsCache = {
+      entities: this._hass.entities,
+      devices: this._hass.devices,
+      states: this._hass.states,
+      options,
+    };
+    return options;
   }
 
   private _getAlarmEntities(): AlarmEntityOption[] {
@@ -1057,10 +1110,52 @@ class Simon42DashboardStrategyEditor extends LitElement {
     .custom-item-row {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .custom-item-row > * {
+      min-width: 0;
+    }
+    .weather-start-add-row {
+      align-items: stretch;
+      margin-top: 10px;
+    }
+    .weather-start-add-row .btn-primary {
+      flex: 0 1 auto;
+      padding: 10px 14px;
+    }
+    .weather-start-add-row select {
+      flex: 1 1 180px;
+      min-width: 160px;
     }
     .custom-item-validation {
       font-size: 12px;
       min-height: 16px;
+    }
+    .custom-content-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .editor-subsection {
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      padding: 12px;
+    }
+    .subsection-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
+    .subsection-title a {
+      margin-left: auto;
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 16px;
     }
 
     /* -- Section dividers ---------------------------------------------- */
@@ -1145,6 +1240,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
       .custom-item-row {
         flex-direction: column;
+      }
+      .weather-start-add-row .btn-primary,
+      .weather-start-add-row select {
+        width: 100%;
       }
 
       .entity-list-item {
@@ -1357,10 +1456,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
 
         ${this._renderSectionOrderPanel()}
-        ${this._renderCustomSectionsSection()}
-        ${this._renderCustomCardsSection()}
-        ${this._renderCustomBadgesSection()}
-        ${this._renderCustomViewsSection()}
+        ${this._renderCustomContentSection()}
       </div>
       ${this._cardPickerOpen ? this._renderCardPickerOverlay() : nothing}
     `;
@@ -1532,22 +1628,50 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _getWeatherStartAreaOptions(): AreaRegistryEntry[] {
     if (!this._hass) return [];
-    const hidden = new Set(this._config.areas_display?.hidden || []);
+    const hiddenList = this._config.areas_display?.hidden || [];
     const order = this._config.areas_display?.order || [];
-    return Object.values(this._hass.areas || {})
+    const hiddenKey = hiddenList.join('\u0000');
+    const orderKey = order.join('\u0000');
+    if (
+      this._weatherStartAreaOptionsCache
+      && this._weatherStartAreaOptionsCache.areas === this._hass.areas
+      && this._weatherStartAreaOptionsCache.hiddenKey === hiddenKey
+      && this._weatherStartAreaOptionsCache.orderKey === orderKey
+    ) {
+      return this._weatherStartAreaOptionsCache.options;
+    }
+
+    const hidden = new Set(hiddenList);
+    const orderMap = new Map(order.map((areaId, index) => [areaId, index]));
+    const options = Object.values(this._hass.areas || {})
       .filter((area) => !hidden.has(area.area_id))
       .sort((a, b) => {
-        const ai = order.indexOf(a.area_id);
-        const bi = order.indexOf(b.area_id);
+        const ai = orderMap.get(a.area_id) ?? -1;
+        const bi = orderMap.get(b.area_id) ?? -1;
         const ae = ai >= 0 ? ai : 9999;
         const be = bi >= 0 ? bi : 9999;
         return ae - be || a.name.localeCompare(b.name);
       });
+    this._weatherStartAreaOptionsCache = {
+      areas: this._hass.areas,
+      hiddenKey,
+      orderKey,
+      options,
+    };
+    return options;
   }
 
   private _getWeatherStartFloorOptions(): WeatherStartFloorOption[] {
     if (!this._hass) return [];
     const areas = this._getWeatherStartAreaOptions();
+    if (
+      this._weatherStartFloorOptionsCache
+      && this._weatherStartFloorOptionsCache.floors === this._hass.floors
+      && this._weatherStartFloorOptionsCache.areas === areas
+    ) {
+      return this._weatherStartFloorOptionsCache.options;
+    }
+
     const floorIds = new Set<string>();
     let hasFloorlessAreas = false;
     for (const area of areas) {
@@ -1568,6 +1692,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
       floors.push({ floor_id: null, name: localize('sections.areas_other'), icon: 'mdi:home-outline' });
     }
 
+    this._weatherStartFloorOptionsCache = {
+      floors: this._hass.floors,
+      areas,
+      options: floors,
+    };
     return floors;
   }
 
@@ -2028,9 +2157,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
             `;
           })}
         </div>
-        <div class="custom-item-row" style="margin-top: 10px; align-items: center;">
+        <div class="custom-item-row weather-start-add-row">
           <button class="btn-primary" @click=${this._openCardPickerForWeatherStartCard}>
-            ${localize('editor.add_custom_card')}
+            ${localize('editor.weather_start_add_card')}
           </button>
           ${!hasSummariesBlock ? html`
             <button class="btn-primary" @click=${this._addWeatherStartSummaries}>
@@ -2038,13 +2167,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
             </button>
           ` : nothing}
           <button class="btn-primary" @click=${this._addWeatherStartSection}>
-            ${localize('editor.add_custom_section')}
+            ${localize('editor.weather_start_add_section')}
           </button>
-          <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartArea}>
+          <select @change=${this._addWeatherStartArea}>
             <option value="">${localize('editor.weather_start_add_area')}</option>
             ${unplacedAreas.map((area) => html`<option value=${area.area_id}>${area.name}</option>`)}
           </select>
-          <select style="flex:1; min-width: 180px;" @change=${this._addWeatherStartFloor}>
+          <select @change=${this._addWeatherStartFloor}>
             <option value="">${localize('editor.weather_start_add_floor')}</option>
             ${floors.map((floor) => html`<option value=${floor.floor_id || '__none__'}>${floor.name}</option>`)}
           </select>
@@ -2822,14 +2951,31 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _renderCustomCardsSection(): TemplateResult {
+  private _renderCustomContentSection(): TemplateResult {
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.section_custom_content')}</div>
+        <div class="description" style="margin-left: 0; margin-bottom: 12px;">
+          ${localize('editor.section_custom_content_desc')}
+        </div>
+        <div class="custom-content-grid">
+          ${this._renderCustomCardsSection(true)}
+          ${this._renderCustomSectionsSection(true)}
+          ${this._renderCustomBadgesSection(true)}
+          ${this._renderCustomViewsSection(true)}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderCustomCardsSection(nested = false): TemplateResult {
     const customCards = this._config.custom_cards || [];
     const customCardsHeading = this._config.custom_cards_heading || '';
     const customCardsIcon = this._config.custom_cards_icon || '';
 
     return html`
-      <div class="section">
-        <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+      <div class=${nested ? 'editor-subsection' : 'section'}>
+        <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_cards')}
           <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
             target="_blank" rel="noopener"
@@ -2864,12 +3010,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _renderCustomSectionsSection(): TemplateResult {
+  private _renderCustomSectionsSection(nested = false): TemplateResult {
     const customSections = this._config.custom_sections || [];
 
     return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.section_custom_sections')}</div>
+      <div class=${nested ? 'editor-subsection' : 'section'}>
+        <div class=${nested ? 'subsection-title' : 'section-title'}>${localize('editor.section_custom_sections')}</div>
         <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_sections_help')}</div>
 
         <div id="custom-sections-list">
@@ -2885,12 +3031,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _renderCustomBadgesSection(): TemplateResult {
+  private _renderCustomBadgesSection(nested = false): TemplateResult {
     const customBadges = this._config.custom_badges || [];
 
     return html`
-      <div class="section">
-        <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+      <div class=${nested ? 'editor-subsection' : 'section'}>
+        <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_badges')}
           <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
             target="_blank" rel="noopener"
@@ -2912,12 +3058,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _renderCustomViewsSection(): TemplateResult {
+  private _renderCustomViewsSection(nested = false): TemplateResult {
     const customViews = this._config.custom_views || [];
 
     return html`
-      <div class="section">
-        <div class="section-title" style="display: flex; align-items: center; gap: 8px;">
+      <div class=${nested ? 'editor-subsection' : 'section'}>
+        <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
           ${localize('editor.section_custom_views')}
           <a href="https://github.com/TheRealSimon42/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
             target="_blank" rel="noopener"
@@ -3126,11 +3272,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
 
     // Sort areas by configured order
+    const areaOrderMap = new Map(areaOrder.map((areaId, index) => [areaId, index]));
+    const originalIndexMap = new Map(allAreas.map((area, index) => [area.area_id, index]));
     const sortedAreas = [...allAreas].sort((a, b) => {
-      const orderA = areaOrder.indexOf(a.area_id);
-      const orderB = areaOrder.indexOf(b.area_id);
-      const effectiveA = orderA !== -1 ? orderA : 9999 + allAreas.indexOf(a);
-      const effectiveB = orderB !== -1 ? orderB : 9999 + allAreas.indexOf(b);
+      const orderA = areaOrderMap.get(a.area_id);
+      const orderB = areaOrderMap.get(b.area_id);
+      const effectiveA = orderA !== undefined ? orderA : 9999 + (originalIndexMap.get(a.area_id) ?? 0);
+      const effectiveB = orderB !== undefined ? orderB : 9999 + (originalIndexMap.get(b.area_id) ?? 0);
       return effectiveA - effectiveB;
     });
 
@@ -3706,13 +3854,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Favorites --------------------------------------------------------
 
-  private _addFavoriteFromSelect(): void {
-    const select = this.shadowRoot!.querySelector('#favorite-entity-select') as HTMLSelectElement | null;
-    if (!select || !select.value) return;
-    this._addFavoriteEntity(select.value);
-    select.value = '';
-  }
-
   private _addFavoriteEntity(entityId: string): void {
     if (!this._hass) return;
     const currentFavorites = this._config.favorite_entities || [];
@@ -3746,13 +3887,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   // -- Room Pins --------------------------------------------------------
-
-  private _addRoomPinFromSelect(): void {
-    const select = this.shadowRoot!.querySelector('#room-pin-entity-select') as HTMLSelectElement | null;
-    if (!select || !select.value) return;
-    this._addRoomPinEntity(select.value);
-    select.value = '';
-  }
 
   private _addRoomPinEntity(entityId: string): void {
     if (!this._hass) return;
@@ -4281,6 +4415,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       delete newConfig.areas_display;
     }
 
+    this._invalidateWeatherStartOptionsCaches();
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
@@ -4656,6 +4791,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       },
     };
 
+    this._invalidateWeatherStartOptionsCaches();
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
