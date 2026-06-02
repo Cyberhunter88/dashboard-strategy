@@ -2,7 +2,240 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.3.4-beta.9...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.10.0...HEAD).
+
+<a name="1.10.0"></a>
+## [1.10.0] - 2026-06-02
+### Features
+- pin individual areas to the top navigation bar [`11cc6b5`](https://github.com/Cyberhunter88/dashboard-strategy/commit/11cc6b5)
+
+### Chores
+- release v1.10.0 [`75a60f2`](https://github.com/Cyberhunter88/dashboard-strategy/commit/75a60f2)
+
+<a name="1.9.13"></a>
+## [1.9.13] - 2026-06-02
+### Bugfixes
+- update all fork references from TheRealSimon42 to Cyberhunter88 ([#14](https://github.com/Cyberhunter88/dashboard-strategy/issues/14)) [`8b476f8`](https://github.com/Cyberhunter88/dashboard-strategy/commit/8b476f8)
+
+### Chores
+- release v1.9.13 [`38d0874`](https://github.com/Cyberhunter88/dashboard-strategy/commit/38d0874)
+
+<a name="1.9.12"></a>
+## [1.9.12] - 2026-06-02
+### Chores
+- release v1.9.12 [`ff0b057`](https://github.com/Cyberhunter88/dashboard-strategy/commit/ff0b057)
+
+<a name="1.9.11"></a>
+## [1.9.11] - 2026-06-02
+### Chores
+- release v1.9.11 [`d18de73`](https://github.com/Cyberhunter88/dashboard-strategy/commit/d18de73)
+
+<a name="1.9.10"></a>
+## [1.9.10] - 2026-06-02
+### Chores
+- release v1.9.10 [`f702455`](https://github.com/Cyberhunter88/dashboard-strategy/commit/f702455)
+
+<a name="1.9.9"></a>
+## [1.9.9] - 2026-06-02
+### Chores
+- release v1.9.9 [`ece63b2`](https://github.com/Cyberhunter88/dashboard-strategy/commit/ece63b2)
+
+<a name="1.9.8"></a>
+## [1.9.8] - 2026-06-02
+### Chores
+- release v1.9.8 [`ddd5c53`](https://github.com/Cyberhunter88/dashboard-strategy/commit/ddd5c53)
+
+<a name="1.9.7"></a>
+## [1.9.7] - 2026-06-02
+### Chores
+- release v1.9.7 [`c18cfe3`](https://github.com/Cyberhunter88/dashboard-strategy/commit/c18cfe3)
+
+<a name="1.9.6"></a>
+## [1.9.6] - 2026-06-02
+### Chores
+- release v1.9.6 [`291e017`](https://github.com/Cyberhunter88/dashboard-strategy/commit/291e017)
+
+<a name="1.9.5"></a>
+## [1.9.5] - 2026-06-02
+### Chores
+- release v1.9.5 [`2ccb7bc`](https://github.com/Cyberhunter88/dashboard-strategy/commit/2ccb7bc)
+
+<a name="1.9.4"></a>
+## [1.9.4] - 2026-06-01
+### Chores
+- release v1.9.4 [`1378606`](https://github.com/Cyberhunter88/dashboard-strategy/commit/1378606)
+
+<a name="1.9.3"></a>
+## [1.9.3] - 2026-06-01
+### Chores
+- release v1.9.3 [`550c893`](https://github.com/Cyberhunter88/dashboard-strategy/commit/550c893)
+
+<a name="1.9.2"></a>
+## [1.9.2] - 2026-06-01
+### Chores
+- release v1.9.2 [`dd82c06`](https://github.com/Cyberhunter88/dashboard-strategy/commit/dd82c06)
+
+<a name="1.9.1"></a>
+## [1.9.1] - 2026-06-01
+### Chores
+- release v1.9.1 [`7d32616`](https://github.com/Cyberhunter88/dashboard-strategy/commit/7d32616)
+
+<a name="1.9.0"></a>
+## [1.9.0] - 2026-06-01
+### Features
+- visual card picker dialog in the editor [`26a5da1`](https://github.com/Cyberhunter88/dashboard-strategy/commit/26a5da1)
+
+### Chores
+- bump version to 1.9.0 [`20f2cd2`](https://github.com/Cyberhunter88/dashboard-strategy/commit/20f2cd2)
+
+### Documentation
+- update CLAUDE.md for v1.9.0 visual card picker [`a83a673`](https://github.com/Cyberhunter88/dashboard-strategy/commit/a83a673)
+
+<a name="1.8.0"></a>
+## [1.8.0] - 2026-06-01
+### Features
+- per-block YAML override for the weather_start layout [`69b2395`](https://github.com/Cyberhunter88/dashboard-strategy/commit/69b2395)
+
+### Documentation
+- update CLAUDE.md for v1.8.0 weather_start YAML overrides [`21ee46b`](https://github.com/Cyberhunter88/dashboard-strategy/commit/21ee46b)
+
+<a name="1.7.0"></a>
+## [1.7.0] - 2026-06-01
+### Features
+- reorderable blocks for the weather_start layout via weather_start_order [`bbd3f12`](https://github.com/Cyberhunter88/dashboard-strategy/commit/bbd3f12)
+
+<a name="1.6.12"></a>
+## [1.6.12] - 2026-06-01
+### Bugfixes
+- match weather_start date card design to the native clock card [`e7275f4`](https://github.com/Cyberhunter88/dashboard-strategy/commit/e7275f4)
+
+<a name="1.6.11"></a>
+## [1.6.11] - 2026-06-01
+### Bugfixes
+- fix weather_start clock digital style and button-card date rendering [`68d68f7`](https://github.com/Cyberhunter88/dashboard-strategy/commit/68d68f7)
+
+### Chores
+- release v1.6.11 [`6ec2340`](https://github.com/Cyberhunter88/dashboard-strategy/commit/6ec2340)
+
+### Documentation
+- update CLAUDE.md for v1.6.11 clock/date fixes [`b383c79`](https://github.com/Cyberhunter88/dashboard-strategy/commit/b383c79)
+
+<a name="1.6.10"></a>
+## [1.6.10] - 2026-06-01
+### Bugfixes
+- replace style blocks in markdown cards ([#11](https://github.com/Cyberhunter88/dashboard-strategy/issues/11)) [`a34c730`](https://github.com/Cyberhunter88/dashboard-strategy/commit/a34c730)
+
+### Documentation
+- update CLAUDE.md for v1.6.10 style tag sanitization fix [`85341c9`](https://github.com/Cyberhunter88/dashboard-strategy/commit/85341c9)
+
+<a name="1.6.9"></a>
+## [1.6.9] - 2026-06-01
+### Chores
+- release v1.6.9 with markdown style parsing fix and 32px spacing between floor groups in columns [`f6e0580`](https://github.com/Cyberhunter88/dashboard-strategy/commit/f6e0580)
+
+<a name="1.6.8"></a>
+## [1.6.8] - 2026-06-01
+### Chores
+- release v1.6.8 with centered clock/date, custom sizes, and stable grouping for Keller/Weitere Bereiche columns [`5901490`](https://github.com/Cyberhunter88/dashboard-strategy/commit/5901490)
+
+<a name="1.6.7"></a>
+## [1.6.7] - 2026-06-01
+### Features
+- configurable clock/date font sizes in the weather_start layout [`87b4bd5`](https://github.com/Cyberhunter88/dashboard-strategy/commit/87b4bd5)
+
+### Chores
+- bump version to v1.6.7 [`3e6220c`](https://github.com/Cyberhunter88/dashboard-strategy/commit/3e6220c)
+
+### Documentation
+- update CLAUDE.md for v1.6.7 clock_size/date_size [`4447a01`](https://github.com/Cyberhunter88/dashboard-strategy/commit/4447a01)
+
+<a name="1.6.6"></a>
+## [1.6.6] - 2026-06-01
+### Bugfixes
+- fix eight code review findings [`8b36716`](https://github.com/Cyberhunter88/dashboard-strategy/commit/8b36716)
+
+### Chores
+- version bump 1.6.5 to 1.6.6 [`637e8b5`](https://github.com/Cyberhunter88/dashboard-strategy/commit/637e8b5)
+
+### Documentation
+- update CLAUDE.md for completed v1.6.6 features [`e5e5454`](https://github.com/Cyberhunter88/dashboard-strategy/commit/e5e5454)
+
+<a name="1.6.5"></a>
+## [1.6.5] - 2026-06-01
+### Features
+- add weather start page layout [`1e87629`](https://github.com/Cyberhunter88/dashboard-strategy/commit/1e87629)
+
+<a name="1.6.4"></a>
+## [1.6.4] - 2026-06-01
+### Chores
+- improve editor room block grouping [`3c8c856`](https://github.com/Cyberhunter88/dashboard-strategy/commit/3c8c856)
+- release v1.6.4 [`8775817`](https://github.com/Cyberhunter88/dashboard-strategy/commit/8775817)
+
+<a name="1.6.3"></a>
+## [1.6.3] - 2026-06-01
+### Chores
+- release v1.6.3 [`57502c5`](https://github.com/Cyberhunter88/dashboard-strategy/commit/57502c5)
+
+<a name="1.6.2"></a>
+## [1.6.2] - 2026-06-01
+### Chores
+- release v1.6.2 [`5d308e0`](https://github.com/Cyberhunter88/dashboard-strategy/commit/5d308e0)
+
+<a name="1.6.1"></a>
+## [1.6.1] - 2026-06-01
+### Features
+- add area custom section support [`6bcdf17`](https://github.com/Cyberhunter88/dashboard-strategy/commit/6bcdf17)
+
+### Chores
+- release v1.6.1 [`a0c9aef`](https://github.com/Cyberhunter88/dashboard-strategy/commit/a0c9aef)
+
+<a name="1.6.0"></a>
+## [1.6.0] - 2026-06-01
+### Features
+- add area custom section support [`ed83351`](https://github.com/Cyberhunter88/dashboard-strategy/commit/ed83351)
+
+<a name="1.5.0"></a>
+## [1.5.0] - 2026-06-01
+### Features
+- custom overview sections and room stack ordering [`3460f9d`](https://github.com/Cyberhunter88/dashboard-strategy/commit/3460f9d)
+- forward-compatible stack ordering helper [`6d5e8cd`](https://github.com/Cyberhunter88/dashboard-strategy/commit/6d5e8cd)
+- room stack type definitions and default stack order [`718437f`](https://github.com/Cyberhunter88/dashboard-strategy/commit/718437f)
+
+### Documentation
+- design spec for reorderable stacks in room views [`874f8ae`](https://github.com/Cyberhunter88/dashboard-strategy/commit/874f8ae)
+
+<a name="1.4.0"></a>
+## [1.4.0] - 2026-06-01
+### Features
+- per-area custom cards in room views with top/bottom placement [`27d90db`](https://github.com/Cyberhunter88/dashboard-strategy/commit/27d90db)
+- add per-area custom card UI subsection in the editor [`bacbcef`](https://github.com/Cyberhunter88/dashboard-strategy/commit/bacbcef)
+- add per-area custom card config handlers [`a79080b`](https://github.com/Cyberhunter88/dashboard-strategy/commit/a79080b)
+- add area custom card editor translations in German and English [`6884c62`](https://github.com/Cyberhunter88/dashboard-strategy/commit/6884c62)
+
+### Chores
+- release 1.4.0 per-area custom cards in room views [`1f45d47`](https://github.com/Cyberhunter88/dashboard-strategy/commit/1f45d47)
+
+### Documentation
+- design and implementation plan for custom cards in room views [`eb4f403`](https://github.com/Cyberhunter88/dashboard-strategy/commit/eb4f403)
+
+<a name="1.3.4-beta.11"></a>
+## [1.3.4-beta.11] - 2026-06-01
+### Features
+- UPS/USV auto-detection in room views via show_ups_in_rooms [`17219bd`](https://github.com/Cyberhunter88/dashboard-strategy/commit/17219bd)
+
+### Documentation
+- update README after UPS/USV room view changes [`8ffe650`](https://github.com/Cyberhunter88/dashboard-strategy/commit/8ffe650)
+
+<a name="1.3.4-beta.10"></a>
+## [1.3.4-beta.10] - 2026-06-01
+### Features
+- rename fork to dashboard-strategy to avoid global custom-element collisions with upstream [`9c7e466`](https://github.com/Cyberhunter88/dashboard-strategy/commit/9c7e466)
+
+### Bugfixes
+- stop gitignoring the entry file so HACS can find it [`7f66a8e`](https://github.com/Cyberhunter88/dashboard-strategy/commit/7f66a8e)
+
+### Documentation
+- clean up README HTML and sections [`228e648`](https://github.com/Cyberhunter88/dashboard-strategy/commit/228e648)
 
 <a name="1.3.4-beta.9"></a>
 ## [1.3.4-beta.9] - 2026-06-01

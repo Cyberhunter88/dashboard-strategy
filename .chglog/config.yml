@@ -2,7 +2,7 @@
 template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
-  repository_url: https://github.com/TheRealSimon42/dashboard-strategy
+  repository_url: https://github.com/Cyberhunter88/dashboard-strategy
 options:
   tag_filter_pattern: '^v[0-9]+\.[0-9]+\.[0-9]+$'
   commits:
