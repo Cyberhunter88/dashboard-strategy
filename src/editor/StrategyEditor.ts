@@ -2587,33 +2587,35 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
         ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
 
-        ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
-          (checked) => this._toggleChanged('show_clock_card', checked, true))}
-        <div class="description">${localize('editor.show_clock_card_desc')}</div>
+        ${overviewLayout !== 'weather_start' ? html`
+          ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
+            (checked) => this._toggleChanged('show_clock_card', checked, true))}
+          <div class="description">${localize('editor.show_clock_card_desc')}</div>
 
-        <div class="form-row">
-          <label for="alarm-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.alarm_entity')}</label>
-          <select id="alarm-entity"
-            style="flex: 1;"
-            @change=${this._alarmEntityChanged}>
-            <option value="" ?selected=${!alarmEntity}>${localize('editor.alarm_none')}</option>
-            ${alarmEntities.map((entity) => html`
-              <option value=${entity.entity_id} ?selected=${entity.entity_id === alarmEntity}>
-                ${entity.name}
-              </option>
-            `)}
-          </select>
-        </div>
-        <div class="description">${localize('editor.alarm_desc')}</div>
+          <div class="form-row">
+            <label for="alarm-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.alarm_entity')}</label>
+            <select id="alarm-entity"
+              style="flex: 1;"
+              @change=${this._alarmEntityChanged}>
+              <option value="" ?selected=${!alarmEntity}>${localize('editor.alarm_none')}</option>
+              ${alarmEntities.map((entity) => html`
+                <option value=${entity.entity_id} ?selected=${entity.entity_id === alarmEntity}>
+                  ${entity.name}
+                </option>
+              `)}
+            </select>
+          </div>
+          <div class="description">${localize('editor.alarm_desc')}</div>
 
-        ${this._renderCheckbox('show-search-card', localize('editor.show_search_card'), showSearchCard,
-          (checked) => this._toggleChanged('show_search_card', checked, false),
-          !hasSearchCardDeps)}
-        <div class="description">
-          ${hasSearchCardDeps
-            ? localize('editor.show_search_card_desc')
-            : html`<span>&#x26A0;&#xFE0F; ${unsafeHTML(localize('editor.show_search_card_missing'))}</span>`}
-        </div>
+          ${this._renderCheckbox('show-search-card', localize('editor.show_search_card'), showSearchCard,
+            (checked) => this._toggleChanged('show_search_card', checked, false),
+            !hasSearchCardDeps)}
+          <div class="description">
+            ${hasSearchCardDeps
+              ? localize('editor.show_search_card_desc')
+              : html`<span>&#x26A0;&#xFE0F; ${unsafeHTML(localize('editor.show_search_card_missing'))}</span>`}
+          </div>
+        ` : nothing}
       </div>
     `;
   }
