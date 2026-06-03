@@ -572,6 +572,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           {
             type: 'custom:dashboard-strategy-lights-group-card',
             entities: roomEntities.lights,
+            config: dashboardConfig,
             group_type: 'all',
             heading_label: localize('room.lighting'),
             heading_icon: 'mdi:lightbulb',

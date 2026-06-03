@@ -7,6 +7,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
+import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 
 
 interface CoversGroupConfig {
@@ -130,6 +131,7 @@ class Simon42CoversGroupCard extends LitElement {
 
     const relevant: string[] = [];
     for (const id of this._cachedFilteredIds) {
+      if (!isEntityCurrentlyAvailable(this.hass, id, this._config.config)) continue;
       const state = this.hass.states[id];
       if (!state) continue;
 

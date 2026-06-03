@@ -1483,6 +1483,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
         </div>
 
+        ${this._renderAdvancedOptionsSection()}
         ${this._renderSectionOrderPanel()}
         ${this._renderCustomContentSection()}
       </div>
@@ -1495,6 +1496,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
   // ====================================================================
 
   // -- Section order panel -----------------------------------------------
+
+  private _renderAdvancedOptionsSection(): TemplateResult {
+    const hideUnavailableEntities = this._config.hide_unavailable_entities === true;
+
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.section_advanced_options')}</div>
+
+        ${this._renderCheckbox('hide-unavailable-entities', localize('editor.hide_unavailable_entities'), hideUnavailableEntities,
+          (checked) => this._toggleChanged('hide_unavailable_entities', checked, false))}
+        <div class="description">${localize('editor.hide_unavailable_entities_desc')}</div>
+      </div>
+    `;
+  }
 
   private _getSectionsOrder(): SectionKey[] {
     return this._config.sections_order || [...DEFAULT_SECTIONS_ORDER];
