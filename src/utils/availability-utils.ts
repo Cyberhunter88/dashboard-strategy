@@ -40,13 +40,32 @@ function withAvailabilityVisibility<T extends Record<string, any>>(config: T): T
   };
 }
 
+function withAvailabilityConditionalCard(card: LovelaceCardConfig): LovelaceCardConfig {
+  const entity = card.entity;
+  if (typeof entity !== 'string' || entity.length === 0) return card;
+  if (card.type === 'conditional') return card;
+
+  return {
+    type: 'conditional',
+    conditions: availabilityVisibility(entity),
+    card,
+  };
+}
+
 function applyToCard(card: LovelaceCardConfig): LovelaceCardConfig {
-  let next: LovelaceCardConfig = withAvailabilityVisibility(card);
+  let next: LovelaceCardConfig = card;
 
   if (Array.isArray(next.cards)) {
     next = {
       ...next,
       cards: next.cards.map((child: LovelaceCardConfig) => applyToCard(child)),
+    };
+  }
+
+  if (next.card && typeof next.card === 'object' && !Array.isArray(next.card)) {
+    next = {
+      ...next,
+      card: applyToCard(next.card as LovelaceCardConfig),
     };
   }
 
@@ -60,7 +79,7 @@ function applyToCard(card: LovelaceCardConfig): LovelaceCardConfig {
     };
   }
 
-  return next;
+  return withAvailabilityConditionalCard(next);
 }
 
 export function withUnavailableEntitiesHidden(
