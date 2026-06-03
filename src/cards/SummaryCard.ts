@@ -9,11 +9,13 @@ import { trackHassUpdate, debugLog, timeStart, timeEnd } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { getBatteryEntities, SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
 import type { SummaryType } from '../types/strategy';
+import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 
 interface SummaryCardConfig {
   summary_type: SummaryType;
   hide_mobile_app_batteries?: boolean;
   battery_critical_threshold?: number;
+  hide_unavailable_entities?: boolean;
   compact?: boolean;
   alignment?: 'start' | 'center';
 }
@@ -245,12 +247,14 @@ class Simon42SummaryCard extends LitElement {
     switch (this._config.summary_type) {
       case 'lights':
         for (const id of this._relevantEntityIds) {
+          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
           if (hass.states[id]?.state === 'on') count++;
         }
         return count;
 
       case 'covers':
         for (const id of this._relevantEntityIds) {
+          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
           const s = hass.states[id]?.state;
           if (s === 'open' || s === 'opening') count++;
         }
@@ -258,6 +262,7 @@ class Simon42SummaryCard extends LitElement {
 
       case 'security':
         for (const id of this._relevantEntityIds) {
+          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
           const state = hass.states[id];
           if (!state) continue;
           if (id.startsWith('lock.') && state.state === 'unlocked') count++;
@@ -269,6 +274,7 @@ class Simon42SummaryCard extends LitElement {
       case 'batteries': {
         const critThreshold = this._config.battery_critical_threshold ?? 20;
         for (const id of this._relevantEntityIds) {
+          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
           const state = hass.states[id];
           if (!state) continue;
           if (id.startsWith('binary_sensor.')) {
@@ -286,6 +292,7 @@ class Simon42SummaryCard extends LitElement {
 
       case 'climate':
         for (const id of this._relevantEntityIds) {
+          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
           const s = hass.states[id]?.state;
           if (s && s !== 'off' && s !== 'unavailable' && s !== 'unknown') count++;
         }
