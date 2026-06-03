@@ -1,4 +1,4 @@
-﻿#  Dashboard Strategy
+﻿# Dashboard Strategy
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/v/release/Cyberhunter88/dashboard-strategy?style=for-the-badge&color=green)](https://github.com/Cyberhunter88/dashboard-strategy/releases)
@@ -21,13 +21,17 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 - **Etagen-Gruppierung** — Bereiche und Lichter optional nach Etagen gliedern
 - **Favoriten** — Beliebige Entitäten als Kacheln auf der Übersicht anpinnen
 - **Alarm-Panel** — Optionale Alarmanlage neben der Uhr
-- **Granulare Filterung** — Per Label (`no-dboard`), pro Bereich, pro Domain, pro Entity
+- **Granulare Filterung** — Per Label (`no_dboard`), pro Bereich, pro Domain, pro Entity
+- **Wetter-Startseite** — Alternative Startseite mit großem Uhr-/Datumsblock, Wetterblöcken, freien Karten, Abschnitten, Bereichen und Etagen in eigener Reihenfolge
 - **Teiloffene Rollos** — Optionale dritte Gruppe (Offen / Teiloffen / Geschlossen) mit Live-Übergängen
 - **Alert-Icons** — Optionale Alert-Badges auf Bereichskarten (Bewegung, Feuchtigkeit, Rauch, Wärme u.a.)
 - **Rauch- & Gasmelder** — In der Sicherheits-Übersicht, im Security-Summary-Count und als Badges in Raum-Views
+- **UPS/USV-Erkennung** — Automatische USV-Gruppen in Raum-Views mit Gauge und zugehörigen Kacheln
 - **Batch-Aktionen** — Heading-Badges für Gruppensteuerung (alle ein/aus, alle öffnen/schließen)
 - **Automationen & Skripte in Räumen** — Bereichs-zugeordnete Automationen und Skripte in Raum-Views anzeigen
 - **Eigene Karten** — Beliebige Karten via YAML auf der Übersicht einbinden
+- **Eigene Abschnitte** — Mehrere eigene Sections mit Überschrift, Icon und beliebigen Karten
+- **Eigene Karten pro Raum** — YAML, geführte Kacheln oder komplette Sections ober- oder unterhalb der automatischen Raum-Abschnitte
 - **Eigene Badges** — Beliebige Badges via YAML im Header (neben Personen-Chips)
 - **Custom Views** — Eigene Dashboard-Views mit beliebigen Cards via YAML
 - **Reaktive Updates** — Echtzeit-Aktualisierung via LitElement Custom Cards
@@ -82,7 +86,7 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
 
 **Geräte zuweisen** — Weise deine Geräte (Lampen, Sensoren, Rollos etc.) in den HA-Einstellungen einem Bereich zu. Die Strategy erkennt automatisch, welche Entitäten in welchem Raum sind.
 
-**Temperatur & Feuchtigkeit** — Die Bereichskarten auf der Übersicht zeigen Temperatur und Feuchtigkeit nur an, wenn du die Sensoren in den **Home Assistant Bereichseinstellungen** explizit zugewiesen hast (**Einstellungen → Bereiche → Bereich bearbeiten → Temperatur-Sensor / Feuchtigkeits-Sensor**). Diese Einstellung findest du in Home Assistant selbst, nicht im Strategy-Editor. Eine automatische Erkennung würde bei manchen Setups falsche Sensoren anzeigen (z.B. Drucker-Temperatur im Büro). HA's eigene Home Strategy macht es genauso. In den **Raum-Detail-Views** hingegen werden Sensoren automatisch als Badges erkannt — unerwünschte Badges können über das Label `no-dboard` oder den Strategy-Editor ausgeblendet werden.
+**Temperatur & Feuchtigkeit** — Die Bereichskarten auf der Übersicht zeigen Temperatur und Feuchtigkeit nur an, wenn du die Sensoren in den **Home Assistant Bereichseinstellungen** explizit zugewiesen hast (**Einstellungen → Bereiche → Bereich bearbeiten → Temperatur-Sensor / Feuchtigkeits-Sensor**). Diese Einstellung findest du in Home Assistant selbst, nicht im Strategy-Editor. Eine automatische Erkennung würde bei manchen Setups falsche Sensoren anzeigen (z.B. Drucker-Temperatur im Büro). HA's eigene Home Strategy macht es genauso. In den **Raum-Detail-Views** hingegen werden Sensoren automatisch als Badges erkannt — unerwünschte Badges können über das Label `no_dboard` oder den Strategy-Editor ausgeblendet werden.
 
 **Unerwünschte Entitäten ausblenden** — Nicht jede Entität soll im Dashboard auftauchen. Es gibt drei Wege:
 
@@ -92,10 +96,10 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Entitaet-auf-nicht-sichtbar-stellen-via-entity-config.gif" alt="Entität auf nicht sichtbar stellen" width="800" />
 </p>
 
-- **Label `no-dboard`** — Erstelle in Home Assistant unter **Einstellungen → Labels** ein Label `no-dboard` und weise es Entitäten zu. Die Entität wird aus allen simon42-Strategy-Dashboards global ausgeblendet, bleibt aber in anderen (manuellen) Dashboards sichtbar.
+- **Label `no_dboard`** — Erstelle in Home Assistant unter **Einstellungen → Labels** ein Label `no_dboard` und weise es Entitäten zu. Die Entität wird aus dieser Dashboard Strategy global ausgeblendet, bleibt aber in anderen (manuellen) Dashboards sichtbar. Wichtig: Der Unterstrich ist relevant; `no-dboard` wird vom aktuellen Code nicht als Ausschluss-Label erkannt.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/no-dboard-label.png" alt="Label no-dboard in Home Assistant erstellen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/no-dboard-label.png" alt="Label no_dboard in Home Assistant erstellen" width="800" />
 </p>
 
 - **Im Strategy-Editor ausblenden** — Über das Konfigurationsmenü der Strategy können einzelne Entitäten pro Bereich und Domain individuell ein- und ausgeblendet werden. Das betrifft nur diese eine Strategy-Ansicht.
@@ -157,7 +161,9 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
 </p>
 
-**Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht.
+**Startseiten-Layout** — Standardmäßig zeigt die Übersicht klassische Sections. Alternativ kann die **Wetter-Startseite** aktiviert werden: große Uhr, Datum, aktuelle Wetterkarte, stündliche und tägliche Vorhersage, Zusammenfassungen, Bereiche, Etagen, eigene Karten und eigene Abschnitte können per Drag & Drop frei angeordnet werden. Einzelne Startseiten-Blöcke lassen sich zusätzlich mit eigenem Lovelace-YAML überschreiben.
+
+**Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht. Die Wetter-Entität kann automatisch erkannt oder im Editor festgelegt werden. Die Energie-Karte kann optional direkt auf das Home-Assistant-Energie-Dashboard verlinken.
 
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
 
@@ -191,6 +197,10 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Raum-Pins** — Spezielle Entitäten die in ihren zugeordneten Räumen ganz oben erscheinen. Ideal für Entitäten die nicht automatisch erkannt werden (z.B. Wetterstationen).
 
+**Raum-Abschnitte sortieren** — Die Reihenfolge der automatischen Raum-Abschnitte (USV, Energie, Kameras, Lichter, Schlösser, Klima, Rollos, Medien, Szenen, Sonstiges, Raum-Pins) kann pro Bereich angepasst werden.
+
+**UPS/USV** — Unterstützte USV-Geräte werden automatisch in Raum-Views gruppiert. Die Gruppe zeigt eine Batterie-Gauge und zugehörige Kacheln, z.B. NUT-/UPS-Signale. Die Erkennung ist standardmäßig aktiv und kann über `show_ups_in_rooms: false` deaktiviert werden.
+
 **Automationen & Skripte** — Optional können dem Bereich zugeordnete Automationen und Skripte in den Raum-Views angezeigt werden. Beide Optionen sind separat aktivierbar und standardmäßig aus.
 
 **Fenster- & Türkontakte** — Optional können Fensterkontakte und Türkontakte als Badges in den Raum-Views angezeigt werden. Zwei getrennte Toggles im Editor, standardmäßig aus. Absolute Luftfeuchtigkeit (z.B. von der Thermal Comfort Integration, `g/m³`) wird automatisch als Badge erkannt.
@@ -206,7 +216,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 ### Erweiterte Funktionen
 
 #### Eigene Karten
-Beliebige Lovelace-Karten via YAML zur Übersicht hinzufügen. Die Karten erscheinen in einer eigenen Section zwischen den Zusammenfassungen und den Bereichen. Überschrift und Icon der Section sind frei wählbar.
+Beliebige Lovelace-Karten via YAML zur Übersicht hinzufügen. Die Karten erscheinen standardmäßig in einer eigenen Section. Überschrift und Icon der Section sind frei wählbar. Jede Karte kann außerdem gezielt in bestehende Übersichtbereiche platziert werden, z.B. Übersicht, Bereiche, Wetter oder Energie.
 
 **Tipp:** Erstelle die Karte zuerst in einem normalen Dashboard, kopiere den YAML-Code und füge ihn im Editor ein.
 
@@ -219,6 +229,14 @@ content: "Willkommen zuhause!"
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Eigene-Karten-hinzufugen.gif" alt="Eigene Karten hinzufügen" width="800" />
 </p>
+
+#### Eigene Abschnitte
+
+Eigene Abschnitte sind vollständige Sections mit eigener Überschrift, eigenem Icon und beliebigen Karten. Sie eignen sich, wenn mehrere Custom Cards getrennt von der Standard-Section gruppiert werden sollen.
+
+#### Eigene Karten in Raum-Views
+
+Pro Bereich können zusätzliche Karten direkt in der Raum-View ergänzt werden. Unterstützt werden freies YAML, geführte Entity-Kacheln und komplette Sections. Die Platzierung ist pro Karte wählbar: oben vor den automatisch generierten Abschnitten oder unten danach.
 
 #### Eigene Badges
 
@@ -262,7 +280,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | Methode | Ebene | Beschreibung |
 |---------|-------|-------------|
 | Nicht sichtbar schalten | Global | Entität wird aus allen auto-generierten Strategies ausgeblendet |
-| Label `no-dboard` | Global | Entität wird nur aus simon42-Strategy-Dashboards ausgeblendet |
+| Label `no_dboard` | Global | Entität wird aus dieser Dashboard Strategy ausgeblendet |
 | `groups_options.hidden` | Pro Bereich | Entität nur in bestimmtem Bereich ausblenden |
 | Entity Registry | Automatisch | Hidden/Disabled Entities werden ignoriert |
 | Entity Category | Automatisch | Config/Diagnostic Entities werden ignoriert |
@@ -274,8 +292,10 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 
 | Option | Typ | Standard | Beschreibung |
 |--------|-----|----------|-------------|
+| `theme` | string | HA-Standard | Theme für alle automatisch generierten Views |
 | `show_clock_card` | boolean | `true` | Uhr auf der Übersicht |
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
+| `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
 | `show_search_card` | boolean | `false` | Such-Karte (benötigt custom:search-card) |
 | `show_light_summary` | boolean | `true` | Lichter-Zusammenfassung |
 | `show_covers_summary` | boolean | `true` | Rollo-Zusammenfassung |
@@ -288,26 +308,45 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `battery_low_threshold` | number | `50` | Schwellwert für niedrige Batterien (%) |
 | `show_weather` | boolean | `true` | Wetter-Karte |
 | `show_energy` | boolean | `true` | Energie-Dashboard |
+| `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
+| `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
+| `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
+| `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
+| `overview_layout` | `"default"` \| `"weather_start"` | `"default"` | Startseiten-Layout |
+| `sections_order` | string[] | Standard-Reihenfolge | Reihenfolge der Standard-Übersichts-Sections |
+| `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
+| `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
+| `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |
 | `group_by_floors` | boolean | `false` | Bereiche nach Etagen gliedern |
 | `show_partially_open_covers` | boolean | `false` | Teiloffene Rollos separat anzeigen |
 | `show_alerts_on_areas` | boolean | `false` | Alert-Icons auf Bereichskarten |
+| `show_switches_on_areas` | boolean | `false` | Switch-Steuerung auf Bereichskarten anzeigen |
 | `show_locks_in_rooms` | boolean | `false` | Schlösser in Raum-Views |
 | `show_automations_in_rooms` | boolean | `false` | Automationen in Raum-Views |
 | `show_scripts_in_rooms` | boolean | `false` | Skripte in Raum-Views |
+| `show_ups_in_rooms` | boolean | `true` | UPS/USV-Gruppen in Raum-Views anzeigen |
 | `show_window_contacts_in_rooms` | boolean | `false` | Fensterkontakte als Badges in Raum-Views |
 | `show_door_contacts_in_rooms` | boolean | `false` | Türkontakte als Badges in Raum-Views |
 | `use_default_area_sort` | boolean | `false` | HA-Sortierung für Bereiche verwenden |
 | `areas_display.hidden` | string[] | `[]` | Ausgeblendete Bereiche |
 | `areas_display.order` | string[] | `[]` | Reihenfolge der Bereiche |
+| `areas_display.nav_items` | string[] | `[]` | Einzelne Bereiche unabhängig von `show_room_views` in der Navigation anzeigen |
 | `areas_options` | object | `{}` | Entity-Filterung pro Bereich |
+| `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View |
+| `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln oder Sections pro Raum |
 | `room_pin_entities` | string[] | `[]` | Raum-Pin Entitäten |
+| `room_pins_show_state` | boolean | `false` | Status auf Raum-Pin-Kacheln anzeigen |
+| `room_pins_hide_last_changed` | boolean | `false` | `last_changed` auf Raum-Pin-Kacheln ausblenden |
 | `show_summary_views` | boolean | `false` | Summary-Views in Navigation |
 | `show_room_views` | boolean | `false` | Raum-Views in Navigation |
 | `group_lights_by_floors` | boolean | `false` | Lichter nach Etagen gruppieren |
+| `nested_light_groups` | boolean | `false` | Lichtgruppen als aufklappbare Container mit Mitgliedern anzeigen |
 | `custom_cards` | object[] | `[]` | Eigene Karten via YAML |
 | `custom_cards_heading` | string | `"Eigene Karten"` | Überschrift der Custom Cards Section |
 | `custom_cards_icon` | string | `"mdi:cards"` | Icon der Custom Cards Section |
+| `custom_cards[].target_section` | string | `"custom_cards"` | Ziel-Section für eine eigene Karte |
+| `custom_sections` | object[] | `[]` | Eigene vollständige Sections mit Karten |
 | `custom_badges` | object[] | `[]` | Eigene Badges im Header via YAML |
 | `custom_views` | object[] | `[]` | Eigene Views via YAML |
 
