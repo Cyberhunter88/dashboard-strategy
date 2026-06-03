@@ -1962,8 +1962,148 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._saveWeatherStartLayoutItems(items);
   }
 
+  private _getWeatherStartCustomCardIndex(
+    item: WeatherStartLayoutItem,
+    customCards: CustomCard[] = this._config.custom_cards || []
+  ): number {
+    if (item.type !== 'custom_card') return -1;
+    return customCards.findIndex((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
+  }
+
+  private _getWeatherStartCustomSectionIndex(
+    item: WeatherStartLayoutItem,
+    customSections: CustomSection[] = this._config.custom_sections || []
+  ): number {
+    if (item.type !== 'custom_section') return -1;
+    return customSections.findIndex((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id);
+  }
+
+  private _renderWeatherStartCustomCardEditor(card: CustomCard, index: number): TemplateResult {
+    const validationMsg = card._yaml_error
+      ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">&#x274C; ${card._yaml_error}</div>`
+      : card.yaml
+        ? html`<div style="color: var(--success-color, green); font-size: 12px; margin-top: 4px;">&#x2705; ${localize('editor.yaml_valid')}</div>`
+        : nothing;
+
+    return html`
+      <label class="form-row" style="margin: 0 0 8px 0;">
+        <span style="min-width: 150px;">${localize('editor.card_editor_title_label')}</span>
+        <input type="text"
+          style="flex: 1;"
+          .value=${card.editor_title || ''}
+          placeholder=${localize('editor.card_editor_title_placeholder')}
+          @change=${(e: Event) => this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)} />
+      </label>
+      <div class="description" style="margin: 0 0 8px 0;">${localize('editor.card_editor_title_help')}</div>
+      <label class="form-row" style="margin: 0 0 8px 0;">
+        <span style="min-width: 150px;">${localize('editor.card_dashboard_title_label')}</span>
+        <input type="text"
+          style="flex: 1;"
+          .value=${card.title || ''}
+          placeholder=${localize('editor.card_title_placeholder')}
+          @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)} />
+      </label>
+      <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_card_yaml_desc')}</div>
+      <textarea
+        rows="8"
+        style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
+        placeholder=${localize('editor.yaml_placeholder')}
+        .value=${card.yaml || ''}
+        @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}
+      ></textarea>
+      ${validationMsg}
+    `;
+  }
+
+  private _renderWeatherStartCustomSectionEditor(section: CustomSection, sectionIndex: number): TemplateResult {
+    const cards = section.cards || [];
+
+    return html`
+      <div class="custom-item-row" style="margin-bottom: 8px;">
+        <input type="text"
+          .value=${section.title || ''}
+          placeholder=${localize('editor.custom_section_title_placeholder')}
+          style="flex: 2;"
+          @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)} />
+        <input type="text"
+          .value=${section.icon || ''}
+          placeholder=${localize('editor.custom_section_icon_placeholder')}
+          style="flex: 1;"
+          @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)} />
+      </div>
+      <div class="description" style="margin: 0 0 8px 0;">${localize('editor.weather_start_section_cards_desc')}</div>
+      ${cards.length === 0
+        ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
+        : cards.map((card, cardIndex) => {
+          const validationMsg = card._yaml_error
+            ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
+            : card.yaml
+              ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+              : nothing;
+          return html`
+            <div class="custom-item" style="margin-bottom: 8px;">
+              <div class="custom-item-header">
+                <strong>${this._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong>
+                <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>&#x2715;</button>
+              </div>
+              <div class="custom-item-fields">
+                <label>${localize('editor.card_editor_title_label')}</label>
+                <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
+                  @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'editor_title', (e.target as HTMLInputElement).value)} />
+                <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+                <label>${localize('editor.card_dashboard_title_label')}</label>
+                <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
+                  @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'title', (e.target as HTMLInputElement).value)} />
+                <textarea rows="5" placeholder=${localize('editor.yaml_placeholder')}
+                  .value=${card.yaml || ''}
+                  style="width: 100%;"
+                  @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+                <div class="custom-item-validation">${validationMsg}</div>
+              </div>
+            </div>
+          `;
+        })}
+      <button class="btn-primary" style="margin-top: 4px;" @click=${() => this._openCardPickerForSection(sectionIndex)}>
+        ${localize('editor.add_card_to_section')}
+      </button>
+    `;
+  }
+
   private _removeWeatherStartItem(itemId: string): void {
-    this._saveWeatherStartLayoutItems(this._getWeatherStartLayoutItems().filter((item) => item.id !== itemId));
+    const items = this._getWeatherStartLayoutItems();
+    const item = items.find((entry) => entry.id === itemId);
+    const remainingItems = items.filter((entry) => entry.id !== itemId);
+
+    if (!item) {
+      this._saveWeatherStartLayoutItems(remainingItems);
+      return;
+    }
+
+    if (item.type === 'custom_card') {
+      const customCards = [...(this._config.custom_cards || [])];
+      const cardIndex = this._getWeatherStartCustomCardIndex(item, customCards);
+      if (cardIndex >= 0) customCards.splice(cardIndex, 1);
+      const newConfig: Simon42StrategyConfig = { ...this._config, weather_start_layout_items: remainingItems };
+      if (customCards.length > 0) newConfig.custom_cards = customCards;
+      else delete newConfig.custom_cards;
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+      return;
+    }
+
+    if (item.type === 'custom_section') {
+      const customSections = [...(this._config.custom_sections || [])];
+      const sectionIndex = this._getWeatherStartCustomSectionIndex(item, customSections);
+      if (sectionIndex >= 0) customSections.splice(sectionIndex, 1);
+      const newConfig: Simon42StrategyConfig = { ...this._config, weather_start_layout_items: remainingItems };
+      if (customSections.length > 0) newConfig.custom_sections = customSections;
+      else delete newConfig.custom_sections;
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+      return;
+    }
+
+    this._saveWeatherStartLayoutItems(remainingItems);
   }
 
   private _addWeatherStartSummaries(): void {
@@ -2049,6 +2189,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards, weather_start_layout_items: items };
       this._config = newConfig;
       this._fireConfigChanged(newConfig);
+      this._expandedWeatherBlocks = new Set([...this._expandedWeatherBlocks, `custom-card-${id}`]);
     });
   };
 
@@ -2134,6 +2275,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
             const isExpanded = this._expandedWeatherBlocks.has(item.id);
             const hasOverride = !!item.yaml;
             const canRemove = item.type !== 'area' && item.type !== 'floor';
+            const customCardIndex = this._getWeatherStartCustomCardIndex(item, customCards);
+            const customCard = customCardIndex >= 0 ? customCards[customCardIndex] : undefined;
+            const customSectionIndex = this._getWeatherStartCustomSectionIndex(item, customSections);
+            const customSection = customSectionIndex >= 0 ? customSections[customSectionIndex] : undefined;
             return html`
               <div>
                 <div class="section-order-item ${disabled ? 'disabled' : ''}"
@@ -2164,7 +2309,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </div>
                 ${isExpanded ? html`
                   <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
-                    ${item.type === 'summaries' ? html`
+                    ${customCard ? this._renderWeatherStartCustomCardEditor(customCard, customCardIndex) : nothing}
+                    ${customSection ? this._renderWeatherStartCustomSectionEditor(customSection, customSectionIndex) : nothing}
+                    ${!customCard && !customSection && item.type === 'summaries' ? html`
                       <label class="form-row" style="margin: 0 0 8px 0;">
                         <span style="min-width: 120px;">${localize('editor.weather_start_summary_size')}</span>
                         <select
@@ -2176,27 +2323,29 @@ class Simon42DashboardStrategyEditor extends LitElement {
                         </select>
                       </label>
                     ` : nothing}
-                    <label class="form-row" style="margin: 0 0 8px 0;">
+                    ${!customCard && !customSection ? html`
+                      <label class="form-row" style="margin: 0 0 8px 0;">
                       <input type="checkbox"
                         ?checked=${item.stack_with_previous === true}
                         @change=${(e: Event) => this._toggleWeatherStartItemStack(item.id, (e.target as HTMLInputElement).checked)} />
                       <span>${localize('editor.weather_start_stack_with_previous')}</span>
-                    </label>
-                    <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_block_yaml_desc')}</div>
-                    <textarea
-                      rows="6"
-                      style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
-                      placeholder=${localize('editor.yaml_placeholder')}
-                      .value=${item.yaml || ''}
-                      @change=${(e: Event) => this._updateWeatherStartItemYaml(item.id, (e.target as HTMLTextAreaElement).value)}
-                    ></textarea>
-                    ${item._yaml_error ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">${item._yaml_error}</div>` : nothing}
-                    ${item.parsed_config ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">${localize('editor.yaml_valid')}</div>` : nothing}
-                    ${hasOverride ? html`
-                      <button class="text-btn" style="margin-top:8px;"
-                        @click=${() => this._resetWeatherStartItemYaml(item.id)}>
-                        ${localize('editor.weather_start_block_reset')}
-                      </button>
+                      </label>
+                      <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_block_yaml_desc')}</div>
+                      <textarea
+                        rows="6"
+                        style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
+                        placeholder=${localize('editor.yaml_placeholder')}
+                        .value=${item.yaml || ''}
+                        @change=${(e: Event) => this._updateWeatherStartItemYaml(item.id, (e.target as HTMLTextAreaElement).value)}
+                      ></textarea>
+                      ${item._yaml_error ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">${item._yaml_error}</div>` : nothing}
+                      ${item.parsed_config ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">${localize('editor.yaml_valid')}</div>` : nothing}
+                      ${hasOverride ? html`
+                        <button class="text-btn" style="margin-top:8px;"
+                          @click=${() => this._resetWeatherStartItemYaml(item.id)}>
+                          ${localize('editor.weather_start_block_reset')}
+                        </button>
+                      ` : nothing}
                     ` : nothing}
                   </div>
                 ` : nothing}
@@ -2204,6 +2353,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
             `;
           })}
         </div>
+        <div class="description" style="margin: 12px 0 6px 0;">${localize('editor.weather_start_add_content_desc')}</div>
         <div class="custom-item-row weather-start-add-row">
           <button class="btn-primary" @click=${this._openCardPickerForWeatherStartCard}>
             ${localize('editor.weather_start_add_card')}
@@ -3002,15 +3152,22 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderCustomContentSection(): TemplateResult {
+    const isWeatherStart = (this._config.overview_layout || 'default') === 'weather_start';
+
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_custom_content')}</div>
         <div class="description" style="margin-left: 0; margin-bottom: 12px;">
           ${localize('editor.section_custom_content_desc')}
         </div>
+        ${isWeatherStart ? html`
+          <div class="empty-state" style="margin-bottom: 12px;">
+            ${localize('editor.custom_content_weather_start_hint')}
+          </div>
+        ` : nothing}
         <div class="custom-content-grid">
-          ${this._renderCustomCardsSection(true)}
-          ${this._renderCustomSectionsSection(true)}
+          ${isWeatherStart ? nothing : this._renderCustomCardsSection(true)}
+          ${isWeatherStart ? nothing : this._renderCustomSectionsSection(true)}
           ${this._renderCustomBadgesSection(true)}
           ${this._renderCustomViewsSection(true)}
         </div>
@@ -4162,6 +4319,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     customCards[index] = updated;
 
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
+    if (updated._yaml_error) {
+      this._config = newConfig;
+      this.requestUpdate();
+      return;
+    }
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
@@ -4268,6 +4430,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     section.cards = cards;
     customSections[sectionIndex] = section;
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+    if (updated._yaml_error) {
+      this._config = newConfig;
+      this.requestUpdate();
+      return;
+    }
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
