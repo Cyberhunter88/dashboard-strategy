@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.10.1';
+const STRATEGY_VERSION = '1.11.0';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -46,6 +46,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     const { Registry } = await import('./Registry');
     const { getVisibleAreasFromHass } = await import('./utils/name-utils');
     const { localize } = await import('./utils/localize');
+    const { withUnavailableEntitiesHidden } = await import('./utils/availability-utils');
     t('imports done');
 
     const getStrategy = (tag: string): any => customElements.get(tag);
@@ -151,7 +152,7 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     return {
       title: localize('dashboard.title'),
-      views: views.map(withConfiguredTheme),
+      views: views.map((view) => withConfiguredTheme(withUnavailableEntitiesHidden(view, config))),
     };
   }
 

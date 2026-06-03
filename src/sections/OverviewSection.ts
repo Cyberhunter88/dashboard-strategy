@@ -34,6 +34,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'lights',
       areas_options: config.areas_options || {},
+      hide_unavailable_entities: config.hide_unavailable_entities,
       ...compactConfig,
     });
   }
@@ -43,6 +44,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'covers',
       areas_options: config.areas_options || {},
+      hide_unavailable_entities: config.hide_unavailable_entities,
       ...compactConfig,
     });
   }
@@ -52,6 +54,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'security',
       areas_options: config.areas_options || {},
+      hide_unavailable_entities: config.hide_unavailable_entities,
       ...compactConfig,
     });
   }
@@ -63,6 +66,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       areas_options: config.areas_options || {},
       hide_mobile_app_batteries: config.hide_mobile_app_batteries,
       battery_critical_threshold: config.battery_critical_threshold,
+      hide_unavailable_entities: config.hide_unavailable_entities,
       ...compactConfig,
     });
   }
@@ -72,6 +76,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       type: 'custom:dashboard-strategy-summary-card',
       summary_type: 'climate',
       areas_options: config.areas_options || {},
+      hide_unavailable_entities: config.hide_unavailable_entities,
       ...compactConfig,
     });
   }

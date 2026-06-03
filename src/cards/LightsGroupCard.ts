@@ -9,6 +9,7 @@ import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { stripAreaName } from '../utils/name-utils';
+import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 
 
 interface LightsGroupConfig {
@@ -188,16 +189,17 @@ class Simon42LightsGroupCard extends LitElement {
   private _getRelevantLights(lightIds?: Iterable<string>): string[] {
     if (!this.hass) return [];
     const sourceIds = lightIds ? Array.from(lightIds) : Array.from(this._cachedSourceIds || []);
-    if (sourceIds.length === 0) return [];
+    const availableSourceIds = sourceIds.filter((id) => isEntityCurrentlyAvailable(this.hass, id, this._config.config));
+    if (availableSourceIds.length === 0) return [];
 
     if (this._config.group_type === 'all') {
-      return [...sourceIds].sort((a, b) => this._sortByLastChanged(a, b));
+      return availableSourceIds.sort((a, b) => this._sortByLastChanged(a, b));
     }
 
     const targetState = this._config.group_type === 'on' ? 'on' : 'off';
 
     const relevant: string[] = [];
-    for (const id of sourceIds) {
+    for (const id of availableSourceIds) {
       const state = this._getState(id);
       if (state && state.state === targetState) relevant.push(id);
     }
