@@ -258,7 +258,9 @@ export interface CustomBadge {
 export interface CustomCard {
   /** Stable id used by free weather-start layout items */
   id?: string;
-  /** Optional title shown as heading above the card */
+  /** Optional editor-only name used for lists and drag/drop labels */
+  editor_title?: string;
+  /** Optional title shown as heading above the card on the dashboard */
   title?: string;
   /** Target section where this card appears (default: 'custom_cards') */
   target_section?: SectionKey;
@@ -290,6 +292,8 @@ export interface AreaCustomCard {
   mode?: 'yaml' | 'tile' | 'section'; // default: 'yaml'
   /** Platzierung relativ zu den Auto-Sektionen der Raumansicht */
   position?: 'top' | 'bottom'; // default: 'bottom'
+  /** Optionaler Editor-only Name fuer Listen und Sortierung */
+  editor_title?: string;
   /** Optionale Überschrift (rendert als heading-Card davor) */
   title?: string;
   // --- YAML-Modus ---

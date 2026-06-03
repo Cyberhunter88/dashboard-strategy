@@ -1751,6 +1751,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return section.id || `legacy-custom-section-${index}`;
   }
 
+  private _getCustomCardEditorLabel(card: CustomCard | AreaCustomCard | undefined, fallback: string): string {
+    return card?.editor_title || card?.title || fallback;
+  }
+
   private _getLegacyWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
     const order = this._getWeatherStartOrder();
     const items: WeatherStartLayoutItem[] = [];
@@ -2036,7 +2040,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const yamlStr = yaml.dump(config).trim();
       const customCards: CustomCard[] = [
         ...(this._config.custom_cards || []),
-        { id, title: '', yaml: yamlStr, parsed_config: config },
+        { id, editor_title: '', yaml: yamlStr, parsed_config: config },
       ];
       const items = [
         ...this._getWeatherStartLayoutItems(),
@@ -2064,7 +2068,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
     if (item.type === 'custom_card') {
       const card = customCards.find((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
-      return { icon: 'mdi:cards', label: card?.title || localize('editor.new_card') };
+      return { icon: 'mdi:cards', label: this._getCustomCardEditorLabel(card, localize('editor.new_card')) };
     }
     if (item.type === 'custom_section') {
       const section = customSections.find((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id);
@@ -3200,10 +3204,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return html`
       <div class="custom-item" data-index=${index}>
         <div class="custom-item-header">
-          <strong>${card.title || localize('editor.new_card')}</strong>
+          <strong>${this._getCustomCardEditorLabel(card, localize('editor.new_card'))}</strong>
           <button class="btn-remove" @click=${() => this._removeCustomCard(index)}>&#x2715;</button>
         </div>
         <div class="custom-item-fields">
+          <label>${localize('editor.card_editor_title_label')}</label>
+          <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
+            @change=${(e: Event) => this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)} />
+          <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+          <label>${localize('editor.card_dashboard_title_label')}</label>
           <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
             @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)} />
           <div class="custom-card-target">
@@ -3256,10 +3265,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
               return html`
                 <div class="custom-item" data-index=${cardIndex} style="margin-bottom: 8px;">
                   <div class="custom-item-header">
-                    <strong>${card.title || `${localize('editor.new_card')} ${cardIndex + 1}`}</strong>
+                    <strong>${this._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong>
                     <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>&#x2715;</button>
                   </div>
                   <div class="custom-item-fields">
+                    <label>${localize('editor.card_editor_title_label')}</label>
+                    <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
+                      @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'editor_title', (e.target as HTMLInputElement).value)} />
+                    <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+                    <label>${localize('editor.card_dashboard_title_label')}</label>
                     <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
                       @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'title', (e.target as HTMLInputElement).value)} />
                     <textarea rows="5" placeholder=${localize('editor.yaml_placeholder')}
@@ -3534,10 +3548,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return html`
       <div class="custom-item" data-index=${index}>
         <div class="custom-item-header">
-          <strong>${card.title || localize('editor.area_custom_card_new')}</strong>
+          <strong>${this._getCustomCardEditorLabel(card, localize('editor.area_custom_card_new'))}</strong>
           <button class="btn-remove" @click=${() => this._removeAreaCustomCard(areaId, index)}>&#x2715;</button>
         </div>
         <div class="custom-item-fields">
+          <label>${localize('editor.card_editor_title_label')}</label>
+          <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
+            @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'editor_title', (e.target as HTMLInputElement).value)} />
+          <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+          <label>${localize('editor.card_dashboard_title_label')}</label>
           <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
             @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'title', (e.target as HTMLInputElement).value)} />
           <div class="custom-card-target">
@@ -4082,7 +4101,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _addCustomCard(): void {
     const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
-    customCards.push({ title: '', yaml: '', parsed_config: undefined } as CustomCard);
+    customCards.push({ editor_title: '', yaml: '', parsed_config: undefined } as CustomCard);
 
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
     this._config = newConfig;
@@ -4183,7 +4202,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
     if (!customSections[sectionIndex]) return;
     const section = { ...customSections[sectionIndex] };
-    section.cards = [...(section.cards || []), { title: '', yaml: '', parsed_config: undefined } as CustomCard];
+    section.cards = [...(section.cards || []), { editor_title: '', yaml: '', parsed_config: undefined } as CustomCard];
     customSections[sectionIndex] = section;
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
     this._config = newConfig;
@@ -4302,7 +4321,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     cards.push({
       mode: 'yaml',
       position: 'bottom',
-      title: '',
+      editor_title: '',
       yaml: '',
       parsed_config: undefined,
     } as AreaCustomCard);
@@ -5029,7 +5048,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._openCardPicker((config) => {
       const yamlStr = yaml.dump(config).trim();
       const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
-      customCards.push({ title: '', yaml: yamlStr, parsed_config: config });
+      customCards.push({ editor_title: '', yaml: yamlStr, parsed_config: config });
       const newConfig = { ...this._config, custom_cards: customCards };
       this._config = newConfig;
       this._fireConfigChanged(newConfig);
@@ -5042,7 +5061,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const customSections = [...(this._config.custom_sections || [])];
       if (!customSections[sectionIndex]) return;
       const section = { ...customSections[sectionIndex] };
-      section.cards = [...(section.cards || []), { title: '', yaml: yamlStr, parsed_config: config }];
+      section.cards = [...(section.cards || []), { editor_title: '', yaml: yamlStr, parsed_config: config }];
       customSections[sectionIndex] = section;
       const newConfig = { ...this._config, custom_sections: customSections };
       this._config = newConfig;
@@ -5054,7 +5073,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._openCardPicker((config) => {
       const yamlStr = yaml.dump(config).trim();
       const cards = this._getAreaCustomCards(areaId);
-      cards.push({ mode: 'yaml', position: 'bottom', title: '', yaml: yamlStr, parsed_config: config } as AreaCustomCard);
+      cards.push({ mode: 'yaml', position: 'bottom', editor_title: '', yaml: yamlStr, parsed_config: config } as AreaCustomCard);
       this._writeAreaCustomCards(areaId, cards);
     });
   }
