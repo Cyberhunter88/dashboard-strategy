@@ -11,6 +11,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig, CustomCard, CustomSection } from '../types/strategy';
 import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
 import { localize } from '../utils/localize';
+import { createHeadingCard, renderParsedCustomCards } from '../utils/lovelace-utils';
 
 export interface OverviewSectionParams {
   someSensorId: string | null;
@@ -254,19 +255,10 @@ export function createCustomCardsSection(
   if (validCards.length === 0) return null;
 
   const cards: LovelaceCardConfig[] = [
-    { type: 'heading', heading: heading || localize('sections.custom_cards'), icon: icon || 'mdi:cards' },
+    createHeadingCard(heading || localize('sections.custom_cards'), { icon: icon || 'mdi:cards' }),
   ];
 
-  for (const card of validCards) {
-    if (Array.isArray(card.parsed_config)) {
-      cards.push(...card.parsed_config);
-    } else {
-      if (card.title) {
-        cards.push({ type: 'heading', heading: card.title });
-      }
-      cards.push(card.parsed_config as LovelaceCardConfig);
-    }
-  }
+  cards.push(...renderParsedCustomCards(validCards));
 
   return { type: 'grid', cards };
 }
@@ -288,17 +280,7 @@ export function createCustomSectionsArray(customSections: CustomSection[]): Love
       ...(section.icon ? { icon: section.icon } : {}),
     });
 
-    for (const card of section.cards || []) {
-      if (!card.parsed_config) continue;
-      if (Array.isArray(card.parsed_config)) {
-        cards.push(...card.parsed_config);
-      } else {
-        if (card.title) {
-          cards.push({ type: 'heading', heading: card.title, heading_style: 'subtitle' });
-        }
-        cards.push(card.parsed_config as LovelaceCardConfig);
-      }
-    }
+    cards.push(...renderParsedCustomCards(section.cards || [], 'subtitle'));
 
     if (cards.length > 1) {
       result.push({ type: 'grid', cards });

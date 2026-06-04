@@ -20,46 +20,12 @@ import { createWeatherSection, createEnergySection } from '../sections/WeatherEn
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
-
-/**
- * Normalizes a sections_order array: removes invalid/duplicate keys,
- * appends any missing keys at the end (forward compatibility).
- */
-function normalizeSectionsOrder(order: SectionKey[]): SectionKey[] {
-  const validKeys = new Set<SectionKey>(['overview', 'custom_cards', 'custom_sections', 'areas', 'weather', 'energy']);
-  const seen = new Set<SectionKey>();
-  const result: SectionKey[] = [];
-  for (const key of order) {
-    if (validKeys.has(key) && !seen.has(key)) {
-      result.push(key);
-      seen.add(key);
-    }
-  }
-  for (const key of DEFAULT_SECTIONS_ORDER) {
-    if (!seen.has(key)) result.push(key);
-  }
-  return result;
-}
-
-/**
- * Renders custom cards into an array of LovelaceCardConfigs (without section wrapper).
- * Used to append assigned custom cards to existing sections.
- */
-function renderCustomCards(cards: CustomCard[]): LovelaceCardConfig[] {
-  const result: LovelaceCardConfig[] = [];
-  for (const card of cards) {
-    if (!card.parsed_config) continue;
-    if (Array.isArray(card.parsed_config)) {
-      result.push(...card.parsed_config);
-    } else {
-      if (card.title) {
-        result.push({ type: 'heading', heading: card.title, heading_style: 'subtitle' });
-      }
-      result.push(card.parsed_config as LovelaceCardConfig);
-    }
-  }
-  return result;
-}
+import { mergeConfiguredOrder } from '../utils/order-utils';
+import {
+  parsedConfigToSections,
+  renderParsedCustomCardAsSection,
+  renderParsedCustomCards,
+} from '../utils/lovelace-utils';
 
 function createLargeTimeCard(): LovelaceCardConfig {
   // Native clock card — DOMPurify strips style in markdown cards in recent HA versions.
@@ -128,25 +94,6 @@ function createLargeDateCard(): LovelaceCardConfig {
   };
 }
 
-function normalizeWeatherStartOrder(order: WeatherStartKey[]): WeatherStartKey[] {
-  const validKeys = new Set<WeatherStartKey>([
-    'clock', 'date', 'summaries', 'weather_current', 'weather_hourly', 'weather_daily',
-    'areas', 'custom_cards', 'custom_sections',
-  ]);
-  const seen = new Set<WeatherStartKey>();
-  const result: WeatherStartKey[] = [];
-  for (const key of order) {
-    if (validKeys.has(key) && !seen.has(key)) {
-      result.push(key);
-      seen.add(key);
-    }
-  }
-  for (const key of DEFAULT_WEATHER_START_ORDER) {
-    if (!seen.has(key)) result.push(key);
-  }
-  return result;
-}
-
 function withBlockOverride(
   key: WeatherStartKey,
   defaultSection: LovelaceSectionConfig | null,
@@ -191,34 +138,6 @@ function appendWeatherStartBlock(
   }
 
   sections.push(block);
-}
-
-function parsedConfigToSections(parsed: Record<string, any> | Record<string, any>[] | null | undefined): LovelaceSectionConfig[] {
-  if (!parsed) return [];
-  if (Array.isArray(parsed)) {
-    return [{ type: 'grid', cards: parsed as LovelaceCardConfig[] }];
-  }
-  if (Array.isArray(parsed.sections)) {
-    return parsed.sections as LovelaceSectionConfig[];
-  }
-  if (Array.isArray(parsed.cards)) {
-    return [parsed as LovelaceSectionConfig];
-  }
-  return [{ type: 'grid', cards: [parsed as LovelaceCardConfig] }];
-}
-
-function renderCustomCardAsSection(card: CustomCard | undefined): LovelaceSectionConfig | null {
-  if (!card?.parsed_config) return null;
-  const cards: LovelaceCardConfig[] = [];
-  if (Array.isArray(card.parsed_config)) {
-    cards.push(...card.parsed_config as LovelaceCardConfig[]);
-  } else {
-    if (card.title) {
-      cards.push({ type: 'heading', heading: card.title, heading_style: 'subtitle' });
-    }
-    cards.push(card.parsed_config as LovelaceCardConfig);
-  }
-  return cards.length > 0 ? { type: 'grid', cards } : null;
 }
 
 function renderCustomSection(section: CustomSection | undefined): LovelaceSectionConfig | null {
@@ -399,7 +318,7 @@ function createWeatherStartSectionsFromItems(
         break;
       }
       case 'custom_card':
-        section = renderCustomCardAsSection(findCustomCard(dashboardConfig, item));
+        section = renderParsedCustomCardAsSection(findCustomCard(dashboardConfig, item), 'subtitle');
         break;
       case 'custom_section':
         section = renderCustomSection(findCustomSection(dashboardConfig, item));
@@ -423,7 +342,7 @@ function createWeatherStartSections(
   order: WeatherStartKey[],
   blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {}
 ): LovelaceSectionConfig[] {
-  const normalizedOrder = normalizeWeatherStartOrder(order);
+  const normalizedOrder = mergeConfiguredOrder(order, DEFAULT_WEATHER_START_ORDER);
 
   const blockMap = new Map<WeatherStartKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>();
 
@@ -605,7 +524,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     ]);
 
     // Assemble in configured order, appending assigned custom cards to each section
-    const sectionsOrder = normalizeSectionsOrder(dashboardConfig.sections_order ?? DEFAULT_SECTIONS_ORDER);
+    const sectionsOrder = mergeConfiguredOrder(dashboardConfig.sections_order, DEFAULT_SECTIONS_ORDER);
     const overviewSections: LovelaceSectionConfig[] = [];
     for (const key of sectionsOrder) {
       const result = sectionMap.get(key);
@@ -619,7 +538,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       if (key !== 'custom_cards') {
         const assigned = customCardsBySection.get(key);
         if (assigned && assigned.length > 0) {
-          const extraCards = renderCustomCards(assigned);
+          const extraCards = renderParsedCustomCards(assigned, 'subtitle');
           if (extraCards.length > 0) {
             // Append to the last section added (handles array sections like areas)
             const lastSection = overviewSections[overviewSections.length - 1];

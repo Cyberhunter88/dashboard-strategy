@@ -57,6 +57,30 @@ interface WeatherStartFloorOption {
   icon?: string | null;
 }
 
+interface ParsedEditorYaml {
+  parsed_config?: Record<string, any> | Record<string, any>[];
+  _yaml_error?: string;
+}
+
+function getYamlErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message.split('\n')[0] : 'UngÃ¼ltiges YAML';
+  return message || 'UngÃ¼ltiges YAML';
+}
+
+function parseEditorYamlConfig(yamlString: string, invalidMessage: string): ParsedEditorYaml {
+  if (!yamlString.trim()) return { parsed_config: undefined };
+
+  try {
+    const parsed = yaml.load(yamlString);
+    if (parsed && typeof parsed === 'object') {
+      return { parsed_config: parsed as Record<string, any> | Record<string, any>[] };
+    }
+    return { parsed_config: undefined, _yaml_error: invalidMessage };
+  } catch (error: unknown) {
+    return { parsed_config: undefined, _yaml_error: getYamlErrorMessage(error) };
+  }
+}
+
 declare global {
   interface Window {
     customCards?: Array<{ type: string; name: string; description: string }>;
@@ -4205,23 +4229,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomView = { ...customViews[index], yaml: yamlString };
     delete updated._yaml_error;
 
-    if (yamlString.trim()) {
-      try {
-        const parsed = yaml.load(yamlString);
-        if (parsed && typeof parsed === 'object') {
-          updated.parsed_config = parsed as Record<string, any>;
-        } else {
-          updated._yaml_error = 'YAML muss ein Objekt ergeben';
-          updated.parsed_config = undefined;
-        }
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message.split('\n')[0] : 'Ungültiges YAML';
-        updated._yaml_error = message || 'Ungültiges YAML';
-        updated.parsed_config = undefined;
-      }
-    } else {
-      updated.parsed_config = undefined;
-    }
+    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt ergeben");
+    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+    updated._yaml_error = parsed._yaml_error;
 
     customViews[index] = updated;
 
@@ -4298,23 +4308,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomCard = { ...customCards[index], yaml: yamlString };
     delete updated._yaml_error;
 
-    if (yamlString.trim()) {
-      try {
-        const parsed = yaml.load(yamlString);
-        if (parsed && typeof parsed === 'object') {
-          updated.parsed_config = parsed as Record<string, any>;
-        } else {
-          updated._yaml_error = 'YAML muss ein Objekt oder Array ergeben';
-          updated.parsed_config = undefined;
-        }
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message.split('\n')[0] : 'Ungültiges YAML';
-        updated._yaml_error = message || 'Ungültiges YAML';
-        updated.parsed_config = undefined;
-      }
-    } else {
-      updated.parsed_config = undefined;
-    }
+    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt oder Array ergeben");
+    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+    updated._yaml_error = parsed._yaml_error;
 
     customCards[index] = updated;
 
@@ -4408,23 +4404,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomCard = { ...cards[cardIndex], yaml: yamlString };
     delete updated._yaml_error;
 
-    if (yamlString.trim()) {
-      try {
-        const parsed = yaml.load(yamlString);
-        if (parsed && typeof parsed === 'object') {
-          updated.parsed_config = parsed as Record<string, any>;
-        } else {
-          updated._yaml_error = 'YAML muss ein Objekt oder Array ergeben';
-          updated.parsed_config = undefined;
-        }
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message.split('\n')[0] : 'Ungültiges YAML';
-        updated._yaml_error = message || 'Ungültiges YAML';
-        updated.parsed_config = undefined;
-      }
-    } else {
-      updated.parsed_config = undefined;
-    }
+    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt oder Array ergeben");
+    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+    updated._yaml_error = parsed._yaml_error;
 
     cards[cardIndex] = updated;
     section.cards = cards;
@@ -4599,23 +4581,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomBadge = { ...customBadges[index], yaml: yamlString };
     delete updated._yaml_error;
 
-    if (yamlString.trim()) {
-      try {
-        const parsed = yaml.load(yamlString);
-        if (parsed && typeof parsed === 'object') {
-          updated.parsed_config = parsed as Record<string, any>;
-        } else {
-          updated._yaml_error = 'YAML muss ein Objekt ergeben';
-          updated.parsed_config = undefined;
-        }
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message.split('\n')[0] : 'Ungültiges YAML';
-        updated._yaml_error = message || 'Ungültiges YAML';
-        updated.parsed_config = undefined;
-      }
-    } else {
-      updated.parsed_config = undefined;
-    }
+    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt ergeben");
+    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+    updated._yaml_error = parsed._yaml_error;
 
     customBadges[index] = updated;
 

@@ -16,6 +16,7 @@ import { Registry } from '../Registry';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { BADGE_COLOR_MAP, getColorForEntity, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
+import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
 
 // HA supported_features bitmask values
 const FAN_SET_SPEED = 1;
@@ -71,7 +72,7 @@ function buildAreaCustomCardSection(
         const sectionConfig: LovelaceSectionConfig = { ...section };
         if (card.title && index === 0) {
           sectionConfig.cards = [
-            { type: 'heading', heading: card.title },
+            createHeadingCard(card.title),
             ...((sectionConfig.cards || []) as LovelaceCardConfig[]),
           ];
         }
@@ -83,18 +84,17 @@ function buildAreaCustomCardSection(
     if (mode === 'tile') {
       if (card.entity) {
         if (card.title) {
-          built.push({ type: 'heading', heading: card.title });
+          built.push(createHeadingCard(card.title));
         }
         built.push({ type: 'tile', entity: card.entity });
       }
     } else {
       // YAML-Modus: nur fehlerfreie, geparste Configs verwenden
       if (card.parsed_config && !card._yaml_error && typeof card.parsed_config === 'object') {
-        const cardConfigs = Array.isArray(card.parsed_config) ? card.parsed_config : [card.parsed_config];
         if (card.title) {
-          built.push({ type: 'heading', heading: card.title });
+          built.push(createHeadingCard(card.title));
         }
-        built.push(...(cardConfigs as LovelaceCardConfig[]));
+        built.push(...parsedConfigToCards(card.parsed_config));
       }
     }
   }

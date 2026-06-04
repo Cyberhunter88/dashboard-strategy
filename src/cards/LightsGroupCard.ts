@@ -10,7 +10,12 @@ import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { stripAreaName } from '../utils/name-utils';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
-
+import {
+  createHeadingCardElement,
+  createTileCardElement,
+  propagateHassToCards,
+  type LovelaceCardElement,
+} from '../utils/card-element-utils';
 
 interface LightsGroupConfig {
   config?: any;
@@ -34,11 +39,6 @@ interface FloorGroup {
 interface LightHierarchyNode {
   entityId: string;
   childIds: string[];
-}
-
-interface LovelaceCardElement extends HTMLElement {
-  hass?: HomeAssistant;
-  setConfig(config: Record<string, unknown>): void;
 }
 
 const LIGHT_BRIGHTNESS_MODES = ['brightness', 'color_temp', 'hs', 'xy', 'rgb', 'rgbw', 'rgbww', 'white'];
@@ -167,10 +167,7 @@ class Simon42LightsGroupCard extends LitElement {
   }
 
   private _propagateHass(hass: HomeAssistant): void {
-    if (this._headingCard) this._headingCard.hass = hass;
-    for (const card of this._tileCards.values()) {
-      card.hass = hass;
-    }
+    propagateHassToCards(hass, this._headingCard, this._floorHeadingCards.values(), this._tileCards.values());
   }
 
   private _getState(entityId: string): HassEntity | undefined {
@@ -405,7 +402,7 @@ class Simon42LightsGroupCard extends LitElement {
     const existingCard = this._tileCards.get(entityId);
     if (existingCard) return existingCard;
 
-    const card = document.createElement('hui-tile-card') as LovelaceCardElement;
+    const card = createTileCardElement();
     card.hass = this.hass;
     const cardConfig: any = { type: 'tile', entity: entityId, vertical: false, state_content: 'last_changed' };
     const displayName = this._getDisplayName(entityId);
@@ -567,7 +564,7 @@ class Simon42LightsGroupCard extends LitElement {
   private _getOrCreateFloorHeadingCard(key: string): LovelaceCardElement {
     let card = this._floorHeadingCards.get(key);
     if (card) return card;
-    card = document.createElement('hui-heading-card') as LovelaceCardElement;
+    card = createHeadingCardElement();
     this._floorHeadingCards.set(key, card);
     return card;
   }
@@ -590,7 +587,7 @@ class Simon42LightsGroupCard extends LitElement {
       const headingSlot = this.shadowRoot?.getElementById('heading');
       if (headingSlot) {
         if (!this._headingCard) {
-          this._headingCard = document.createElement('hui-heading-card') as LovelaceCardElement;
+          this._headingCard = createHeadingCardElement();
         }
         const mainHeadingCard = this._headingCard;
         headingSlot.appendChild(mainHeadingCard);
@@ -637,7 +634,7 @@ class Simon42LightsGroupCard extends LitElement {
     const headingSlot = this.shadowRoot?.getElementById('heading');
     if (headingSlot) {
       if (!this._headingCard) {
-        this._headingCard = document.createElement('hui-heading-card') as LovelaceCardElement;
+        this._headingCard = createHeadingCardElement();
       }
       const mainHeadingCard = this._headingCard;
       headingSlot.appendChild(mainHeadingCard);

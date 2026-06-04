@@ -8,7 +8,13 @@ import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
-
+import { stripCoverType } from '../utils/name-utils';
+import {
+  createHeadingCardElement,
+  createTileCardElement,
+  propagateHassToCards,
+  type LovelaceCardElement,
+} from '../utils/card-element-utils';
 
 interface CoversGroupConfig {
   config?: any;
@@ -21,28 +27,6 @@ interface CoversGroupConfig {
   batch_open_text?: string;
   batch_close_text?: string;
 }
-
-// Pre-compiled RegExps for cover type name stripping
-const COVER_TERMS = [
-  'Rollo',
-  'Rollladen',
-  'Jalousie',
-  'Vorhang',
-  'Gardine',
-  'Rolladen',
-  'Beschattung',
-  'Raffstore',
-  'Fenster',
-  'Cover',
-  'Blind',
-  'Curtain',
-  'Shade',
-  'Shutter',
-  'Window',
-  'Markise',
-  'Awning',
-];
-const COVER_TERM_REGEXPS = COVER_TERMS.map((term) => new RegExp(`^${term}\\s+|\\s+${term}$`, 'gi'));
 
 const DEFAULT_DEVICE_CLASSES = ['awning', 'blind', 'curtain', 'shade', 'shutter', 'window'];
 
@@ -58,8 +42,8 @@ class Simon42CoversGroupCard extends LitElement {
   private _lastCoversList = '';
 
   // Reusable card pool
-  private _tileCards: Map<string, any> = new Map();
-  private _headingCard: any = null;
+  private _tileCards: Map<string, LovelaceCardElement> = new Map();
+  private _headingCard: LovelaceCardElement | null = null;
 
   static styles = css`
     :host {
@@ -107,10 +91,7 @@ class Simon42CoversGroupCard extends LitElement {
   }
 
   private _propagateHass(hass: HomeAssistant): void {
-    if (this._headingCard) this._headingCard.hass = hass;
-    for (const card of this._tileCards.values()) {
-      card.hass = hass;
-    }
+    propagateHassToCards(hass, this._headingCard, this._tileCards.values());
   }
 
   private _getFilteredCoverEntities(hass: HomeAssistant): string[] {
@@ -177,20 +158,6 @@ class Simon42CoversGroupCard extends LitElement {
     return relevant;
   }
 
-  private _stripCoverType(entityId: string): string {
-    const state = this.hass?.states[entityId];
-    if (!state) return entityId;
-
-    let name = state.attributes.friendly_name || entityId;
-
-    for (const regex of COVER_TERM_REGEXPS) {
-      regex.lastIndex = 0;
-      name = name.replace(regex, '');
-    }
-
-    return name.trim() || state.attributes.friendly_name || entityId;
-  }
-
   private _buildHeadingConfig(covers: string[]): any {
     const groupType = this._config.group_type;
     const openText = this._config.batch_open_text || localize('covers.open_all');
@@ -250,16 +217,16 @@ class Simon42CoversGroupCard extends LitElement {
     };
   }
 
-  private _getOrCreateTileCard(entityId: string): any {
+  private _getOrCreateTileCard(entityId: string): LovelaceCardElement {
     let card = this._tileCards.get(entityId);
     if (card) return card;
 
-    card = document.createElement('hui-tile-card');
+    card = createTileCardElement();
     card.hass = this.hass;
     card.setConfig({
       type: 'tile',
       entity: entityId,
-      name: this._stripCoverType(entityId),
+      name: this.hass ? stripCoverType(entityId, this.hass) : entityId,
       features: [{ type: 'cover-open-close' }],
       vertical: false,
       features_position: 'inline',
@@ -321,7 +288,7 @@ class Simon42CoversGroupCard extends LitElement {
     const headingSlot = this.shadowRoot?.getElementById('heading');
     if (headingSlot) {
       if (!this._headingCard) {
-        this._headingCard = document.createElement('hui-heading-card');
+        this._headingCard = createHeadingCardElement();
         headingSlot.appendChild(this._headingCard);
       }
       this._headingCard.hass = this.hass;
@@ -346,7 +313,7 @@ class Simon42CoversGroupCard extends LitElement {
     let prevNode: Node | null = null;
     for (const entityId of covers) {
       const card = this._getOrCreateTileCard(entityId);
-      const nextSibling = prevNode ? prevNode.nextSibling : grid.firstChild;
+      const nextSibling: ChildNode | null = prevNode ? prevNode.nextSibling : grid.firstChild;
       if (card !== nextSibling) {
         grid.insertBefore(card, nextSibling);
       }

@@ -9,6 +9,7 @@ import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
 import { DEFAULT_STACKS_ORDER, type StackKey, type AreasDisplay } from '../types/strategy';
+import { mergeConfiguredOrder } from './order-utils';
 
 // -- Module-level RegExp caches (shared across all calls) -------------
 
@@ -21,18 +22,35 @@ interface AreaRegExps {
 const _areaRegExpCache = new Map<string, AreaRegExps>();
 
 const _coverTypeRegExps: RegExp[] = [
-  'Rollo',
-  'Rollos',
-  'Rolladen',
-  'Rolläden',
-  'Vorhang',
-  'Vorhänge',
-  'Jalousie',
-  'Jalousien',
-  'Shutter',
-  'Shutters',
-  'Blind',
-  'Blinds',
+  "Rollo",
+  "Rollos",
+  "Rolladen",
+  "Rolläden",
+  "Vorhang",
+  "Vorhänge",
+  "Gardine",
+  "Gardinen",
+  "Jalousie",
+  "Jalousien",
+  "Beschattung",
+  "Raffstore",
+  "Raffstores",
+  "Fenster",
+  "Cover",
+  "Shutter",
+  "Shutters",
+  "Blind",
+  "Blinds",
+  "Curtain",
+  "Curtains",
+  "Shade",
+  "Shades",
+  "Window",
+  "Windows",
+  "Markise",
+  "Markisen",
+  "Awning",
+  "Awnings",
 ].map((type) => new RegExp(`\\b${type}\\b`, 'gi'));
 
 // -- Helper: escape special regex characters --------------------------
@@ -196,10 +214,5 @@ export function sortByLastChanged(a: string, b: string, hass: HomeAssistant): nu
  * then any missing default keys appended in DEFAULT order; unknown keys are dropped.
  */
 export function mergeStacksOrder(stored?: StackKey[]): StackKey[] {
-  if (!stored || stored.length === 0) {
-    return [...DEFAULT_STACKS_ORDER];
-  }
-  const known = stored.filter((key) => DEFAULT_STACKS_ORDER.includes(key));
-  const missing = DEFAULT_STACKS_ORDER.filter((key) => !known.includes(key));
-  return [...known, ...missing];
+  return mergeConfiguredOrder(stored, DEFAULT_STACKS_ORDER);
 }
