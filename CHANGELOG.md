@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.13.7"></a>
+## [1.13.7] - 2026-06-04
+### Bugfixes
+- render area cards reliably when Home Assistant upgrades the native area card element after the dashboard strategy wrapper is created
+
 <a name="1.13.6"></a>
 ## [1.13.6] - 2026-06-04
 ### Bugfixes

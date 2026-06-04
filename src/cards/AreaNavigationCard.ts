@@ -23,6 +23,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private _hass?: HomeAssistant;
   private _config?: AreaNavigationCardConfig;
   private _card?: NativeAreaCard;
+  private _nativeCardReady = false;
 
   set hass(hass: HomeAssistant | undefined) {
     this._hass = hass;
@@ -40,6 +41,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.style.display = 'block';
     this._ensureCard();
     this.addEventListener('click', this._handleClick);
   }
@@ -54,10 +56,23 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     this._card = document.createElement('hui-area-card') as NativeAreaCard;
     if (this.hass) this._card.hass = this.hass;
     this.appendChild(this._card);
+
+    this._nativeCardReady = typeof this._card.setConfig === 'function';
+    if (this._nativeCardReady) return;
+
+    void customElements.whenDefined('hui-area-card')
+      .then(() => {
+        this._nativeCardReady = true;
+        if (this._card && this._hass) this._card.hass = this._hass;
+        this._updateNativeCard();
+      })
+      .catch(() => {
+        this._nativeCardReady = false;
+      });
   }
 
   private _updateNativeCard(): void {
-    if (!this._card || !this._config) return;
+    if (!this._card || !this._config || !this._nativeCardReady) return;
 
     const areaConfig: LovelaceCardConfig = Object.fromEntries(
       Object.entries(this._config).filter(([key]) => key !== 'navigation_path' && key !== 'type')
