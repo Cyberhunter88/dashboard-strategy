@@ -52,11 +52,11 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   connectedCallback(): void {
     this.style.display = 'block';
     this._ensureCard();
-    this.addEventListener('click', this._handleClick);
+    this.addEventListener('click', this._handleClick, { capture: true });
   }
 
   disconnectedCallback(): void {
-    this.removeEventListener('click', this._handleClick);
+    this.removeEventListener('click', this._handleClick, { capture: true });
   }
 
   private _ensureCard(): void {
