@@ -2036,7 +2036,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
         @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}
       ></textarea>
       <button class="btn-primary" style="margin-top: 6px;" @click=${() => this._openCardEditorForCustomCard(index)}>
-        Karte mit HA-Editor bearbeiten
+        ${localize('editor.edit_card_with_ha_editor')}
       </button>
       ${validationMsg}
     `;
@@ -2087,7 +2087,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
                 <button class="btn-primary" style="margin-top: 6px;"
                   @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}>
-                  Karte mit HA-Editor bearbeiten
+                  ${localize('editor.edit_card_with_ha_editor')}
                 </button>
                 <div class="custom-item-validation">${validationMsg}</div>
               </div>
@@ -3419,7 +3419,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
             style="width: 100%;"
             @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}></textarea>
           <button class="btn-primary" style="margin-top: 6px;" @click=${() => this._openCardEditorForCustomCard(index)}>
-            Karte mit HA-Editor bearbeiten
+            ${localize('editor.edit_card_with_ha_editor')}
           </button>
           <div class="custom-item-validation">
             ${validationMsg}
@@ -3473,7 +3473,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
                       @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
                     <button class="btn-primary" style="margin-top: 6px;"
                       @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}>
-                      Karte mit HA-Editor bearbeiten
+                      ${localize('editor.edit_card_with_ha_editor')}
                     </button>
                     <div class="custom-item-validation">${validationMsg}</div>
                   </div>
@@ -3791,7 +3791,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 @change=${(e: Event) => this._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}></textarea>
               <button class="btn-primary" style="margin-top: 6px;"
                 @click=${() => this._openCardEditorForAreaCustomCard(areaId, index)}>
-                Karte mit HA-Editor bearbeiten
+                ${localize('editor.edit_card_with_ha_editor')}
               </button>
               <div class="custom-item-validation">
                 ${validationMsg}
@@ -4284,15 +4284,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  private _addCustomCard(): void {
-    const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
-    customCards.push({ editor_title: '', yaml: '', parsed_config: undefined } as CustomCard);
-
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
   private _removeCustomCard(index: number): void {
     const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
     customCards.splice(index, 1);
@@ -4369,17 +4360,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
     if (!customSections[sectionIndex]) return;
     customSections[sectionIndex] = { ...customSections[sectionIndex], [field]: value };
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _addCardToSection(sectionIndex: number): void {
-    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
-    if (!customSections[sectionIndex]) return;
-    const section = { ...customSections[sectionIndex] };
-    section.cards = [...(section.cards || []), { editor_title: '', yaml: '', parsed_config: undefined } as CustomCard];
-    customSections[sectionIndex] = section;
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);

@@ -264,6 +264,7 @@
     "card_editor_title_placeholder": "Card name (editor only)",
     "card_dashboard_title_label": "Dashboard heading",
     "card_editor_title_help": "This name only helps with finding and sorting the card. It is not shown on the dashboard.",
+    "edit_card_with_ha_editor": "Edit card with HA editor",
     "yaml_valid": "YAML valid",
     "area_custom_cards_title": "Custom Cards",
     "area_custom_cards_help": "Custom cards, tiles, and complete sections for this room view. Shown in addition to the automatic sections.",

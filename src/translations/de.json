@@ -264,6 +264,7 @@
     "card_editor_title_placeholder": "Kartenname (nur im Editor)",
     "card_dashboard_title_label": "Überschrift auf dem Dashboard",
     "card_editor_title_help": "Dieser Name hilft nur beim Wiederfinden und Sortieren. Er wird nicht auf dem Dashboard angezeigt.",
+    "edit_card_with_ha_editor": "Karte mit HA-Editor bearbeiten",
     "yaml_valid": "YAML gültig",
     "area_custom_cards_title": "Eigene Karten",
     "area_custom_cards_help": "Eigene Karten, Kacheln und komplette Sections für diese Raumansicht. Werden zusätzlich zu den automatischen Sektionen angezeigt.",
