@@ -7,6 +7,21 @@ import type { InlineViewEdits, Simon42StrategyConfig } from '../types/strategy';
 
 const EDITABLE_CARD_TYPE = 'custom:dashboard-strategy-editable-card';
 const CONTAINER_CARD_TYPES = new Set(['horizontal-stack', 'vertical-stack', 'grid']);
+const HALF_WIDTH_TILE_DOMAINS = new Set([
+  'automation',
+  'binary_sensor',
+  'button',
+  'event',
+  'input_boolean',
+  'input_button',
+  'input_select',
+  'number',
+  'scene',
+  'script',
+  'select',
+  'sensor',
+  'switch',
+]);
 
 function slug(value: string): string {
   return value
@@ -92,15 +107,14 @@ function wrapEditableCard(
   const renderedCard = override?.parsed_config && typeof override.parsed_config === 'object'
     ? override.parsed_config as LovelaceCardConfig
     : card;
+  const gridOptions = renderedCard.grid_options || card.grid_options || getDefaultWrapperGridOptions(renderedCard);
 
   return {
     type: EDITABLE_CARD_TYPE,
     edit_id: editId,
     view_path: viewPath,
     source_hash: sourceHash,
-    ...(renderedCard.grid_options || card.grid_options
-      ? { grid_options: renderedCard.grid_options || card.grid_options }
-      : {}),
+    ...(gridOptions ? { grid_options: gridOptions } : {}),
     ...(renderedCard.visibility || card.visibility
       ? { visibility: renderedCard.visibility || card.visibility }
       : {}),
@@ -111,6 +125,16 @@ function wrapEditableCard(
     original_card: card,
     has_override: !!override,
   };
+}
+
+function getDefaultWrapperGridOptions(card: LovelaceCardConfig): LovelaceCardConfig['grid_options'] | undefined {
+  if (card.type !== 'tile' || typeof card.entity !== 'string') return undefined;
+  if (Array.isArray(card.features) && card.features.length > 0) return undefined;
+
+  const domain = card.entity.split('.')[0];
+  if (!HALF_WIDTH_TILE_DOMAINS.has(domain)) return undefined;
+
+  return { columns: 6 };
 }
 
 function applyToCard(
