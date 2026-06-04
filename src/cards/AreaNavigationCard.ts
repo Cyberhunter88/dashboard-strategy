@@ -19,11 +19,21 @@ type NativeAreaCard = HTMLElement & {
   getCardSize?: () => number;
 };
 
+interface LovelaceCardHelpers {
+  createCardElement(config: LovelaceCardConfig): NativeAreaCard;
+}
+
+declare global {
+  interface Window {
+    loadCardHelpers?: () => Promise<LovelaceCardHelpers>;
+  }
+}
+
 class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private _hass?: HomeAssistant;
   private _config?: AreaNavigationCardConfig;
   private _card?: NativeAreaCard;
-  private _nativeCardReady = false;
+  private _renderToken = 0;
 
   set hass(hass: HomeAssistant | undefined) {
     this._hass = hass;
@@ -37,7 +47,6 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   setConfig(config: AreaNavigationCardConfig): void {
     this._config = config;
     this._ensureCard();
-    this._updateNativeCard();
   }
 
   connectedCallback(): void {
@@ -51,38 +60,65 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   }
 
   private _ensureCard(): void {
-    if (this._card) return;
+    if (!this._config) return;
 
-    this._card = document.createElement('hui-area-card') as NativeAreaCard;
-    if (this.hass) this._card.hass = this.hass;
-    this.appendChild(this._card);
+    if (this._card) {
+      this._updateNativeCard();
+      return;
+    }
 
-    this._nativeCardReady = typeof this._card.setConfig === 'function';
-    if (this._nativeCardReady) return;
+    const token = ++this._renderToken;
+    const nativeConfig = this._createNativeConfig();
 
-    void customElements.whenDefined('hui-area-card')
-      .then(() => {
-        this._nativeCardReady = true;
-        if (this._card && this._hass) this._card.hass = this._hass;
-        this._updateNativeCard();
+    void this._createNativeCard(nativeConfig)
+      .then((card) => {
+        if (token !== this._renderToken) return;
+
+        this._card = card;
+        if (this._hass) this._card.hass = this._hass;
+        this.replaceChildren(this._card);
       })
       .catch(() => {
-        this._nativeCardReady = false;
+        if (token === this._renderToken) this._card = undefined;
       });
   }
 
-  private _updateNativeCard(): void {
-    if (!this._card || !this._config || !this._nativeCardReady) return;
+  private async _createNativeCard(config: LovelaceCardConfig): Promise<NativeAreaCard> {
+    if (window.loadCardHelpers) {
+      const helpers = await window.loadCardHelpers();
+      return helpers.createCardElement(config);
+    }
 
+    await customElements.whenDefined('hui-area-card');
+    const card = document.createElement('hui-area-card') as NativeAreaCard;
+    card.setConfig?.(config);
+    return card;
+  }
+
+  private _createNativeConfig(): LovelaceCardConfig {
+    if (!this._config) return { type: 'area' };
     const areaConfig: LovelaceCardConfig = Object.fromEntries(
       Object.entries(this._config).filter(([key]) => key !== 'navigation_path' && key !== 'type')
     ) as LovelaceCardConfig;
 
-    this._card.setConfig?.({
+    return {
       ...areaConfig,
       type: 'area',
       tap_action: { action: 'none' },
-    });
+    };
+  }
+
+  private _updateNativeCard(): void {
+    if (!this._card || !this._config) return;
+
+    const nativeConfig = this._createNativeConfig();
+    if (typeof this._card.setConfig === 'function') {
+      this._card.setConfig(nativeConfig);
+      return;
+    }
+
+    this._card = undefined;
+    this._ensureCard();
   }
 
   private _isFeatureInteraction(event: MouseEvent): boolean {
