@@ -157,7 +157,7 @@ export function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): Lov
     : undefined;
 
   return {
-    type: 'area',
+    type: 'custom:dashboard-strategy-area-card',
     area: area.area_id,
     display_type: 'compact',
     sensor_classes: sensorClasses.length > 0 ? sensorClasses : undefined,
@@ -165,10 +165,7 @@ export function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): Lov
     exclude_entities: excludeEntities.length > 0 ? excludeEntities : undefined,
     features: controls.length > 0 ? [{ type: 'area-controls', controls }] : [],
     features_position: 'inline',
-    tap_action: {
-      action: 'navigate',
-      navigation_path: roomPath,
-    },
+    navigation_path: roomPath,
     vertical: false,
     grid_options: { columns: 'full' },
   };

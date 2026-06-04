@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.13.4';
+const STRATEGY_VERSION = '1.13.5';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -24,6 +24,7 @@ const modulesPromise = Promise.all([
   import('./cards/SummaryCard'),
   import('./cards/LightsGroupCard'),
   import('./cards/CoversGroupCard'),
+  import('./cards/AreaNavigationCard'),
   import('./views/OverviewViewStrategy'),
   import('./views/LightsViewStrategy'),
   import('./views/CoversViewStrategy'),
