@@ -4,6 +4,52 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.14.3"></a>
+## [1.14.3] - 2026-06-04
+### Bugfixes
+- preserve sections grid layout while hiding unavailable entities
+- keep area card navigation reliable during long dashboard sessions
+
+<a name="1.14.1"></a>
+## [1.14.1] - 2026-06-04
+### Bugfixes
+- hide empty generated sections while unavailable entities are hidden
+
+<a name="1.14.0"></a>
+## [1.14.0] - 2026-06-04
+### Bugfixes
+- stabilize tablet area navigation by letting Home Assistant's native area card handle room navigation
+
+<a name="1.13.11"></a>
+## [1.13.11] - 2026-06-04
+### Bugfixes
+- let the native Home Assistant area card own room navigation so returning to the overview keeps area taps working
+
+<a name="1.13.10"></a>
+## [1.13.10] - 2026-06-04
+### Bugfixes
+- route wrapped area card taps through Home Assistant's action handler and avoid blocking normal card taps as feature-button clicks
+
+<a name="1.13.9"></a>
+## [1.13.9] - 2026-06-04
+### Bugfixes
+- navigate from wrapped area cards even when the native Home Assistant area card consumes click events internally
+
+<a name="1.13.8"></a>
+## [1.13.8] - 2026-06-04
+### Bugfixes
+- create wrapped native area cards through Home Assistant card helpers so they stay rendered after HA lifecycle updates
+
+<a name="1.13.7"></a>
+## [1.13.7] - 2026-06-04
+### Bugfixes
+- render area cards reliably when Home Assistant upgrades the native area card element after the dashboard strategy wrapper is created
+
+<a name="1.13.6"></a>
+## [1.13.6] - 2026-06-04
+### Bugfixes
+- keep weather start clock, date, summaries, and weather cards in a stable stacked column
+
 <a name="1.13.3"></a>
 ## [1.13.3] - 2026-06-03
 ### Bugfixes

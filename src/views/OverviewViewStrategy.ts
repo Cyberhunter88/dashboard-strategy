@@ -159,6 +159,40 @@ function withBlockOverride(
   return defaultSection;
 }
 
+const WEATHER_START_INFO_BLOCKS = new Set<WeatherStartKey>([
+  'clock',
+  'date',
+  'summaries',
+  'weather_current',
+  'weather_hourly',
+  'weather_daily',
+]);
+
+function shouldStackWeatherStartBlock(key: WeatherStartKey, previousKey: WeatherStartKey | null): boolean {
+  return previousKey !== null
+    && WEATHER_START_INFO_BLOCKS.has(previousKey)
+    && WEATHER_START_INFO_BLOCKS.has(key);
+}
+
+function appendWeatherStartBlock(
+  sections: LovelaceSectionConfig[],
+  block: LovelaceSectionConfig | LovelaceSectionConfig[],
+  stackWithPrevious: boolean
+): void {
+  if (Array.isArray(block)) {
+    sections.push(...block);
+    return;
+  }
+
+  const lastSection = sections[sections.length - 1];
+  if (stackWithPrevious && lastSection?.cards && block.cards) {
+    lastSection.cards.push(...block.cards);
+    return;
+  }
+
+  sections.push(block);
+}
+
 function parsedConfigToSections(parsed: Record<string, any> | Record<string, any>[] | null | undefined): LovelaceSectionConfig[] {
   if (!parsed) return [];
   if (Array.isArray(parsed)) {
@@ -472,14 +506,12 @@ function createWeatherStartSections(
   blockMap.set('areas', areasSections);
 
   const sections: LovelaceSectionConfig[] = [];
+  let previousKey: WeatherStartKey | null = null;
   for (const key of normalizedOrder) {
     const block = blockMap.get(key);
     if (!block) continue;
-    if (Array.isArray(block)) {
-      sections.push(...block);
-    } else {
-      sections.push(block);
-    }
+    appendWeatherStartBlock(sections, block, shouldStackWeatherStartBlock(key, previousKey));
+    previousKey = key;
   }
 
   return sections;
