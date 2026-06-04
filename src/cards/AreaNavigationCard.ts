@@ -2,8 +2,7 @@
 // AREA NAVIGATION CARD
 // ====================================================================
 // Thin wrapper around HA's native area card. The native card keeps all
-// rendering/features, while this wrapper performs room navigation reliably
-// on first dashboard load.
+// rendering/features, while this wrapper performs room navigation reliably.
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
@@ -34,6 +33,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private _config?: AreaNavigationCardConfig;
   private _card?: NativeAreaCard;
   private _renderToken = 0;
+  private readonly _boundHandleClick = (ev: MouseEvent) => this._handleClick(ev);
 
   set hass(hass: HomeAssistant | undefined) {
     this._hass = hass;
@@ -51,7 +51,13 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
 
   connectedCallback(): void {
     this.style.display = 'block';
+    this.style.cursor = 'pointer';
+    this.addEventListener('click', this._boundHandleClick, { capture: true });
     this._ensureCard();
+  }
+
+  disconnectedCallback(): void {
+    this.removeEventListener('click', this._boundHandleClick, { capture: true });
   }
 
   private _ensureCard(): void {
@@ -99,11 +105,36 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     return {
       ...areaConfig,
       type: 'area',
-      tap_action: {
-        action: 'navigate',
-        navigation_path: this._config.navigation_path,
-      },
+      tap_action: { action: 'none' },
     };
+  }
+
+  private _isControlClick(ev: MouseEvent): boolean {
+    const path = ev.composedPath();
+    for (const node of path) {
+      if (!(node instanceof HTMLElement)) continue;
+      if (node === this || node === this._card) continue;
+
+      const tagName = node.tagName.toLowerCase();
+      if (
+        node.matches('a, button, input, select, textarea, mwc-button, ha-icon-button, ha-control-button') ||
+        tagName.includes('control') ||
+        tagName.includes('button')
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private _handleClick(ev: MouseEvent): void {
+    if (!this._config?.navigation_path || ev.defaultPrevented || this._isControlClick(ev)) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    window.history.pushState(null, '', this._config.navigation_path);
+    window.dispatchEvent(new Event('location-changed'));
   }
 
   private _updateNativeCard(): void {

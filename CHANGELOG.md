@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.14.2"></a>
+## [1.14.2] - 2026-06-04
+### Bugfixes
+- preserve sections grid layout while hiding unavailable entities
+- keep area card navigation reliable during long dashboard sessions
+
 <a name="1.14.1"></a>
 ## [1.14.1] - 2026-06-04
 ### Bugfixes

@@ -145,18 +145,6 @@ function applyToSection(section: LovelaceSectionConfig): LovelaceSectionConfig {
   };
 }
 
-function withAvailabilityConditionalCard(card: LovelaceCardConfig): LovelaceCardConfig {
-  const entity = card.entity;
-  if (typeof entity !== 'string' || entity.length === 0) return card;
-  if (card.type === 'conditional') return card;
-
-  return {
-    type: 'conditional',
-    conditions: availabilityVisibility(entity),
-    card,
-  };
-}
-
 function applyToCard(card: LovelaceCardConfig): LovelaceCardConfig {
   let next: LovelaceCardConfig = card;
 
@@ -184,7 +172,7 @@ function applyToCard(card: LovelaceCardConfig): LovelaceCardConfig {
     };
   }
 
-  return withAvailabilityConditionalCard(next);
+  return withAvailabilityVisibility(next);
 }
 
 export function withUnavailableEntitiesHidden(
