@@ -33,7 +33,11 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private _config?: AreaNavigationCardConfig;
   private _card?: NativeAreaCard;
   private _renderToken = 0;
+  private _tapStart: { pointerId: number; x: number; y: number } | null = null;
+  private _lastPointerNavigation = 0;
   private readonly _boundHandleClick = (ev: MouseEvent) => this._handleClick(ev);
+  private readonly _boundHandlePointerDown = (ev: PointerEvent) => this._handlePointerDown(ev);
+  private readonly _boundHandlePointerUp = (ev: PointerEvent) => this._handlePointerUp(ev);
 
   set hass(hass: HomeAssistant | undefined) {
     this._hass = hass;
@@ -52,11 +56,16 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   connectedCallback(): void {
     this.style.display = 'block';
     this.style.cursor = 'pointer';
+    this.style.touchAction = 'manipulation';
+    this.addEventListener('pointerdown', this._boundHandlePointerDown, { capture: true });
+    this.addEventListener('pointerup', this._boundHandlePointerUp, { capture: true });
     this.addEventListener('click', this._boundHandleClick, { capture: true });
     this._ensureCard();
   }
 
   disconnectedCallback(): void {
+    this.removeEventListener('pointerdown', this._boundHandlePointerDown, { capture: true });
+    this.removeEventListener('pointerup', this._boundHandlePointerUp, { capture: true });
     this.removeEventListener('click', this._boundHandleClick, { capture: true });
   }
 
@@ -109,7 +118,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     };
   }
 
-  private _isControlClick(ev: MouseEvent): boolean {
+  private _isControlEvent(ev: Event): boolean {
     const path = ev.composedPath();
     for (const node of path) {
       if (!(node instanceof HTMLElement)) continue;
@@ -128,13 +137,56 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     return false;
   }
 
-  private _handleClick(ev: MouseEvent): void {
-    if (!this._config?.navigation_path || ev.defaultPrevented || this._isControlClick(ev)) return;
+  private _canNavigate(ev: Event): boolean {
+    return !!this._config?.navigation_path && !ev.defaultPrevented && !this._isControlEvent(ev);
+  }
 
+  private _navigate(ev: Event): void {
+    if (!this._config?.navigation_path) return;
     ev.preventDefault();
     ev.stopPropagation();
     window.history.pushState(null, '', this._config.navigation_path);
     window.dispatchEvent(new Event('location-changed'));
+  }
+
+  private _handlePointerDown(ev: PointerEvent): void {
+    if (ev.pointerType === 'mouse' || !this._canNavigate(ev)) {
+      this._tapStart = null;
+      return;
+    }
+
+    this._tapStart = {
+      pointerId: ev.pointerId,
+      x: ev.clientX,
+      y: ev.clientY,
+    };
+  }
+
+  private _handlePointerUp(ev: PointerEvent): void {
+    if (ev.pointerType === 'mouse' || !this._tapStart || this._tapStart.pointerId !== ev.pointerId || !this._canNavigate(ev)) {
+      this._tapStart = null;
+      return;
+    }
+
+    const dx = Math.abs(ev.clientX - this._tapStart.x);
+    const dy = Math.abs(ev.clientY - this._tapStart.y);
+    this._tapStart = null;
+
+    if (dx > 12 || dy > 12) return;
+
+    this._lastPointerNavigation = Date.now();
+    this._navigate(ev);
+  }
+
+  private _handleClick(ev: MouseEvent): void {
+    if (Date.now() - this._lastPointerNavigation < 750) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
+
+    if (!this._canNavigate(ev)) return;
+    this._navigate(ev);
   }
 
   private _updateNativeCard(): void {

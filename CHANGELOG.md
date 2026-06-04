@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.15.2"></a>
+## [1.15.2] - 2026-06-04
+### Bugfixes
+- navigate area cards on tablet touch/pointer taps instead of relying only on desktop click events
+
 <a name="1.15.1"></a>
 ## [1.15.1] - 2026-06-04
 ### Bugfixes
