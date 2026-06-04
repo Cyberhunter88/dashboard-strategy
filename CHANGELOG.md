@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.15.1"></a>
+## [1.15.1] - 2026-06-04
+### Bugfixes
+- render wrapped dashboard cards after the editable-card shadow DOM is ready
+- support native and custom card fallback rendering when Home Assistant card helpers are not available
+
 <a name="1.15.0"></a>
 ## [1.15.0] - 2026-06-04
 ### Features

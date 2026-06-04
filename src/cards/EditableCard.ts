@@ -76,6 +76,15 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function cardElementTag(type: string): string | null {
+  if (!type) return null;
+  if (type.startsWith('custom:')) return type.replace(/^custom:/, '');
+  if (type === 'entities') return 'hui-entities-card';
+  if (type === 'entity') return 'hui-entity-card';
+  if (type === 'picture-elements') return 'hui-picture-elements-card';
+  return `hui-${type}-card`;
+}
+
 class DashboardStrategyEditableCard extends LitElement {
   static properties = {
     _editMode: { state: true },
@@ -254,8 +263,7 @@ class DashboardStrategyEditableCard extends LitElement {
   };
 
   private async _renderChild(): Promise<void> {
-    if (!this.card || stableSame(this._childConfig, this.card)) return;
-    this._childConfig = clone(this.card);
+    if (!this.card) return;
 
     const host = this.shadowRoot?.querySelector('.card-host') as HTMLElement | null;
     if (!host) {
@@ -263,15 +271,29 @@ class DashboardStrategyEditableCard extends LitElement {
       return;
     }
 
+    if (this._child && stableSame(this._childConfig, this.card)) return;
+    this._childConfig = clone(this.card);
+
     host.innerHTML = '';
 
     try {
       const helpers = await window.loadCardHelpers?.();
-      const child = helpers?.createCardElement
-        ? helpers.createCardElement(this.card)
-        : document.createElement((this.card.type || '').replace(/^custom:/, ''));
+      let child: HTMLElement;
 
-      if (!helpers?.createCardElement && 'setConfig' in child) {
+      if (helpers?.createCardElement) {
+        child = helpers.createCardElement(this.card);
+      } else {
+        const tagName = cardElementTag(this.card.type);
+        if (!tagName) {
+          throw new Error(`Card helper not available for ${this.card.type}`);
+        }
+        if (!customElements.get(tagName)) {
+          await customElements.whenDefined(tagName);
+        }
+        child = document.createElement(tagName);
+      }
+
+      if ('setConfig' in child) {
         (child as any).setConfig(this.card);
       }
       if (this._hass) (child as any).hass = this._hass;
