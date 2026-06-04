@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.14.5';
+const STRATEGY_VERSION = '1.15.0';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -25,6 +25,7 @@ const modulesPromise = Promise.all([
   import('./cards/LightsGroupCard'),
   import('./cards/CoversGroupCard'),
   import('./cards/AreaNavigationCard'),
+  import('./cards/EditableCard'),
   import('./views/OverviewViewStrategy'),
   import('./views/LightsViewStrategy'),
   import('./views/CoversViewStrategy'),
@@ -48,6 +49,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     const { getVisibleAreasFromHass } = await import('./utils/name-utils');
     const { localize } = await import('./utils/localize');
     const { withUnavailableEntitiesHidden } = await import('./utils/availability-utils');
+    const { applyInlineEditorToViews } = await import('./utils/inline-editor');
     t('imports done');
 
     const getStrategy = (tag: string): any => customElements.get(tag);
@@ -151,9 +153,11 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     t(`generate() done — ${views.length} views`);
 
+    const processedViews = applyInlineEditorToViews(views, config);
+
     return {
       title: localize('dashboard.title'),
-      views: views.map((view) => withConfiguredTheme(withUnavailableEntitiesHidden(view, config))),
+      views: processedViews.map((view) => withConfiguredTheme(withUnavailableEntitiesHidden(view, config))),
     };
   }
 

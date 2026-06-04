@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.15.0"></a>
+## [1.15.0] - 2026-06-04
+### Features
+- add inline editing for generated strategy cards using Home Assistant's standard card editor
+- persist generated-card overrides in the strategy configuration so automatic dashboard generation stays active
+
 <a name="1.14.4"></a>
 ## [1.14.4] - 2026-06-04
 ### Bugfixes
