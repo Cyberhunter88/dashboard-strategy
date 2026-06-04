@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.15.4"></a>
+## [1.15.4] - 2026-06-04
+### Bugfixes
+- remove the dashboard floating edit button and inline card wrappers
+- move existing custom card editing into the normal strategy editor via Home Assistant's card editor
+
 <a name="1.15.3"></a>
 ## [1.15.3] - 2026-06-04
 ### Bugfixes

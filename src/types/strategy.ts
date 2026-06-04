@@ -200,39 +200,6 @@ export interface Simon42StrategyConfig {
 
   // Custom badges (shown in header next to person chips)
   custom_badges?: CustomBadge[];
-
-  // Inline editor overrides for generated dashboard content
-  inline_editor?: InlineEditorConfig;
-}
-
-// -- Inline Editor ----------------------------------------------------
-
-export interface InlineEditorConfig {
-  version: 1;
-  views?: Record<string, InlineViewEdits>;
-}
-
-export interface InlineViewEdits {
-  custom_cards?: InlineCustomCard[];
-  generated_card_overrides?: Record<string, InlineGeneratedCardOverride>;
-  hidden_generated_cards?: string[];
-  section_order?: string[];
-}
-
-export interface InlineCustomCard {
-  id: string;
-  yaml?: string;
-  parsed_config?: Record<string, any> | null;
-  title?: string;
-  position?: 'top' | 'bottom';
-}
-
-export interface InlineGeneratedCardOverride {
-  yaml?: string;
-  parsed_config?: Record<string, any> | null;
-  source_hash: string;
-  title?: string;
-  updated_at?: string;
 }
 
 // -- Area Management --------------------------------------------------

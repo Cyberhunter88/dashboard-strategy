@@ -2035,6 +2035,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
         .value=${card.yaml || ''}
         @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}
       ></textarea>
+      <button class="btn-primary" style="margin-top: 6px;" @click=${() => this._openCardEditorForCustomCard(index)}>
+        Karte mit HA-Editor bearbeiten
+      </button>
       ${validationMsg}
     `;
   }
@@ -2082,6 +2085,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   .value=${card.yaml || ''}
                   style="width: 100%;"
                   @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+                <button class="btn-primary" style="margin-top: 6px;"
+                  @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}>
+                  Karte mit HA-Editor bearbeiten
+                </button>
                 <div class="custom-item-validation">${validationMsg}</div>
               </div>
             </div>
@@ -3411,6 +3418,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
             .value=${card.yaml || ''}
             style="width: 100%;"
             @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}></textarea>
+          <button class="btn-primary" style="margin-top: 6px;" @click=${() => this._openCardEditorForCustomCard(index)}>
+            Karte mit HA-Editor bearbeiten
+          </button>
           <div class="custom-item-validation">
             ${validationMsg}
           </div>
@@ -3461,6 +3471,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
                       .value=${card.yaml || ''}
                       style="width: 100%;"
                       @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+                    <button class="btn-primary" style="margin-top: 6px;"
+                      @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}>
+                      Karte mit HA-Editor bearbeiten
+                    </button>
                     <div class="custom-item-validation">${validationMsg}</div>
                   </div>
                 </div>
@@ -3775,6 +3789,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 .value=${card.yaml || ''}
                 style="width: 100%;"
                 @change=${(e: Event) => this._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}></textarea>
+              <button class="btn-primary" style="margin-top: 6px;"
+                @click=${() => this._openCardEditorForAreaCustomCard(areaId, index)}>
+                Karte mit HA-Editor bearbeiten
+              </button>
               <div class="custom-item-validation">
                 ${validationMsg}
               </div>
@@ -5104,6 +5122,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     // Strip internal fields before saving
     const cleanConfig: Simon42StrategyConfig = { ...config };
+    delete (cleanConfig as Record<string, unknown>).inline_editor;
     if (cleanConfig.custom_views) {
       cleanConfig.custom_views = cleanConfig.custom_views.map((cv) => {
         const clean = { ...cv };
@@ -5213,14 +5232,84 @@ class Simon42DashboardStrategyEditor extends LitElement {
     });
   }
 
-  private _openCardPicker(callback: (config: Record<string, any>) => void): void {
+  private _openCardEditorForCustomCard(index: number): void {
+    const card = this._config.custom_cards?.[index];
+    const initialConfig = this._getEditableCardConfig(card);
+    if (!initialConfig) return;
+
+    this._openCardPicker((config) => {
+      this._updateCustomCardYaml(index, yaml.dump(config).trim());
+    }, initialConfig);
+  }
+
+  private _openCardEditorForSectionCard(sectionIndex: number, cardIndex: number): void {
+    const card = this._config.custom_sections?.[sectionIndex]?.cards?.[cardIndex];
+    const initialConfig = this._getEditableCardConfig(card);
+    if (!initialConfig) return;
+
+    this._openCardPicker((config) => {
+      this._updateSectionCardYaml(sectionIndex, cardIndex, yaml.dump(config).trim());
+    }, initialConfig);
+  }
+
+  private _openCardEditorForAreaCustomCard(areaId: string, index: number): void {
+    const card = this._getAreaCustomCards(areaId)[index];
+    const initialConfig = this._getEditableAreaCardConfig(card);
+    if (!initialConfig) return;
+
+    this._openCardPicker((config) => {
+      const cards = this._getAreaCustomCards(areaId);
+      if (!cards[index]) return;
+      const updated: AreaCustomCard = {
+        ...cards[index],
+        mode: 'yaml',
+        yaml: yaml.dump(config).trim(),
+        parsed_config: config,
+      };
+      delete updated._yaml_error;
+      cards[index] = updated;
+      this._writeAreaCustomCards(areaId, cards);
+    }, initialConfig);
+  }
+
+  private _getEditableCardConfig(card: CustomCard | undefined): Record<string, any> | null {
+    if (card?.parsed_config && typeof card.parsed_config === 'object' && !Array.isArray(card.parsed_config)) {
+      return card.parsed_config as Record<string, any>;
+    }
+    if (!card?.yaml?.trim()) return null;
+
+    try {
+      const parsed = yaml.load(card.yaml);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, any> : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private _getEditableAreaCardConfig(card: AreaCustomCard | undefined): Record<string, any> | null {
+    if (!card) return null;
+    if ((card.mode || 'yaml') === 'tile' && card.entity) return { type: 'tile', entity: card.entity };
+    if (card.parsed_config && typeof card.parsed_config === 'object' && !Array.isArray(card.parsed_config)) {
+      return card.parsed_config as Record<string, any>;
+    }
+    if (!card.yaml?.trim()) return null;
+
+    try {
+      const parsed = yaml.load(card.yaml);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, any> : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private _openCardPicker(callback: (config: Record<string, any>) => void, initialConfig?: Record<string, any>): void {
     this._cardPickerCallback = callback;
-    this._cardPickerConfig = null;
+    this._cardPickerConfig = initialConfig || null;
     this._cardPickerOpen = true;
-    this._cardPickerStep = 'type';
+    this._cardPickerStep = initialConfig ? 'editor' : 'type';
     this._cardPickerSearch = '';
-    this._cardPickerSelectedType = '';
-    this._cardPickerYaml = '';
+    this._cardPickerSelectedType = typeof initialConfig?.type === 'string' ? initialConfig.type : '';
+    this._cardPickerYaml = initialConfig ? yaml.dump(initialConfig).trim() : '';
     this._cardPickerHasVisualEditor = false;
   }
 
