@@ -15,6 +15,21 @@ import type {
 import type { Simon42StrategyConfig } from '../types/strategy';
 
 const HIDDEN_AVAILABILITY_STATES = ['unavailable', 'unknown'] as const;
+const HALF_WIDTH_TILE_DOMAINS = new Set([
+  'automation',
+  'binary_sensor',
+  'button',
+  'event',
+  'input_boolean',
+  'input_button',
+  'input_select',
+  'number',
+  'scene',
+  'script',
+  'select',
+  'sensor',
+  'switch',
+]);
 
 export function shouldHideUnavailableEntities(
   config?: Pick<Simon42StrategyConfig, 'hide_unavailable_entities'>
@@ -61,10 +76,25 @@ function withAvailabilityVisibility<T extends Record<string, any>>(config: T): T
 
   return {
     ...config,
+    ...getStableGridOptions(config, entity),
     visibility: [
       ...((Array.isArray(config.visibility) ? config.visibility : []) as LovelaceCondition[]),
       ...availabilityVisibility(entity),
     ],
+  };
+}
+
+function getStableGridOptions(config: Record<string, any>, entity: string): Pick<LovelaceCardConfig, 'grid_options'> {
+  if (config.grid_options || config.type !== 'tile') return {};
+  if (Array.isArray(config.features) && config.features.length > 0) return {};
+
+  const domain = entity.split('.')[0];
+  if (!HALF_WIDTH_TILE_DOMAINS.has(domain)) return {};
+
+  return {
+    grid_options: {
+      columns: 6,
+    },
   };
 }
 

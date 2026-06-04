@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.14.4"></a>
+## [1.14.4] - 2026-06-04
+### Bugfixes
+- keep simple room tiles half-width when unavailable hiding is active
+
 <a name="1.14.3"></a>
 ## [1.14.3] - 2026-06-04
 ### Bugfixes
