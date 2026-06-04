@@ -4,6 +4,14 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.15.6"></a>
+## [1.15.6] - 2026-06-04
+### Chores
+- remove unused weather-start editor methods left over from the previous block override UI
+- simplify weather-start availability checks that were already always enabled by auto-detection
+- share the editable-card config parser between overview, section, and area custom cards
+- add an npm typecheck script for repeatable TypeScript validation
+
 <a name="1.15.5"></a>
 ## [1.15.5] - 2026-06-04
 ### Chores

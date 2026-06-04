@@ -22,7 +22,6 @@ import type {
   SectionKey,
   StackKey,
   WeatherStartKey,
-  WeatherStartBlockConfig,
   WeatherStartLayoutItem,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
@@ -1644,24 +1643,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return this._config.weather_start_order || [...DEFAULT_WEATHER_START_ORDER];
   }
 
-  private _updateWeatherStartOrder(newOrder: WeatherStartKey[]): void {
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (newOrder.join('|') === DEFAULT_WEATHER_START_ORDER.join('|')) {
-      delete newConfig.weather_start_order;
-    } else {
-      newConfig.weather_start_order = newOrder;
-    }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
   private _isWeatherStartBlockDisabled(key: WeatherStartKey): boolean {
-    const hasWeather = !!(this._config.weather_entity || true); // weather entity auto-detected if not set
     switch (key) {
       case 'weather_current':
       case 'weather_hourly':
       case 'weather_daily':
-        return !hasWeather;
+        return false;
       case 'custom_cards':
         return (this._config.custom_cards || []).length === 0;
       case 'custom_sections':
@@ -1899,41 +1886,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const expanded = new Set(this._expandedWeatherBlocks);
     if (expanded.has(key)) { expanded.delete(key); } else { expanded.add(key); }
     this._expandedWeatherBlocks = expanded;
-  }
-
-  private _handleWeatherBlockYamlChange(key: WeatherStartKey, value: string): void {
-    const trimmed = value.trim();
-    const blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {
-      ...(this._config.weather_start_blocks_config || {}),
-    };
-    if (!trimmed) {
-      delete blocksConfig[key];
-    } else {
-      let parsed: Record<string, any>[] | null = null;
-      let _yaml_error: string | undefined;
-      try {
-        const raw = yaml.load(trimmed);
-        if (Array.isArray(raw)) { parsed = raw as Record<string, any>[]; }
-        else if (raw && typeof raw === 'object') { parsed = [raw as Record<string, any>]; }
-        else { _yaml_error = 'YAML must be a card object or list of cards'; }
-      } catch (e: any) { _yaml_error = e.message as string; }
-      blocksConfig[key] = { yaml: trimmed, parsed_config: parsed, _yaml_error };
-    }
-    const newConfig = { ...this._config };
-    if (Object.keys(blocksConfig).length === 0) { delete newConfig.weather_start_blocks_config; }
-    else { newConfig.weather_start_blocks_config = blocksConfig; }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _resetWeatherBlockYaml(key: WeatherStartKey): void {
-    const blocksConfig = { ...(this._config.weather_start_blocks_config || {}) };
-    delete blocksConfig[key];
-    const newConfig = { ...this._config };
-    if (Object.keys(blocksConfig).length === 0) { delete newConfig.weather_start_blocks_config; }
-    else { newConfig.weather_start_blocks_config = blocksConfig; }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
   }
 
   private _parseWeatherStartItemYaml(yamlString: string): Pick<WeatherStartLayoutItem, 'parsed_config' | '_yaml_error'> {
@@ -5214,7 +5166,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _openCardEditorForCustomCard(index: number): void {
     const card = this._config.custom_cards?.[index];
-    const initialConfig = this._getEditableCardConfig(card);
+    const initialConfig = this._getEditableYamlCardConfig(card);
     if (!initialConfig) return;
 
     this._openCardPicker((config) => {
@@ -5224,7 +5176,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _openCardEditorForSectionCard(sectionIndex: number, cardIndex: number): void {
     const card = this._config.custom_sections?.[sectionIndex]?.cards?.[cardIndex];
-    const initialConfig = this._getEditableCardConfig(card);
+    const initialConfig = this._getEditableYamlCardConfig(card);
     if (!initialConfig) return;
 
     this._openCardPicker((config) => {
@@ -5252,28 +5204,19 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }, initialConfig);
   }
 
-  private _getEditableCardConfig(card: CustomCard | undefined): Record<string, any> | null {
+  private _getEditableAreaCardConfig(card: AreaCustomCard | undefined): Record<string, any> | null {
+    if (!card) return null;
+    if ((card.mode || 'yaml') === 'tile' && card.entity) return { type: 'tile', entity: card.entity };
+    return this._getEditableYamlCardConfig(card);
+  }
+
+  private _getEditableYamlCardConfig(
+    card: Pick<CustomCard | AreaCustomCard, 'parsed_config' | 'yaml'> | undefined
+  ): Record<string, any> | null {
     if (card?.parsed_config && typeof card.parsed_config === 'object' && !Array.isArray(card.parsed_config)) {
       return card.parsed_config as Record<string, any>;
     }
     if (!card?.yaml?.trim()) return null;
-
-    try {
-      const parsed = yaml.load(card.yaml);
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, any> : null;
-    } catch {
-      return null;
-    }
-  }
-
-  private _getEditableAreaCardConfig(card: AreaCustomCard | undefined): Record<string, any> | null {
-    if (!card) return null;
-    if ((card.mode || 'yaml') === 'tile' && card.entity) return { type: 'tile', entity: card.entity };
-    if (card.parsed_config && typeof card.parsed_config === 'object' && !Array.isArray(card.parsed_config)) {
-      return card.parsed_config as Record<string, any>;
-    }
-    if (!card.yaml?.trim()) return null;
-
     try {
       const parsed = yaml.load(card.yaml);
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, any> : null;

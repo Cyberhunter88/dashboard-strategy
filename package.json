@@ -1,6 +1,6 @@
 {
   "name": "dashboard-strategy",
-  "version": "1.15.5",
+  "version": "1.15.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" --fix"
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
