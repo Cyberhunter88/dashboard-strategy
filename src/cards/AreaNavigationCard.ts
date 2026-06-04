@@ -52,11 +52,6 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   connectedCallback(): void {
     this.style.display = 'block';
     this._ensureCard();
-    this.addEventListener('click', this._handleClick, { capture: true });
-  }
-
-  disconnectedCallback(): void {
-    this.removeEventListener('click', this._handleClick, { capture: true });
   }
 
   private _ensureCard(): void {
@@ -104,7 +99,10 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     return {
       ...areaConfig,
       type: 'area',
-      tap_action: { action: 'none' },
+      tap_action: {
+        action: 'navigate',
+        navigation_path: this._config.navigation_path,
+      },
     };
   }
 
@@ -120,38 +118,6 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     this._card = undefined;
     this._ensureCard();
   }
-
-  private _isFeatureInteraction(event: MouseEvent): boolean {
-    return event.composedPath().some((node) => {
-      if (!(node instanceof HTMLElement)) return false;
-      const tagName = node.tagName.toLowerCase();
-      return (
-        tagName === 'hui-card-features' ||
-        tagName === 'ha-control-button' ||
-        tagName === 'ha-control-button-group'
-      );
-    });
-  }
-
-  private _handleClick = (event: MouseEvent): void => {
-    if (!this._config || event.defaultPrevented || this._isFeatureInteraction(event)) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    this.dispatchEvent(new CustomEvent('hass-action', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        config: {
-          tap_action: {
-            action: 'navigate',
-            navigation_path: this._config.navigation_path,
-          },
-        },
-        action: 'tap',
-      },
-    }));
-  };
 
   getCardSize(): number {
     return this._card?.getCardSize?.() ?? 1;

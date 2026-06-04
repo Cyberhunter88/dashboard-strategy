@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.13.11"></a>
+## [1.13.11] - 2026-06-04
+### Bugfixes
+- let the native Home Assistant area card own room navigation so returning to the overview keeps area taps working
+
 <a name="1.13.10"></a>
 ## [1.13.10] - 2026-06-04
 ### Bugfixes
