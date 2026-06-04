@@ -130,6 +130,16 @@ function getAreaExcludedEntities(areaId: string, hass: HomeAssistant): string[] 
     .map((entity) => entity.entity_id);
 }
 
+function getDashboardBasePath(): string {
+  const path = window.location.pathname.replace(/\/+$/, '');
+  if (!path || path === '/') return '';
+
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length <= 1) return `/${segments.join('/')}`;
+
+  return `/${segments.slice(0, -1).join('/')}`;
+}
+
 /**
  * Builds a single area card config for use in area sections.
  * Pre-filters controls and sensor_classes like HA does — the card
@@ -139,6 +149,7 @@ export function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): Lov
   const controls = getAreaControls(area.area_id, hass);
   const sensorClasses = getAreaSensorClasses(area, hass);
   const excludeEntities = getAreaExcludedEntities(area.area_id, hass);
+  const roomPath = `${getDashboardBasePath()}/${area.area_id}`;
 
   // Pre-filter alert classes if enabled
   const alertClasses = Registry.config.show_alerts_on_areas
@@ -154,7 +165,10 @@ export function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): Lov
     exclude_entities: excludeEntities.length > 0 ? excludeEntities : undefined,
     features: controls.length > 0 ? [{ type: 'area-controls', controls }] : [],
     features_position: 'inline',
-    navigation_path: area.area_id,
+    tap_action: {
+      action: 'navigate',
+      navigation_path: roomPath,
+    },
     vertical: false,
     grid_options: { columns: 'full' },
   };
