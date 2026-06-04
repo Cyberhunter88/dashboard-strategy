@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.13.10"></a>
+## [1.13.10] - 2026-06-04
+### Bugfixes
+- route wrapped area card taps through Home Assistant's action handler and avoid blocking normal card taps as feature-button clicks
+
 <a name="1.13.9"></a>
 ## [1.13.9] - 2026-06-04
 ### Bugfixes

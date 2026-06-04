@@ -128,8 +128,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
       return (
         tagName === 'hui-card-features' ||
         tagName === 'ha-control-button' ||
-        tagName === 'ha-control-button-group' ||
-        tagName === 'button'
+        tagName === 'ha-control-button-group'
       );
     });
   }
@@ -138,8 +137,20 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     if (!this._config || event.defaultPrevented || this._isFeatureInteraction(event)) return;
 
     event.preventDefault();
-    history.pushState(null, '', this._config.navigation_path);
-    window.dispatchEvent(new Event('location-changed'));
+    event.stopPropagation();
+    this.dispatchEvent(new CustomEvent('hass-action', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        config: {
+          tap_action: {
+            action: 'navigate',
+            navigation_path: this._config.navigation_path,
+          },
+        },
+        action: 'tap',
+      },
+    }));
   };
 
   getCardSize(): number {
