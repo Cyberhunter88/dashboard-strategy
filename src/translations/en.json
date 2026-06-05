@@ -24,6 +24,7 @@
     "energy": "Energy"
   },
   "stacks": {
+    "ups": "UPS",
     "energy": "Energy",
     "cameras": "Cameras",
     "lights": "Lights",

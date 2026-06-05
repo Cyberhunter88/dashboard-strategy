@@ -24,6 +24,7 @@
     "energy": "Energie"
   },
   "stacks": {
+    "ups": "USV/UPS",
     "energy": "Energie",
     "cameras": "Kameras",
     "lights": "Lichter",

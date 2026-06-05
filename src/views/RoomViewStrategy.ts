@@ -502,11 +502,14 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     if (upsDevices.length > 0) {
       const critThreshold = dashboardConfig.battery_critical_threshold ?? 20;
       const lowThreshold = dashboardConfig.battery_low_threshold ?? 50;
+      const hiddenUpsEntities = new Set<string>(groupsOptions.ups?.hidden || []);
 
       for (const upsDevice of upsDevices) {
+        if (hiddenUpsEntities.has(upsDevice.batteryId)) continue;
+
         const sortedSensors = [...upsDevice.sensorIds].sort(
           (a, b) => upsSensorRole(a, hass) - upsSensorRole(b, hass) || a.localeCompare(b)
-        );
+        ).filter((entityId) => !hiddenUpsEntities.has(entityId));
 
         pushStack('ups', {
           type: 'grid',

@@ -3574,6 +3574,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const hass = this._hass!;
 
     const domainGroups: DomainGroup[] = [
+      { key: 'ups', label: localize('stacks.ups'), icon: 'mdi:power-plug-battery' },
       { key: 'lights', label: localize('editor.domain_lights'), icon: 'mdi:lightbulb' },
       { key: 'climate', label: localize('editor.domain_climate'), icon: 'mdi:thermostat' },
       { key: 'covers', label: localize('editor.domain_covers'), icon: 'mdi:window-shutter' },
@@ -5454,6 +5455,61 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     .filter((e: EntityRegistryEntry) => e.labels?.includes('no_dboard'))
     .map((e: EntityRegistryEntry) => e.entity_id);
 
+  const entitiesByDevice = new Map<string, EntityRegistryEntry[]>();
+  for (const entity of entities) {
+    if (!entity.device_id) continue;
+    const bucket = entitiesByDevice.get(entity.device_id);
+    if (bucket) bucket.push(entity);
+    else entitiesByDevice.set(entity.device_id, [entity]);
+  }
+
+  const upsDeviceClasses = new Set(['duration', 'apparent_power', 'power', 'voltage']);
+  const upsIdPattern = /load|runtime|time_left|input_voltage|status/;
+  const usedByUps = new Set<string>();
+
+  for (const deviceEntities of entitiesByDevice.values()) {
+    const areaEntities = deviceEntities.filter((entity) => {
+      let belongsToArea = false;
+      if (entity.area_id) belongsToArea = entity.area_id === areaId;
+      else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
+      return (
+        belongsToArea &&
+        !excludeLabels.includes(entity.entity_id) &&
+        !!hass.states[entity.entity_id] &&
+        !isEntityRegistryHidden(entity)
+      );
+    });
+    if (areaEntities.length === 0) continue;
+
+    let batteryId: string | undefined;
+    let hasUpsSignal = false;
+    let isNut = false;
+
+    for (const entity of areaEntities) {
+      if (entity.platform === 'nut') isNut = true;
+
+      const entityState = hass.states[entity.entity_id];
+      if (!entityState) continue;
+      const deviceClass = entityState.attributes?.device_class as string | undefined;
+      const unit = entityState.attributes?.unit_of_measurement as string | undefined;
+
+      if (!batteryId && entity.entity_id.startsWith('sensor.') && deviceClass === 'battery' && unit === '%') {
+        batteryId = entity.entity_id;
+        continue;
+      }
+
+      if (deviceClass && upsDeviceClasses.has(deviceClass)) hasUpsSignal = true;
+      else if (upsIdPattern.test(entity.entity_id)) hasUpsSignal = true;
+    }
+
+    if (!batteryId) continue;
+    if (!isNut && !hasUpsSignal) continue;
+
+    const upsEntityIds = areaEntities.map((entity) => entity.entity_id);
+    roomEntities.ups.push(...upsEntityIds);
+    for (const entityId of upsEntityIds) usedByUps.add(entityId);
+  }
+
   for (const entity of entities) {
     let belongsToArea = false;
 
@@ -5464,6 +5520,7 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     }
 
     if (!belongsToArea) continue;
+    if (usedByUps.has(entity.entity_id)) continue;
     if (excludeLabels.includes(entity.entity_id)) continue;
     if (!hass.states[entity.entity_id]) continue;
     if (isEntityRegistryHidden(entity)) continue;
