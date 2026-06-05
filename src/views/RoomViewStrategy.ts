@@ -37,6 +37,21 @@ function mediaPlayerSupportsPlayback(state: HassEntity): boolean {
   return (f & (MEDIA_PAUSE | MEDIA_PLAY | MEDIA_STOP)) !== 0;
 }
 
+function upsSensorRole(entityId: string, hass: HomeAssistant): number {
+  const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
+  if (deviceClass === 'duration' || /runtime|time_left|load_runtime/.test(entityId)) return 1;
+  if (deviceClass === 'power' || deviceClass === 'apparent_power' || /(^|[._])load([._]|$)/.test(entityId)) return 2;
+  if (deviceClass === 'voltage' || /voltage|input/.test(entityId)) return 3;
+  if (/status|state/.test(entityId)) return 4;
+  return 5;
+}
+
+interface UpsDeviceRender {
+  name: string;
+  batteryId: string;
+  sensorIds: string[];
+}
+
 /**
  * Baut aus den AreaCustomCard-Einträgen einer Position (top/bottom) genau
  * eine grid-Sammel-Section. Gibt [] zurück, wenn keine gültige Karte vorliegt.
@@ -155,9 +170,63 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // Main categorization loop — use pre-filtered visible entities from Registry
     // (no hidden, no_dboard, config/diagnostic, config-hidden)
     const visibleEntities = Registry.getVisibleEntitiesForArea(area.area_id);
+    const showUps = dashboardConfig.show_ups_in_rooms !== false;
+    const usedByUps = new Set<string>();
+    const upsDevices: UpsDeviceRender[] = [];
+
+    if (showUps) {
+      const entitiesByDevice = new Map<string, typeof visibleEntities>();
+      for (const entity of visibleEntities) {
+        if (!entity.device_id) continue;
+        const bucket = entitiesByDevice.get(entity.device_id);
+        if (bucket) bucket.push(entity);
+        else entitiesByDevice.set(entity.device_id, [entity]);
+      }
+
+      const upsDeviceClasses = new Set(['duration', 'apparent_power', 'power', 'voltage']);
+      const upsIdPattern = /load|runtime|time_left|input_voltage|status/;
+
+      for (const [deviceId, entities] of entitiesByDevice) {
+        let batteryId: string | undefined;
+        let hasUpsSignal = false;
+        let isNut = false;
+
+        for (const entity of entities) {
+          if (entity.platform === 'nut') isNut = true;
+
+          const entityState = hass.states[entity.entity_id];
+          if (!entityState) continue;
+          const deviceClass = entityState.attributes?.device_class as string | undefined;
+          const unit = entityState.attributes?.unit_of_measurement as string | undefined;
+
+          if (!batteryId && entity.entity_id.startsWith('sensor.') && deviceClass === 'battery' && unit === '%') {
+            batteryId = entity.entity_id;
+            continue;
+          }
+
+          if (deviceClass && upsDeviceClasses.has(deviceClass)) hasUpsSignal = true;
+          else if (upsIdPattern.test(entity.entity_id)) hasUpsSignal = true;
+        }
+
+        if (!batteryId) continue;
+        if (!isNut && !hasUpsSignal) continue;
+
+        const sensorIds = entities
+          .map((entity) => entity.entity_id)
+          .filter((entityId) => entityId !== batteryId && !!hass.states[entityId]);
+
+        const device = Registry.getDevice(deviceId);
+        const name = device?.name_by_user ?? device?.name ?? 'UPS';
+        upsDevices.push({ name, batteryId, sensorIds });
+
+        usedByUps.add(batteryId);
+        for (const entityId of sensorIds) usedByUps.add(entityId);
+      }
+    }
 
     for (const entity of visibleEntities) {
       const entityId = entity.entity_id;
+      if (usedByUps.has(entityId)) continue;
 
       // State check
       const state = hass.states[entityId];
@@ -370,9 +439,12 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       if (entities[0]) addCandidate(entities[0], colorKey);
     }
 
-    // Window/door: show ALL matches (not just first), users control via per-area hidden[]
-    for (const id of sensorEntities.window) addCandidate(id, 'window', 'window');
-    for (const id of sensorEntities.door) addCandidate(id, 'door', 'door');
+    if (dashboardConfig.show_window_contacts_in_rooms === true) {
+      for (const id of sensorEntities.window) addCandidate(id, 'window', 'window');
+    }
+    if (dashboardConfig.show_door_contacts_in_rooms === true) {
+      for (const id of sensorEntities.door) addCandidate(id, 'door', 'door');
+    }
 
     // Apply per-area badge config: filter hidden, append additional
     let filteredCandidates = candidates;
@@ -425,6 +497,43 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const arr = stacks.get(key) ?? [];
       arr.push(section);
       stacks.set(key, arr);
+    }
+
+    if (upsDevices.length > 0) {
+      const critThreshold = dashboardConfig.battery_critical_threshold ?? 20;
+      const lowThreshold = dashboardConfig.battery_low_threshold ?? 50;
+
+      for (const upsDevice of upsDevices) {
+        const sortedSensors = [...upsDevice.sensorIds].sort(
+          (a, b) => upsSensorRole(a, hass) - upsSensorRole(b, hass) || a.localeCompare(b)
+        );
+
+        pushStack('ups', {
+          type: 'grid',
+          cards: [
+            {
+              type: 'heading',
+              heading_style: 'title',
+              icon: 'mdi:power-plug-battery',
+              heading: upsDevice.name,
+            },
+            {
+              type: 'gauge',
+              entity: upsDevice.batteryId,
+              name: localize('ups.battery'),
+              min: 0,
+              max: 100,
+              needle: false,
+              severity: { red: 0, yellow: critThreshold, green: lowThreshold },
+            },
+            ...sortedSensors.map((entityId) => ({
+              type: 'tile',
+              entity: entityId,
+              vertical: false,
+            })),
+          ],
+        });
+      }
     }
 
     if (roomEntities.energy.length > 0) {

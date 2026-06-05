@@ -98,6 +98,9 @@
     "battery_one": "battery",
     "battery_many": "batteries"
   },
+  "ups": {
+    "battery": "Battery"
+  },
   "climate": {
     "heating": "Heating",
     "cooling": "Cooling",
@@ -203,6 +206,8 @@
     "show_automations_in_rooms_desc": "Shows automations assigned to the area in the respective room views.",
     "show_scripts_in_rooms": "Show scripts in room views",
     "show_scripts_in_rooms_desc": "Shows scripts assigned to the area in the respective room views.",
+    "show_ups_in_rooms": "Show UPS in room views",
+    "show_ups_in_rooms_desc": "Automatically detects UPS devices and shows a block per device with battery level and related sensors in the respective room view. Sensors hidden via the 'no_dboard' label or entity options are not included.",
     "show_window_contacts_in_rooms": "Show window contacts in room views",
     "show_window_contacts_in_rooms_desc": "Shows window contacts as badges in the respective room views.",
     "show_door_contacts_in_rooms": "Show door contacts in room views",

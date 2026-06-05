@@ -98,6 +98,9 @@
     "battery_one": "Batterie",
     "battery_many": "Batterien"
   },
+  "ups": {
+    "battery": "Akku"
+  },
   "climate": {
     "heating": "Heizen",
     "cooling": "Kühlen",
@@ -203,6 +206,8 @@
     "show_automations_in_rooms_desc": "Zeigt dem Bereich zugeordnete Automationen in den jeweiligen Raum-Ansichten an.",
     "show_scripts_in_rooms": "Skripte in Raum-Ansichten anzeigen",
     "show_scripts_in_rooms_desc": "Zeigt dem Bereich zugeordnete Skripte in den jeweiligen Raum-Ansichten an.",
+    "show_ups_in_rooms": "USV/UPS in Raum-Ansichten anzeigen",
+    "show_ups_in_rooms_desc": "Erkennt USV-/UPS-Geraete automatisch und zeigt pro Geraet einen Block mit Akku-Ladestand und zugehoerigen Sensoren in der jeweiligen Raum-Ansicht. Sensoren mit Label 'no_dboard' oder ausgeblendete Entitaeten werden nicht beruecksichtigt.",
     "show_window_contacts_in_rooms": "Fensterkontakte in Raum-Ansichten anzeigen",
     "show_window_contacts_in_rooms_desc": "Zeigt Fensterkontakte als Badges in den jeweiligen Raum-Ansichten an.",
     "show_door_contacts_in_rooms": "Türkontakte in Raum-Ansichten anzeigen",

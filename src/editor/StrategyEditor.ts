@@ -26,6 +26,7 @@ import type {
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
+import { isEntityRegistryHidden } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isBadgeCandidate, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder } from '../utils/name-utils';
@@ -2965,6 +2966,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showLocksInRooms = this._config.show_locks_in_rooms === true;
     const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
     const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
+    const showUpsInRooms = this._config.show_ups_in_rooms !== false;
+    const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
+    const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -3011,6 +3015,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
               (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('show-ups-in-rooms', localize('editor.show_ups_in_rooms'), showUpsInRooms,
+              (checked) => this._toggleChanged('show_ups_in_rooms', checked, true))}
+            <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('show-window-contacts-in-rooms', localize('editor.show_window_contacts_in_rooms'), showWindowContactsInRooms,
+              (checked) => this._toggleChanged('show_window_contacts_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_window_contacts_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('show-door-contacts-in-rooms', localize('editor.show_door_contacts_in_rooms'), showDoorContactsInRooms,
+              (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_door_contacts_in_rooms_desc')}</div>
           </div>
 
           <div class="option-group">
@@ -5450,10 +5466,10 @@ async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Prom
     if (!belongsToArea) continue;
     if (excludeLabels.includes(entity.entity_id)) continue;
     if (!hass.states[entity.entity_id]) continue;
-    if (entity.hidden) continue;
+    if (isEntityRegistryHidden(entity)) continue;
 
     const entityRegistry = hass.entities?.[entity.entity_id];
-    if (entityRegistry?.hidden) continue;
+    if (isEntityRegistryHidden(entityRegistry)) continue;
 
     const domain = entity.entity_id.split('.')[0];
     const stateObj = hass.states[entity.entity_id];
@@ -5514,7 +5530,7 @@ function getAreaBadgeCandidates(areaId: string, hass: HomeAssistant): string[] {
     if (entity.area_id) belongsToArea = entity.area_id === areaId;
     else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
     if (!belongsToArea) continue;
-    if (entity.hidden) continue;
+    if (isEntityRegistryHidden(entity)) continue;
     if (entity.labels?.includes('no_dboard')) continue;
     if (!hass.states[entity.entity_id]) continue;
 
@@ -5563,7 +5579,7 @@ function getAvailableBadgeEntities(
     if (entity.area_id) belongsToArea = entity.area_id === areaId;
     else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
     if (!belongsToArea) continue;
-    if (entity.hidden) continue;
+    if (isEntityRegistryHidden(entity)) continue;
     if (!hass.states[entity.entity_id]) continue;
 
     const domain = entity.entity_id.split('.')[0];

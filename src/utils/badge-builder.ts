@@ -8,6 +8,7 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceBadgeConfig } from '../types/lovelace';
 import type { PersonData } from '../types/strategy';
+import { isEntityRegistryHidden } from '../types/registries';
 
 /**
  * Creates Lovelace entity badges for a list of persons.
@@ -26,7 +27,7 @@ export function createPersonBadges(persons: PersonData[], hass: HomeAssistant): 
 
     // Registry check: skip if entity is hidden
     const registryEntry = hass.entities[person.entity_id];
-    if (registryEntry?.hidden === true) continue;
+    if (isEntityRegistryHidden(registryEntry)) continue;
 
     const firstName = person.name.split(' ')[0];
 

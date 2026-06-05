@@ -17,11 +17,18 @@ export interface EntityRegistryEntry {
   area_id?: string | null;
   labels: string[];
   hidden?: boolean;
+  hidden_by?: 'user' | 'integration' | null;
+  disabled_by?: 'user' | 'integration' | 'config_entry' | null;
   entity_category?: EntityCategory | null;
   platform?: string;
   has_entity_name?: boolean;
   display_precision?: number;
   translation_key?: string | null;
+}
+
+export function isEntityRegistryHidden(entry: EntityRegistryEntry | undefined | null): boolean {
+  if (!entry) return false;
+  return entry.hidden === true || entry.hidden_by != null || entry.disabled_by != null;
 }
 
 // -- Device Registry --------------------------------------------------

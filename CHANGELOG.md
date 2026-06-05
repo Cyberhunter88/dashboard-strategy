@@ -4,6 +4,13 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.15.7"></a>
+## [1.15.7] - 2026-06-05
+### Bugfixes
+- rebuild the registry when config- or device-based visibility inputs change
+- honor hidden_by and disabled_by consistently in registry-backed filters
+- restore UPS room blocks and wire the room badge toggles for window and door contacts
+
 <a name="1.15.6"></a>
 ## [1.15.6] - 2026-06-04
 ### Chores

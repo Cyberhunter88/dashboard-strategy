@@ -8,6 +8,7 @@
 import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig, PersonData } from '../types/strategy';
+import { isEntityRegistryHidden } from '../types/registries';
 
 /**
  * Collects person entities with home/away state.
@@ -82,7 +83,7 @@ export function getBatteryEntities(hass: HomeAssistant, config: Simon42StrategyC
     if (Registry.isHiddenByConfig(entityId)) return false;
 
     const entry = Registry.getEntity(entityId);
-    if (entry?.hidden) return false;
+    if (isEntityRegistryHidden(entry)) return false;
     // Platform-specific filter: hide mobile_app batteries if configured
     if (config.hide_mobile_app_batteries) {
       if (entry?.platform === 'mobile_app') return false;

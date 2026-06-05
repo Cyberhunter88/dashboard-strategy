@@ -11,11 +11,12 @@
 // ====================================================================
 
 import type { HomeAssistant } from './types/homeassistant';
-import type {
+import {
   EntityRegistryEntry,
   DeviceRegistryEntry,
   AreaRegistryEntry,
   FloorRegistryEntry,
+  isEntityRegistryHidden,
 } from './types/registries';
 import type { Simon42StrategyConfig } from './types/strategy';
 import { timeStart, timeEnd, debugLog } from './utils/debug';
@@ -103,7 +104,9 @@ class Registry {
     if (
       Registry._initialized &&
       hass.entities === Registry._hass?.entities &&
-      hass.areas === Registry._hass?.areas
+      hass.areas === Registry._hass?.areas &&
+      hass.devices === Registry._hass?.devices &&
+      config === Registry._config
     ) return;
     Registry._initialized = false;
 
@@ -161,7 +164,7 @@ class Registry {
   private static _isEntityVisible(entity: EntityRegistryEntry): boolean {
     if (Registry._excludeSet.has(entity.entity_id)) return false;
     if (Registry._hiddenFromConfig.has(entity.entity_id)) return false;
-    if (entity.hidden) return false;
+    if (isEntityRegistryHidden(entity)) return false;
     if (entity.entity_category === 'config' || entity.entity_category === 'diagnostic') return false;
     return true;
   }
@@ -440,7 +443,7 @@ class Registry {
     const entry = Registry._entityById.get(entityId);
     if (!entry) return false; // Entity not in registry — don't exclude
 
-    if (entry.hidden) return true;
+    if (isEntityRegistryHidden(entry)) return true;
     if (entry.entity_category === 'config' || entry.entity_category === 'diagnostic') return true;
 
     return false;
