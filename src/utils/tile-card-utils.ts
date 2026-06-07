@@ -72,11 +72,12 @@ function buildAdaptiveFeatures(
     case 'lock':
       return [{ type: 'lock-commands' }];
     case 'media_player': {
-      const features: LovelaceTileCardFeatureConfig[] = [];
-      if (mediaPlayerSupportsPlayback(state)) features.push({ type: 'media-player-playback' });
-      if (mediaPlayerSupportsSourceSelection(state)) features.push({ type: 'media-player-source' });
-      if (mediaPlayerSupportsSoundModeSelection(state)) features.push({ type: 'media-player-sound-mode' });
-      return features;
+      // Keep media tiles strictly horizontal by exposing only one
+      // primary inline feature instead of stacking multiple controls.
+      if (mediaPlayerSupportsPlayback(state)) return [{ type: 'media-player-playback' }];
+      if (mediaPlayerSupportsSourceSelection(state)) return [{ type: 'media-player-source' }];
+      if (mediaPlayerSupportsSoundModeSelection(state)) return [{ type: 'media-player-sound-mode' }];
+      return [];
     }
     case 'vacuum':
       return [{ type: 'vacuum-commands' }];
