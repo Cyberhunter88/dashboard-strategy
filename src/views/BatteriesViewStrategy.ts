@@ -7,8 +7,10 @@ import type { LovelaceViewConfig, LovelaceSectionConfig } from '../types/lovelac
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { getBatteryEntities } from '../utils/entity-filter';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
 function createBatterySection(
+  hass: HomeAssistant,
   entities: string[],
   status: 'critical' | 'low' | 'good',
   rangeText: string,
@@ -28,13 +30,13 @@ function createBatterySection(
         }`,
         heading_style: 'title',
       },
-      ...entities.map((e) => ({
-        type: 'tile',
-        entity: e,
-        vertical: false,
-        state_content: ['state', 'last_changed'],
-        color,
-      })),
+      ...entities.map((e) =>
+        buildAdaptiveTileCardConfig(hass, e, {
+          vertical: false,
+          state_content: ['state', 'last_changed'],
+          color,
+        })
+      ),
     ],
   };
 }
@@ -87,13 +89,13 @@ class Simon42ViewBatteriesStrategy extends HTMLElement {
 
     const sections: LovelaceSectionConfig[] = [];
 
-    const criticalSection = createBatterySection(critical, 'critical', `< ${criticalThreshold}%`);
+    const criticalSection = createBatterySection(hass, critical, 'critical', `< ${criticalThreshold}%`);
     if (criticalSection) sections.push(criticalSection);
 
-    const lowSection = createBatterySection(low, 'low', `${criticalThreshold}% - ${lowThreshold}%`);
+    const lowSection = createBatterySection(hass, low, 'low', `${criticalThreshold}% - ${lowThreshold}%`);
     if (lowSection) sections.push(lowSection);
 
-    const goodSection = createBatterySection(good, 'good', `> ${lowThreshold}%`);
+    const goodSection = createBatterySection(hass, good, 'good', `> ${lowThreshold}%`);
     if (goodSection) sections.push(goodSection);
 
     return { type: 'sections', sections };

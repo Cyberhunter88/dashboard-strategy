@@ -10,6 +10,7 @@ import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { stripAreaName } from '../utils/name-utils';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
@@ -40,8 +41,6 @@ interface LightHierarchyNode {
   entityId: string;
   childIds: string[];
 }
-
-const LIGHT_BRIGHTNESS_MODES = ['brightness', 'color_temp', 'hs', 'xy', 'rgb', 'rgbw', 'rgbww', 'white'];
 
 class Simon42LightsGroupCard extends LitElement {
   static properties = {
@@ -404,19 +403,17 @@ class Simon42LightsGroupCard extends LitElement {
 
     const card = createTileCardElement();
     card.hass = this.hass;
-    const cardConfig: any = { type: 'tile', entity: entityId, vertical: false, state_content: 'last_changed' };
+    const cardConfig = buildAdaptiveTileCardConfig(this.hass!, entityId, {
+      vertical: false,
+      state_content: 'last_changed',
+    });
     const displayName = this._getDisplayName(entityId);
     if (displayName) {
       cardConfig.name = displayName;
     }
-    const state = this._getState(entityId);
-    const modes = state?.attributes?.supported_color_modes as string[] | undefined;
-    const hasBrightness = modes?.some((m: string) => LIGHT_BRIGHTNESS_MODES.includes(m)) || false;
-    if (this._config.group_type !== 'off' && hasBrightness) {
-      // Keep the slider on supported lights in all interactive views.
-      // HA handles disabled/irrelevant controls for unsupported runtime states.
-      cardConfig.features = [{ type: 'light-brightness' }];
-      cardConfig.features_position = 'inline';
+    if (this._config.group_type === 'off') {
+      delete cardConfig.features;
+      delete cardConfig.features_position;
     }
     card.setConfig(cardConfig);
     card.dataset.entityId = entityId;

@@ -21,6 +21,91 @@ export interface LovelaceCardConfig {
   [key: string]: any;
 }
 
+export interface LovelaceTileCardFeatureBase {
+  type: string;
+  [key: string]: any;
+}
+
+export interface LightBrightnessTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'light-brightness';
+}
+
+export interface ClimateHvacModesTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'climate-hvac-modes';
+}
+
+export interface CoverOpenCloseTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'cover-open-close';
+}
+
+export interface FanSpeedTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'fan-speed';
+}
+
+export interface LockCommandsTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'lock-commands';
+}
+
+export interface MediaPlayerPlaybackTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'media-player-playback';
+}
+
+export interface MediaPlayerSourceTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'media-player-source';
+}
+
+export interface MediaPlayerSoundModeTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'media-player-sound-mode';
+}
+
+export interface NumericInputTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'numeric-input';
+}
+
+export interface SelectOptionsTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'select-options';
+}
+
+export interface ToggleTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'toggle';
+}
+
+export interface UpdateActionsTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'update-actions';
+}
+
+export interface VacuumCommandsTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'vacuum-commands';
+}
+
+export type LovelaceTileCardFeatureConfig =
+  | LightBrightnessTileFeature
+  | ClimateHvacModesTileFeature
+  | CoverOpenCloseTileFeature
+  | FanSpeedTileFeature
+  | LockCommandsTileFeature
+  | MediaPlayerPlaybackTileFeature
+  | MediaPlayerSourceTileFeature
+  | MediaPlayerSoundModeTileFeature
+  | NumericInputTileFeature
+  | SelectOptionsTileFeature
+  | ToggleTileFeature
+  | UpdateActionsTileFeature
+  | VacuumCommandsTileFeature
+  | LovelaceTileCardFeatureBase;
+
+export interface LovelaceTileCardConfig extends LovelaceCardConfig {
+  type: 'tile';
+  entity: string;
+  vertical?: boolean;
+  name?: string;
+  color?: string;
+  show_entity_picture?: boolean;
+  features?: LovelaceTileCardFeatureConfig[];
+  features_position?: 'inline' | 'bottom';
+  state_content?: string | string[];
+}
+
 // -- Badges -----------------------------------------------------------
 
 export interface LovelaceBadgeConfig {

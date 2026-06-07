@@ -7,6 +7,7 @@ import type { LovelaceViewConfig, LovelaceCardConfig, LovelaceSectionConfig } fr
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
 class Simon42ViewSecurityStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
@@ -73,23 +74,21 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
           ],
         });
         cards.push(
-          ...unlocked.map((e) => ({
-            type: 'tile',
-            entity: e,
-            features: [{ type: 'lock-commands' }],
-            state_content: 'last_changed',
-          }))
+          ...unlocked.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              state_content: 'last_changed',
+            })
+          )
         );
       }
       if (locked.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.locks_locked'), heading_style: 'subtitle', icon: 'mdi:lock' });
         cards.push(
-          ...locked.map((e) => ({
-            type: 'tile',
-            entity: e,
-            features: [{ type: 'lock-commands' }],
-            state_content: 'last_changed',
-          }))
+          ...locked.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              state_content: 'last_changed',
+            })
+          )
         );
       }
       if (cards.length > 0) sections.push({ type: 'grid', cards });
@@ -123,25 +122,21 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
           ],
         });
         cards.push(
-          ...open.map((e) => ({
-            type: 'tile',
-            entity: e,
-            features: [{ type: 'cover-open-close' }],
-            features_position: 'inline',
-            state_content: 'last_changed',
-          }))
+          ...open.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              state_content: 'last_changed',
+            })
+          )
         );
       }
       if (closed.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.doors_closed'), heading_style: 'subtitle', icon: 'mdi:door-closed' });
         cards.push(
-          ...closed.map((e) => ({
-            type: 'tile',
-            entity: e,
-            features: [{ type: 'cover-open-close' }],
-            features_position: 'inline',
-            state_content: 'last_changed',
-          }))
+          ...closed.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              state_content: 'last_changed',
+            })
+          )
         );
       }
       if (cards.length > 0) sections.push({ type: 'grid', cards });
@@ -175,25 +170,21 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
           ],
         });
         cards.push(
-          ...open.map((e) => ({
-            type: 'tile',
-            entity: e,
-            features: [{ type: 'cover-open-close' }],
-            features_position: 'inline',
-            state_content: 'last_changed',
-          }))
+          ...open.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              state_content: 'last_changed',
+            })
+          )
         );
       }
       if (closed.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.garages_closed'), heading_style: 'subtitle', icon: 'mdi:garage' });
         cards.push(
-          ...closed.map((e) => ({
-            type: 'tile',
-            entity: e,
-            features: [{ type: 'cover-open-close' }],
-            features_position: 'inline',
-            state_content: 'last_changed',
-          }))
+          ...closed.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              state_content: 'last_changed',
+            })
+          )
         );
       }
       if (cards.length > 0) sections.push({ type: 'grid', cards });
@@ -207,11 +198,11 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
 
       if (open.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.windows_open'), heading_style: 'subtitle', icon: 'mdi:window-open' });
-        cards.push(...open.map((e) => ({ type: 'tile', entity: e, state_content: 'last_changed' })));
+        cards.push(...open.map((e) => buildAdaptiveTileCardConfig(hass, e, { state_content: 'last_changed' })));
       }
       if (closed.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.windows_closed'), heading_style: 'subtitle', icon: 'mdi:window-closed' });
-        cards.push(...closed.map((e) => ({ type: 'tile', entity: e, state_content: 'last_changed' })));
+        cards.push(...closed.map((e) => buildAdaptiveTileCardConfig(hass, e, { state_content: 'last_changed' })));
       }
       if (cards.length > 0) sections.push({ type: 'grid', cards });
     }
@@ -224,11 +215,11 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
 
       if (active.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.smoke_gas_active'), heading_style: 'subtitle', icon: 'mdi:smoke-detector-alert' });
-        cards.push(...active.map((e) => ({ type: 'tile', entity: e, state_content: 'last_changed' })));
+        cards.push(...active.map((e) => buildAdaptiveTileCardConfig(hass, e, { state_content: 'last_changed' })));
       }
       if (inactive.length > 0) {
         cards.push({ type: 'heading', heading: localize('security.smoke_gas_inactive'), heading_style: 'subtitle', icon: 'mdi:smoke-detector' });
-        cards.push(...inactive.map((e) => ({ type: 'tile', entity: e, state_content: 'last_changed' })));
+        cards.push(...inactive.map((e) => buildAdaptiveTileCardConfig(hass, e, { state_content: 'last_changed' })));
       }
       if (cards.length > 0) sections.push({ type: 'grid', cards });
     }

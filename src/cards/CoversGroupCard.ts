@@ -9,6 +9,7 @@ import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { stripCoverType } from '../utils/name-utils';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
@@ -223,15 +224,11 @@ class Simon42CoversGroupCard extends LitElement {
 
     card = createTileCardElement();
     card.hass = this.hass;
-    card.setConfig({
-      type: 'tile',
-      entity: entityId,
+    card.setConfig(buildAdaptiveTileCardConfig(this.hass!, entityId, {
       name: this.hass ? stripCoverType(entityId, this.hass) : entityId,
-      features: [{ type: 'cover-open-close' }],
       vertical: false,
-      features_position: 'inline',
       state_content: ['current_position', 'last_changed'],
-    });
+    }));
     this._tileCards.set(entityId, card);
     return card;
   }

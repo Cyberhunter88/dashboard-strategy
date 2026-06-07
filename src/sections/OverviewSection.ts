@@ -12,6 +12,7 @@ import type { Simon42StrategyConfig, CustomCard, CustomSection } from '../types/
 import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
 import { localize } from '../utils/localize';
 import { createHeadingCard, renderParsedCustomCards } from '../utils/lovelace-utils';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
 export interface OverviewSectionParams {
   someSensorId: string | null;
@@ -165,11 +166,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
         clock_size: 'small',
         show_seconds: false,
       });
-      cards.push({
-        type: 'tile',
-        entity: alarmEntity,
-        vertical: false,
-      });
+      cards.push(buildAdaptiveTileCardConfig(hass, alarmEntity, { vertical: false }));
     } else {
       // Clock only, full width
       cards.push({
@@ -183,14 +180,14 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
     }
   } else if (alarmEntity) {
     // No clock, but alarm panel full width
-    cards.push({
-      type: 'tile',
-      entity: alarmEntity,
-      vertical: false,
-      grid_options: {
-        columns: 'full',
-      },
-    });
+    cards.push(
+      buildAdaptiveTileCardConfig(hass, alarmEntity, {
+        vertical: false,
+        grid_options: {
+          columns: 'full',
+        },
+      })
+    );
   }
 
   // Add search card if enabled
@@ -221,13 +218,13 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
     if (!hideLastChanged) stateContent.push('last_changed');
 
     for (const entityId of favoriteEntities) {
-      cards.push({
-        type: 'tile',
-        entity: entityId,
-        show_entity_picture: true,
-        vertical: false,
-        ...(stateContent.length > 0 ? { state_content: stateContent } : {}),
-      });
+      cards.push(
+        buildAdaptiveTileCardConfig(hass, entityId, {
+          show_entity_picture: true,
+          vertical: false,
+          ...(stateContent.length > 0 ? { state_content: stateContent } : {}),
+        })
+      );
     }
   }
 

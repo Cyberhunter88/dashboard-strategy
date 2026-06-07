@@ -2,7 +2,7 @@
 // VIEW STRATEGY — ROOM (Room detail with sensor badges + cameras)
 // ====================================================================
 
-import type { HomeAssistant, HassEntity } from '../types/homeassistant';
+import type { HomeAssistant } from '../types/homeassistant';
 import type {
   LovelaceViewConfig,
   LovelaceCardConfig,
@@ -17,25 +17,10 @@ import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { BADGE_COLOR_MAP, getColorForEntity, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
-// HA supported_features bitmask values
-const FAN_SET_SPEED = 1;
-const MEDIA_PAUSE = 1;
-const MEDIA_PLAY = 16384;
-const MEDIA_STOP = 4096;
 const ROOM_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
 const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
-
-/** Check if a fan supports speed control */
-function fanSupportsSpeed(state: HassEntity): boolean {
-  return ((state.attributes?.supported_features as number) & FAN_SET_SPEED) !== 0;
-}
-
-/** Check if a media player supports playback controls */
-function mediaPlayerSupportsPlayback(state: HassEntity): boolean {
-  const f = (state.attributes?.supported_features as number) || 0;
-  return (f & (MEDIA_PAUSE | MEDIA_PLAY | MEDIA_STOP)) !== 0;
-}
 
 function upsSensorRole(entityId: string, hass: HomeAssistant): number {
   const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
@@ -59,6 +44,7 @@ interface UpsDeviceRender {
  */
 function buildAreaCustomCardSection(
   cards: AreaCustomCard[],
+  hass: HomeAssistant,
   position: 'top' | 'bottom'
 ): LovelaceSectionConfig[] {
   const sections: LovelaceSectionConfig[] = [];
@@ -101,7 +87,7 @@ function buildAreaCustomCardSection(
         if (card.title) {
           built.push(createHeadingCard(card.title));
         }
-        built.push({ type: 'tile', entity: card.entity });
+        built.push(buildAdaptiveTileCardConfig(hass, card.entity));
       }
     } else {
       // YAML-Modus: nur fehlerfreie, geparste Configs verwenden
@@ -484,7 +470,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // === SECTIONS ===
     // Custom cards (position 'top') always come first, before all auto-stacks.
     const sections: LovelaceSectionConfig[] = [
-      ...buildAreaCustomCardSection(customCards, 'top'),
+      ...buildAreaCustomCardSection(customCards, hass, 'top'),
     ];
 
     // Per-area stack ordering: collect each auto-section under a StackKey,
@@ -529,11 +515,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
               needle: false,
               severity: { red: 0, yellow: critThreshold, green: lowThreshold },
             },
-            ...sortedSensors.map((entityId) => ({
-              type: 'tile',
-              entity: entityId,
-              vertical: false,
-            })),
+            ...sortedSensors.map((entityId) =>
+              buildAdaptiveTileCardConfig(hass, entityId, {
+                vertical: false,
+              })
+            ),
           ],
         });
       }
@@ -555,14 +541,14 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         type: 'grid',
         cards: [
           { type: 'heading', heading: localize('sections.energy'), heading_style: 'title', icon: 'mdi:lightning-bolt' },
-          ...energyEntities.map((entityId) => ({
-            type: 'tile',
-            entity: entityId,
-            name: stripAreaName(entityId, area, hass),
-            vertical: false,
-            state_content: 'state',
-            tap_action: { action: 'more-info' },
-          })),
+          ...energyEntities.map((entityId) =>
+            buildAdaptiveTileCardConfig(hass, entityId, {
+              name: stripAreaName(entityId, area, hass),
+              vertical: false,
+              state_content: 'state',
+              tap_action: { action: 'more-info' },
+            })
+          ),
         ],
       });
     }
@@ -696,38 +682,31 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    domainSection('locks', roomEntities.locks, localize('room.locks'), 'mdi:lock', (e) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      features: [{ type: 'lock-commands' }],
-      features_position: 'inline',
-      vertical: false,
-      state_content: 'last_changed',
-    }));
+    domainSection('locks', roomEntities.locks, localize('room.locks'), 'mdi:lock', (e) =>
+      buildAdaptiveTileCardConfig(hass, e, {
+        name: stripAreaName(e, area, hass),
+        vertical: false,
+        state_content: 'last_changed',
+      })
+    );
 
     const climateCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.climate)
-      climateCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        features: [{ type: 'climate-hvac-modes' }],
-        features_position: 'inline',
-        vertical: false,
-        state_content: ['hvac_action', 'current_temperature'],
-      });
+      climateCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: ['hvac_action', 'current_temperature'],
+        })
+      );
     for (const e of roomEntities.fan) {
-      const state = hass.states[e];
-      const hasSpeed = state && fanSupportsSpeed(state);
-      climateCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        ...(hasSpeed ? { features: [{ type: 'fan-speed' }], features_position: 'inline' } : {}),
-        vertical: false,
-        state_content: 'last_changed',
-      });
+      climateCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: 'last_changed',
+        })
+      );
     }
     if (climateCards.length > 0) {
       pushStack('climate', {
@@ -739,63 +718,54 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    domainSection('covers', [...roomEntities.covers, ...roomEntities.covers_curtain], localize('room.covers'), 'mdi:window-shutter', (e) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      features: [{ type: 'cover-open-close' }],
-      vertical: false,
-      features_position: 'inline',
-      state_content: ['current_position', 'last_changed'],
-    }));
-
-    domainSection('covers_window', roomEntities.covers_window, localize('room.windows'), 'mdi:window-open-variant', (e) => ({
-      type: 'tile',
-      entity: e,
-      name: stripAreaName(e, area, hass),
-      features: [{ type: 'cover-open-close' }],
-      vertical: false,
-      features_position: 'inline',
-      state_content: ['current_position', 'last_changed'],
-    }));
-
-    domainSection('media', roomEntities.media_player, localize('room.media'), 'mdi:speaker', (e) => {
-      const state = hass.states[e];
-      const hasPlayback = state && mediaPlayerSupportsPlayback(state);
-      return {
-        type: 'tile',
-        entity: e,
+    domainSection('covers', [...roomEntities.covers, ...roomEntities.covers_curtain], localize('room.covers'), 'mdi:window-shutter', (e) =>
+      buildAdaptiveTileCardConfig(hass, e, {
         name: stripAreaName(e, area, hass),
         vertical: false,
-        ...(hasPlayback ? { features: [{ type: 'media-player-playback' }], features_position: 'inline' } : {}),
+        state_content: ['current_position', 'last_changed'],
+      })
+    );
+
+    domainSection('covers_window', roomEntities.covers_window, localize('room.windows'), 'mdi:window-open-variant', (e) =>
+      buildAdaptiveTileCardConfig(hass, e, {
+        name: stripAreaName(e, area, hass),
+        vertical: false,
+        state_content: ['current_position', 'last_changed'],
+      })
+    );
+
+    domainSection('media', roomEntities.media_player, localize('room.media'), 'mdi:speaker', (e) =>
+      buildAdaptiveTileCardConfig(hass, e, {
+        name: stripAreaName(e, area, hass),
+        vertical: false,
         state_content: ['media_title', 'media_artist'],
-      };
-    });
+      })
+    );
 
     const sceneAutomationCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.scenes)
-      sceneAutomationCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        vertical: false,
-        state_content: 'last_changed',
-      });
+      sceneAutomationCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: 'last_changed',
+        })
+      );
     for (const e of roomEntities.automations)
-      sceneAutomationCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        vertical: false,
-        state_content: 'last_changed',
-      });
+      sceneAutomationCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: 'last_changed',
+        })
+      );
     for (const e of roomEntities.scripts)
-      sceneAutomationCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        vertical: false,
-      });
+      sceneAutomationCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+        })
+      );
 
     if (sceneAutomationCards.length > 0) {
       pushStack('scenes', {
@@ -815,23 +785,21 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // Switches block (keeps vacuum tiles for backward-compatible grouping).
     const miscCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.vacuum)
-      miscCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        features: [{ type: 'vacuum-commands' }],
-        features_position: 'inline',
-        vertical: false,
-        state_content: 'last_changed',
-      });
+      miscCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: 'last_changed',
+        })
+      );
     for (const e of roomEntities.switches)
-      miscCards.push({
-        type: 'tile',
-        entity: e,
-        name: stripAreaName(e, area, hass),
-        vertical: false,
-        state_content: 'last_changed',
-      });
+      miscCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: 'last_changed',
+        })
+      );
 
     miscCards.sort((a, b) => {
       const sA = hass.states[a.entity];
@@ -872,13 +840,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
             const pinStateContent: string[] = [];
             if (dashboardConfig.room_pins_show_state === true) pinStateContent.push('state');
             if (dashboardConfig.room_pins_hide_last_changed !== true) pinStateContent.push('last_changed');
-            return {
-              type: 'tile',
-              entity: e,
+            return buildAdaptiveTileCardConfig(hass, e, {
               name: stripAreaName(e, area, hass),
               vertical: false,
               ...(pinStateContent.length > 0 ? { state_content: pinStateContent } : {}),
-            };
+            });
           }),
         ],
       });
@@ -890,7 +856,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       if (blocks) sections.push(...blocks);
     }
 
-    sections.push(...buildAreaCustomCardSection(customCards, 'bottom'));
+    sections.push(...buildAreaCustomCardSection(customCards, hass, 'bottom'));
 
     debugLog(
       `Room ${area.area_id}: ${visibleEntities.length} visible entities, ${sections.length} sections, ${badges.length} badges`

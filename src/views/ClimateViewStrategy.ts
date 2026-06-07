@@ -6,6 +6,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceViewConfig, LovelaceSectionConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
 class Simon42ViewClimateStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
@@ -56,14 +57,12 @@ class Simon42ViewClimateStrategy extends HTMLElement {
             heading_style: 'title',
             icon,
           },
-          ...entities.map((e) => ({
-            type: 'tile',
-            entity: e,
-            vertical: false,
-            features: [{ type: 'climate-hvac-modes' }],
-            features_position: 'inline',
-            state_content: ['hvac_action', 'current_temperature'],
-          })),
+          ...entities.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              vertical: false,
+              state_content: ['hvac_action', 'current_temperature'],
+            })
+          ),
         ],
       });
     };
