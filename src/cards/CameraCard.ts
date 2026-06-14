@@ -116,7 +116,7 @@ class DashboardStrategyCameraCard extends HTMLElement {
       .then((card) => {
         if (token !== this._renderToken) return;
         this._card = card;
-        if (this._hass) card.hass = this._hass;
+        this._updateNativeCard();
         this._renderContents();
       })
       .catch(() => {
