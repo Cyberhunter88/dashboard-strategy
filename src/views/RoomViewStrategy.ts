@@ -556,6 +556,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // Cameras
     if (roomEntities.cameras.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
+      const cameraStreamMode = dashboardConfig.camera_stream_mode ?? 'on_demand';
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
         const camEntity = Registry.getEntity(cameraId);
@@ -616,22 +617,22 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           }
 
           cameraCards.push({
-            type: 'picture-glance',
-            camera_image: cameraId,
-            camera_view: isAqara ? 'live' : 'auto',
-            fit_mode: 'cover',
-            title: stripAreaName(cameraId, area, hass),
+            type: 'custom:dashboard-strategy-camera-card',
+            entity: cameraId,
+            name: stripAreaName(cameraId, area, hass),
             entities: glanceEntities,
+            stream_mode: cameraStreamMode,
+            fit_mode: 'cover',
+            aspect_ratio: '16:9',
           });
         } else {
           cameraCards.push({
-            type: 'picture-entity',
+            type: 'custom:dashboard-strategy-camera-card',
             entity: cameraId,
-            camera_image: cameraId,
-            camera_view: 'auto',
             name: stripAreaName(cameraId, area, hass),
-            show_name: true,
-            show_state: false,
+            stream_mode: cameraStreamMode,
+            fit_mode: 'cover',
+            aspect_ratio: '16:9',
           });
         }
       }

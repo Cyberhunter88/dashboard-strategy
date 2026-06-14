@@ -2969,6 +2969,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
+    const cameraStreamMode = this._config.camera_stream_mode ?? 'on_demand';
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -3027,6 +3028,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-door-contacts-in-rooms', localize('editor.show_door_contacts_in_rooms'), showDoorContactsInRooms,
               (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_door_contacts_in_rooms_desc')}</div>
+
+            <label for="camera-stream-mode">${localize('editor.camera_stream_mode')}</label>
+            <select id="camera-stream-mode" .value=${cameraStreamMode} @change=${this._cameraStreamModeChanged}>
+              <option value="snapshot">${localize('editor.camera_stream_snapshot')}</option>
+              <option value="on_demand">${localize('editor.camera_stream_on_demand')}</option>
+              <option value="live">${localize('editor.camera_stream_live')}</option>
+            </select>
+            <div class="description">${localize('editor.camera_stream_mode_desc')}</div>
           </div>
 
           <div class="option-group">
@@ -4049,6 +4058,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
+
+  private _cameraStreamModeChanged = (e: Event): void => {
+    const mode = (e.target as HTMLSelectElement).value as 'snapshot' | 'on_demand' | 'live';
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (mode === 'on_demand') {
+      delete newConfig.camera_stream_mode;
+    } else {
+      newConfig.camera_stream_mode = mode;
+    }
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
 
   private _themeChanged = (e: Event): void => {
     if (!this._hass) return;

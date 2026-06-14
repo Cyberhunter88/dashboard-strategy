@@ -124,7 +124,9 @@
     "misc": "Schalter",
     "automations": "Automationen",
     "scripts": "Skripte",
-    "room_pins": "Raum-Pins"
+    "room_pins": "Raum-Pins",
+    "start_camera_stream": "Live-Stream starten",
+    "stop_camera_stream": "Live-Stream stoppen"
   },
   "editor": {
     "section_order": "Abschnitts-Reihenfolge",
@@ -213,6 +215,11 @@
     "show_window_contacts_in_rooms_desc": "Zeigt Fensterkontakte als Badges in den jeweiligen Raum-Ansichten an.",
     "show_door_contacts_in_rooms": "Türkontakte in Raum-Ansichten anzeigen",
     "show_door_contacts_in_rooms_desc": "Zeigt Türkontakte als Badges in den jeweiligen Raum-Ansichten an.",
+    "camera_stream_mode": "Kamera-Streams",
+    "camera_stream_snapshot": "Nur Vorschaubilder (schnellste Option)",
+    "camera_stream_on_demand": "Live-Stream auf Abruf",
+    "camera_stream_live": "Live, solange die Karte sichtbar ist",
+    "camera_stream_mode_desc": "Auf Abruf ist der empfohlene Modus: Vorschaubilder werden nur im sichtbaren Bereich aktualisiert und der native Home-Assistant-Stream startet erst über die Play-Taste.",
     "use_default_area_sort": "Home Assistant Sortierung verwenden",
     "use_default_area_sort_desc": "Verwendet die Sortierung der Bereiche aus Home Assistant anstelle der hier konfigurierten Reihenfolge.",
     "areas_manage_desc": "Wähle aus, welche Bereiche im Dashboard angezeigt werden sollen und in welcher Reihenfolge. Klappe Bereiche auf, um einzelne Entitäten zu verwalten.",
