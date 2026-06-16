@@ -13,6 +13,7 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
+  haveEntityStatesChanged,
   propagateHassToCards,
   type LovelaceCardElement,
 } from '../utils/card-element-utils';
@@ -69,6 +70,20 @@ class Simon42CoversGroupCard extends LitElement {
   setConfig(config: CoversGroupConfig): void {
     this._config = config;
     this._deviceClasses = config.device_classes || DEFAULT_DEVICE_CLASSES;
+    this._cachedFilteredIds = null;
+    this._lastCoversList = '';
+    this.requestUpdate();
+  }
+
+  protected shouldUpdate(changedProps: PropertyValues): boolean {
+    if (!changedProps.has('hass') || !this.hass) return true;
+
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (!oldHass) return true;
+    if (oldHass.entities !== this.hass.entities) return true;
+    if (!this._cachedFilteredIds) return true;
+
+    return haveEntityStatesChanged(oldHass, this.hass, this._cachedFilteredIds);
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
