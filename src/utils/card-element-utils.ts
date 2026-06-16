@@ -36,3 +36,18 @@ export function propagateHassToCards(
     (group as LovelaceCardElement).hass = hass;
   }
 }
+
+export function haveEntityStatesChanged(
+  oldHass: HomeAssistant | undefined,
+  hass: HomeAssistant,
+  entityIds: Iterable<string>
+): boolean {
+  if (!oldHass) return true;
+  if (oldHass.states === hass.states) return false;
+
+  for (const entityId of entityIds) {
+    if (oldHass.states[entityId] !== hass.states[entityId]) return true;
+  }
+
+  return false;
+}
