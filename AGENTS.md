@@ -1,318 +1,275 @@
-﻿# Simon42 Dashboard Strategy
+# Dashboard Strategy - Agent Instructions
 
-Custom Lovelace Dashboard Strategy for Home Assistant. Generates dynamic dashboards from area/device/entity metadata with flexible user configuration. This project is actively used by Simons loved YouTube viewers — clean, stable code is top priority.
+Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dynamic dashboards from Home Assistant area, device, entity, floor, and state metadata with a configurable editor. This code is user-facing and distributed through HACS, so keep changes conservative, stable, and tested.
 
-> **Fork-Rename (ab v1.3.4-beta.10):** Dieser Fork (`Cyberhunter88/dashboard-strategy`) registriert eigene globale Custom-Element-Namen, damit er **nicht** mit dem Original (`TheRealSimon42/dashboard-strategy`) kollidiert, wenn beide gleichzeitig in HA installiert sind. Geänderte öffentliche Bezeichner:
-> - Dashboard-Config-Typ: `custom:dashboard-strategy` (vorher `custom:simon42-dashboard`)
-> - Haupt-Strategy-Element: `ll-strategy-dashboard-strategy`
-> - View-Strategien: `ll-strategy-dashboard-strategy-view-{overview,lights,covers,security,batteries,climate,room}`
-> - Cards: `dashboard-strategy-{summary,lights-group,covers-group}-card`
-> - Editor: `dashboard-strategy-editor`
-> - Build-Output / HACS-`filename`: `dashboard-strategy.js`; `publicPath` / Resource-URL: `/hacsfiles/dashboard-strategy/`
-> - HACS-Anzeigename (`hacs.json` `name`): `Dashboard Strategy`
->
-> **Quelldateinamen unter `src/` sind auf den Fork-Namen angepasst** (`dashboard-strategy.ts` usw.) — sie sind für HA/HACS unsichtbar. Interne JS-Klassennamen (`Simon42DashboardStrategy` etc.) bleiben weiterhin rein JS-intern und erzeugen keine globale Kollision.
->
-> **Breaking Change für bestehende Dashboards:** YAML-Konfigs mit `type: custom:simon42-dashboard` müssen auf `type: custom:dashboard-strategy` umgestellt werden.
+> Fork rename: this fork is `Cyberhunter88/dashboard-strategy` and intentionally uses its own public custom element names so it can coexist with the original `TheRealSimon42/dashboard-strategy`.
+
+## Public Names
+
+Do not regress these public identifiers:
+
+- Dashboard config type: `custom:dashboard-strategy`
+- Main strategy element: `ll-strategy-dashboard-strategy`
+- View strategies: `ll-strategy-dashboard-strategy-view-{overview,lights,covers,security,batteries,climate,room}`
+- Cards:
+  - `dashboard-strategy-summary-card`
+  - `dashboard-strategy-lights-group-card`
+  - `dashboard-strategy-covers-group-card`
+  - `dashboard-strategy-area-card`
+  - `dashboard-strategy-camera-card`
+  - `dashboard-strategy-editable-card`
+- Editor: `dashboard-strategy-editor`
+- HACS filename: `dashboard-strategy.js`
+- HACS resource path: `/hacsfiles/dashboard-strategy/`
+- HACS display name in `hacs.json`: `Dashboard Strategy`
+
+Existing dashboards must use:
+
+```yaml
+strategy:
+  type: custom:dashboard-strategy
+```
 
 ## Architecture
 
-**Language:** TypeScript (ES2020, strict mode)
-**Build:** Webpack → code-split chunks (main + lit + core + views + editor on-demand)
-**Distribution:** HACS-compatible (Custom Repository), deployed to `/config/www/community/dashboard-strategy/`
+- Language: TypeScript, ES2020, strict mode.
+- Build: Webpack with code-split chunks.
+- Distribution: HACS custom repository, compiled files in `dist/`.
+- Runtime data source: the Home Assistant `hass` object, especially `hass.entities`, `hass.devices`, `hass.areas`, `hass.floors`, and `hass.states`.
 
-### Module Overview
+Main source layout:
 
-```
+```text
 src/
-├── dashboard-strategy.ts    # Entry point: generate(config, hass) → {title, views[]}
-├── Registry.ts                      # Singleton registry (synchronous init from hass object, pre-computed Maps)
-├── types/                           # Type definitions
-│   ├── homeassistant.ts             #   HA interfaces (hass object, callWS, formatters)
-│   ├── registries.ts                #   Entity/device/area/floor registry types
-│   ├── strategy.ts                  #   Simon42 config types
-│   └── lovelace.ts                  #   Lovelace card/view/section/badge types
-├── utils/
-│   ├── entity-filter.ts             #   Entity collection (collectPersons, findWeatherEntity, findDummySensor)
-│   ├── name-utils.ts                #   Name/entity helpers (stripAreaName, getVisibleAreas, sortByLastChanged)
-│   ├── badge-builder.ts             #   Person badge creation
-│   └── view-builder.ts              #   View generation (overview, utility, area views)
-├── sections/
-│   ├── OverviewSection.ts           #   Clock, alarm, search, summaries, favorites
-│   ├── AreasSection.ts              #   Area cards (with optional floor grouping)
-│   └── WeatherEnergySection.ts      #   Weather forecast + energy distribution
-├── cards/                           # LitElement custom cards (reactive, tile card pooling)
-│   ├── SummaryCard.ts               #   Reactive summary tiles (lights, covers, security, batteries, climate)
-│   ├── LightsGroupCard.ts           #   On/off light grouping (heading badges + tile card pool + floor grouping)
-│   └── CoversGroupCard.ts           #   Open/closed cover grouping (heading badges + tile card pool)
-├── views/                           # Specialized view strategies
-│   ├── RoomViewStrategy.ts          #   Room detail view (15+ device classes, Reolink + Aqara cameras)
-│   ├── LightsViewStrategy.ts        #   Light aggregation (optional floor grouping)
-│   ├── CoversViewStrategy.ts        #   Cover/blind aggregation
-│   ├── SecurityViewStrategy.ts      #   Security overview (locks, doors, windows, garages, smoke/gas detectors)
-│   ├── BatteriesViewStrategy.ts     #   Battery status (critical/low/ok)
-│   └── ClimateViewStrategy.ts       #   Climate/thermostat overview (heating/cooling/idle/off)
-└── editor/                          # Configuration UI
-    ├── StrategyEditor.ts            #   Editor class (largest file — config form, state management)
-    ├── editor-handlers.ts           #   Event listeners, drag/drop area reordering
-    ├── editor-template.ts           #   HTML template generation
-    └── editor-styles.ts             #   CSS styling
+├── dashboard-strategy.ts       # entry point, version log, custom element registration, generate()
+├── Registry.ts                 # static singleton registry and pre-filtered lookup maps
+├── cards/                      # Lit/custom card implementations
+│   ├── AreaNavigationCard.ts
+│   ├── CameraCard.ts
+│   ├── CoversGroupCard.ts
+│   ├── EditableCard.ts
+│   ├── LightsGroupCard.ts
+│   └── SummaryCard.ts
+├── editor/                     # graphical strategy editor
+│   ├── StrategyEditor.ts       # largest file; state, rendering, config mutations
+│   ├── editor-handlers.ts
+│   ├── editor-styles.ts
+│   └── editor-template.ts
+├── sections/                   # overview, areas, weather, energy section builders
+├── translations/               # de/en i18n strings
+├── types/                      # HA, registry, Lovelace, and strategy config types
+├── utils/                      # filters, ordering, localization, card helpers
+└── views/                      # overview, utility, and room view strategies
 ```
 
-Output:
-```
+Important build output:
+
+```text
 dist/
-├── dashboard-strategy.js                        # Entry point (instant custom element registration)
-├── dashboard-strategy-core.<hash>.js            # Registry, cards, utils
-├── dashboard-strategy-lit.<hash>.js             # Lit framework (shared)
-├── dashboard-strategy-views.<hash>.js           # All view strategies
-├── dashboard-strategy-editor.<hash>.js          # Editor (lazy-loaded on demand)
-├── *.js.gz / *.js.br                                    # Pre-compressed variants
-└── *.LICENSE.txt                                        # License files
+├── dashboard-strategy.js
+├── dashboard-strategy-core.<hash>.js
+├── dashboard-strategy-lit.<hash>.js
+├── dashboard-strategy-views.<hash>.js
+├── dashboard-strategy-editor.<hash>.js
+├── *.js.gz
+├── *.js.br
+└── *.LICENSE.txt
 ```
 
-### Data Flow
+## Data Flow
 
-1. **Entry Point** registers custom elements, calls `Registry.initialize(hass, config)` synchronously
-2. **Registry** reads entity/device/area data from `hass` object (synchronous), builds pre-computed Maps/Sets
-3. **Utils** collect persons, weather, favorites using pre-filtered Registry methods
-4. **Section Builders** generate overview, areas, weather/energy sections
-5. **View Builders** generate utility views (lights, covers, security, batteries, climate) + per-area room views
-6. **Custom Cards** render reactive UI (real-time `hass` updates via `set hass()`)
+1. `src/dashboard-strategy.ts` registers the main element immediately.
+2. It starts loading all strategy chunks early, before `generate()` is called.
+3. `generate(config, hass)` waits for modules, initializes `Registry`, resolves visible areas, and pre-resolves all views.
+4. `Registry.initialize(hass, config)` builds raw and visible lookup maps from the `hass` object.
+5. Overview, utility, and room strategies generate native Lovelace view configs.
+6. Custom cards render reactive UI and receive frequent `hass` updates from Home Assistant.
 
-### Registry — Core Design
+## Registry Rules
 
-The Registry is a **static singleton** (no instance, all static members). Initialized once, then provides O(1) lookups everywhere.
+`Registry` is a static singleton. Prefer its lookup APIs over rescanning raw Home Assistant registries.
 
-**Synchronous Init** (reads directly from hass object, no WebSocket needed):
-```
-Object.values(hass.entities)  → EntityRegistryDisplayEntry[]
-Object.values(hass.devices)   → DeviceRegistryEntry[]
-Object.values(hass.areas)     → AreaRegistryEntry[]
-```
-Called once in dashboard strategy `generate()` before views are returned. Idempotent — subsequent calls in view strategies are no-ops.
+It builds:
 
-**Pre-Computed Maps:**
+| Map | Key | Value | Scope |
+| --- | --- | --- | --- |
+| `_entityById` | `entity_id` | entity registry entry | raw |
+| `_deviceById` | `device_id` | device registry entry | raw |
+| `_entitiesByDevice` | `device_id` | `entity_id[]` | raw |
+| `_entitiesByDomain` | domain | `entity_id[]` | raw with state |
+| `_entitiesByArea` | `area_id` | entity registry entries | raw |
+| `_visibleEntitiesByArea` | `area_id` | entity registry entries | pre-filtered |
+| `_visibleEntitiesByDomain` | domain | `entity_id[]` | pre-filtered |
+| `_configDiagEntitiesByArea` | `area_id` | config/diagnostic entries | config/diagnostic only |
 
-| Map | Key | Value | Filtered? |
-|-----|-----|-------|-----------|
-| `_entityById` | entity_id | EntityRegistryDisplayEntry | Raw |
-| `_deviceById` | device_id | DeviceRegistryEntry | Raw |
-| `_entitiesByDevice` | device_id | entity_id[] | Raw |
-| `_entitiesByDomain` | domain | entity_id[] | Raw |
-| `_entitiesByArea` | area_id | EntityRegistryDisplayEntry[] | Raw |
-| `_visibleEntitiesByArea` | area_id | EntityRegistryDisplayEntry[] | **Pre-filtered** |
-| `_visibleEntitiesByDomain` | domain | entity_id[] | **Pre-filtered** |
-| `_configDiagEntitiesByArea` | area_id | EntityRegistryDisplayEntry[] | Config/diagnostic only |
+Visibility filtering happens once in `Registry._isEntityVisible()`:
 
-Raw Maps stay available for the Editor (needs all entities for show/hide toggles).
+- entity is not labeled `no_dboard`
+- entity is not hidden by `areas_options.*.groups_options.*.hidden`
+- entity is not hidden in the HA entity registry
+- entity category is not `config` or `diagnostic`
+- entity has a current state where required by the map builder
 
-**Pre-Filtering** (applied once during init via `_isEntityVisible()`):
-- Not in `_excludeSet` (no "no_dboard" label)
-- Not in `_hiddenFromConfig` (not in `areas_options.*.groups_options.*.hidden`)
-- Not `hidden_by` (user or integration)
-- Not `disabled_by` (user or integration)
-- Not `entity_category` "config" or "diagnostic"
+`Registry.initialize()` is idempotent for state-only updates, but reinitializes when registry object references or the strategy config object change.
 
-Downstream code uses pre-filtered methods directly — no redundant inline checks.
+## Entity Registry Is Authoritative
 
-### Entity Filtering Pipeline
+Many important properties are registry-only. Always read these from `hass.entities[id]` or `Registry.getEntity(id)`, not from state attributes:
 
-```
-Entity → no_dboard label? → areas_options hidden? → Registry status (hidden_by, disabled_by)?
-      → Category check (config/diagnostic excluded) → Platform filter → Dedup → Display
-```
+| Property | Registry | State attributes |
+| --- | --- | --- |
+| `hidden_by` | authoritative | usually unavailable |
+| `disabled_by` | authoritative when present | usually unavailable |
+| `entity_category` | authoritative | sometimes copied, often missing |
+| `platform` | authoritative | unavailable |
+| `device_id` | authoritative | unavailable |
 
-### HA Entity Registry vs. State-Attributes (CRITICAL)
+Summary cards often start from `hass.states`, so they must look up registry entries before filtering. Group cards and room builders usually receive or fetch pre-filtered registry entries.
 
-Many entity properties exist ONLY in the Entity Registry, NOT in state attributes. Always use the registry as primary source:
+## Configuration Surface
 
-| Property | Registry (`hass.entities[id]`) | State attributes |
-|----------|-------------------------------|-----------------|
-| `hidden_by` | "user", "integration", null | NOT available |
-| `disabled_by` | "user", "integration", null | NOT available |
-| `entity_category` | "config", "diagnostic", null | Sometimes copied, often missing |
-| `platform` | "mobile_app", "mqtt", etc. | NOT available |
-| `device_id` | device UUID | NOT available |
+Keep `src/types/strategy.ts`, editor rendering, translations, README, and generated behavior in sync when adding or changing options.
 
-**Rule:** Always read `hidden_by`, `disabled_by`, `entity_category`, and `platform` from the registry. Group cards (lights, covers) get entities pre-filtered from the registry array — they have these fields directly on the entity object. The summary card works with `hass.states` keys and must look up registry entries via `hass.entities?.[id]`.
+Current main config areas:
 
-### Config Hierarchy
+- Appearance: `theme`
+- Overview toggles: `show_clock_card`, `alarm_entity`, `show_search_card`, `show_light_summary`, `show_covers_summary`, `show_security_summary`, `show_battery_summary`, `show_climate_summary`
+- Weather and energy: `show_weather`, `weather_entity`, `show_energy`, `energy_link_dashboard`
+- Summary behavior: `summaries_columns`, `show_partially_open_covers`, `hide_mobile_app_batteries`, `battery_critical_threshold`, `battery_low_threshold`
+- Availability: `hide_unavailable_entities`
+- Layout: `overview_layout`, `sections_order`, `weather_start_order`, `weather_start_layout_items`, `weather_start_blocks_config`
+- Areas and floors: `group_by_floors`, `use_default_area_sort`, `areas_display.hidden`, `areas_display.order`, `areas_display.nav_items`
+- Area cards: `show_switches_on_areas`, `show_alerts_on_areas`
+- Room views: `show_room_views`, `show_locks_in_rooms`, `show_automations_in_rooms`, `show_scripts_in_rooms`, `show_ups_in_rooms`, `show_window_contacts_in_rooms`, `show_door_contacts_in_rooms`, `nested_light_groups`
+- Room entities: `room_pin_entities`, `room_pins_show_state`, `room_pins_hide_last_changed`
+- Per-area options: `areas_options.{areaId}.groups_options`, `areas_options.{areaId}.stacks_order`, `areas_options.{areaId}.custom_cards`
+- Custom content: `custom_cards`, `custom_cards_heading`, `custom_cards_icon`, `custom_sections`, `custom_badges`, `custom_views`
 
-- **Global toggles**: show_weather, show_energy, show_summary_views, show_room_views, group_by_floors, show_covers_summary, show_clock_card, show_light_summary, show_security_summary, show_battery_summary, show_climate_summary, show_search_card, show_locks_in_rooms, hide_mobile_app_batteries, group_lights_by_floors, use_default_area_sort, show_switches_on_areas, show_alerts_on_areas, show_ups_in_rooms
-- **Layout**: summaries_columns (2 | 4)
-- **Area-level**: areas_display.hidden, areas_display.order
-- **Entity-level**: areas_options.{areaId}.groups_options.{domain}.hidden
-- **Per-area custom cards**: areas_options.{areaId}.custom_cards[] (per-card `mode` yaml|tile, `position` top|bottom, optional `title`; rendered in the room detail view in addition to the auto-sections)
-- **Special**: room_pin_entities, alarm_entity, favorite_entities, custom_views
+## Feature Notes
+
+- Overview has two layouts: default sections and `weather_start`.
+- Weather start supports built-in blocks, free layout items, area/floor placement, custom cards, custom sections, and YAML overrides per block.
+- Overview custom cards can target `custom_cards`, `overview`, `areas`, `weather`, or `energy`.
+- Custom sections are full Lovelace sections with their own title/icon.
+- Custom badges render in the overview header next to person badges.
+- Per-room custom cards support `yaml`, guided `tile`, and full `section` modes, with `top` or `bottom` placement.
+- Room stack order is per area via `areas_options.{areaId}.stacks_order`.
+- Room views can include lights, covers, covers_window, locks, climate, media, scenes, automations, scripts, switches, vacuums, energy sensors, cameras, UPS groups, room pins, and sensor badges.
+- UPS detection is enabled by default and should only use visible pre-filtered entities.
+- Window and door contact badges are opt-in.
+- Temperature and humidity on area cards are only shown when explicitly assigned in HA area settings.
+- Room detail temperature and humidity also use explicit area assignments for primary badges; other sensor badges are auto-detected.
+- Alert icons on area cards use a curated binary sensor device class allowlist.
+- Adaptive tile card features are centralized in `src/utils/tile-card-utils.ts`.
+
+## Performance Constraints
+
+Do not undo these decisions:
+
+- The entry chunk must stay tiny and register `ll-strategy-dashboard-strategy` immediately.
+- Keep code splitting: entry, lit, core, views, editor.
+- Keep content-hashed chunk filenames for cache busting.
+- Start chunk loading immediately in the entry point.
+- Pre-resolve views in `generate()` instead of returning lazy strategy stubs.
+- Use `Registry` pre-filtered maps instead of repeated per-card scans.
+- Area cards must receive only controls and sensor classes that actually exist.
+- Tile cards should receive only features supported by the entity.
+- Custom cards should stay reactive and avoid full DOM rebuilds on every `hass` update.
+- Lights and covers group cards use tile card pooling; do not revert to repeated `innerHTML` rebuilds.
 
 ## Complexity Hotspots
 
-These files require extra care — changes here most likely cause regressions:
+Use extra care in:
 
-1. **editor/StrategyEditor.ts** — Editor state management, expand state persistence, config-changed events
-2. **views/RoomViewStrategy.ts** — Entity categorization across 15+ device classes
-3. **Registry.ts** — Central data layer, all views depend on its Maps/Sets
-4. **utils/name-utils.ts** — Utilities used everywhere (changes ripple through entire codebase)
+1. `src/editor/StrategyEditor.ts` - editor state, expand persistence, YAML parsing, config-changed events.
+2. `src/views/RoomViewStrategy.ts` - entity categorization, badge logic, camera logic, stack ordering, custom room content.
+3. `src/Registry.ts` - central filtering and all lookup maps.
+4. `src/utils/name-utils.ts` and `src/utils/order-utils.ts` - sorting and merge behavior used across views.
+5. `src/utils/tile-card-utils.ts` - native tile features across many domains.
+6. `src/cards/SummaryCard.ts`, `LightsGroupCard.ts`, `CoversGroupCard.ts` - reactive update and pooling behavior.
 
 ## Development Workflow
 
-1. Create a feature branch from `main` (e.g. `feature/climate-summary-view`)
-2. Build: `npm run build` (production) or `npm run build-dev` (with source maps)
-3. Deploy: copy `dist/` contents to `/Volumes/config/www/community/dashboard-strategy/`
-4. Delete stale `.gz` and `.br` files after copying (HA serves compressed over `.js` if present)
-5. Hard-refresh browser (Cmd+Shift+R). HA restart only needed for structural changes, not logic changes
-6. **Test on the live system** — always before pushing to GitHub!
-7. Test via Playwright and/or HA MCP tools
+Before editing:
 
-**Build scripts:**
+- Check working tree status.
+- Do not revert user changes or generated files you did not create.
+- If `dist/` is already dirty, treat it as user/generated state and avoid cleanup unless asked.
+
+Common checks:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
 ```
-npm run build       # Production (minified, no source maps)
-npm run build-dev   # Development (source maps)
-npm run watch       # Dev + auto-rebuild on file changes
+
+Other scripts:
+
+```bash
+npm run build-dev
+npm run watch
+npm run format:check
+npm run format
+npm run lint:fix
 ```
 
-## Git & Release Workflow
+For source changes, run at least typecheck and lint when practical. For release-ready work, run the production build and include updated `dist/` files.
 
-**Never commit directly to `main`.** Always use feature branches.
+Live Home Assistant validation is expected before pushing user-facing dashboard behavior.
 
-### Feature Development
-1. `git checkout -b feature/<name>` from `main`
-2. Develop, build, test on live system
-3. **Commit all files — source AND `dist/`!** HACS serves the `dist/` files from the tagged commit
-4. `git push -u origin feature/<name>`
-5. Create PR from feature branch → `main` (triggers HACS validation workflow)
-6. Wait for CI to pass, then merge
-7. Delete feature branch (local + remote)
+## Git and Release Workflow
 
-### Beta Releases
-- Beta versions are tagged as **Pre-Release** on GitHub (e.g. `v1.3.0-beta.1`)
-- Each beta builds on the previous one — everything flows into `main`
-- Increment beta number: `beta.1` → `beta.2` → `beta.3`
-- When stable: tag `v1.3.0` as a regular release
-- **Minor bump** (`v1.3.0`) for new features, **patch bump** (`v1.2.1`) for pure bugfixes
+Never commit directly to `main`. Use a feature branch.
 
-### Version Checklist (before every release/beta)
+Feature flow:
 
-The following locations must be updated for a new version:
+1. Branch from `main`.
+2. Implement and test.
+3. Build production output.
+4. Commit source and `dist/` together when the change affects the bundle.
+5. Push the feature branch.
+6. Open a PR to `main`.
+7. Wait for HACS validation and CI.
+8. Merge, then create the release/tag from the merged commit when requested.
 
-| File | Field | Example |
-|------|-------|---------|
-| `package.json` | `"version"` | `"1.3.4-beta.10"` |
-| `src/dashboard-strategy.ts` | `STRATEGY_VERSION` | `'1.3.4-beta.10'` |
-| `package-lock.json` | updated automatically via `npm install` | — |
-| **Git tag** | create on release | `v1.3.4-beta.10` or `v1.3.4` |
+Version checklist for releases:
 
-**Important:** `STRATEGY_VERSION` is logged to the browser console — useful for asking users which version they have installed.
+| File | Field |
+| --- | --- |
+| `package.json` | `version` |
+| `package-lock.json` | lockfile version metadata |
+| `src/dashboard-strategy.ts` | `STRATEGY_VERSION` |
+| GitHub release/tag | `v<version>` |
 
-### Porting Community PRs
-When PRs were created against the old codebase and cannot be merged directly:
-1. Manually port the changes into the current TypeScript codebase
-2. Credit the original author as `Co-Authored-By: Name <user@users.noreply.github.com>` in the commit
-3. Close the original PR with a friendly comment + link to the release
-4. Issue reference in the commit (`Closes #XX`) automatically closes the issue on merge
+`STRATEGY_VERSION` is logged in the browser console as `Dashboard Strategy vX.Y.Z loaded`.
 
-## Design Decisions
+Beta releases are GitHub pre-releases, e.g. `v1.3.4-beta.10`. Patch bumps are for bugfix-only releases; minor bumps are for feature releases.
 
-Deliberate architecture decisions that should not be changed:
+## Community PR Porting
 
-### Code-Split Chunk Architecture (PERFORMANCE-CRITICAL)
-The bundle is deliberately split into 5 chunks:
+When porting a PR from the old/original codebase:
 
-| Chunk | Contents | Size | Loads |
-|-------|----------|------|-------|
-| `main` (Entry) | Custom element registration | tiny | Immediately — must register before HA's 5s timeout |
-| `lit` | Lit framework (shared) | small | Async, shared by core/views/editor |
-| `core` | Registry, Utils, Cards, OverviewView | medium | Async, for the home screen |
-| `views` | Lights/Covers/Security/Batteries/Climate/Room Views | small | Async, on navigation |
-| `editor` | StrategyEditor + js-yaml | large | On-demand, only when user opens config |
-
-**Why:** Without code splitting, the entry point was a single large bundle. HA has a fixed 5-second timeout for custom element registration. On slow connections (Slow 4G), the JS file competes with all other HA chunks and custom cards for max. 6 browser connections. With the tiny entry point, the element registers instantly while the rest loads in the background.
-
-**Content-Hash Chunk Filenames:** Chunks include a `[contenthash:8]` in their filename (e.g. `dashboard-strategy-core.c6a1e2e6.js`). HACS only sets its cache-busting `hacstag` on the entry file — without content hashes, browsers would serve stale cached chunks after a HACS update.
-
-### No Auto-Detection for Temperature/Humidity on Area Cards
-The overview area cards only show `sensor_classes` (temperature, humidity) when the user has explicitly assigned an entity in the **HA area settings** (`area.temperature_entity_id`, `area.humidity_entity_id`). No auto-detection because:
-- Wrong sensors would be displayed (e.g. printer temperature in the office)
-- The user would have no way to remove them
-- HA's own Home Strategy does it the same way
-
-**Note:** In room detail views (RoomViewStrategy), sensors ARE auto-detected — they appear as badges and can be filtered via `no_dboard` label or `groups_options.hidden`.
-
-### Pre-filtered Features on Area Cards and Tile Cards (PERFORMANCE-CRITICAL)
-Area cards only receive `controls` that actually exist in the area (e.g. `['light', 'cover-shutter']`), not all possible controls. Tile cards only receive `features` that the entity supports (e.g. `light-brightness` only for lights with brightness support, `climate-hvac-modes` only for climate entities).
-
-**Why:** Without pre-filtering, each card must scan all entities itself — with many areas and entities, this causes massive load times on weak devices (tablets, wall panels). Check here first when investigating performance issues!
-
-### Custom Cards: LitElement with Reactive willUpdate() (PERFORMANCE-CRITICAL)
-All custom cards (SummaryCard, LightsGroupCard, CoversGroupCard) use LitElement with `willUpdate(changedProps)` instead of the previous innerHTML rebuild pattern. This means:
-- HA calls `card.hass = ...` on **every** state change (any entity in the entire system) — this happens hundreds of times per minute
-- Without the reactive pattern, each card would rebuild its entire DOM on every `set hass()` call → massive performance problems
-- With `willUpdate()`, cards check whether relevant states actually changed and only re-render when needed
-- SummaryCard additionally caches relevant entity IDs (`_relevantEntityIds`) and only invalidates the cache on registry changes (`oldHass.entities !== this.hass.entities`)
-- LightsGroupCard and CoversGroupCard use tile card pooling (DOM elements are reused instead of recreated)
-
-**Why:** The migration from innerHTML to LitElement + willUpdate was extensive, but without this pattern the dashboard is unusable on weak devices (tablets, wall panels). Do not revert!
-
-### Climate Summary Default: Off
-`show_climate_summary` defaults to `false` because not every user has thermostats. All other summaries (lights, covers, security, batteries) default to on.
-
-## Roadmap: HA Best Practices Alignment
-
-Gradual alignment with the official HA Home Strategy. Reference: `../references/ha-strategies/`
-
-**Original problem:** With disabled cache + Slow 4G throttling:
-`Error: Timeout waiting for strategy element ll-strategy-dashboard-simon42-dashboard to be registered`
-→ HA has a fixed 5-second timeout for custom element registration. Official strategies are part of the frontend bundle (no HTTP request), custom strategies must be loaded as external JS files.
-
-**Analysis result:** The remaining timeout on Slow 4G is a browser connection limit issue (max. 6 concurrent HTTP connections per origin). HA's own frontend chunks + all installed custom cards compete for slots. The strategy JS must wait until a slot is free. We have no control over this — neither HACS nor HA offer prioritization for custom resources. On normal connections (Fast 4G+) everything works smoothly.
-
-### Completed (main)
-- [x] LightsGroupCard: innerHTML rebuild → stable DOM + tile card pooling
-- [x] LightsGroupCard: custom batch button → heading card with button badges (perform-action)
-- [x] SummaryCard: dummy entity hack → own shadow DOM template
-- [x] Registry.initialize() in dashboard strategy entry point (race condition fix)
-- [x] Lit migration: all 3 custom cards (LightsGroupCard, CoversGroupCard, SummaryCard) to LitElement
-- [x] CoversGroupCard: innerHTML eliminated + heading badges + tile card pooling (analogous to LightsGroupCard)
-- [x] Bugfix: `hide_mobile_app_batteries` was not passed to SummaryCard
-- [x] Lazy imports: entry point reduced to tiny size, instant custom element registration
-- [x] Chunk architecture: main → lit → core → views → editor (on-demand)
-- [x] Custom cards: set hass() → Lit @property + willUpdate() (HA best practice pattern)
-- [x] Area cards: pre-filtered controls + conditional sensor_classes (HA best practice, performance fix for weak devices)
-- [x] Views pre-resolved in generate() instead of strategy stubs (like HA Home Panel, eliminates lazy resolution on navigation)
-- [x] Chunk loading: immediate start at entry point instead of in generate()
-- [x] Dead code removed: createUtilityViews(), createAreaViews() from view-builder.ts
-- [x] Conditional tile features: light-brightness, fan-speed, media-player-playback only when entity supports it (supported_features / color_modes)
-- [x] Aqara camera support in RoomViewStrategy (community PR #46, ported)
-- [x] Toggleable summary cards: clock, lights, covers, security, batteries individually toggleable (community PR #15, ported)
-- [x] HA-native area sorting via `use_default_area_sort` (community PR #34, ported)
-- [x] Empty overview section no longer rendered
-- [x] Editor sections logically regrouped
-- [x] LightsGroupCard: optional floor grouping with per-floor batch actions (`group_lights_by_floors`)
-- [x] ClimateViewStrategy: new climate view (heating/cooling/idle/off) + climate SummaryCard
-- [x] Content-hash chunk filenames for cache busting after HACS updates
-- [x] i18n: localize utility + DE/EN translations, auto-detect from hass.locale.language (#56)
-- [x] Alert icons on area cards: configurable `show_alerts_on_areas` toggle with curated allowlist (#114)
-- [x] Smoke/gas detectors in SecurityView, SummaryCard count, and room badges (#104)
-- [x] Security view headings: emojis replaced with MDI icons
-- [x] UPS/USV auto-detection in room views: device-based grouping (battery % + UPS signal, NUT shortcut), gauge + sorted tiles, opt-out via `show_ups_in_rooms`; operates only on pre-filtered visible entities so `no_dboard` stays effective
-- [x] Per-area custom cards in room views: `areas_options.{areaId}.custom_cards[]` — free YAML or guided entity-tile mode, per-card top/bottom placement, optional heading; editor subsection inside each area's expandable section (native `<select>`), DE/EN i18n
-
-### Open: Evaluate
-- SummaryCard entity caching removal (HA's home-summary doesn't cache — stateless per render = more correct behavior for dynamic entity changes)
-
-### Phase 2: Align Further Views
-- CoversViewStrategy, SecurityViewStrategy, BatteriesViewStrategy — optimize analogous to LightsView
-- RoomViewStrategy: evaluate HA patterns (computeAreaTileCardConfig, feature auto-detection)
+1. Manually port the behavior into the current TypeScript structure.
+2. Preserve the fork's public names.
+3. Credit the original author with `Co-Authored-By: Name <user@users.noreply.github.com>` in the commit when appropriate.
+4. Reference the issue or PR in the commit/PR body when useful.
+5. Update README, translations, editor UI, types, and dist as needed.
 
 ## References
 
-Local reference copies for architecture and pattern lookup (sparse checkouts, read-only):
+Local read-only reference checkouts may exist next to this repo:
 
-| Local Path | Repository | Contents |
-|------------|------------|----------|
-| `../references/ha-strategies/` | `home-assistant/frontend` → `src/panels/lovelace/strategies/` | Official HA strategies (TypeScript, architecture reference) |
-| `../references/mushroom-strategy/` | `DigiLive/mushroom-strategy` | Community dashboard strategy (TypeScript + build pipeline reference) |
-| `../references/hacs-docs/` | `hacs/documentation` → `source/docs/publish/` | HACS publishing documentation (hacs.json options, release handling) |
+| Path | Source | Use |
+| --- | --- | --- |
+| `../references/ha-strategies/` | Home Assistant frontend strategies | official strategy patterns |
+| `../references/mushroom-strategy/` | DigiLive mushroom strategy | community strategy patterns |
+| `../references/hacs-docs/` | HACS documentation | publishing and HACS metadata |
 
-**HA Release Notes (Markdown)**: `https://github.com/home-assistant/home-assistant.io/blob/rc/source/_posts/` — Blog posts in MD format. Example for April 2026: `2026-04-01-release-20264.markdown`. Useful for checking which HA features/changes are current and whether issues have become obsolete due to HA updates.
+For Home Assistant release notes, prefer the Markdown posts in:
+
+```text
+https://github.com/home-assistant/home-assistant.io/blob/rc/source/_posts/
+```
+
+Use current upstream sources before making claims about recent Home Assistant frontend behavior.
