@@ -10,6 +10,7 @@ import { localize } from '../utils/localize';
 import { getBatteryEntities, SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
 import type { SummaryType } from '../types/strategy';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
+import { haveEntityStatesChanged } from '../utils/card-element-utils';
 
 interface SummaryCardConfig {
   summary_type: SummaryType;
@@ -144,6 +145,15 @@ class Simon42SummaryCard extends LitElement {
     if (!oldHass || oldHass.entities !== this.hass.entities) {
       this._relevantEntityIds = null;
       debugLog(`summary-${this._config.summary_type}: cache invalidated (registry changed)`);
+    }
+
+    this._getRelevantEntities();
+    if (
+      oldHass &&
+      this._relevantEntityIds &&
+      !haveEntityStatesChanged(oldHass, this.hass, this._relevantEntityIds)
+    ) {
+      return;
     }
 
     const newCount = this._calculateCount();

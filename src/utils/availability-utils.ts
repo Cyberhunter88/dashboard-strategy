@@ -149,9 +149,17 @@ function isDecorativeSectionCard(card: LovelaceCardConfig): boolean {
   return card.type === 'heading';
 }
 
-function shouldApplySectionAvailability(cards: LovelaceCardConfig[]): boolean {
-  const contentCards = cards.filter((card) => !isDecorativeSectionCard(card));
-  return contentCards.length > 0 && contentCards.every((card) => collectEntityIdsFromCard(card).length > 0);
+function shouldApplySectionAvailability(
+  cards: LovelaceCardConfig[],
+  entityIdsByCard: string[][]
+): boolean {
+  let contentCardCount = 0;
+  for (let i = 0; i < cards.length; i++) {
+    if (isDecorativeSectionCard(cards[i])) continue;
+    contentCardCount++;
+    if (entityIdsByCard[i].length === 0) return false;
+  }
+  return contentCardCount > 0;
 }
 
 function applyToSection(section: LovelaceSectionConfig): LovelaceSectionConfig {
@@ -159,11 +167,12 @@ function applyToSection(section: LovelaceSectionConfig): LovelaceSectionConfig {
 
   const originalCards = section.cards;
   const cards = originalCards.map((card) => applyToCard(card));
-  const entityIds = originalCards.flatMap((card) => collectEntityIdsFromCard(card));
+  const entityIdsByCard = originalCards.map((card) => collectEntityIdsFromCard(card));
+  const entityIds = entityIdsByCard.flat();
 
   return {
     ...section,
-    ...(shouldApplySectionAvailability(originalCards)
+    ...(shouldApplySectionAvailability(originalCards, entityIdsByCard)
       ? {
           visibility: [
             ...((Array.isArray(section.visibility) ? section.visibility : []) as LovelaceCondition[]),

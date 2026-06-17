@@ -86,6 +86,22 @@ export interface WeatherStartLayoutItem {
   _yaml_error?: string;
 }
 
+export type CameraRenderer = 'native' | 'webrtc';
+
+export interface CameraWebrtcStreamConfig {
+  url?: string;
+  entity?: string;
+  poster?: string;
+  mode?: string;
+  media?: string;
+  muted?: boolean;
+  ui?: boolean;
+  server?: string;
+  style?: string;
+}
+
+export type CameraWebrtcStreamsConfig = Record<string, string | CameraWebrtcStreamConfig>;
+
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -155,6 +171,9 @@ export interface Simon42StrategyConfig {
   show_alerts_on_areas?: boolean; // default: false
   energy_link_dashboard?: boolean; // default: true
   hide_unavailable_entities?: boolean; // default: false
+  camera_stream_mode?: 'snapshot' | 'on_demand' | 'live'; // default: 'on_demand'
+  camera_renderer?: CameraRenderer; // default: 'native'
+  camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 
   // Layout
   overview_layout?: OverviewLayout; // default: 'default'

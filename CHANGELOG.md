@@ -4,6 +4,21 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.17.1"></a>
+## [1.17.1] - 2026-06-14
+### Bugfixes
+- reapply the current camera visibility state after Home Assistant card helpers finish loading
+
+<a name="1.17.0"></a>
+## [1.17.0] - 2026-06-14
+### Features
+- add visibility-aware native Home Assistant camera streaming for room views
+- add snapshot, on-demand, and visible-live camera modes to the strategy editor
+
+### Performance
+- default camera playback to on-demand streaming
+- stop live streams outside the visible viewport and use fixed 16:9 previews
+
 <a name="1.15.7"></a>
 ## [1.15.7] - 2026-06-05
 ### Bugfixes

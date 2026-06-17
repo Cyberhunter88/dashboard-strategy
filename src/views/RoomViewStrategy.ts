@@ -10,7 +10,14 @@ import type {
   LovelaceBadgeConfig,
 } from '../types/lovelace';
 import type { AreaRegistryEntry } from '../types/registries';
-import type { RoomEntities, SensorEntities, AreaCustomCard, StackKey } from '../types/strategy';
+import type {
+  RoomEntities,
+  SensorEntities,
+  AreaCustomCard,
+  StackKey,
+  CameraWebrtcStreamsConfig,
+  CameraWebrtcStreamConfig,
+} from '../types/strategy';
 import { stripAreaName, sortByLastChanged, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
@@ -35,6 +42,36 @@ interface UpsDeviceRender {
   name: string;
   batteryId: string;
   sensorIds: string[];
+}
+
+function buildWebrtcCameraCard(
+  cameraId: string,
+  name: string,
+  streams: CameraWebrtcStreamsConfig | undefined
+): LovelaceCardConfig {
+  const mapping = streams?.[cameraId];
+  const card: LovelaceCardConfig = {
+    type: 'custom:webrtc-camera',
+    title: name,
+  };
+
+  if (typeof mapping === 'string' && mapping.trim()) {
+    return { ...card, url: mapping.trim() };
+  }
+
+  if (mapping && typeof mapping === 'object' && !Array.isArray(mapping)) {
+    const streamConfig = mapping as CameraWebrtcStreamConfig;
+    const { url, entity, ...options } = streamConfig;
+    return {
+      ...card,
+      ...options,
+      ...(url ? { url } : {}),
+      ...(!url && entity ? { entity } : {}),
+      ...(!url && !entity ? { entity: cameraId } : {}),
+    };
+  }
+
+  return { ...card, entity: cameraId };
 }
 
 /**
@@ -556,8 +593,18 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // Cameras
     if (roomEntities.cameras.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
+      const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
+      const cameraStreamMode = dashboardConfig.camera_stream_mode ?? 'on_demand';
+      const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
+        const cameraName = stripAreaName(cameraId, area, hass);
+
+        if (cameraRenderer === 'webrtc') {
+          cameraCards.push(buildWebrtcCameraCard(cameraId, cameraName, cameraWebrtcStreams));
+          continue;
+        }
+
         const camEntity = Registry.getEntity(cameraId);
         const deviceId = camEntity?.device_id;
 
@@ -616,22 +663,22 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           }
 
           cameraCards.push({
-            type: 'picture-glance',
-            camera_image: cameraId,
-            camera_view: isAqara ? 'live' : 'auto',
-            fit_mode: 'cover',
-            title: stripAreaName(cameraId, area, hass),
+            type: 'custom:dashboard-strategy-camera-card',
+            entity: cameraId,
+            name: cameraName,
             entities: glanceEntities,
+            stream_mode: cameraStreamMode,
+            fit_mode: 'cover',
+            aspect_ratio: '16:9',
           });
         } else {
           cameraCards.push({
-            type: 'picture-entity',
+            type: 'custom:dashboard-strategy-camera-card',
             entity: cameraId,
-            camera_image: cameraId,
-            camera_view: 'auto',
-            name: stripAreaName(cameraId, area, hass),
-            show_name: true,
-            show_state: false,
+            name: cameraName,
+            stream_mode: cameraStreamMode,
+            fit_mode: 'cover',
+            aspect_ratio: '16:9',
           });
         }
       }

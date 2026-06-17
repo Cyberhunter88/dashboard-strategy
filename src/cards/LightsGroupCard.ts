@@ -14,6 +14,7 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
+  haveEntityStatesChanged,
   propagateHassToCards,
   type LovelaceCardElement,
 } from '../utils/card-element-utils';
@@ -142,6 +143,21 @@ class Simon42LightsGroupCard extends LitElement {
     // Invalidate cache so new config (e.g. toggled group_by_floors) takes effect immediately
     this._cachedSourceIds = null;
     this._cachedAreaForEntity = null;
+    this._lastLightsList = '';
+    this.requestUpdate();
+  }
+
+  protected shouldUpdate(changedProps: PropertyValues): boolean {
+    if (!changedProps.has('hass') || !this.hass) return true;
+
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (!oldHass) return true;
+    if (oldHass.entities !== this.hass.entities) return true;
+    if (oldHass.devices !== this.hass.devices) return true;
+    if (this._config.group_by_floors && oldHass.floors !== this.hass.floors) return true;
+    if (!this._cachedSourceIds) return true;
+
+    return haveEntityStatesChanged(oldHass, this.hass, this._cachedSourceIds);
   }
 
   protected willUpdate(changedProps: PropertyValues): void {

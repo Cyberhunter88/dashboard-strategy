@@ -23,6 +23,11 @@ type NativeCameraCard = HTMLElement & {
   getCardSize?: () => number;
 };
 
+interface CameraWindow extends Window {
+  loadCardHelpers?: () => Promise<{
+    createCardElement(config: LovelaceCardConfig): NativeCameraCard;
+  }>;
+}
 class DashboardStrategyCameraCard extends HTMLElement {
   private _hass?: HomeAssistant;
   private _config?: CameraCardConfig;
@@ -110,7 +115,7 @@ class DashboardStrategyCameraCard extends HTMLElement {
       .then((card) => {
         if (token !== this._renderToken) return;
         this._card = card;
-        if (this._hass) card.hass = this._hass;
+        this._updateNativeCard();
         this._renderContents();
       })
       .catch(() => {
@@ -119,8 +124,9 @@ class DashboardStrategyCameraCard extends HTMLElement {
   }
 
   private async _createNativeCard(config: LovelaceCardConfig): Promise<NativeCameraCard> {
-    if (window.loadCardHelpers) {
-      const helpers = await window.loadCardHelpers();
+    const cameraWindow = window as CameraWindow;
+    if (cameraWindow.loadCardHelpers) {
+      const helpers = await cameraWindow.loadCardHelpers();
       return helpers.createCardElement(config);
     }
 
