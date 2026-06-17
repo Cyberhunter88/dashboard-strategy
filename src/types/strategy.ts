@@ -6,6 +6,8 @@
 // used throughout the strategy codebase.
 // ====================================================================
 
+import type { LovelaceCardConfig } from './lovelace';
+
 // -- Section Ordering -------------------------------------------------
 
 export type SectionKey = 'overview' | 'custom_cards' | 'custom_sections' | 'areas' | 'weather' | 'energy';
@@ -219,6 +221,27 @@ export interface Simon42StrategyConfig {
 
   // Custom badges (shown in header next to person chips)
   custom_badges?: CustomBadge[];
+
+  // Inline editor persistence for generated cards/sections
+  inline_editor?: InlineEditorConfig;
+}
+
+export interface InlineCardOverride {
+  yaml: string;
+  parsed_config?: LovelaceCardConfig | null;
+  source_hash?: string;
+  updated_at?: string;
+}
+
+export interface InlineViewEdits {
+  generated_card_overrides?: Record<string, InlineCardOverride>;
+  hidden_generated_cards?: string[];
+  section_order?: string[];
+}
+
+export interface InlineEditorConfig {
+  version: number;
+  views?: Record<string, InlineViewEdits>;
 }
 
 // -- Area Management --------------------------------------------------

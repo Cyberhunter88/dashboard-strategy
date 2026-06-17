@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.18.2"></a>
+## [1.18.2] - 2026-06-17
+### Chores
+- publish the merged inline editor and camera worktree snapshot on top of the current main branch
+- rebuild bundled `dist/` assets for the 1.18.2 release
+
 <a name="1.17.1"></a>
 ## [1.17.1] - 2026-06-14
 ### Bugfixes

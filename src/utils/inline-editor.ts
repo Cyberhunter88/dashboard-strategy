@@ -164,7 +164,7 @@ function applyToSection(
 function applySectionOrder(sections: LovelaceSectionConfig[], edits: InlineViewEdits | undefined): LovelaceSectionConfig[] {
   if (!edits?.section_order?.length) return sections;
 
-  const order = new Map(edits.section_order.map((id, index) => [id, index]));
+  const order = new Map<string, number>(edits.section_order.map((id: string, index: number) => [id, index]));
   return [...sections].sort((a, b) => {
     const aId = typeof a.id === 'string' ? a.id : '';
     const bId = typeof b.id === 'string' ? b.id : '';

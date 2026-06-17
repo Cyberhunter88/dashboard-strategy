@@ -13,11 +13,9 @@ interface CardHelpers {
   createCardElement(config: LovelaceCardConfig): HTMLElement;
 }
 
-declare global {
-  interface Window {
-    loadCardHelpers?: () => Promise<CardHelpers>;
-  }
-}
+type EditableWindow = Window & {
+  loadCardHelpers?: () => Promise<CardHelpers>;
+};
 
 const EDIT_MODE_STORAGE_KEY = 'dashboard-strategy-inline-edit-mode';
 const EDIT_MODE_EVENT = 'dashboard-strategy-inline-edit-mode-changed';
@@ -276,7 +274,7 @@ class DashboardStrategyEditableCard extends LitElement {
     host.innerHTML = '';
 
     try {
-      const helpers = await window.loadCardHelpers?.();
+      const helpers = await (window as EditableWindow).loadCardHelpers?.();
       const child = helpers?.createCardElement
         ? helpers.createCardElement(this.card)
         : document.createElement((this.card.type || '').replace(/^custom:/, ''));
@@ -416,7 +414,9 @@ class DashboardStrategyEditableCard extends LitElement {
         const overrides = { ...(viewEdits.generated_card_overrides || {}) };
         delete overrides[this.edit_id];
         viewEdits.generated_card_overrides = Object.keys(overrides).length > 0 ? overrides : undefined;
-        viewEdits.hidden_generated_cards = (viewEdits.hidden_generated_cards || []).filter((id) => id !== this.edit_id);
+        viewEdits.hidden_generated_cards = (viewEdits.hidden_generated_cards || []).filter(
+          (id: string) => id !== this.edit_id
+        );
       });
 
       this.has_override = false;
