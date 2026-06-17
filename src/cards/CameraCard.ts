@@ -28,7 +28,6 @@ interface CameraWindow extends Window {
     createCardElement(config: LovelaceCardConfig): NativeCameraCard;
   }>;
 }
-
 class DashboardStrategyCameraCard extends HTMLElement {
   private _hass?: HomeAssistant;
   private _config?: CameraCardConfig;
