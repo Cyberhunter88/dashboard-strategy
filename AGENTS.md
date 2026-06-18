@@ -58,7 +58,7 @@ src/
 ├── sections/                   # overview, areas, weather, energy section builders
 ├── translations/               # de/en i18n strings
 ├── types/                      # HA, registry, Lovelace, and strategy config types
-├── utils/                      # filters, ordering, localization, card helpers
+├── utils/                      # filters, ordering, localization, inline edit, card helpers
 └── views/                      # overview, utility, and room view strategies
 ```
 
@@ -133,34 +133,41 @@ Keep `src/types/strategy.ts`, editor rendering, translations, README, and genera
 Current main config areas:
 
 - Appearance: `theme`
-- Overview toggles: `show_clock_card`, `alarm_entity`, `show_search_card`, `show_light_summary`, `show_covers_summary`, `show_security_summary`, `show_battery_summary`, `show_climate_summary`
+- Overview toggles: `show_clock_card`, `alarm_entity`, `show_search_card`, `show_light_summary`, `show_covers_summary`, `show_security_summary`, `show_battery_summary`, `show_climate_summary`, `show_summary_views`
 - Weather and energy: `show_weather`, `weather_entity`, `show_energy`, `energy_link_dashboard`
 - Summary behavior: `summaries_columns`, `show_partially_open_covers`, `hide_mobile_app_batteries`, `battery_critical_threshold`, `battery_low_threshold`
 - Availability: `hide_unavailable_entities`
+- Cameras: `camera_stream_mode`, `camera_renderer`, `camera_webrtc_streams`
 - Layout: `overview_layout`, `sections_order`, `weather_start_order`, `weather_start_layout_items`, `weather_start_blocks_config`
 - Areas and floors: `group_by_floors`, `use_default_area_sort`, `areas_display.hidden`, `areas_display.order`, `areas_display.nav_items`
 - Area cards: `show_switches_on_areas`, `show_alerts_on_areas`
-- Room views: `show_room_views`, `show_locks_in_rooms`, `show_automations_in_rooms`, `show_scripts_in_rooms`, `show_ups_in_rooms`, `show_window_contacts_in_rooms`, `show_door_contacts_in_rooms`, `nested_light_groups`
-- Room entities: `room_pin_entities`, `room_pins_show_state`, `room_pins_hide_last_changed`
+- Lights and rooms: `group_lights_by_floors`, `show_room_views`, `show_locks_in_rooms`, `show_automations_in_rooms`, `show_scripts_in_rooms`, `show_ups_in_rooms`, `show_window_contacts_in_rooms`, `show_door_contacts_in_rooms`, `nested_light_groups`
+- Favorites and room pins: `favorite_entities`, `favorites_show_state`, `favorites_hide_last_changed`, `room_pin_entities`, `room_pins_show_state`, `room_pins_hide_last_changed`
 - Per-area options: `areas_options.{areaId}.groups_options`, `areas_options.{areaId}.stacks_order`, `areas_options.{areaId}.custom_cards`
 - Custom content: `custom_cards`, `custom_cards_heading`, `custom_cards_icon`, `custom_sections`, `custom_badges`, `custom_views`
+- Inline editing persistence: `inline_editor`
 
 ## Feature Notes
 
 - Overview has two layouts: default sections and `weather_start`.
 - Weather start supports built-in blocks, free layout items, area/floor placement, custom cards, custom sections, and YAML overrides per block.
 - Overview custom cards can target `custom_cards`, `overview`, `areas`, `weather`, or `energy`.
+- Favorite entities render as tile cards below the overview summaries and have independent state/last-changed display toggles.
+- Summary utility views are opt-in via `show_summary_views`; do not assume lights/covers/security/batteries/climate appear in top navigation by default.
 - Custom sections are full Lovelace sections with their own title/icon.
 - Custom badges render in the overview header next to person badges.
+- Custom views append complete user-defined Lovelace views after generated views.
 - Per-room custom cards support `yaml`, guided `tile`, and full `section` modes, with `top` or `bottom` placement.
-- Room stack order is per area via `areas_options.{areaId}.stacks_order`.
-- Room views can include lights, covers, covers_window, locks, climate, media, scenes, automations, scripts, switches, vacuums, energy sensors, cameras, UPS groups, room pins, and sensor badges.
+- Room stack order is per area via `areas_options.{areaId}.stacks_order`; defaults include `ups`, `energy`, `cameras`, `lights`, `locks`, `climate`, `covers`, `covers_curtain`, `covers_window`, `media`, `scenes`, `misc`, and `room_pins`.
+- Room views can include lights, covers, covers_window, locks, climate, fans, media, scenes, automations, scripts, switches, vacuums, energy sensors, cameras, UPS groups, room pins, and sensor badges.
+- Cameras support native Home Assistant cards with `snapshot`, `on_demand`, or `live` streaming, plus optional `custom:webrtc-camera` rendering through `camera_webrtc_streams`.
 - UPS detection is enabled by default and should only use visible pre-filtered entities.
 - Window and door contact badges are opt-in.
 - Temperature and humidity on area cards are only shown when explicitly assigned in HA area settings.
 - Room detail temperature and humidity also use explicit area assignments for primary badges; other sensor badges are auto-detected.
 - Alert icons on area cards use a curated binary sensor device class allowlist.
 - Adaptive tile card features are centralized in `src/utils/tile-card-utils.ts`.
+- Inline edited generated cards are wrapped with `dashboard-strategy-editable-card` and persisted under `inline_editor`; keep generated-card IDs and source hashes stable when changing inline-editable output.
 
 ## Performance Constraints
 
@@ -174,6 +181,7 @@ Do not undo these decisions:
 - Use `Registry` pre-filtered maps instead of repeated per-card scans.
 - Area cards must receive only controls and sensor classes that actually exist.
 - Tile cards should receive only features supported by the entity.
+- Camera cards should avoid eager live streams unless explicitly configured; `on_demand` is the default.
 - Custom cards should stay reactive and avoid full DOM rebuilds on every `hass` update.
 - Lights and covers group cards use tile card pooling; do not revert to repeated `innerHTML` rebuilds.
 
@@ -186,7 +194,8 @@ Use extra care in:
 3. `src/Registry.ts` - central filtering and all lookup maps.
 4. `src/utils/name-utils.ts` and `src/utils/order-utils.ts` - sorting and merge behavior used across views.
 5. `src/utils/tile-card-utils.ts` - native tile features across many domains.
-6. `src/cards/SummaryCard.ts`, `LightsGroupCard.ts`, `CoversGroupCard.ts` - reactive update and pooling behavior.
+6. `src/utils/inline-editor.ts` and `src/cards/EditableCard.ts` - generated-card wrapping, override persistence, hidden card state.
+7. `src/cards/SummaryCard.ts`, `LightsGroupCard.ts`, `CoversGroupCard.ts`, `CameraCard.ts` - reactive update, pooling, and stream behavior.
 
 ## Development Workflow
 
