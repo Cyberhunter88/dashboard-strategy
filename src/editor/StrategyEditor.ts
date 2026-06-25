@@ -23,7 +23,6 @@ import type {
   StackKey,
   WeatherStartKey,
   WeatherStartLayoutItem,
-  CameraRenderer,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
@@ -2969,8 +2968,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
-    const cameraRenderer = this._config.camera_renderer ?? 'native';
-    const cameraStreamMode = this._config.camera_stream_mode ?? 'on_demand';
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -3029,25 +3026,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-door-contacts-in-rooms', localize('editor.show_door_contacts_in_rooms'), showDoorContactsInRooms,
               (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_door_contacts_in_rooms_desc')}</div>
-
-            <label for="camera-renderer">${localize('editor.camera_renderer')}</label>
-            <select id="camera-renderer" .value=${cameraRenderer} @change=${this._cameraRendererChanged}>
-              <option value="native">${localize('editor.camera_renderer_native')}</option>
-              <option value="webrtc">${localize('editor.camera_renderer_webrtc')}</option>
-            </select>
-            <div class="description">${localize('editor.camera_renderer_desc')}</div>
-
-            ${cameraRenderer === 'native'
-              ? html`
-                  <label for="camera-stream-mode">${localize('editor.camera_stream_mode')}</label>
-                  <select id="camera-stream-mode" .value=${cameraStreamMode} @change=${this._cameraStreamModeChanged}>
-                    <option value="snapshot">${localize('editor.camera_stream_snapshot')}</option>
-                    <option value="on_demand">${localize('editor.camera_stream_on_demand')}</option>
-                    <option value="live">${localize('editor.camera_stream_live')}</option>
-                  </select>
-                  <div class="description">${localize('editor.camera_stream_mode_desc')}</div>
-                `
-              : nothing}
           </div>
 
           <div class="option-group">
@@ -4070,30 +4048,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
-
-  private _cameraStreamModeChanged = (e: Event): void => {
-    const mode = (e.target as HTMLSelectElement).value as 'snapshot' | 'on_demand' | 'live';
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (mode === 'on_demand') {
-      delete newConfig.camera_stream_mode;
-    } else {
-      newConfig.camera_stream_mode = mode;
-    }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _cameraRendererChanged = (e: Event): void => {
-    const renderer = (e.target as HTMLSelectElement).value as CameraRenderer;
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (renderer === 'native') {
-      delete newConfig.camera_renderer;
-    } else {
-      newConfig.camera_renderer = renderer;
-    }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
 
   private _themeChanged = (e: Event): void => {
     if (!this._hass) return;
@@ -5384,9 +5338,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const filteredBuiltIn = CARD_TYPES.filter(
       t => !search || t.type.includes(search) || t.name.toLowerCase().includes(search)
     );
-    const customCardTypes = (window.customCards || []).filter(
-      c => !search || c.type.includes(search) || (c.name || '').toLowerCase().includes(search)
-    );
+    const customCardTypes = (window.customCards || []).filter((c) => {
+      const type = (c.type || '').toLowerCase();
+      const name = (c.name || '').toLowerCase();
+      if (type === 'webrtc-camera' || type === 'custom:webrtc-camera' || name.includes('webrtc')) return false;
+      return !search || type.includes(search) || name.includes(search);
+    });
     return html`
       <div class="card-picker-overlay" @click=${this._handlePickerOverlayClick}>
         <div class="card-picker-dialog" @click=${(e: Event) => e.stopPropagation()}>

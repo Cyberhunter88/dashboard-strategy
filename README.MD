@@ -310,7 +310,6 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_energy` | boolean | `true` | Energie-Dashboard |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
-| `camera_stream_mode` | `snapshot` / `on_demand` / `live` | `on_demand` | Kamera-Vorschau oder sichtbarkeitsgesteuerten nativen HA-Live-Stream verwenden |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |

@@ -74,6 +74,21 @@ function buildWebrtcCameraCard(
   return { ...card, entity: cameraId };
 }
 
+function buildNativeCameraCard(
+  cameraId: string,
+  name: string,
+  entities?: Array<string | Record<string, unknown>>
+): LovelaceCardConfig {
+  return {
+    type: 'custom:dashboard-strategy-camera-card',
+    entity: cameraId,
+    name,
+    ...(entities?.length ? { entities } : {}),
+    fit_mode: 'cover',
+    aspect_ratio: '16:9',
+  };
+}
+
 /**
  * Baut aus den AreaCustomCard-Einträgen einer Position (top/bottom) genau
  * eine grid-Sammel-Section. Gibt [] zurück, wenn keine gültige Karte vorliegt.
@@ -596,7 +611,6 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     if (roomEntities.cameras.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
-      const cameraStreamMode = dashboardConfig.camera_stream_mode ?? 'on_demand';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
@@ -664,24 +678,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
             if (doorbell) glanceEntities.push({ entity: doorbell });
           }
 
-          cameraCards.push({
-            type: 'custom:dashboard-strategy-camera-card',
-            entity: cameraId,
-            name: cameraName,
-            entities: glanceEntities,
-            stream_mode: cameraStreamMode,
-            fit_mode: 'cover',
-            aspect_ratio: '16:9',
-          });
+          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, glanceEntities));
         } else {
-          cameraCards.push({
-            type: 'custom:dashboard-strategy-camera-card',
-            entity: cameraId,
-            name: cameraName,
-            stream_mode: cameraStreamMode,
-            fit_mode: 'cover',
-            aspect_ratio: '16:9',
-          });
+          cameraCards.push(buildNativeCameraCard(cameraId, cameraName));
         }
       }
       if (cameraCards.length > 0) {

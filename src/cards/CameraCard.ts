@@ -1,18 +1,15 @@
 // ====================================================================
-// CAMERA CARD - Native HA camera card with visibility-aware streaming
+// CAMERA CARD - Native HA camera card with manual live toggle
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig } from '../types/lovelace';
 import { localize } from '../utils/localize';
 
-type CameraStreamMode = 'snapshot' | 'on_demand' | 'live';
-
 interface CameraCardConfig extends LovelaceCardConfig {
   entity: string;
   name?: string;
   entities?: Array<string | Record<string, unknown>>;
-  stream_mode?: CameraStreamMode;
   fit_mode?: 'cover' | 'contain' | 'fill';
   aspect_ratio?: string;
 }
@@ -28,14 +25,13 @@ interface CameraWindow extends Window {
     createCardElement(config: LovelaceCardConfig): NativeCameraCard;
   }>;
 }
+
 class DashboardStrategyCameraCard extends HTMLElement {
   private _hass?: HomeAssistant;
   private _config?: CameraCardConfig;
   private _card?: NativeCameraCard;
   private _streamButton?: HTMLButtonElement;
-  private _observer?: IntersectionObserver;
-  private _visible = false;
-  private _streamRequested = false;
+  private _liveRequested = false;
   private _renderToken = 0;
 
   set hass(hass: HomeAssistant | undefined) {
@@ -50,55 +46,18 @@ class DashboardStrategyCameraCard extends HTMLElement {
   setConfig(config: CameraCardConfig): void {
     if (!config?.entity) throw new Error('Camera entity must be specified');
     this._config = config;
-    this._streamRequested = false;
+    this._liveRequested = false;
     this._ensureCard();
   }
 
   connectedCallback(): void {
     this.style.display = 'block';
     this.style.position = 'relative';
-    this._startVisibilityObserver();
     this._ensureCard();
-  }
-
-  disconnectedCallback(): void {
-    this._observer?.disconnect();
-    this._observer = undefined;
-    this._visible = false;
-    this._updateNativeCard();
   }
 
   getCardSize(): number {
     return this._card?.getCardSize?.() ?? 3;
-  }
-
-  private _getStreamMode(): CameraStreamMode {
-    return this._config?.stream_mode ?? 'on_demand';
-  }
-
-  private _shouldStream(): boolean {
-    if (!this.isConnected || !this._visible) return false;
-    const mode = this._getStreamMode();
-    return mode === 'live' || (mode === 'on_demand' && this._streamRequested);
-  }
-
-  private _startVisibilityObserver(): void {
-    if (this._observer) return;
-    if (!('IntersectionObserver' in window)) {
-      this._visible = true;
-      return;
-    }
-
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        const visible = entry?.isIntersecting === true;
-        if (visible === this._visible) return;
-        this._visible = visible;
-        this._updateNativeCard();
-      },
-      { rootMargin: '120px 0px', threshold: 0.01 }
-    );
-    this._observer.observe(this);
   }
 
   private _ensureCard(): void {
@@ -141,7 +100,7 @@ class DashboardStrategyCameraCard extends HTMLElement {
     const config = this._config!;
     const common = {
       camera_image: config.entity,
-      camera_view: this._shouldStream() ? 'live' : 'auto',
+      camera_view: this._liveRequested ? 'live' : 'auto',
       fit_mode: config.fit_mode ?? 'cover',
       aspect_ratio: config.aspect_ratio ?? '16:9',
     };
@@ -179,32 +138,29 @@ class DashboardStrategyCameraCard extends HTMLElement {
     this._streamButton = undefined;
     this.replaceChildren(this._card);
 
-    if (this._getStreamMode() === 'on_demand') {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.style.cssText =
-        'position:absolute;top:8px;right:8px;z-index:2;width:40px;height:40px;border:0;border-radius:50%;' +
-        'display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;' +
-        'background:rgba(0,0,0,.55);backdrop-filter:blur(4px);';
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this._streamRequested = !this._streamRequested;
-        this._updateNativeCard();
-      });
-      this._streamButton = button;
-      this.appendChild(button);
-      this._updateStreamButton();
-    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.style.cssText =
+      'position:absolute;top:8px;right:8px;z-index:2;width:40px;height:40px;border:0;border-radius:50%;' +
+      'display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;' +
+      'background:rgba(0,0,0,.55);backdrop-filter:blur(4px);';
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this._liveRequested = !this._liveRequested;
+      this._updateNativeCard();
+    });
+    this._streamButton = button;
+    this.appendChild(button);
+    this._updateStreamButton();
   }
 
   private _updateStreamButton(): void {
     if (!this._streamButton) return;
-    const streaming = this._shouldStream();
     const icon = document.createElement('ha-icon');
-    icon.setAttribute('icon', streaming ? 'mdi:stop' : 'mdi:play');
+    icon.setAttribute('icon', this._liveRequested ? 'mdi:stop' : 'mdi:play');
     this._streamButton.replaceChildren(icon);
-    this._streamButton.title = localize(streaming ? 'room.stop_camera_stream' : 'room.start_camera_stream');
+    this._streamButton.title = localize(this._liveRequested ? 'room.stop_camera_stream' : 'room.start_camera_stream');
     this._streamButton.setAttribute('aria-label', this._streamButton.title);
   }
 }
@@ -215,5 +171,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'dashboard-strategy-camera-card',
   name: 'Dashboard Strategy Camera Card',
-  description: 'Native Home Assistant camera card with visibility-aware streaming',
+  description: 'Native Home Assistant camera card with manual live toggle',
 });

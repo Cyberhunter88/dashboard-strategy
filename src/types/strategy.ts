@@ -173,7 +173,6 @@ export interface Simon42StrategyConfig {
   show_alerts_on_areas?: boolean; // default: false
   energy_link_dashboard?: boolean; // default: true
   hide_unavailable_entities?: boolean; // default: false
-  camera_stream_mode?: 'snapshot' | 'on_demand' | 'live'; // default: 'on_demand'
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 
