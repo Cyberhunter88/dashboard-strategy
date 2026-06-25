@@ -17,6 +17,7 @@ import type {
   CustomBadge,
   CustomSection,
   AreaCustomCard,
+  AreaOptions,
   RoomEntities,
   OverviewLayout,
   SectionKey,
@@ -154,6 +155,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _cameraWebrtcStreamsError: string | null = null;
   private _cameraWebrtcDefaultsYaml: string | null = null;
   private _cameraWebrtcDefaultsError: string | null = null;
+  private _areaCameraWebrtcStreamsYaml = new Map<string, string>();
+  private _areaCameraWebrtcStreamsError = new Map<string, string>();
+  private _areaCameraWebrtcDefaultsYaml = new Map<string, string>();
+  private _areaCameraWebrtcDefaultsError = new Map<string, string>();
 
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<string, {
@@ -2546,6 +2551,33 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _writeAreaOptions(areaId: string, areaOptions: AreaOptions): void {
+    const newAreasOptions: Record<string, AreaOptions> = {
+      ...this._config.areas_options,
+      [areaId]: areaOptions,
+    };
+
+    if (Object.keys(newAreasOptions[areaId]).length === 0) {
+      delete newAreasOptions[areaId];
+    }
+
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (Object.keys(newAreasOptions).length === 0) {
+      delete newConfig.areas_options;
+    } else {
+      newConfig.areas_options = newAreasOptions;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _updateAreaCameraOption(areaId: string, updater: (options: AreaOptions) => void): void {
+    const areaOptions: AreaOptions = { ...(this._config.areas_options?.[areaId] || {}) };
+    updater(areaOptions);
+    this._writeAreaOptions(areaId, areaOptions);
+  }
+
   private static _stackMeta = new Map<StackKey, { icon: string; labelKey: string }>([
     ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'stacks.energy' }],
     ['cameras', { icon: 'mdi:cctv', labelKey: 'stacks.cameras' }],
@@ -2978,12 +3010,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
-    const cameraRenderer = this._config.camera_renderer ?? 'native';
-    const cameraStreamMode = this._config.camera_stream_mode ?? 'on_demand';
-    const cameraWebrtcStreamsYaml = this._getCameraWebrtcStreamsYaml();
-    const cameraWebrtcPreload = this._config.camera_webrtc_preload ?? 'off';
-    const cameraWebrtcPreloadMargin = this._config.camera_webrtc_preload_margin ?? 800;
-    const cameraWebrtcDefaultsYaml = this._getCameraWebrtcDefaultsYaml();
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -3042,86 +3068,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-door-contacts-in-rooms', localize('editor.show_door_contacts_in_rooms'), showDoorContactsInRooms,
               (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_door_contacts_in_rooms_desc')}</div>
-
-            <label for="camera-renderer">${localize('editor.camera_renderer')}</label>
-            <select id="camera-renderer" .value=${cameraRenderer} @change=${this._cameraRendererChanged}>
-              <option value="native">${localize('editor.camera_renderer_native')}</option>
-              <option value="webrtc">${localize('editor.camera_renderer_webrtc')}</option>
-            </select>
-            <div class="description">${localize('editor.camera_renderer_desc')}</div>
-
-            ${cameraRenderer === 'native'
-              ? html`
-                  <label for="camera-stream-mode">${localize('editor.camera_stream_mode')}</label>
-                  <select id="camera-stream-mode" .value=${cameraStreamMode} @change=${this._cameraStreamModeChanged}>
-                    <option value="snapshot">${localize('editor.camera_stream_snapshot')}</option>
-                    <option value="on_demand">${localize('editor.camera_stream_on_demand')}</option>
-                    <option value="live">${localize('editor.camera_stream_live')}</option>
-                  </select>
-                  <div class="description">${localize('editor.camera_stream_mode_desc')}</div>
-                `
-              : html`
-                  <label for="camera-webrtc-streams">${localize('editor.camera_webrtc_streams')}</label>
-                  <textarea
-                    id="camera-webrtc-streams"
-                    style="width: 100%; min-height: 110px;"
-                    placeholder=${localize('editor.camera_webrtc_streams_placeholder')}
-                    .value=${cameraWebrtcStreamsYaml}
-                    @input=${this._cameraWebrtcStreamsChanged}
-                  ></textarea>
-                  ${this._cameraWebrtcStreamsError
-                    ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">
-                        ${this._cameraWebrtcStreamsError}
-                      </div>`
-                    : nothing}
-                  <div class="description" style="margin-left: 0;">
-                    ${localize('editor.camera_webrtc_streams_desc')}
-                  </div>
-
-                  <label for="camera-webrtc-preload">${localize('editor.camera_webrtc_preload')}</label>
-                  <select id="camera-webrtc-preload" .value=${cameraWebrtcPreload} @change=${this._cameraWebrtcPreloadChanged}>
-                    <option value="off">${localize('editor.camera_webrtc_preload_off')}</option>
-                    <option value="near_viewport">${localize('editor.camera_webrtc_preload_near_viewport')}</option>
-                    <option value="always">${localize('editor.camera_webrtc_preload_always')}</option>
-                  </select>
-                  <div class="description" style="margin-left: 0;">
-                    ${localize('editor.camera_webrtc_preload_desc')}
-                  </div>
-
-                  ${cameraWebrtcPreload === 'near_viewport'
-                    ? html`
-                        <label for="camera-webrtc-preload-margin">${localize('editor.camera_webrtc_preload_margin')}</label>
-                        <input
-                          id="camera-webrtc-preload-margin"
-                          type="number"
-                          min="0"
-                          step="100"
-                          .value=${String(cameraWebrtcPreloadMargin)}
-                          @change=${this._cameraWebrtcPreloadMarginChanged}
-                        />
-                        <div class="description" style="margin-left: 0;">
-                          ${localize('editor.camera_webrtc_preload_margin_desc')}
-                        </div>
-                      `
-                    : nothing}
-
-                  <label for="camera-webrtc-defaults">${localize('editor.camera_webrtc_defaults')}</label>
-                  <textarea
-                    id="camera-webrtc-defaults"
-                    style="width: 100%; min-height: 120px;"
-                    placeholder=${localize('editor.camera_webrtc_defaults_placeholder')}
-                    .value=${cameraWebrtcDefaultsYaml}
-                    @input=${this._cameraWebrtcDefaultsChanged}
-                  ></textarea>
-                  ${this._cameraWebrtcDefaultsError
-                    ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">
-                        ${this._cameraWebrtcDefaultsError}
-                      </div>`
-                    : nothing}
-                  <div class="description" style="margin-left: 0;">
-                    ${localize('editor.camera_webrtc_defaults_desc')}
-                  </div>
-                `}
           </div>
 
           <div class="option-group">
@@ -3651,6 +3597,99 @@ class Simon42DashboardStrategyEditor extends LitElement {
     });
   }
 
+  private _renderAreaCameraOptions(areaId: string): TemplateResult {
+    const areaOptions = this._config.areas_options?.[areaId] || {};
+    const cameraRenderer = areaOptions.camera_renderer ?? this._config.camera_renderer ?? 'native';
+    const cameraStreamMode = areaOptions.camera_stream_mode ?? this._config.camera_stream_mode ?? 'on_demand';
+    const cameraWebrtcStreamsYaml = this._getAreaCameraWebrtcStreamsYaml(areaId, areaOptions);
+    const cameraWebrtcPreload = areaOptions.camera_webrtc_preload ?? this._config.camera_webrtc_preload ?? 'off';
+    const cameraWebrtcPreloadMargin = areaOptions.camera_webrtc_preload_margin ?? this._config.camera_webrtc_preload_margin ?? 800;
+    const cameraWebrtcDefaultsYaml = this._getAreaCameraWebrtcDefaultsYaml(areaId, areaOptions);
+    const streamsError = this._areaCameraWebrtcStreamsError.get(areaId);
+    const defaultsError = this._areaCameraWebrtcDefaultsError.get(areaId);
+
+    return html`
+      <div class="entity-group" data-group="camera_options">
+        <div class="entity-group-header">
+          <ha-icon icon="mdi:cctv"></ha-icon>
+          <span class="group-name">${localize('editor.area_camera_options')}</span>
+        </div>
+        <div class="entity-list">
+          <label for=${`camera-renderer-${areaId}`}>${localize('editor.camera_renderer')}</label>
+          <select id=${`camera-renderer-${areaId}`} .value=${cameraRenderer}
+            @change=${(e: Event) => this._areaCameraRendererChanged(areaId, e)}>
+            <option value="native">${localize('editor.camera_renderer_native')}</option>
+            <option value="webrtc">${localize('editor.camera_renderer_webrtc')}</option>
+          </select>
+          <div class="description" style="margin-left: 0;">${localize('editor.area_camera_options_desc')}</div>
+
+          ${cameraRenderer === 'native'
+            ? html`
+                <label for=${`camera-stream-mode-${areaId}`}>${localize('editor.camera_stream_mode')}</label>
+                <select id=${`camera-stream-mode-${areaId}`} .value=${cameraStreamMode}
+                  @change=${(e: Event) => this._areaCameraStreamModeChanged(areaId, e)}>
+                  <option value="snapshot">${localize('editor.camera_stream_snapshot')}</option>
+                  <option value="on_demand">${localize('editor.camera_stream_on_demand')}</option>
+                  <option value="live">${localize('editor.camera_stream_live')}</option>
+                </select>
+                <div class="description" style="margin-left: 0;">${localize('editor.camera_stream_mode_desc')}</div>
+              `
+            : html`
+                <label for=${`camera-webrtc-streams-${areaId}`}>${localize('editor.camera_webrtc_streams')}</label>
+                <textarea
+                  id=${`camera-webrtc-streams-${areaId}`}
+                  style="width: 100%; min-height: 110px;"
+                  placeholder=${localize('editor.camera_webrtc_streams_placeholder')}
+                  .value=${cameraWebrtcStreamsYaml}
+                  @input=${(e: Event) => this._areaCameraWebrtcStreamsChanged(areaId, e)}
+                ></textarea>
+                ${streamsError
+                  ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">${streamsError}</div>`
+                  : nothing}
+                <div class="description" style="margin-left: 0;">${localize('editor.camera_webrtc_streams_desc')}</div>
+
+                <label for=${`camera-webrtc-preload-${areaId}`}>${localize('editor.camera_webrtc_preload')}</label>
+                <select id=${`camera-webrtc-preload-${areaId}`} .value=${cameraWebrtcPreload}
+                  @change=${(e: Event) => this._areaCameraWebrtcPreloadChanged(areaId, e)}>
+                  <option value="off">${localize('editor.camera_webrtc_preload_off')}</option>
+                  <option value="near_viewport">${localize('editor.camera_webrtc_preload_near_viewport')}</option>
+                  <option value="always">${localize('editor.camera_webrtc_preload_always')}</option>
+                </select>
+                <div class="description" style="margin-left: 0;">${localize('editor.camera_webrtc_preload_desc')}</div>
+
+                ${cameraWebrtcPreload === 'near_viewport'
+                  ? html`
+                      <label for=${`camera-webrtc-preload-margin-${areaId}`}>${localize('editor.camera_webrtc_preload_margin')}</label>
+                      <input
+                        id=${`camera-webrtc-preload-margin-${areaId}`}
+                        type="number"
+                        min="0"
+                        step="100"
+                        .value=${String(cameraWebrtcPreloadMargin)}
+                        @change=${(e: Event) => this._areaCameraWebrtcPreloadMarginChanged(areaId, e)}
+                      />
+                      <div class="description" style="margin-left: 0;">${localize('editor.camera_webrtc_preload_margin_desc')}</div>
+                    `
+                  : nothing}
+
+                <label for=${`camera-webrtc-defaults-${areaId}`}>${localize('editor.camera_webrtc_defaults')}</label>
+                <textarea
+                  id=${`camera-webrtc-defaults-${areaId}`}
+                  style="width: 100%; min-height: 120px;"
+                  placeholder=${localize('editor.camera_webrtc_defaults_placeholder')}
+                  .value=${cameraWebrtcDefaultsYaml}
+                  @input=${(e: Event) => this._areaCameraWebrtcDefaultsChanged(areaId, e)}
+                ></textarea>
+                ${defaultsError
+                  ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">${defaultsError}</div>`
+                  : nothing}
+                <div class="description" style="margin-left: 0;">${localize('editor.camera_webrtc_defaults_desc')}</div>
+              `}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderAreaEntities(
     areaId: string,
     data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>
@@ -3714,6 +3753,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!hasEntities && !hasBadges) {
       return html`
         <div class="empty-state">${localize('editor.no_entities_in_area')}</div>
+        ${this._renderAreaCameraOptions(areaId)}
         ${this._renderStackOrderPanel(areaId, data)}
         ${customCardsSection}
       `;
@@ -3723,6 +3763,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="entity-groups">
+        ${this._renderAreaCameraOptions(areaId)}
         ${domainGroups.map((group) => {
           const entities = groupedEntities[group.key] as string[] | undefined;
           if (!entities || entities.length === 0) return nothing;
@@ -3832,6 +3873,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
               @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'mode', (e.target as HTMLSelectElement).value)}>
               <option value="yaml" ?selected=${mode === 'yaml'}>${localize('editor.area_custom_card_mode_yaml')}</option>
               <option value="tile" ?selected=${mode === 'tile'}>${localize('editor.area_custom_card_mode_tile')}</option>
+              <option value="webrtc" ?selected=${mode === 'webrtc'}>${localize('editor.area_custom_card_mode_webrtc')}</option>
               <option value="section" ?selected=${mode === 'section'}>${localize('editor.area_custom_card_mode_section')}</option>
             </select>
           </div>
@@ -3848,6 +3890,19 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </select>
               </div>
             `
+            : mode === 'webrtc'
+              ? html`
+                <div class="custom-card-target">
+                  <label>${localize('editor.area_custom_card_webrtc_url')}:</label>
+                  <input type="text"
+                    .value=${card.webrtc_url || ''}
+                    placeholder=${localize('editor.area_custom_card_webrtc_url_placeholder')}
+                    @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'webrtc_url', (e.target as HTMLInputElement).value)} />
+                </div>
+                <div class="description" style="margin-left: 0;">
+                  ${localize('editor.area_custom_card_webrtc_url_desc')}
+                </div>
+              `
             : html`
               <textarea rows="6" placeholder=${localize('editor.yaml_placeholder')}
                 .value=${card.yaml || ''}
@@ -3885,6 +3940,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
         <div class="area-custom-card-actions">
           <button class="btn-primary" @click=${() => this._addAreaCustomCard(areaId)}>
             ${localize('editor.area_custom_card_add_yaml')}
+          </button>
+          <button class="btn-primary" @click=${() => this._addAreaWebrtcCard(areaId)}>
+            ${localize('editor.area_custom_card_add_webrtc')}
           </button>
           <button class="btn-primary" @click=${() => this._openCardPickerForAreaCustomCard(areaId)}>
             ${localize('editor.area_custom_card_add_picker')}
@@ -4143,6 +4201,151 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  private _areaCameraRendererChanged(areaId: string, e: Event): void {
+    const renderer = (e.target as HTMLSelectElement).value as CameraRenderer;
+    this._updateAreaCameraOption(areaId, (options) => {
+      if (renderer === 'native' && !this._config.camera_renderer) {
+        delete options.camera_renderer;
+      } else {
+        options.camera_renderer = renderer;
+      }
+    });
+    this._areaCameraWebrtcStreamsError.delete(areaId);
+    this._areaCameraWebrtcDefaultsError.delete(areaId);
+  }
+
+  private _areaCameraStreamModeChanged(areaId: string, e: Event): void {
+    const mode = (e.target as HTMLSelectElement).value as 'snapshot' | 'on_demand' | 'live';
+    this._updateAreaCameraOption(areaId, (options) => {
+      if (mode === 'on_demand' && !this._config.camera_stream_mode) {
+        delete options.camera_stream_mode;
+      } else {
+        options.camera_stream_mode = mode;
+      }
+    });
+  }
+
+  private _areaCameraWebrtcPreloadChanged(areaId: string, e: Event): void {
+    const preload = (e.target as HTMLSelectElement).value as CameraWebrtcPreloadMode;
+    this._updateAreaCameraOption(areaId, (options) => {
+      if (preload === 'off' && !this._config.camera_webrtc_preload) {
+        delete options.camera_webrtc_preload;
+        delete options.camera_webrtc_preload_margin;
+      } else {
+        options.camera_webrtc_preload = preload;
+        if (preload === 'near_viewport' && typeof options.camera_webrtc_preload_margin !== 'number') {
+          options.camera_webrtc_preload_margin = 800;
+        }
+        if (preload === 'always') {
+          delete options.camera_webrtc_preload_margin;
+        }
+      }
+    });
+  }
+
+  private _areaCameraWebrtcPreloadMarginChanged(areaId: string, e: Event): void {
+    const margin = parseInt((e.target as HTMLInputElement).value, 10);
+    if (isNaN(margin) || margin < 0) return;
+
+    this._updateAreaCameraOption(areaId, (options) => {
+      if (margin === 800 && !this._config.camera_webrtc_preload_margin) {
+        delete options.camera_webrtc_preload_margin;
+      } else {
+        options.camera_webrtc_preload_margin = margin;
+      }
+    });
+  }
+
+  private _getAreaCameraWebrtcStreamsYaml(areaId: string, areaOptions: AreaOptions): string {
+    const draft = this._areaCameraWebrtcStreamsYaml.get(areaId);
+    if (draft !== undefined) return draft;
+    const streams = areaOptions.camera_webrtc_streams ?? this._config.camera_webrtc_streams;
+    if (!streams || Object.keys(streams).length === 0) return '';
+    return yaml.dump(streams).trim();
+  }
+
+  private _getAreaCameraWebrtcDefaultsYaml(areaId: string, areaOptions: AreaOptions): string {
+    const draft = this._areaCameraWebrtcDefaultsYaml.get(areaId);
+    if (draft !== undefined) return draft;
+    const defaults = areaOptions.camera_webrtc_defaults ?? this._config.camera_webrtc_defaults;
+    if (!defaults || Object.keys(defaults).length === 0) return '';
+    return yaml.dump(defaults).trim();
+  }
+
+  private _areaCameraWebrtcStreamsChanged(areaId: string, e: Event): void {
+    const yamlString = (e.target as HTMLTextAreaElement).value;
+    this._areaCameraWebrtcStreamsYaml.set(areaId, yamlString);
+
+    const trimmed = yamlString.trim();
+    if (!trimmed) {
+      this._areaCameraWebrtcStreamsError.delete(areaId);
+      this._updateAreaCameraOption(areaId, (options) => {
+        delete options.camera_webrtc_streams;
+      });
+      return;
+    }
+
+    try {
+      const parsed = yaml.load(trimmed);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        this._areaCameraWebrtcStreamsError.set(areaId, localize('editor.camera_webrtc_streams_invalid'));
+        this.requestUpdate();
+        return;
+      }
+
+      const streams = parsed as Record<string, unknown>;
+      const valid = Object.entries(streams).every(
+        ([key, value]) =>
+          !!key.trim()
+          && (typeof value === 'string' || (!!value && typeof value === 'object' && !Array.isArray(value)))
+      );
+      if (!valid) {
+        this._areaCameraWebrtcStreamsError.set(areaId, localize('editor.camera_webrtc_streams_invalid'));
+        this.requestUpdate();
+        return;
+      }
+
+      this._areaCameraWebrtcStreamsError.delete(areaId);
+      this._updateAreaCameraOption(areaId, (options) => {
+        options.camera_webrtc_streams = streams as CameraWebrtcStreamsConfig;
+      });
+    } catch (error: unknown) {
+      this._areaCameraWebrtcStreamsError.set(areaId, getYamlErrorMessage(error));
+      this.requestUpdate();
+    }
+  }
+
+  private _areaCameraWebrtcDefaultsChanged(areaId: string, e: Event): void {
+    const yamlString = (e.target as HTMLTextAreaElement).value;
+    this._areaCameraWebrtcDefaultsYaml.set(areaId, yamlString);
+
+    const trimmed = yamlString.trim();
+    if (!trimmed) {
+      this._areaCameraWebrtcDefaultsError.delete(areaId);
+      this._updateAreaCameraOption(areaId, (options) => {
+        delete options.camera_webrtc_defaults;
+      });
+      return;
+    }
+
+    try {
+      const parsed = yaml.load(trimmed);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        this._areaCameraWebrtcDefaultsError.set(areaId, localize('editor.camera_webrtc_defaults_invalid'));
+        this.requestUpdate();
+        return;
+      }
+
+      this._areaCameraWebrtcDefaultsError.delete(areaId);
+      this._updateAreaCameraOption(areaId, (options) => {
+        options.camera_webrtc_defaults = parsed as CameraWebrtcStreamConfig;
+      });
+    } catch (error: unknown) {
+      this._areaCameraWebrtcDefaultsError.set(areaId, getYamlErrorMessage(error));
+      this.requestUpdate();
+    }
   }
 
   private _cameraStreamModeChanged = (e: Event): void => {
@@ -4688,6 +4891,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._writeAreaCustomCards(areaId, cards);
   }
 
+  private _addAreaWebrtcCard(areaId: string): void {
+    const cards = this._getAreaCustomCards(areaId);
+    cards.push({
+      mode: 'webrtc',
+      position: 'bottom',
+      editor_title: '',
+      title: '',
+      webrtc_url: '',
+    } as AreaCustomCard);
+    this._writeAreaCustomCards(areaId, cards);
+  }
+
   private _removeAreaCustomCard(areaId: string, index: number): void {
     const cards = this._getAreaCustomCards(areaId);
     if (index < 0 || index >= cards.length) return;
@@ -4704,11 +4919,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const cards = this._getAreaCustomCards(areaId);
     if (!cards[index]) return;
     const updated: AreaCustomCard = { ...cards[index], [field]: value };
-    if (field === 'mode' && value !== 'tile') {
+    if (field === 'mode' && (value === 'yaml' || value === 'section')) {
       this._parseAreaCustomCardYamlConfig(updated, updated.yaml || '');
     }
-    if (field === 'mode' && value === 'tile') {
+    if (field === 'mode' && (value === 'tile' || value === 'webrtc')) {
       delete updated._yaml_error;
+      updated.parsed_config = undefined;
     }
     cards[index] = updated;
     this._writeAreaCustomCards(areaId, cards);

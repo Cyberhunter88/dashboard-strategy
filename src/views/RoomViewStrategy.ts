@@ -15,6 +15,7 @@ import type {
   SensorEntities,
   AreaCustomCard,
   StackKey,
+  Simon42StrategyConfig,
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
   CameraWebrtcPreloadMode,
@@ -29,6 +30,27 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
 const ROOM_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
 const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
+const GUIDED_WEBRTC_DEFAULTS: CameraWebrtcStreamConfig = {
+  mode: 'webrtc,mse',
+  media: 'video',
+  muted: true,
+  intersection: 0.5,
+};
+
+function wrapWebrtcCard(
+  card: LovelaceCardConfig,
+  preload: CameraWebrtcPreloadMode,
+  preloadMargin: number | undefined
+): LovelaceCardConfig {
+  if (preload === 'off') return card;
+
+  return {
+    type: 'custom:dashboard-strategy-webrtc-camera-card',
+    card,
+    preload,
+    ...(typeof preloadMargin === 'number' ? { preload_margin: preloadMargin } : {}),
+  };
+}
 
 function upsSensorRole(entityId: string, hass: HomeAssistant): number {
   const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
@@ -77,14 +99,24 @@ function buildWebrtcCameraCard(
     card = { ...baseCard, entity: cameraId };
   }
 
-  if (preload === 'off') return card;
+  return wrapWebrtcCard(card, preload, preloadMargin);
+}
 
-  return {
-    type: 'custom:dashboard-strategy-webrtc-camera-card',
-    card,
-    preload,
-    ...(typeof preloadMargin === 'number' ? { preload_margin: preloadMargin } : {}),
+function buildGuidedWebrtcAreaCard(
+  card: AreaCustomCard,
+  dashboardConfig: Simon42StrategyConfig
+): LovelaceCardConfig | null {
+  const url = card.webrtc_url?.trim();
+  if (!url) return null;
+
+  const webrtcCard: LovelaceCardConfig = {
+    type: 'custom:webrtc-camera',
+    ...GUIDED_WEBRTC_DEFAULTS,
+    ...(dashboardConfig.camera_webrtc_defaults || {}),
+    url,
   };
+  const preload = dashboardConfig.camera_webrtc_preload ?? 'near_viewport';
+  return wrapWebrtcCard(webrtcCard, preload, dashboardConfig.camera_webrtc_preload_margin ?? 800);
 }
 
 /**
@@ -95,6 +127,7 @@ function buildWebrtcCameraCard(
 function buildAreaCustomCardSection(
   cards: AreaCustomCard[],
   hass: HomeAssistant,
+  dashboardConfig: Simon42StrategyConfig,
   position: 'top' | 'bottom'
 ): LovelaceSectionConfig[] {
   const sections: LovelaceSectionConfig[] = [];
@@ -138,6 +171,14 @@ function buildAreaCustomCardSection(
           built.push(createHeadingCard(card.title));
         }
         built.push(buildAdaptiveTileCardConfig(hass, card.entity));
+      }
+    } else if (mode === 'webrtc') {
+      const webrtcCard = buildGuidedWebrtcAreaCard(card, dashboardConfig);
+      if (webrtcCard) {
+        if (card.title) {
+          built.push(createHeadingCard(card.title));
+        }
+        built.push(webrtcCard);
       }
     } else {
       // YAML-Modus: nur fehlerfreie, geparste Configs verwenden
@@ -517,15 +558,25 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
+    const areaOptions = dashboardConfig.areas_options?.[area.area_id];
+    const cameraConfig: Simon42StrategyConfig = {
+      ...dashboardConfig,
+      camera_stream_mode: areaOptions?.camera_stream_mode ?? dashboardConfig.camera_stream_mode,
+      camera_renderer: areaOptions?.camera_renderer ?? dashboardConfig.camera_renderer,
+      camera_webrtc_streams: areaOptions?.camera_webrtc_streams ?? dashboardConfig.camera_webrtc_streams,
+      camera_webrtc_preload: areaOptions?.camera_webrtc_preload ?? dashboardConfig.camera_webrtc_preload,
+      camera_webrtc_preload_margin: areaOptions?.camera_webrtc_preload_margin ?? dashboardConfig.camera_webrtc_preload_margin,
+      camera_webrtc_defaults: areaOptions?.camera_webrtc_defaults ?? dashboardConfig.camera_webrtc_defaults,
+    };
+
     // === SECTIONS ===
     // Custom cards (position 'top') always come first, before all auto-stacks.
     const sections: LovelaceSectionConfig[] = [
-      ...buildAreaCustomCardSection(customCards, hass, 'top'),
+      ...buildAreaCustomCardSection(customCards, hass, cameraConfig, 'top'),
     ];
 
     // Per-area stack ordering: collect each auto-section under a StackKey,
     // then emit them in the user-configured order (areas_options.{areaId}.stacks_order).
-    const areaOptions = dashboardConfig.areas_options?.[area.area_id];
     const stacksOrder = mergeStacksOrder(areaOptions?.stacks_order);
     const stacks = new Map<StackKey, LovelaceSectionConfig[]>();
 
@@ -606,12 +657,12 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     // Cameras
     if (roomEntities.cameras.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
-      const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
-      const cameraStreamMode = dashboardConfig.camera_stream_mode ?? 'on_demand';
-      const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
-      const cameraWebrtcDefaults = dashboardConfig.camera_webrtc_defaults;
-      const cameraWebrtcPreload = dashboardConfig.camera_webrtc_preload ?? 'off';
-      const cameraWebrtcPreloadMargin = dashboardConfig.camera_webrtc_preload_margin;
+      const cameraRenderer = cameraConfig.camera_renderer ?? 'native';
+      const cameraStreamMode = cameraConfig.camera_stream_mode ?? 'on_demand';
+      const cameraWebrtcStreams = cameraConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
+      const cameraWebrtcDefaults = cameraConfig.camera_webrtc_defaults;
+      const cameraWebrtcPreload = cameraConfig.camera_webrtc_preload ?? 'off';
+      const cameraWebrtcPreloadMargin = cameraConfig.camera_webrtc_preload_margin;
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
         const cameraName = stripAreaName(cameraId, area, hass);
@@ -928,7 +979,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       if (blocks) sections.push(...blocks);
     }
 
-    sections.push(...buildAreaCustomCardSection(customCards, hass, 'bottom'));
+    sections.push(...buildAreaCustomCardSection(customCards, hass, cameraConfig, 'bottom'));
 
     debugLog(
       `Room ${area.area_id}: ${visibleEntities.length} visible entities, ${sections.length} sections, ${badges.length} badges`

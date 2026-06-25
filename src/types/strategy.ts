@@ -265,6 +265,12 @@ export interface AreaOptions {
   groups_options?: Record<string, GroupOptions>;
   custom_cards?: AreaCustomCard[];
   stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
+  camera_stream_mode?: 'snapshot' | 'on_demand' | 'live';
+  camera_renderer?: CameraRenderer;
+  camera_webrtc_streams?: CameraWebrtcStreamsConfig;
+  camera_webrtc_preload?: CameraWebrtcPreloadMode;
+  camera_webrtc_preload_margin?: number;
+  camera_webrtc_defaults?: CameraWebrtcStreamConfig;
 }
 
 export interface GroupOptions {
@@ -340,7 +346,7 @@ export interface CustomSection {
 
 export interface AreaCustomCard {
   /** Eingabemodus: freies YAML oder geführte Entity-Kachel */
-  mode?: 'yaml' | 'tile' | 'section'; // default: 'yaml'
+  mode?: 'yaml' | 'tile' | 'section' | 'webrtc'; // default: 'yaml'
   /** Platzierung relativ zu den Auto-Sektionen der Raumansicht */
   position?: 'top' | 'bottom'; // default: 'bottom'
   /** Optionaler Editor-only Name fuer Listen und Sortierung */
@@ -357,6 +363,8 @@ export interface AreaCustomCard {
   // --- Geführter Kachel-Modus ---
   /** Entity-ID für `{ type: 'tile', entity }` */
   entity?: string;
+  /** go2rtc-Streamname oder Stream-URL fuer eine optimierte WebRTC-Karte */
+  webrtc_url?: string;
 }
 
 // -- Room Entities (entity collections per area) ----------------------
