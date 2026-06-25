@@ -271,6 +271,7 @@ export interface AreaOptions {
   camera_webrtc_preload?: CameraWebrtcPreloadMode;
   camera_webrtc_preload_margin?: number;
   camera_webrtc_defaults?: CameraWebrtcStreamConfig;
+  camera_columns?: 1 | 2 | 3 | 4;
 }
 
 export interface GroupOptions {

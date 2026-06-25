@@ -137,7 +137,7 @@ Current main config areas:
 - Weather and energy: `show_weather`, `weather_entity`, `show_energy`, `energy_link_dashboard`
 - Summary behavior: `summaries_columns`, `show_partially_open_covers`, `hide_mobile_app_batteries`, `battery_critical_threshold`, `battery_low_threshold`
 - Availability: `hide_unavailable_entities`
-- Cameras: `camera_stream_mode`, `camera_renderer`, `camera_webrtc_streams`
+- Cameras: `camera_stream_mode`, `camera_renderer`, `camera_columns`, `camera_webrtc_streams`
 - Layout: `overview_layout`, `sections_order`, `weather_start_order`, `weather_start_layout_items`, `weather_start_blocks_config`
 - Areas and floors: `group_by_floors`, `use_default_area_sort`, `areas_display.hidden`, `areas_display.order`, `areas_display.nav_items`
 - Area cards: `show_switches_on_areas`, `show_alerts_on_areas`
@@ -160,7 +160,7 @@ Current main config areas:
 - Per-room custom cards support `yaml`, guided `tile`, and full `section` modes, with `top` or `bottom` placement.
 - Room stack order is per area via `areas_options.{areaId}.stacks_order`; defaults include `ups`, `energy`, `cameras`, `lights`, `locks`, `climate`, `covers`, `covers_curtain`, `covers_window`, `media`, `scenes`, `misc`, and `room_pins`.
 - Room views can include lights, covers, covers_window, locks, climate, fans, media, scenes, automations, scripts, switches, vacuums, energy sensors, cameras, UPS groups, room pins, and sensor badges.
-- Cameras support native Home Assistant cards with `snapshot`, `on_demand`, or `live` streaming, plus optional `custom:webrtc-camera` rendering through `camera_webrtc_streams`.
+- Cameras support native Home Assistant cards with `snapshot`, `on_demand`, or `live` streaming, optional `custom:webrtc-camera` rendering through `camera_webrtc_streams`, and per-area camera section columns through `camera_columns`.
 - UPS detection is enabled by default and should only use visible pre-filtered entities.
 - Window and door contact badges are opt-in.
 - Temperature and humidity on area cards are only shown when explicitly assigned in HA area settings.

@@ -3605,6 +3605,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const cameraWebrtcPreload = areaOptions.camera_webrtc_preload ?? this._config.camera_webrtc_preload ?? 'off';
     const cameraWebrtcPreloadMargin = areaOptions.camera_webrtc_preload_margin ?? this._config.camera_webrtc_preload_margin ?? 800;
     const cameraWebrtcDefaultsYaml = this._getAreaCameraWebrtcDefaultsYaml(areaId, areaOptions);
+    const cameraColumns = areaOptions.camera_columns;
+    const cameraColumnsValue =
+      typeof cameraColumns === 'number' && cameraColumns >= 1 && cameraColumns <= 4 ? String(cameraColumns) : '';
     const streamsError = this._areaCameraWebrtcStreamsError.get(areaId);
     const defaultsError = this._areaCameraWebrtcDefaultsError.get(areaId);
 
@@ -3622,6 +3625,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
             <option value="webrtc">${localize('editor.camera_renderer_webrtc')}</option>
           </select>
           <div class="description" style="margin-left: 0;">${localize('editor.area_camera_options_desc')}</div>
+
+          <label for=${`camera-columns-${areaId}`}>${localize('editor.camera_columns')}</label>
+          <select id=${`camera-columns-${areaId}`} .value=${cameraColumnsValue}
+            @change=${(e: Event) => this._areaCameraColumnsChanged(areaId, e)}>
+            <option value="">${localize('editor.camera_columns_auto')}</option>
+            <option value="1">${localize('editor.camera_columns_1')}</option>
+            <option value="2">${localize('editor.camera_columns_2')}</option>
+            <option value="3">${localize('editor.camera_columns_3')}</option>
+            <option value="4">${localize('editor.camera_columns_4')}</option>
+          </select>
+          <div class="description" style="margin-left: 0;">${localize('editor.camera_columns_desc')}</div>
 
           ${cameraRenderer === 'native'
             ? html`
@@ -4223,6 +4237,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
         delete options.camera_stream_mode;
       } else {
         options.camera_stream_mode = mode;
+      }
+    });
+  }
+
+  private _areaCameraColumnsChanged(areaId: string, e: Event): void {
+    const value = (e.target as HTMLSelectElement).value;
+    const columns = parseInt(value, 10);
+    this._updateAreaCameraOption(areaId, (options) => {
+      if (!value || isNaN(columns) || columns < 1 || columns > 4) {
+        delete options.camera_columns;
+      } else {
+        options.camera_columns = columns as 1 | 2 | 3 | 4;
       }
     });
   }

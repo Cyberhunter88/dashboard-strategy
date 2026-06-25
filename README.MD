@@ -342,6 +342,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View |
 | `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln, geführte WebRTC-Kameras oder Sections pro Raum |
 | `areas_options.*.camera_renderer` | `native` / `webrtc` | `native` | Kamera-Renderer nur für diesen Bereich |
+| `areas_options.*.camera_columns` | 1 / 2 / 3 / 4 | automatisch | Spaltenzahl des Kamera-Bereichs in dieser Raum-View |
 | `areas_options.*.camera_stream_mode` | `snapshot` / `on_demand` / `live` | `on_demand` | Native Kamera-Streams nur für diesen Bereich |
 | `areas_options.*.camera_webrtc_streams` | object | `{}` | WebRTC/go2rtc Stream-Zuordnung nur für diesen Bereich |
 | `areas_options.*.camera_webrtc_defaults` | object | `{}` | Gemeinsame WebRTC-Defaults nur für diesen Bereich |
@@ -376,6 +377,7 @@ strategy:
   areas_options:
     cams:
       camera_renderer: webrtc
+      camera_columns: 2
       camera_webrtc_preload: near_viewport
       camera_webrtc_preload_margin: 800
       camera_webrtc_defaults:

@@ -663,6 +663,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const cameraWebrtcDefaults = cameraConfig.camera_webrtc_defaults;
       const cameraWebrtcPreload = cameraConfig.camera_webrtc_preload ?? 'off';
       const cameraWebrtcPreloadMargin = cameraConfig.camera_webrtc_preload_margin;
+      const cameraColumns = areaOptions?.camera_columns;
+      const validCameraColumns =
+        typeof cameraColumns === 'number' && cameraColumns >= 1 && cameraColumns <= 4 ? cameraColumns : undefined;
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
         const cameraName = stripAreaName(cameraId, area, hass);
@@ -761,6 +764,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       if (cameraCards.length > 0) {
         pushStack('cameras', {
           type: 'grid',
+          ...(validCameraColumns ? { columns: validCameraColumns } : {}),
           cards: [{ type: 'heading', heading: localize('room.cameras'), heading_style: 'title', icon: 'mdi:cctv' }, ...cameraCards],
         });
       }
