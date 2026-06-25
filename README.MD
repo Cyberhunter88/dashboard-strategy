@@ -311,6 +311,11 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
 | `camera_stream_mode` | `snapshot` / `on_demand` / `live` | `on_demand` | Kamera-Vorschau oder sichtbarkeitsgesteuerten nativen HA-Live-Stream verwenden |
+| `camera_renderer` | `native` / `webrtc` | `native` | Kamera-Renderer für Raum-Kameras |
+| `camera_webrtc_streams` | object | `{}` | Per-Kamera-Zuordnung für `custom:webrtc-camera` (`url`, `entity`, `poster`, `mode`, `media`, `muted`, `ui`, `server`, `style`, `background`, `intersection`, `streams`, ...) |
+| `camera_webrtc_defaults` | object | `{}` | Gemeinsame `custom:webrtc-camera` Optionen für alle automatisch erzeugten WebRTC-Kameras |
+| `camera_webrtc_preload` | `off` / `near_viewport` / `always` | `off` | WebRTC-Kameras vor Sichtbarkeit montieren oder dauerhaft warm halten |
+| `camera_webrtc_preload_margin` | number | `800` | Vorlade-Abstand in Pixeln für `near_viewport` |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
@@ -352,6 +357,31 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `custom_views` | object[] | `[]` | Eigene Views via YAML |
 
 </details>
+
+### WebRTC-Kameras
+
+Für Raum-Kameras kann statt der nativen Home-Assistant-Kamera-Karte `custom:webrtc-camera` genutzt werden. Die Strategy kann Streams nur früher montieren bzw. warm halten; die eigentliche Dekodierung, Pufferung und Stream-Stabilität übernimmt Browser/go2rtc/WebRTC-Karte.
+
+Empfohlene Basis-Konfiguration:
+
+```yaml
+strategy:
+  type: custom:dashboard-strategy
+  camera_renderer: webrtc
+  camera_webrtc_preload: near_viewport
+  camera_webrtc_preload_margin: 800
+  camera_webrtc_defaults:
+    mode: webrtc,mse
+    media: video
+    muted: true
+    intersection: 0.5
+  camera_webrtc_streams:
+    camera.garten:
+      url: reolink_garten_main
+      poster: camera.garten
+```
+
+`camera_webrtc_preload: always` setzt die erzeugten Karten auf einen dauerhaft warmen Stream (`background: true`). Das lädt schneller, kann bei mehreren Kameras aber CPU, Netzwerk und go2rtc stärker belasten.
 
 ## Fehlerbehebung
 

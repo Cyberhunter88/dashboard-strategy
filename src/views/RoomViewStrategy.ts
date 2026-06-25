@@ -17,6 +17,7 @@ import type {
   StackKey,
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
+  CameraWebrtcPreloadMode,
 } from '../types/strategy';
 import { stripAreaName, sortByLastChanged, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
@@ -47,31 +48,43 @@ interface UpsDeviceRender {
 function buildWebrtcCameraCard(
   cameraId: string,
   name: string,
-  streams: CameraWebrtcStreamsConfig | undefined
+  streams: CameraWebrtcStreamsConfig | undefined,
+  defaults: CameraWebrtcStreamConfig | undefined,
+  preload: CameraWebrtcPreloadMode,
+  preloadMargin: number | undefined
 ): LovelaceCardConfig {
   const mapping = streams?.[cameraId];
-  const card: LovelaceCardConfig = {
+  const baseCard: LovelaceCardConfig = {
     type: 'custom:webrtc-camera',
     title: name,
+    ...(defaults || {}),
   };
 
+  let card: LovelaceCardConfig;
   if (typeof mapping === 'string' && mapping.trim()) {
-    return { ...card, url: mapping.trim() };
-  }
-
-  if (mapping && typeof mapping === 'object' && !Array.isArray(mapping)) {
+    card = { ...baseCard, url: mapping.trim() };
+  } else if (mapping && typeof mapping === 'object' && !Array.isArray(mapping)) {
     const streamConfig = mapping as CameraWebrtcStreamConfig;
     const { url, entity, ...options } = streamConfig;
-    return {
-      ...card,
+    card = {
+      ...baseCard,
       ...options,
       ...(url ? { url } : {}),
       ...(!url && entity ? { entity } : {}),
       ...(!url && !entity ? { entity: cameraId } : {}),
     };
+  } else {
+    card = { ...baseCard, entity: cameraId };
   }
 
-  return { ...card, entity: cameraId };
+  if (preload === 'off') return card;
+
+  return {
+    type: 'custom:dashboard-strategy-webrtc-camera-card',
+    card,
+    preload,
+    ...(typeof preloadMargin === 'number' ? { preload_margin: preloadMargin } : {}),
+  };
 }
 
 /**
@@ -596,12 +609,24 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
       const cameraStreamMode = dashboardConfig.camera_stream_mode ?? 'on_demand';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
+      const cameraWebrtcDefaults = dashboardConfig.camera_webrtc_defaults;
+      const cameraWebrtcPreload = dashboardConfig.camera_webrtc_preload ?? 'off';
+      const cameraWebrtcPreloadMargin = dashboardConfig.camera_webrtc_preload_margin;
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
         const cameraName = stripAreaName(cameraId, area, hass);
 
         if (cameraRenderer === 'webrtc') {
-          cameraCards.push(buildWebrtcCameraCard(cameraId, cameraName, cameraWebrtcStreams));
+          cameraCards.push(
+            buildWebrtcCameraCard(
+              cameraId,
+              cameraName,
+              cameraWebrtcStreams,
+              cameraWebrtcDefaults,
+              cameraWebrtcPreload,
+              cameraWebrtcPreloadMargin
+            )
+          );
           continue;
         }
 

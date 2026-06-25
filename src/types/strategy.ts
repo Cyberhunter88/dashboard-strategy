@@ -89,6 +89,7 @@ export interface WeatherStartLayoutItem {
 }
 
 export type CameraRenderer = 'native' | 'webrtc';
+export type CameraWebrtcPreloadMode = 'off' | 'near_viewport' | 'always';
 
 export interface CameraWebrtcStreamConfig {
   url?: string;
@@ -100,6 +101,11 @@ export interface CameraWebrtcStreamConfig {
   ui?: boolean;
   server?: string;
   style?: string;
+  background?: boolean;
+  intersection?: number;
+  streams?: Array<Record<string, unknown>>;
+  digital_ptz?: boolean | Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export type CameraWebrtcStreamsConfig = Record<string, string | CameraWebrtcStreamConfig>;
@@ -176,6 +182,9 @@ export interface Simon42StrategyConfig {
   camera_stream_mode?: 'snapshot' | 'on_demand' | 'live'; // default: 'on_demand'
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
+  camera_webrtc_preload?: CameraWebrtcPreloadMode; // default: 'off'
+  camera_webrtc_preload_margin?: number; // default: 800
+  camera_webrtc_defaults?: CameraWebrtcStreamConfig;
 
   // Layout
   overview_layout?: OverviewLayout; // default: 'default'

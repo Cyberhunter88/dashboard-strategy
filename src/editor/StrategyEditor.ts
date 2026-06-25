@@ -24,6 +24,8 @@ import type {
   WeatherStartKey,
   WeatherStartLayoutItem,
   CameraRenderer,
+  CameraWebrtcPreloadMode,
+  CameraWebrtcStreamConfig,
   CameraWebrtcStreamsConfig,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
@@ -109,6 +111,7 @@ const CARD_TYPES: Array<{ type: string; name: string; icon: string; template: st
   { type: 'statistics-graph', name: 'Statistikgraph',     icon: 'mdi:chart-bar',                template: 'type: statistics-graph\nentities:\n  - entity: ""\nstat_types:\n  - mean\nchart_type: line\nperiod: 5minute\n' },
   { type: 'picture',          name: 'Bild',               icon: 'mdi:image',                    template: 'type: picture\nimage: ""\n' },
   { type: 'picture-entity',   name: 'Entity-Bild',        icon: 'mdi:image-outline',            template: 'type: picture-entity\nentity: ""\n' },
+  { type: 'dashboard-strategy-webrtc-camera-card', name: 'WebRTC Kamera', icon: 'mdi:cctv',     template: 'type: custom:dashboard-strategy-webrtc-camera-card\npreload: near_viewport\npreload_margin: 800\ncard:\n  type: custom:webrtc-camera\n  entity: camera.example\n  mode: webrtc,mse\n  media: video\n  muted: true\n  intersection: 0.5\n' },
   { type: 'map',              name: 'Karte',              icon: 'mdi:map',                      template: 'type: map\nentities:\n  - entity: ""\n' },
   { type: 'todo-list',        name: 'Aufgabenliste',      icon: 'mdi:checkbox-marked-circle',   template: 'type: todo-list\nentity: ""\n' },
   { type: 'logbook',          name: 'Logbuch',            icon: 'mdi:history',                  template: 'type: logbook\nentity: ""\nhours_to_show: 24\n' },
@@ -149,6 +152,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _roomPinSearch = '';
   private _cameraWebrtcStreamsYaml: string | null = null;
   private _cameraWebrtcStreamsError: string | null = null;
+  private _cameraWebrtcDefaultsYaml: string | null = null;
+  private _cameraWebrtcDefaultsError: string | null = null;
 
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<string, {
@@ -2976,6 +2981,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const cameraRenderer = this._config.camera_renderer ?? 'native';
     const cameraStreamMode = this._config.camera_stream_mode ?? 'on_demand';
     const cameraWebrtcStreamsYaml = this._getCameraWebrtcStreamsYaml();
+    const cameraWebrtcPreload = this._config.camera_webrtc_preload ?? 'off';
+    const cameraWebrtcPreloadMargin = this._config.camera_webrtc_preload_margin ?? 800;
+    const cameraWebrtcDefaultsYaml = this._getCameraWebrtcDefaultsYaml();
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -3068,6 +3076,50 @@ class Simon42DashboardStrategyEditor extends LitElement {
                     : nothing}
                   <div class="description" style="margin-left: 0;">
                     ${localize('editor.camera_webrtc_streams_desc')}
+                  </div>
+
+                  <label for="camera-webrtc-preload">${localize('editor.camera_webrtc_preload')}</label>
+                  <select id="camera-webrtc-preload" .value=${cameraWebrtcPreload} @change=${this._cameraWebrtcPreloadChanged}>
+                    <option value="off">${localize('editor.camera_webrtc_preload_off')}</option>
+                    <option value="near_viewport">${localize('editor.camera_webrtc_preload_near_viewport')}</option>
+                    <option value="always">${localize('editor.camera_webrtc_preload_always')}</option>
+                  </select>
+                  <div class="description" style="margin-left: 0;">
+                    ${localize('editor.camera_webrtc_preload_desc')}
+                  </div>
+
+                  ${cameraWebrtcPreload === 'near_viewport'
+                    ? html`
+                        <label for="camera-webrtc-preload-margin">${localize('editor.camera_webrtc_preload_margin')}</label>
+                        <input
+                          id="camera-webrtc-preload-margin"
+                          type="number"
+                          min="0"
+                          step="100"
+                          .value=${String(cameraWebrtcPreloadMargin)}
+                          @change=${this._cameraWebrtcPreloadMarginChanged}
+                        />
+                        <div class="description" style="margin-left: 0;">
+                          ${localize('editor.camera_webrtc_preload_margin_desc')}
+                        </div>
+                      `
+                    : nothing}
+
+                  <label for="camera-webrtc-defaults">${localize('editor.camera_webrtc_defaults')}</label>
+                  <textarea
+                    id="camera-webrtc-defaults"
+                    style="width: 100%; min-height: 120px;"
+                    placeholder=${localize('editor.camera_webrtc_defaults_placeholder')}
+                    .value=${cameraWebrtcDefaultsYaml}
+                    @input=${this._cameraWebrtcDefaultsChanged}
+                  ></textarea>
+                  ${this._cameraWebrtcDefaultsError
+                    ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">
+                        ${this._cameraWebrtcDefaultsError}
+                      </div>`
+                    : nothing}
+                  <div class="description" style="margin-left: 0;">
+                    ${localize('editor.camera_webrtc_defaults_desc')}
                   </div>
                 `}
           </div>
@@ -4115,6 +4167,40 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
     this._config = newConfig;
     this._cameraWebrtcStreamsError = null;
+    this._cameraWebrtcDefaultsError = null;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _cameraWebrtcPreloadChanged = (e: Event): void => {
+    const preload = (e.target as HTMLSelectElement).value as CameraWebrtcPreloadMode;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (preload === 'off') {
+      delete newConfig.camera_webrtc_preload;
+      delete newConfig.camera_webrtc_preload_margin;
+    } else {
+      newConfig.camera_webrtc_preload = preload;
+      if (preload === 'near_viewport' && typeof newConfig.camera_webrtc_preload_margin !== 'number') {
+        newConfig.camera_webrtc_preload_margin = 800;
+      }
+      if (preload === 'always') {
+        delete newConfig.camera_webrtc_preload_margin;
+      }
+    }
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _cameraWebrtcPreloadMarginChanged = (e: Event): void => {
+    const margin = parseInt((e.target as HTMLInputElement).value, 10);
+    if (isNaN(margin) || margin < 0) return;
+
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (margin === 800) {
+      delete newConfig.camera_webrtc_preload_margin;
+    } else {
+      newConfig.camera_webrtc_preload_margin = margin;
+    }
+    this._config = newConfig;
     this._fireConfigChanged(newConfig);
   };
 
@@ -4123,6 +4209,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const streams = this._config.camera_webrtc_streams;
     if (!streams || Object.keys(streams).length === 0) return '';
     return yaml.dump(streams).trim();
+  }
+
+  private _getCameraWebrtcDefaultsYaml(): string {
+    if (this._cameraWebrtcDefaultsYaml !== null) return this._cameraWebrtcDefaultsYaml;
+    const defaults = this._config.camera_webrtc_defaults;
+    if (!defaults || Object.keys(defaults).length === 0) return '';
+    return yaml.dump(defaults).trim();
   }
 
   private _cameraWebrtcStreamsChanged = (e: Event): void => {
@@ -4165,6 +4258,38 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._fireConfigChanged(newConfig);
     } catch (error: unknown) {
       this._cameraWebrtcStreamsError = getYamlErrorMessage(error);
+      this.requestUpdate();
+    }
+  };
+
+  private _cameraWebrtcDefaultsChanged = (e: Event): void => {
+    const yamlString = (e.target as HTMLTextAreaElement).value;
+    this._cameraWebrtcDefaultsYaml = yamlString;
+
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    const trimmed = yamlString.trim();
+    if (!trimmed) {
+      delete newConfig.camera_webrtc_defaults;
+      this._cameraWebrtcDefaultsError = null;
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+      return;
+    }
+
+    try {
+      const parsed = yaml.load(trimmed);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        this._cameraWebrtcDefaultsError = localize('editor.camera_webrtc_defaults_invalid');
+        this.requestUpdate();
+        return;
+      }
+
+      newConfig.camera_webrtc_defaults = parsed as CameraWebrtcStreamConfig;
+      this._cameraWebrtcDefaultsError = null;
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+    } catch (error: unknown) {
+      this._cameraWebrtcDefaultsError = getYamlErrorMessage(error);
       this.requestUpdate();
     }
   };
@@ -5458,8 +5583,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const filteredBuiltIn = CARD_TYPES.filter(
       t => !search || t.type.includes(search) || t.name.toLowerCase().includes(search)
     );
+    const builtInTypes = new Set(CARD_TYPES.map((t) => t.type));
     const customCardTypes = (window.customCards || []).filter(
-      c => !search || c.type.includes(search) || (c.name || '').toLowerCase().includes(search)
+      c => !builtInTypes.has(c.type)
+        && (!search || c.type.includes(search) || (c.name || '').toLowerCase().includes(search))
     );
     return html`
       <div class="card-picker-overlay" @click=${this._handlePickerOverlayClick}>
