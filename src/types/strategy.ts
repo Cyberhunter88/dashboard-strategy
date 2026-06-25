@@ -89,7 +89,6 @@ export interface WeatherStartLayoutItem {
 }
 
 export type CameraRenderer = 'native' | 'webrtc';
-export type CameraWebrtcPreloadMode = 'off' | 'near_viewport' | 'always';
 
 export interface CameraWebrtcStreamConfig {
   url?: string;
@@ -101,11 +100,6 @@ export interface CameraWebrtcStreamConfig {
   ui?: boolean;
   server?: string;
   style?: string;
-  background?: boolean;
-  intersection?: number;
-  streams?: Array<Record<string, unknown>>;
-  digital_ptz?: boolean | Record<string, unknown>;
-  [key: string]: unknown;
 }
 
 export type CameraWebrtcStreamsConfig = Record<string, string | CameraWebrtcStreamConfig>;
@@ -182,9 +176,6 @@ export interface Simon42StrategyConfig {
   camera_stream_mode?: 'snapshot' | 'on_demand' | 'live'; // default: 'on_demand'
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
-  camera_webrtc_preload?: CameraWebrtcPreloadMode; // default: 'off'
-  camera_webrtc_preload_margin?: number; // default: 800
-  camera_webrtc_defaults?: CameraWebrtcStreamConfig;
 
   // Layout
   overview_layout?: OverviewLayout; // default: 'default'
@@ -265,13 +256,6 @@ export interface AreaOptions {
   groups_options?: Record<string, GroupOptions>;
   custom_cards?: AreaCustomCard[];
   stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
-  camera_stream_mode?: 'snapshot' | 'on_demand' | 'live';
-  camera_renderer?: CameraRenderer;
-  camera_webrtc_streams?: CameraWebrtcStreamsConfig;
-  camera_webrtc_preload?: CameraWebrtcPreloadMode;
-  camera_webrtc_preload_margin?: number;
-  camera_webrtc_defaults?: CameraWebrtcStreamConfig;
-  camera_columns?: 1 | 2 | 3 | 4;
 }
 
 export interface GroupOptions {
@@ -347,7 +331,7 @@ export interface CustomSection {
 
 export interface AreaCustomCard {
   /** Eingabemodus: freies YAML oder geführte Entity-Kachel */
-  mode?: 'yaml' | 'tile' | 'section' | 'webrtc'; // default: 'yaml'
+  mode?: 'yaml' | 'tile' | 'section'; // default: 'yaml'
   /** Platzierung relativ zu den Auto-Sektionen der Raumansicht */
   position?: 'top' | 'bottom'; // default: 'bottom'
   /** Optionaler Editor-only Name fuer Listen und Sortierung */
@@ -364,8 +348,6 @@ export interface AreaCustomCard {
   // --- Geführter Kachel-Modus ---
   /** Entity-ID für `{ type: 'tile', entity }` */
   entity?: string;
-  /** go2rtc-Streamname oder Stream-URL fuer eine optimierte WebRTC-Karte */
-  webrtc_url?: string;
 }
 
 // -- Room Entities (entity collections per area) ----------------------

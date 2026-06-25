@@ -310,12 +310,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_energy` | boolean | `true` | Energie-Dashboard |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
-| `camera_stream_mode` | `snapshot` / `on_demand` / `live` | `on_demand` | Legacy/globaler Fallback; im Editor pro Bereich unter Kamera-Einstellungen pflegen |
-| `camera_renderer` | `native` / `webrtc` | `native` | Legacy/globaler Fallback; im Editor pro Bereich unter Kamera-Einstellungen pflegen |
-| `camera_webrtc_streams` | object | `{}` | Legacy/globaler Fallback für WebRTC-Zuordnungen |
-| `camera_webrtc_defaults` | object | `{}` | Legacy/globaler Fallback für gemeinsame `custom:webrtc-camera` Optionen |
-| `camera_webrtc_preload` | `off` / `near_viewport` / `always` | `off` | Legacy/globaler Fallback für WebRTC-Vorladen |
-| `camera_webrtc_preload_margin` | number | `800` | Legacy/globaler Fallback für den Vorlade-Abstand in Pixeln |
+| `camera_stream_mode` | `snapshot` / `on_demand` / `live` | `on_demand` | Kamera-Vorschau oder sichtbarkeitsgesteuerten nativen HA-Live-Stream verwenden |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
@@ -340,14 +335,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `areas_display.nav_items` | string[] | `[]` | Einzelne Bereiche unabhängig von `show_room_views` in der Navigation anzeigen |
 | `areas_options` | object | `{}` | Entity-Filterung pro Bereich |
 | `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View |
-| `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln, geführte WebRTC-Kameras oder Sections pro Raum |
-| `areas_options.*.camera_renderer` | `native` / `webrtc` | `native` | Kamera-Renderer nur für diesen Bereich |
-| `areas_options.*.camera_columns` | 1 / 2 / 3 / 4 | automatisch | Spaltenzahl des Kamera-Bereichs in dieser Raum-View |
-| `areas_options.*.camera_stream_mode` | `snapshot` / `on_demand` / `live` | `on_demand` | Native Kamera-Streams nur für diesen Bereich |
-| `areas_options.*.camera_webrtc_streams` | object | `{}` | WebRTC/go2rtc Stream-Zuordnung nur für diesen Bereich |
-| `areas_options.*.camera_webrtc_defaults` | object | `{}` | Gemeinsame WebRTC-Defaults nur für diesen Bereich |
-| `areas_options.*.camera_webrtc_preload` | `off` / `near_viewport` / `always` | `off` | WebRTC-Vorladen nur für diesen Bereich |
-| `areas_options.*.camera_webrtc_preload_margin` | number | `800` | Vorlade-Abstand nur für diesen Bereich |
+| `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln oder Sections pro Raum |
 | `room_pin_entities` | string[] | `[]` | Raum-Pin Entitäten |
 | `room_pins_show_state` | boolean | `false` | Status auf Raum-Pin-Kacheln anzeigen |
 | `room_pins_hide_last_changed` | boolean | `false` | `last_changed` auf Raum-Pin-Kacheln ausblenden |
@@ -364,36 +352,6 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `custom_views` | object[] | `[]` | Eigene Views via YAML |
 
 </details>
-
-### WebRTC-Kameras
-
-Für Raum-Kameras kann pro Bereich statt der nativen Home-Assistant-Kamera-Karte `custom:webrtc-camera` genutzt werden. Die Strategy kann Streams nur früher montieren bzw. warm halten; die eigentliche Dekodierung, Pufferung und Stream-Stabilität übernimmt Browser/go2rtc/WebRTC-Karte.
-
-Empfohlene Basis-Konfiguration:
-
-```yaml
-strategy:
-  type: custom:dashboard-strategy
-  areas_options:
-    cams:
-      camera_renderer: webrtc
-      camera_columns: 2
-      camera_webrtc_preload: near_viewport
-      camera_webrtc_preload_margin: 800
-      camera_webrtc_defaults:
-        mode: webrtc,mse
-        media: video
-        muted: true
-        intersection: 0.5
-      camera_webrtc_streams:
-        camera.garten:
-          url: reolink_garten_main
-          poster: camera.garten
-```
-
-`areas_options.*.camera_webrtc_preload: always` setzt die erzeugten Karten in diesem Bereich auf einen dauerhaft warmen Stream (`background: true`). Das lädt schneller, kann bei mehreren Kameras aber CPU, Netzwerk und go2rtc stärker belasten.
-
-In einzelnen Raumansichten kannst du unter **Raum-Karten** den geführten Modus **WebRTC-Kamera** verwenden. Dort reicht ein go2rtc-Streamname oder eine Stream-URL; das Dashboard erzeugt daraus automatisch eine optimierte `custom:webrtc-camera` mit `mode: webrtc,mse`, `media: video`, `muted: true`, `intersection: 0.5` und sichtbarkeitsnahem Vorladen.
 
 ## Fehlerbehebung
 
