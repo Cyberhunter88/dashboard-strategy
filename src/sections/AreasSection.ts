@@ -8,7 +8,7 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
-import type { AreaRegistryEntry } from '../types/registries';
+import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 
@@ -31,13 +31,41 @@ const CONTROL_DOMAINS = [
 
 type ControlDomain = (typeof CONTROL_DOMAINS)[number];
 
+interface AreaCardData {
+  visibleEntities: EntityRegistryEntry[];
+  visibleEntityIds: Set<string>;
+  excludedEntities: string[];
+}
+
+interface AreaCardBuildContext {
+  areas: Map<string, AreaCardData>;
+}
+
+function getAreaCardData(areaId: string, hass: HomeAssistant, context?: AreaCardBuildContext): AreaCardData {
+  const cached = context?.areas.get(areaId);
+  if (cached) return cached;
+
+  const visibleEntities = Registry.getVisibleEntitiesForArea(areaId);
+  const visibleEntityIds = new Set(visibleEntities.map((entity) => entity.entity_id));
+  const excludedEntities = Registry.getEntitiesForArea(areaId)
+    .filter((entity) => hass.states[entity.entity_id] && !visibleEntityIds.has(entity.entity_id))
+    .map((entity) => entity.entity_id);
+
+  const data = { visibleEntities, visibleEntityIds, excludedEntities };
+  context?.areas.set(areaId, data);
+  return data;
+}
+
+export function createAreaCardBuildContext(): AreaCardBuildContext {
+  return { areas: new Map() };
+}
+
 /**
  * Pre-computes which area-controls actually have entities in this area.
  * This avoids the area card having to scan all entities at render time.
  * Same approach as HA's areas-overview-view-strategy.
  */
-function getAreaControls(areaId: string, hass: HomeAssistant): ControlDomain[] {
-  const areaEntities = Registry.getVisibleEntitiesForArea(areaId);
+function getAreaControls(areaEntities: EntityRegistryEntry[], hass: HomeAssistant): ControlDomain[] {
   if (areaEntities.length === 0) return [];
 
   const found = new Set<ControlDomain>();
@@ -74,8 +102,7 @@ const ALERT_DEVICE_CLASSES = new Set([
  * Only returns device classes from the allowlist that have at least one
  * binary_sensor entity, so the area card doesn't scan all entities at render time.
  */
-function getAreaAlertClasses(areaId: string, hass: HomeAssistant): string[] {
-  const areaEntities = Registry.getVisibleEntitiesForArea(areaId);
+function getAreaAlertClasses(areaEntities: EntityRegistryEntry[], hass: HomeAssistant): string[] {
   if (areaEntities.length === 0) return [];
 
   const found = new Set<string>();
@@ -97,10 +124,8 @@ function getAreaAlertClasses(areaId: string, hass: HomeAssistant): string[] {
  * Uses the Registry-visible entities only, so no_dboard labels and configured
  * hidden entities remain authoritative.
  */
-function getAreaSensorClasses(area: AreaRegistryEntry, hass: HomeAssistant): string[] {
+function getAreaSensorClasses(area: AreaRegistryEntry, hass: HomeAssistant, visibleEntityIds: Set<string>): string[] {
   const found = new Set<string>();
-  const areaEntities = Registry.getVisibleEntitiesForArea(area.area_id);
-  const visibleEntityIds = new Set(areaEntities.map((entity) => entity.entity_id));
 
   if (
     area.temperature_entity_id &&
@@ -120,16 +145,6 @@ function getAreaSensorClasses(area: AreaRegistryEntry, hass: HomeAssistant): str
   return (['temperature', 'humidity'] as const).filter((sensorClass) => found.has(sensorClass));
 }
 
-function getAreaExcludedEntities(areaId: string, hass: HomeAssistant): string[] {
-  const visibleEntityIds = new Set(
-    Registry.getVisibleEntitiesForArea(areaId).map((entity) => entity.entity_id)
-  );
-
-  return Registry.getEntitiesForArea(areaId)
-    .filter((entity) => hass.states[entity.entity_id] && !visibleEntityIds.has(entity.entity_id))
-    .map((entity) => entity.entity_id);
-}
-
 function getDashboardBasePath(): string {
   const path = window.location.pathname.replace(/\/+$/, '');
   if (!path || path === '/') return '';
@@ -145,15 +160,20 @@ function getDashboardBasePath(): string {
  * Pre-filters controls and sensor_classes like HA does — the card
  * only gets what actually exists, avoiding expensive entity scanning at render.
  */
-export function buildAreaCard(area: AreaRegistryEntry, hass: HomeAssistant): LovelaceCardConfig {
-  const controls = getAreaControls(area.area_id, hass);
-  const sensorClasses = getAreaSensorClasses(area, hass);
-  const excludeEntities = getAreaExcludedEntities(area.area_id, hass);
+export function buildAreaCard(
+  area: AreaRegistryEntry,
+  hass: HomeAssistant,
+  context?: AreaCardBuildContext
+): LovelaceCardConfig {
+  const areaData = getAreaCardData(area.area_id, hass, context);
+  const controls = getAreaControls(areaData.visibleEntities, hass);
+  const sensorClasses = getAreaSensorClasses(area, hass, areaData.visibleEntityIds);
+  const excludeEntities = areaData.excludedEntities;
   const roomPath = `${getDashboardBasePath()}/${area.area_id}`;
 
   // Pre-filter alert classes if enabled
   const alertClasses = Registry.config.show_alerts_on_areas
-    ? getAreaAlertClasses(area.area_id, hass)
+    ? getAreaAlertClasses(areaData.visibleEntities, hass)
     : undefined;
 
   return {
@@ -194,6 +214,8 @@ export function createAreasSection(
   groupByFloors: boolean = false,
   hass: HomeAssistant | null = null
 ): LovelaceSectionConfig | LovelaceSectionConfig[] {
+  const buildContext = createAreaCardBuildContext();
+
   // No floor grouping: flat list
   if (!groupByFloors || !hass) {
     return {
@@ -204,7 +226,7 @@ export function createAreasSection(
           heading_style: 'title',
           heading: localize('sections.areas'),
         },
-        ...visibleAreas.map((area) => buildAreaCard(area, hass as HomeAssistant)),
+        ...visibleAreas.map((area) => buildAreaCard(area, hass as HomeAssistant, buildContext)),
       ],
     };
   }
@@ -241,7 +263,7 @@ export function createAreasSection(
         heading: floorName,
         icon: floorIcon,
       },
-      ...areas.map((area) => buildAreaCard(area, hass)),
+      ...areas.map((area) => buildAreaCard(area, hass, buildContext)),
     ];
   };
 
@@ -253,7 +275,7 @@ export function createAreasSection(
         heading: localize('sections.areas_other'),
         icon: 'mdi:home-outline',
       },
-      ...areasWithoutFloor.map((area) => buildAreaCard(area, hass)),
+      ...areasWithoutFloor.map((area) => buildAreaCard(area, hass, buildContext)),
     ];
   };
 

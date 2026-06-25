@@ -44,12 +44,14 @@ function createBatterySection(
 class Simon42ViewBatteriesStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     // Ensure Registry is initialized (idempotent — no-op if already done)
-    Registry.initialize(hass, config.config || {});
+    const strategyConfig = config.config || {};
+    if (!Registry.isCurrent(hass, strategyConfig)) {
+      Registry.initialize(hass, strategyConfig);
+    }
 
-    const batteryEntities = getBatteryEntities(hass, config.config);
+    const batteryEntities = getBatteryEntities(hass, strategyConfig);
 
     // Group by status
-    const strategyConfig = config.config || {};
     const criticalThreshold = strategyConfig.battery_critical_threshold ?? 20;
     const lowThreshold = strategyConfig.battery_low_threshold ?? 50;
     const critical: string[] = [];

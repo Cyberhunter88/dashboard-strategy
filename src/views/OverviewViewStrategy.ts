@@ -15,7 +15,7 @@ import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/ent
 import { getVisibleAreas } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
 import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createWeatherStartSummariesSection } from '../sections/OverviewSection';
-import { buildAreaCard, createAreasSection } from '../sections/AreasSection';
+import { buildAreaCard, createAreaCardBuildContext, createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
@@ -235,6 +235,7 @@ function createWeatherStartSectionsFromItems(
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
   const normalizedItems = normalizeWeatherStartLayoutItemsForRender(items, visibleAreas, dashboardConfig, hass);
   const sections: LovelaceSectionConfig[] = [];
+  const areaCardContext = createAreaCardBuildContext();
 
   const appendSection = (section: LovelaceSectionConfig | null, stackWithPrevious: boolean | undefined): void => {
     if (!section) return;
@@ -295,7 +296,7 @@ function createWeatherStartSectionsFromItems(
         break;
       case 'area': {
         const area = item.area_id ? areasById.get(item.area_id) : undefined;
-        section = area ? { type: 'grid', cards: [buildAreaCard(area, hass)] } : null;
+        section = area ? { type: 'grid', cards: [buildAreaCard(area, hass, areaCardContext)] } : null;
         break;
       }
       case 'floor': {
@@ -311,7 +312,7 @@ function createWeatherStartSectionsFromItems(
                 heading: item.title || floor?.name || localize('sections.areas_other'),
                 icon: floor?.icon || 'mdi:floor-plan',
               },
-              ...floorAreas.map((area) => buildAreaCard(area, hass)),
+              ...floorAreas.map((area) => buildAreaCard(area, hass, areaCardContext)),
             ],
           };
         }
@@ -442,7 +443,9 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const dashboardConfig: Simon42StrategyConfig = config.dashboardConfig || {};
 
     // Initialize Registry (idempotent — skips if already done by another view)
-    Registry.initialize(hass, dashboardConfig);
+    if (!Registry.isCurrent(hass, dashboardConfig)) {
+      Registry.initialize(hass, dashboardConfig);
+    }
 
     // Visible areas (filtered + sorted by config)
     const visibleAreas = getVisibleAreas(Registry.areas, dashboardConfig.areas_display, dashboardConfig.use_default_area_sort);

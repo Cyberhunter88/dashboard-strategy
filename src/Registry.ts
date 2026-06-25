@@ -332,6 +332,21 @@ class Registry {
     return Registry._initialized;
   }
 
+  /**
+   * Check whether the registry already represents this exact HA registry/config
+   * snapshot. Views can use this to avoid an extra initialize() call when the
+   * entry strategy has already prepared the singleton.
+   */
+  static isCurrent(hass: HomeAssistant, config: Simon42StrategyConfig): boolean {
+    return (
+      Registry._initialized &&
+      hass.entities === Registry._hass?.entities &&
+      hass.areas === Registry._hass?.areas &&
+      hass.devices === Registry._hass?.devices &&
+      config === Registry._config
+    );
+  }
+
   // =====================================================================
   // Entity lookups
   // =====================================================================

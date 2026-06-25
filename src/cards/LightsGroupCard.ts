@@ -53,6 +53,8 @@ class Simon42LightsGroupCard extends LitElement {
   private _cachedSourceIds: Set<string> | null = null;
   private _cachedAreaForEntity: Map<string, string | null> | null = null;
   private _lastLightsList = '';
+  private _renderedLights: string[] = [];
+  private _renderedFloorGroups: FloorGroup[] = [];
 
   // Reusable tile card pool (keyed by entity_id)
   private _tileCards: Map<string, LovelaceCardElement> = new Map();
@@ -144,6 +146,8 @@ class Simon42LightsGroupCard extends LitElement {
     this._cachedSourceIds = null;
     this._cachedAreaForEntity = null;
     this._lastLightsList = '';
+    this._renderedLights = [];
+    this._renderedFloorGroups = [];
     this.requestUpdate();
   }
 
@@ -540,14 +544,17 @@ class Simon42LightsGroupCard extends LitElement {
     if (!this.hass || !this._cachedSourceIds) return nothing;
 
     const lights = this._getRelevantLights();
+    this._renderedLights = lights;
     if (lights.length === 0) {
       this.hidden = true;
+      this._renderedFloorGroups = [];
       return nothing;
     }
     this.hidden = false;
 
     if (this._config.group_by_floors) {
       const floorGroups = this._groupByFloors(lights);
+      this._renderedFloorGroups = floorGroups;
       return html`
         <div class="lights-section">
           <div id="heading"></div>
@@ -565,6 +572,7 @@ class Simon42LightsGroupCard extends LitElement {
         </div>
       `;
     }
+    this._renderedFloorGroups = [];
 
     return html`
       <div class="lights-section">
@@ -586,7 +594,7 @@ class Simon42LightsGroupCard extends LitElement {
     super.updated(changedProps);
     if (!this.hass || !this._cachedSourceIds) return;
 
-    const lights = this._getRelevantLights();
+    const lights = this._renderedLights;
     const lightsKey = lights.join(',');
     if (this._lastLightsList === lightsKey) return;
     this._lastLightsList = lightsKey;
@@ -594,7 +602,7 @@ class Simon42LightsGroupCard extends LitElement {
     if (lights.length === 0) return;
 
     if (this._config.group_by_floors) {
-      const floorGroups = this._groupByFloors(lights);
+      const floorGroups = this._renderedFloorGroups;
 
       // Reconcile main heading (total count)
       const headingSlot = this.shadowRoot?.getElementById('heading');

@@ -42,6 +42,8 @@ class Simon42CoversGroupCard extends LitElement {
   private _deviceClasses!: string[];
   private _cachedFilteredIds: Set<string> | null = null;
   private _lastCoversList = '';
+  private _renderedCovers: string[] = [];
+  private _renderedCoversKey = '';
 
   // Reusable card pool
   private _tileCards: Map<string, LovelaceCardElement> = new Map();
@@ -72,6 +74,8 @@ class Simon42CoversGroupCard extends LitElement {
     this._deviceClasses = config.device_classes || DEFAULT_DEVICE_CLASSES;
     this._cachedFilteredIds = null;
     this._lastCoversList = '';
+    this._renderedCovers = [];
+    this._renderedCoversKey = '';
     this.requestUpdate();
   }
 
@@ -266,6 +270,8 @@ class Simon42CoversGroupCard extends LitElement {
     if (!this.hass || !this._cachedFilteredIds) return nothing;
 
     const covers = this._getRelevantCovers();
+    this._renderedCovers = covers;
+    this._renderedCoversKey = this._calculateRenderKey(covers);
     this.hidden = covers.length === 0;
 
     return html`
@@ -280,8 +286,8 @@ class Simon42CoversGroupCard extends LitElement {
     super.updated(changedProps);
     if (!this.hass || !this._cachedFilteredIds) return;
 
-    const covers = this._getRelevantCovers();
-    const coversKey = this._calculateRenderKey(covers);
+    const covers = this._renderedCovers;
+    const coversKey = this._renderedCoversKey;
     if (this._lastCoversList === coversKey) return;
     this._lastCoversList = coversKey;
 

@@ -149,7 +149,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     const dashboardConfig = config.dashboardConfig || {};
 
     // Ensure Registry is initialized (idempotent — no-op if already done)
-    Registry.initialize(hass, dashboardConfig);
+    if (!Registry.isCurrent(hass, dashboardConfig)) {
+      Registry.initialize(hass, dashboardConfig);
+    }
     const groupsOptions: Record<string, any> = config.groups_options || {};
     const customCards: AreaCustomCard[] = config.custom_cards || [];
 

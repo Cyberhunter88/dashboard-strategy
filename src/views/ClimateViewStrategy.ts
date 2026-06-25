@@ -11,7 +11,10 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 class Simon42ViewClimateStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     // Ensure Registry is initialized (idempotent — no-op if already done)
-    Registry.initialize(hass, config.config || {});
+    const strategyConfig = config.config || {};
+    if (!Registry.isCurrent(hass, strategyConfig)) {
+      Registry.initialize(hass, strategyConfig);
+    }
 
     const climateIds = Registry.getVisibleEntityIdsForDomain('climate').filter(
       (id) => hass.states[id] !== undefined

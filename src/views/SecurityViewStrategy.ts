@@ -12,7 +12,10 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 class Simon42ViewSecurityStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     // Ensure Registry is initialized (idempotent — no-op if already done)
-    Registry.initialize(hass, config.config || {});
+    const strategyConfig = config.config || {};
+    if (!Registry.isCurrent(hass, strategyConfig)) {
+      Registry.initialize(hass, strategyConfig);
+    }
 
     // Use pre-filtered visible entities from Registry
     // Covers lock, cover, binary_sensor domains across all areas
