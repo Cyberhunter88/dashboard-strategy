@@ -24,7 +24,6 @@ import type {
   WeatherStartKey,
   WeatherStartLayoutItem,
   CameraRenderer,
-  CameraWebrtcStreamsConfig,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
@@ -147,9 +146,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
   // Entity search state (NOT @state — we call requestUpdate manually)
   private _favoriteSearch = '';
   private _roomPinSearch = '';
-  private _cameraWebrtcStreamsYaml: string | null = null;
-  private _cameraWebrtcStreamsError: string | null = null;
-
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<string, {
     groupedEntities: Record<string, string[]>;
@@ -2975,7 +2971,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
     const cameraRenderer = this._config.camera_renderer ?? 'native';
     const cameraStreamMode = this._config.camera_stream_mode ?? 'on_demand';
-    const cameraWebrtcStreamsYaml = this._getCameraWebrtcStreamsYaml();
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
@@ -3052,24 +3047,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   </select>
                   <div class="description">${localize('editor.camera_stream_mode_desc')}</div>
                 `
-              : html`
-                  <label for="camera-webrtc-streams">${localize('editor.camera_webrtc_streams')}</label>
-                  <textarea
-                    id="camera-webrtc-streams"
-                    style="width: 100%; min-height: 110px;"
-                    placeholder=${localize('editor.camera_webrtc_streams_placeholder')}
-                    .value=${cameraWebrtcStreamsYaml}
-                    @input=${this._cameraWebrtcStreamsChanged}
-                  ></textarea>
-                  ${this._cameraWebrtcStreamsError
-                    ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">
-                        ${this._cameraWebrtcStreamsError}
-                      </div>`
-                    : nothing}
-                  <div class="description" style="margin-left: 0;">
-                    ${localize('editor.camera_webrtc_streams_desc')}
-                  </div>
-                `}
+              : nothing}
           </div>
 
           <div class="option-group">
@@ -4114,59 +4092,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       newConfig.camera_renderer = renderer;
     }
     this._config = newConfig;
-    this._cameraWebrtcStreamsError = null;
     this._fireConfigChanged(newConfig);
-  };
-
-  private _getCameraWebrtcStreamsYaml(): string {
-    if (this._cameraWebrtcStreamsYaml !== null) return this._cameraWebrtcStreamsYaml;
-    const streams = this._config.camera_webrtc_streams;
-    if (!streams || Object.keys(streams).length === 0) return '';
-    return yaml.dump(streams).trim();
-  }
-
-  private _cameraWebrtcStreamsChanged = (e: Event): void => {
-    const yamlString = (e.target as HTMLTextAreaElement).value;
-    this._cameraWebrtcStreamsYaml = yamlString;
-
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    const trimmed = yamlString.trim();
-    if (!trimmed) {
-      delete newConfig.camera_webrtc_streams;
-      this._cameraWebrtcStreamsError = null;
-      this._config = newConfig;
-      this._fireConfigChanged(newConfig);
-      return;
-    }
-
-    try {
-      const parsed = yaml.load(trimmed);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        this._cameraWebrtcStreamsError = localize('editor.camera_webrtc_streams_invalid');
-        this.requestUpdate();
-        return;
-      }
-
-      const streams = parsed as Record<string, unknown>;
-      const valid = Object.entries(streams).every(
-        ([key, value]) =>
-          !!key.trim() &&
-          (typeof value === 'string' || (!!value && typeof value === 'object' && !Array.isArray(value)))
-      );
-      if (!valid) {
-        this._cameraWebrtcStreamsError = localize('editor.camera_webrtc_streams_invalid');
-        this.requestUpdate();
-        return;
-      }
-
-      newConfig.camera_webrtc_streams = streams as CameraWebrtcStreamsConfig;
-      this._cameraWebrtcStreamsError = null;
-      this._config = newConfig;
-      this._fireConfigChanged(newConfig);
-    } catch (error: unknown) {
-      this._cameraWebrtcStreamsError = getYamlErrorMessage(error);
-      this.requestUpdate();
-    }
   };
 
   private _themeChanged = (e: Event): void => {
