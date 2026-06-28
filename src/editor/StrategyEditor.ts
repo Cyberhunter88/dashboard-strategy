@@ -17,7 +17,7 @@ import type {
   CustomBadge,
   CustomSection,
   AreaCustomCard,
-  RoomEntities,
+  AreaWebrtcCameraConfig,
   OverviewLayout,
   SectionKey,
   StackKey,
@@ -25,11 +25,17 @@ import type {
   WeatherStartLayoutItem,
 } from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
-import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
-import { isEntityRegistryHidden } from '../types/registries';
+import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
-import { isBadgeCandidate, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
+import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder } from '../utils/name-utils';
+import {
+  createRoomEntities,
+  findUpsEntityGroups,
+  getAreaBadgeCandidates,
+  getAvailableBadgeEntities,
+  getEditableAreaEntities,
+} from '../utils/area-entity-utils';
 
 // -- Supporting types for the editor ------------------------------------
 
@@ -3614,11 +3620,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
     areaPickerEntities.sort((a, b) => a.name.localeCompare(b.name));
 
     const customCardsSection = this._renderAreaCustomCardsSection(areaId, areaPickerEntities);
+    const webrtcCamerasSection = this._renderAreaWebrtcCamerasSection(areaId);
 
     if (!hasEntities && !hasBadges) {
       return html`
         <div class="empty-state">${localize('editor.no_entities_in_area')}</div>
         ${this._renderStackOrderPanel(areaId, data)}
+        ${webrtcCamerasSection}
         ${customCardsSection}
       `;
     }
@@ -3687,7 +3695,129 @@ class Simon42DashboardStrategyEditor extends LitElement {
           : nothing}
         ${this._renderStackOrderPanel(areaId, data)}
       </div>
+      ${webrtcCamerasSection}
       ${customCardsSection}
+    `;
+  }
+
+  // -- Area go2rtc cameras ----------------------------------------------
+
+  private _getAreaWebrtcCameras(areaId: string): AreaWebrtcCameraConfig[] {
+    return [...(this._config.areas_options?.[areaId]?.webrtc_cameras || [])];
+  }
+
+  private _writeAreaWebrtcCameras(areaId: string, cameras: AreaWebrtcCameraConfig[]): void {
+    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
+    const newAreaOptions = { ...currentAreaOptions };
+    if (cameras.length > 0) newAreaOptions.webrtc_cameras = cameras;
+    else delete newAreaOptions.webrtc_cameras;
+
+    const newAreasOptions = { ...this._config.areas_options, [areaId]: newAreaOptions };
+    if (Object.keys(newAreaOptions).length === 0) delete newAreasOptions[areaId];
+
+    const newConfig: Simon42StrategyConfig = { ...this._config, areas_options: newAreasOptions };
+    if (Object.keys(newAreasOptions).length === 0) delete newConfig.areas_options;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _addAreaWebrtcCamera(areaId: string): void {
+    const cameras = this._getAreaWebrtcCameras(areaId);
+    cameras.push({
+      id: globalThis.crypto?.randomUUID?.() ?? `camera-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: '',
+      url: '',
+      start_mode: 'manual',
+    });
+    this._writeAreaWebrtcCameras(areaId, cameras);
+  }
+
+  private _updateAreaWebrtcCamera(
+    areaId: string,
+    index: number,
+    field: 'name' | 'url' | 'start_mode',
+    value: string
+  ): void {
+    const cameras = this._getAreaWebrtcCameras(areaId);
+    if (!cameras[index]) return;
+    cameras[index] = { ...cameras[index], [field]: value };
+    this._writeAreaWebrtcCameras(areaId, cameras);
+  }
+
+  private _removeAreaWebrtcCamera(areaId: string, index: number): void {
+    const cameras = this._getAreaWebrtcCameras(areaId);
+    cameras.splice(index, 1);
+    this._writeAreaWebrtcCameras(areaId, cameras);
+  }
+
+  private _moveAreaWebrtcCamera(areaId: string, index: number, direction: -1 | 1): void {
+    const cameras = this._getAreaWebrtcCameras(areaId);
+    const target = index + direction;
+    if (target < 0 || target >= cameras.length) return;
+    [cameras[index], cameras[target]] = [cameras[target], cameras[index]];
+    this._writeAreaWebrtcCameras(areaId, cameras);
+  }
+
+  private _renderAreaWebrtcCamerasSection(areaId: string): TemplateResult {
+    const cameras = this._getAreaWebrtcCameras(areaId);
+    return html`
+      <div class="area-custom-cards">
+        <div class="area-custom-cards-header">
+          <ha-icon icon="mdi:cctv"></ha-icon>
+          <span class="group-name">${localize('editor.area_webrtc_cameras_title')}</span>
+        </div>
+        <div class="area-custom-cards-help">${localize('editor.area_webrtc_cameras_help')}</div>
+        ${cameras.map((camera, index) => html`
+          <div class="custom-item" data-camera-id=${camera.id}>
+            <div class="custom-item-header">
+              <strong>${camera.name || localize('editor.area_webrtc_camera_new')}</strong>
+              <div>
+                <button class="btn-remove" title=${localize('editor.move_up')}
+                  ?disabled=${index === 0}
+                  @click=${() => this._moveAreaWebrtcCamera(areaId, index, -1)}>&#x2191;</button>
+                <button class="btn-remove" title=${localize('editor.move_down')}
+                  ?disabled=${index === cameras.length - 1}
+                  @click=${() => this._moveAreaWebrtcCamera(areaId, index, 1)}>&#x2193;</button>
+                <button class="btn-remove"
+                  @click=${() => this._removeAreaWebrtcCamera(areaId, index)}>&#x2715;</button>
+              </div>
+            </div>
+            <div class="custom-item-fields">
+              <label>${localize('editor.area_webrtc_camera_name')}</label>
+              <input type="text" .value=${camera.name || ''}
+                placeholder=${localize('editor.area_webrtc_camera_name_placeholder')}
+                @change=${(e: Event) => this._updateAreaWebrtcCamera(
+                  areaId, index, 'name', (e.target as HTMLInputElement).value
+                )} />
+              <label>${localize('editor.area_webrtc_camera_url')}</label>
+              <input type="text" .value=${camera.url || ''}
+                placeholder=${localize('editor.area_webrtc_camera_url_placeholder')}
+                @change=${(e: Event) => this._updateAreaWebrtcCamera(
+                  areaId, index, 'url', (e.target as HTMLInputElement).value
+                )} />
+              <div class="description">${localize('editor.area_webrtc_camera_url_help')}</div>
+              <div class="custom-card-target">
+                <label>${localize('editor.area_webrtc_camera_start_mode')}</label>
+                <select @change=${(e: Event) => this._updateAreaWebrtcCamera(
+                  areaId, index, 'start_mode', (e.target as HTMLSelectElement).value
+                )}>
+                  <option value="manual" ?selected=${(camera.start_mode ?? 'manual') === 'manual'}>
+                    ${localize('editor.area_webrtc_camera_start_manual')}
+                  </option>
+                  <option value="auto" ?selected=${camera.start_mode === 'auto'}>
+                    ${localize('editor.area_webrtc_camera_start_auto')}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        `)}
+        <div class="area-custom-card-actions">
+          <button class="btn-primary" @click=${() => this._addAreaWebrtcCamera(areaId)}>
+            ${localize('editor.area_webrtc_camera_add')}
+          </button>
+        </div>
+      </div>
     `;
   }
 
@@ -3929,12 +4059,22 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private async _loadAreaEntities(areaId: string): Promise<void> {
     if (!this._hass) return;
 
-    const groupedEntities = await getAreaGroupedEntities(areaId, this._hass);
+    const visibleEntities = getEditableAreaEntities(areaId, this._hass, this._config);
+    const groupedEntities = createRoomEntities(
+      visibleEntities,
+      this._hass,
+      findUpsEntityGroups(visibleEntities, this._hass),
+      { includeCameras: false }
+    );
     const hiddenEntities = getHiddenEntitiesForArea(areaId, this._config);
     const entityOrders = getEntityOrdersForArea(areaId, this._config);
-    const badgeCandidates = getAreaBadgeCandidates(areaId, this._hass);
+    const badgeCandidates = getAreaBadgeCandidates(visibleEntities, this._hass);
     const additionalBadges = getAdditionalBadgesForArea(areaId, this._config);
-    const availableEntities = getAvailableBadgeEntities(areaId, this._hass, badgeCandidates, additionalBadges);
+    const availableEntities = getAvailableBadgeEntities(
+      visibleEntities,
+      this._hass,
+      [...badgeCandidates, ...additionalBadges]
+    );
     const defaultShowNames = getDefaultShowNameEntities(badgeCandidates, this._hass);
     const { namesVisible, namesHidden } = getBadgeNamesConfig(areaId, this._config);
 
@@ -3959,9 +4099,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const groupedEntities = this._areaEntitiesCache.get(areaId)!.groupedEntities;
     const hiddenEntities = getHiddenEntitiesForArea(areaId, this._config);
     const entityOrders = getEntityOrdersForArea(areaId, this._config);
-    const badgeCandidates = getAreaBadgeCandidates(areaId, this._hass);
+    const visibleEntities = getEditableAreaEntities(areaId, this._hass, this._config);
+    const badgeCandidates = getAreaBadgeCandidates(visibleEntities, this._hass);
     const additionalBadges = getAdditionalBadgesForArea(areaId, this._config);
-    const availableEntities = getAvailableBadgeEntities(areaId, this._hass, badgeCandidates, additionalBadges);
+    const availableEntities = getAvailableBadgeEntities(
+      visibleEntities,
+      this._hass,
+      [...badgeCandidates, ...additionalBadges]
+    );
     const defaultShowNames = getDefaultShowNameEntities(badgeCandidates, this._hass);
     const { namesVisible, namesHidden } = getBadgeNamesConfig(areaId, this._config);
 
@@ -5423,235 +5568,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
 // HELPER FUNCTIONS (local to this module)
 // ====================================================================
 
-async function getAreaGroupedEntities(areaId: string, hass: HomeAssistant): Promise<RoomEntities> {
-  const devices = Object.values(hass.devices || {});
-  const entities = Object.values(hass.entities || {});
-
-  const areaDevices = new Set<string>();
-  for (const device of devices) {
-    if (device.area_id === areaId) {
-      areaDevices.add(device.id);
-    }
-  }
-
-  const roomEntities: RoomEntities = {
-    lights: [],
-    covers: [],
-    covers_curtain: [],
-    covers_window: [],
-    scenes: [],
-    climate: [],
-    media_player: [],
-    vacuum: [],
-    fan: [],
-    switches: [],
-    locks: [],
-    automations: [],
-    scripts: [],
-    cameras: [],
-    ups: [],
-    energy: [],
-  };
-
-  const excludeLabels = entities
-    .filter((e: EntityRegistryEntry) => e.labels?.includes('no_dboard'))
-    .map((e: EntityRegistryEntry) => e.entity_id);
-
-  const entitiesByDevice = new Map<string, EntityRegistryEntry[]>();
-  for (const entity of entities) {
-    if (!entity.device_id) continue;
-    const bucket = entitiesByDevice.get(entity.device_id);
-    if (bucket) bucket.push(entity);
-    else entitiesByDevice.set(entity.device_id, [entity]);
-  }
-
-  const upsDeviceClasses = new Set(['duration', 'apparent_power', 'power', 'voltage']);
-  const upsIdPattern = /load|runtime|time_left|input_voltage|status/;
-  const usedByUps = new Set<string>();
-
-  for (const deviceEntities of entitiesByDevice.values()) {
-    const areaEntities = deviceEntities.filter((entity) => {
-      let belongsToArea = false;
-      if (entity.area_id) belongsToArea = entity.area_id === areaId;
-      else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
-      return (
-        belongsToArea &&
-        !excludeLabels.includes(entity.entity_id) &&
-        !!hass.states[entity.entity_id] &&
-        !isEntityRegistryHidden(entity)
-      );
-    });
-    if (areaEntities.length === 0) continue;
-
-    let batteryId: string | undefined;
-    let hasUpsSignal = false;
-    let isNut = false;
-
-    for (const entity of areaEntities) {
-      if (entity.platform === 'nut') isNut = true;
-
-      const entityState = hass.states[entity.entity_id];
-      if (!entityState) continue;
-      const deviceClass = entityState.attributes?.device_class as string | undefined;
-      const unit = entityState.attributes?.unit_of_measurement as string | undefined;
-
-      if (!batteryId && entity.entity_id.startsWith('sensor.') && deviceClass === 'battery' && unit === '%') {
-        batteryId = entity.entity_id;
-        continue;
-      }
-
-      if (deviceClass && upsDeviceClasses.has(deviceClass)) hasUpsSignal = true;
-      else if (upsIdPattern.test(entity.entity_id)) hasUpsSignal = true;
-    }
-
-    if (!batteryId) continue;
-    if (!isNut && !hasUpsSignal) continue;
-
-    const upsEntityIds = areaEntities.map((entity) => entity.entity_id);
-    roomEntities.ups.push(...upsEntityIds);
-    for (const entityId of upsEntityIds) usedByUps.add(entityId);
-  }
-
-  for (const entity of entities) {
-    let belongsToArea = false;
-
-    if (entity.area_id) {
-      belongsToArea = entity.area_id === areaId;
-    } else if (entity.device_id && areaDevices.has(entity.device_id)) {
-      belongsToArea = true;
-    }
-
-    if (!belongsToArea) continue;
-    if (usedByUps.has(entity.entity_id)) continue;
-    if (excludeLabels.includes(entity.entity_id)) continue;
-    if (!hass.states[entity.entity_id]) continue;
-    if (isEntityRegistryHidden(entity)) continue;
-
-    const entityRegistry = hass.entities?.[entity.entity_id];
-    if (isEntityRegistryHidden(entityRegistry)) continue;
-
-    const domain = entity.entity_id.split('.')[0];
-    const stateObj = hass.states[entity.entity_id];
-    const deviceClass = stateObj.attributes?.device_class;
-
-    if (domain === 'light') {
-      roomEntities.lights.push(entity.entity_id);
-    } else if (domain === 'cover') {
-      if (deviceClass === 'curtain') {
-        roomEntities.covers_curtain.push(entity.entity_id);
-      } else if (deviceClass === 'window' || deviceClass === 'door' || deviceClass === 'gate' || deviceClass === 'garage') {
-        roomEntities.covers_window.push(entity.entity_id);
-      } else {
-        roomEntities.covers.push(entity.entity_id);
-      }
-    } else if (domain === 'scene') {
-      roomEntities.scenes.push(entity.entity_id);
-    } else if (domain === 'climate') {
-      roomEntities.climate.push(entity.entity_id);
-    } else if (domain === 'media_player') {
-      roomEntities.media_player.push(entity.entity_id);
-    } else if (domain === 'vacuum') {
-      roomEntities.vacuum.push(entity.entity_id);
-    } else if (domain === 'fan') {
-      roomEntities.fan.push(entity.entity_id);
-    } else if (domain === 'switch') {
-      roomEntities.switches.push(entity.entity_id);
-    } else if (domain === 'lock') {
-      roomEntities.locks.push(entity.entity_id);
-    } else if (domain === 'automation') {
-      roomEntities.automations.push(entity.entity_id);
-    } else if (domain === 'script') {
-      roomEntities.scripts.push(entity.entity_id);
-    } else if (
-      domain === 'sensor' &&
-      ['power', 'energy', 'water', 'gas'].includes(deviceClass as string)
-    ) {
-      roomEntities.energy.push(entity.entity_id);
-    }
-  }
-
-  return roomEntities;
-}
-
-function getAreaBadgeCandidates(areaId: string, hass: HomeAssistant): string[] {
-  const devices = Object.values(hass.devices || {});
-  const entities = Object.values(hass.entities || {});
-
-  const areaDevices = new Set<string>();
-  for (const device of devices) {
-    if (device.area_id === areaId) areaDevices.add(device.id);
-  }
-
-  const candidates: string[] = [];
-
-  for (const entity of entities) {
-    let belongsToArea = false;
-    if (entity.area_id) belongsToArea = entity.area_id === areaId;
-    else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
-    if (!belongsToArea) continue;
-    if (isEntityRegistryHidden(entity)) continue;
-    if (entity.labels?.includes('no_dboard')) continue;
-    if (!hass.states[entity.entity_id]) continue;
-
-    const domain = entity.entity_id.split('.')[0];
-    const stateObj = hass.states[entity.entity_id];
-    const dc = stateObj.attributes?.device_class as string | undefined;
-    const unit = stateObj.attributes?.unit_of_measurement as string | undefined;
-
-    if (!isBadgeCandidate(domain, dc, unit, entity.entity_id)) continue;
-
-    if (domain === 'sensor' && (dc === 'battery' || entity.entity_id.includes('battery'))) {
-      const val = parseFloat(stateObj.state);
-      if (!isNaN(val) && val < 20) candidates.push(entity.entity_id);
-      continue;
-    }
-
-    candidates.push(entity.entity_id);
-  }
-
-  return candidates;
-}
-
 function getAdditionalBadgesForArea(areaId: string, config: Simon42StrategyConfig): string[] {
   return config.areas_options?.[areaId]?.groups_options?.badges?.additional || [];
-}
-
-function getAvailableBadgeEntities(
-  areaId: string,
-  hass: HomeAssistant,
-  existingCandidates: string[],
-  existingAdditional: string[]
-): Array<{ entity_id: string; name: string }> {
-  const devices = Object.values(hass.devices || {});
-  const entities = Object.values(hass.entities || {});
-  const excludeSet = new Set([...existingCandidates, ...existingAdditional]);
-
-  const areaDevices = new Set<string>();
-  for (const device of devices) {
-    if (device.area_id === areaId) areaDevices.add(device.id);
-  }
-
-  const available: Array<{ entity_id: string; name: string }> = [];
-
-  for (const entity of entities) {
-    let belongsToArea = false;
-    if (entity.area_id) belongsToArea = entity.area_id === areaId;
-    else if (entity.device_id && areaDevices.has(entity.device_id)) belongsToArea = true;
-    if (!belongsToArea) continue;
-    if (isEntityRegistryHidden(entity)) continue;
-    if (!hass.states[entity.entity_id]) continue;
-
-    const domain = entity.entity_id.split('.')[0];
-    if (domain !== 'sensor' && domain !== 'binary_sensor') continue;
-    if (excludeSet.has(entity.entity_id)) continue;
-
-    const stateObj = hass.states[entity.entity_id];
-    const name = (stateObj.attributes?.friendly_name as string) || entity.entity_id.split('.')[1].replace(/_/g, ' ');
-    available.push({ entity_id: entity.entity_id, name });
-  }
-
-  available.sort((a, b) => a.name.localeCompare(b.name));
-  return available;
 }
 
 function getDefaultShowNameEntities(badgeCandidates: string[], hass: HomeAssistant): Set<string> {

@@ -17,6 +17,7 @@ import type {
   StackKey,
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
+  AreaWebrtcCameraConfig,
 } from '../types/strategy';
 import { stripAreaName, sortByLastChanged, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
@@ -25,6 +26,11 @@ import { localize } from '../utils/localize';
 import { BADGE_COLOR_MAP, getColorForEntity, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
+import {
+  createRoomEntities,
+  findUpsEntityGroups,
+  getVisibleAreaEntities,
+} from '../utils/area-entity-utils';
 
 const ROOM_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
 const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
@@ -86,6 +92,15 @@ function buildNativeCameraCard(
     ...(entities?.length ? { entities } : {}),
     fit_mode: 'cover',
     aspect_ratio: '16:9',
+  };
+}
+
+function buildAreaWebrtcCameraCard(camera: AreaWebrtcCameraConfig): LovelaceCardConfig {
+  return {
+    type: 'custom:dashboard-strategy-webrtc-camera-card',
+    url: camera.url.trim(),
+    ...(camera.name?.trim() ? { name: camera.name.trim() } : {}),
+    start_mode: camera.start_mode ?? 'manual',
   };
 }
 
@@ -163,31 +178,8 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     timeStart(`room-generate-${area.area_id}`);
     const dashboardConfig = config.dashboardConfig || {};
 
-    // Ensure Registry is initialized (idempotent — no-op if already done)
-    if (!Registry.isCurrent(hass, dashboardConfig)) {
-      Registry.initialize(hass, dashboardConfig);
-    }
     const groupsOptions: Record<string, any> = config.groups_options || {};
     const customCards: AreaCustomCard[] = config.custom_cards || [];
-
-    const roomEntities: RoomEntities = {
-      lights: [],
-      covers: [],
-      covers_curtain: [],
-      covers_window: [],
-      scenes: [],
-      climate: [],
-      media_player: [],
-      vacuum: [],
-      fan: [],
-      switches: [],
-      locks: [],
-      automations: [],
-      scripts: [],
-      cameras: [],
-      ups: [],
-      energy: [],
-    };
 
     const sensorEntities: SensorEntities = {
       temperature: [],
@@ -209,59 +201,21 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // Main categorization loop — use pre-filtered visible entities from Registry
     // (no hidden, no_dboard, config/diagnostic, config-hidden)
-    const visibleEntities = Registry.getVisibleEntitiesForArea(area.area_id);
+    const visibleEntities = getVisibleAreaEntities(area.area_id, hass, dashboardConfig);
     const showUps = dashboardConfig.show_ups_in_rooms !== false;
-    const usedByUps = new Set<string>();
+    const upsGroups = showUps ? findUpsEntityGroups(visibleEntities, hass) : [];
+    const roomEntities: RoomEntities = createRoomEntities(visibleEntities, hass, upsGroups, {
+      includeAutomations: !!dashboardConfig.show_automations_in_rooms,
+      includeLocks: !!dashboardConfig.show_locks_in_rooms,
+      includeScripts: !!dashboardConfig.show_scripts_in_rooms,
+    });
+    const usedByUps = new Set(upsGroups.flatMap(({ batteryId, sensorIds }) => [batteryId, ...sensorIds]));
     const upsDevices: UpsDeviceRender[] = [];
 
-    if (showUps) {
-      const entitiesByDevice = new Map<string, typeof visibleEntities>();
-      for (const entity of visibleEntities) {
-        if (!entity.device_id) continue;
-        const bucket = entitiesByDevice.get(entity.device_id);
-        if (bucket) bucket.push(entity);
-        else entitiesByDevice.set(entity.device_id, [entity]);
-      }
-
-      const upsDeviceClasses = new Set(['duration', 'apparent_power', 'power', 'voltage']);
-      const upsIdPattern = /load|runtime|time_left|input_voltage|status/;
-
-      for (const [deviceId, entities] of entitiesByDevice) {
-        let batteryId: string | undefined;
-        let hasUpsSignal = false;
-        let isNut = false;
-
-        for (const entity of entities) {
-          if (entity.platform === 'nut') isNut = true;
-
-          const entityState = hass.states[entity.entity_id];
-          if (!entityState) continue;
-          const deviceClass = entityState.attributes?.device_class as string | undefined;
-          const unit = entityState.attributes?.unit_of_measurement as string | undefined;
-
-          if (!batteryId && entity.entity_id.startsWith('sensor.') && deviceClass === 'battery' && unit === '%') {
-            batteryId = entity.entity_id;
-            continue;
-          }
-
-          if (deviceClass && upsDeviceClasses.has(deviceClass)) hasUpsSignal = true;
-          else if (upsIdPattern.test(entity.entity_id)) hasUpsSignal = true;
-        }
-
-        if (!batteryId) continue;
-        if (!isNut && !hasUpsSignal) continue;
-
-        const sensorIds = entities
-          .map((entity) => entity.entity_id)
-          .filter((entityId) => entityId !== batteryId && !!hass.states[entityId]);
-
-        const device = Registry.getDevice(deviceId);
-        const name = device?.name_by_user ?? device?.name ?? 'UPS';
-        upsDevices.push({ name, batteryId, sensorIds });
-
-        usedByUps.add(batteryId);
-        for (const entityId of sensorIds) usedByUps.add(entityId);
-      }
+    for (const { deviceId, batteryId, sensorIds } of upsGroups) {
+      const device = Registry.getDevice(deviceId);
+      const name = device?.name_by_user ?? device?.name ?? 'UPS';
+      upsDevices.push({ name, batteryId, sensorIds });
     }
 
     for (const entity of visibleEntities) {
@@ -272,61 +226,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const state = hass.states[entityId];
       if (!state) continue;
 
-      // Domain categorization
       const domain = entityId.split('.')[0];
       const deviceClass = state.attributes?.device_class as string | undefined;
       const unit = state.attributes?.unit_of_measurement as string | undefined;
-
-      if (domain === 'light') {
-        roomEntities.lights.push(entityId);
-        continue;
-      }
-      if (domain === 'cover') {
-        if (deviceClass === 'curtain') roomEntities.covers_curtain.push(entityId);
-        else if (deviceClass === 'window' || deviceClass === 'door' || deviceClass === 'gate' || deviceClass === 'garage') roomEntities.covers_window.push(entityId);
-        else roomEntities.covers.push(entityId);
-        continue;
-      }
-      if (domain === 'scene') {
-        roomEntities.scenes.push(entityId);
-        continue;
-      }
-      if (domain === 'climate') {
-        roomEntities.climate.push(entityId);
-        continue;
-      }
-      if (domain === 'media_player') {
-        roomEntities.media_player.push(entityId);
-        continue;
-      }
-      if (domain === 'vacuum') {
-        roomEntities.vacuum.push(entityId);
-        continue;
-      }
-      if (domain === 'fan') {
-        roomEntities.fan.push(entityId);
-        continue;
-      }
-      if (domain === 'switch') {
-        roomEntities.switches.push(entityId);
-        continue;
-      }
-      if (domain === 'lock' && dashboardConfig.show_locks_in_rooms) {
-        roomEntities.locks.push(entityId);
-        continue;
-      }
-      if (domain === 'automation' && dashboardConfig.show_automations_in_rooms) {
-        roomEntities.automations.push(entityId);
-        continue;
-      }
-      if (domain === 'script' && dashboardConfig.show_scripts_in_rooms) {
-        roomEntities.scripts.push(entityId);
-        continue;
-      }
-      if (domain === 'camera') {
-        roomEntities.cameras.push(entityId);
-        continue;
-      }
 
       // Sensors for badges
       if (domain === 'sensor') {
@@ -608,7 +510,12 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     }
 
     // Cameras
-    if (roomEntities.cameras.length > 0) {
+    const configuredWebrtcCameras: AreaWebrtcCameraConfig[] = (
+      (areaOptions?.webrtc_cameras || []) as AreaWebrtcCameraConfig[]
+    ).filter(
+      (camera: AreaWebrtcCameraConfig) => typeof camera.url === 'string' && camera.url.trim().length > 0
+    );
+    if (roomEntities.cameras.length > 0 || configuredWebrtcCameras.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
@@ -683,6 +590,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           cameraCards.push(buildNativeCameraCard(cameraId, cameraName));
         }
       }
+      cameraCards.push(...configuredWebrtcCameras.map(buildAreaWebrtcCameraCard));
       if (cameraCards.length > 0) {
         pushStack('cameras', {
           type: 'grid',
