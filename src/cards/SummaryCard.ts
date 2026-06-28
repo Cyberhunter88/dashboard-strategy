@@ -11,6 +11,7 @@ import { getBatteryEntities, SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity
 import type { SummaryType } from '../types/strategy';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { haveEntityStatesChanged } from '../utils/card-element-utils';
+import { getBatteryStatus } from '../utils/battery-utils';
 
 interface SummaryCardConfig {
   summary_type: SummaryType;
@@ -282,20 +283,8 @@ class Simon42SummaryCard extends LitElement {
         return count;
 
       case 'batteries': {
-        const critThreshold = this._config.battery_critical_threshold ?? 20;
         for (const id of this._relevantEntityIds) {
-          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
-          const state = hass.states[id];
-          if (!state) continue;
-          if (id.startsWith('binary_sensor.')) {
-            if (state.state === 'on') count++;
-          } else {
-            const unit = state.attributes?.unit_of_measurement;
-            if (unit && unit !== '%') continue;
-            const value = parseFloat(state.state);
-            const isUnavailable = state.state === 'unavailable' || state.state === 'unknown';
-            if (isUnavailable || (!isNaN(value) && value < critThreshold)) count++;
-          }
+          if (getBatteryStatus(hass, id, this._config) === 'critical') count++;
         }
         return count;
       }
