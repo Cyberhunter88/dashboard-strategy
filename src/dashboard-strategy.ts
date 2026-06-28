@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.19.0';
+const STRATEGY_VERSION = '1.19.1';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -103,6 +103,10 @@ class Simon42DashboardStrategy extends HTMLElement {
     const roomConfigs = await Promise.all(
       visibleAreas.map((area) => {
         const areaOptions = config.areas_options?.[area.area_id];
+        const override = areaOptions?.view_override?.parsed_config;
+        if (override && typeof override === 'object' && !Array.isArray(override)) {
+          return Promise.resolve(override as LovelaceViewConfig);
+        }
         return roomStrategy.generate(
           {
             area,
@@ -131,11 +135,11 @@ class Simon42DashboardStrategy extends HTMLElement {
         ...utilityConfigs[i],
       })),
       ...visibleAreas.map((area, i) => ({
+        ...roomConfigs[i],
         title: area.name,
         path: area.area_id,
         icon: area.icon || 'mdi:floor-plan',
         subview: !showRoomViews && !navItems.has(area.area_id),
-        ...roomConfigs[i],
       })),
     ];
 

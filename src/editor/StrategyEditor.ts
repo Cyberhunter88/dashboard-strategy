@@ -131,6 +131,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     _expandedAreas: { state: true },
     _expandedGroups: { state: true },
     _expandedWeatherBlocks: { state: true },
+    _advancedExpanded: { state: true },
     _cardPickerOpen: { state: true },
     _cardPickerStep: { state: true },
     _cardPickerSearch: { state: true },
@@ -147,6 +148,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   _expandedAreas = new Set<string>();
   _expandedGroups = new Map<string, Set<string>>();
   _expandedWeatherBlocks = new Set<string>();
+  _advancedExpanded = false;
 
   // Entity search state (NOT @state — we call requestUpdate manually)
   private _favoriteSearch = '';
@@ -1483,6 +1485,33 @@ class Simon42DashboardStrategyEditor extends LitElement {
     .btn-secondary:hover {
       border-color: var(--primary-color);
     }
+    .advanced-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid var(--divider-color);
+      border-radius: var(--ha-card-border-radius, 12px);
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .advanced-toggle ha-icon:last-child {
+      margin-left: auto;
+      transition: transform 0.2s ease;
+    }
+    .advanced-toggle[aria-expanded="true"] ha-icon:last-child {
+      transform: rotate(180deg);
+    }
+    .advanced-content {
+      margin-top: 16px;
+      padding-left: 12px;
+      border-left: 3px solid var(--divider-color);
+    }
   `;
 
   // -- Main render ------------------------------------------------------
@@ -1492,9 +1521,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        ${this._renderOverviewSection()}
-        ${this._renderSummariesSection()}
-        ${this._renderFavoritesSection()}
+        ${this._renderBasicOverviewSection()}
+        ${this._renderBasicSummariesSection()}
 
         <div class="section-divider">
           <div class="section-divider-title">
@@ -1502,19 +1530,28 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
         </div>
 
-        ${this._renderAreasSection()}
-        ${this._renderRoomPinsSection()}
-        ${this._renderViewsSection()}
+        ${this._renderBasicAreasSection()}
 
-        <div class="section-divider">
-          <div class="section-divider-title">
-            ${localize('editor.section_advanced')}
+        <button class="advanced-toggle"
+          aria-expanded=${String(this._advancedExpanded)}
+          @click=${() => { this._advancedExpanded = !this._advancedExpanded; }}>
+          <ha-icon icon="mdi:tune-variant"></ha-icon>
+          ${localize('editor.section_advanced')}
+          <ha-icon icon="mdi:chevron-down"></ha-icon>
+        </button>
+        ${this._advancedExpanded ? html`
+          <div class="advanced-content">
+            ${this._renderOverviewSection()}
+            ${this._renderSummariesSection()}
+            ${this._renderFavoritesSection()}
+            ${this._renderAreasSection()}
+            ${this._renderRoomPinsSection()}
+            ${this._renderViewsSection()}
+            ${this._renderAdvancedOptionsSection()}
+            ${this._renderSectionOrderPanel()}
+            ${this._renderCustomContentSection()}
           </div>
-        </div>
-
-        ${this._renderAdvancedOptionsSection()}
-        ${this._renderSectionOrderPanel()}
-        ${this._renderCustomContentSection()}
+        ` : nothing}
       </div>
       ${this._cardPickerOpen ? this._renderCardPickerOverlay() : nothing}
     `;
@@ -2711,6 +2748,85 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Overview section --------------------------------------------------
 
+  private _renderBasicOverviewSection(): TemplateResult {
+    const selectedTheme = this._config.theme || '';
+    const themeNames = this._getThemeNames();
+    const overviewLayout = this._config.overview_layout || 'default';
+    const weatherEntitySelected = this._config.weather_entity || '';
+    const weatherEntities = this._getWeatherEntities();
+
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.section_overview')}</div>
+        <div class="form-row">
+          <label for="basic-dashboard-theme" style="margin-right: 8px; min-width: 120px;">${localize('editor.theme')}</label>
+          <select id="basic-dashboard-theme" style="flex: 1;" @change=${this._themeChanged}>
+            <option value="" ?selected=${!selectedTheme}>${localize('editor.theme_default')}</option>
+            ${themeNames.map((theme) => html`
+              <option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option>
+            `)}
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="basic-overview-layout" style="margin-right: 8px; min-width: 120px;">${localize('editor.overview_layout')}</label>
+          <select id="basic-overview-layout" style="flex: 1;" @change=${this._overviewLayoutChanged}>
+            <option value="default" ?selected=${overviewLayout === 'default'}>${localize('editor.overview_layout_default')}</option>
+            <option value="weather_start" ?selected=${overviewLayout === 'weather_start'}>${localize('editor.overview_layout_weather_start')}</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="basic-weather-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_entity')}</label>
+          <select id="basic-weather-entity" style="flex: 1;" @change=${this._weatherEntityChanged}>
+            <option value="" ?selected=${!weatherEntitySelected}>${localize('editor.weather_entity_auto')}</option>
+            ${weatherEntities.map((entity) => html`
+              <option value=${entity.entity_id} ?selected=${entity.entity_id === weatherEntitySelected}>${entity.name}</option>
+            `)}
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderBasicSummariesSection(): TemplateResult {
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.section_summaries')}</div>
+        ${this._renderCheckbox('basic-show-light-summary', localize('editor.show_light_summary'),
+          this._config.show_light_summary !== false,
+          (checked) => this._toggleChanged('show_light_summary', checked, true))}
+        ${this._renderCheckbox('basic-show-covers-summary', localize('editor.show_covers_summary'),
+          this._config.show_covers_summary !== false,
+          (checked) => this._toggleChanged('show_covers_summary', checked, true))}
+        ${this._renderCheckbox('basic-show-security-summary', localize('editor.show_security_summary'),
+          this._config.show_security_summary !== false,
+          (checked) => this._toggleChanged('show_security_summary', checked, true))}
+        ${this._renderCheckbox('basic-show-climate-summary', localize('editor.show_climate_summary'),
+          this._config.show_climate_summary === true,
+          (checked) => this._toggleChanged('show_climate_summary', checked, false))}
+        ${this._renderCheckbox('basic-show-battery-summary', localize('editor.show_battery_summary'),
+          this._config.show_battery_summary !== false,
+          (checked) => this._toggleChanged('show_battery_summary', checked, true))}
+      </div>
+    `;
+  }
+
+  private _renderBasicAreasSection(): TemplateResult {
+    const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
+    const hiddenAreas = this._config.areas_display?.hidden || [];
+    const areaOrder = this._config.areas_display?.order || [];
+    const navItems = this._config.areas_display?.nav_items || [];
+
+    return html`
+      <div class="section">
+        <div class="section-title">${localize('editor.section_area_views')}</div>
+        <div class="description" style="margin-left: 0;">${localize('editor.area_view_override_intro')}</div>
+        <div class="area-list">
+          ${this._renderAreaItems(allAreas, hiddenAreas, areaOrder, navItems, true)}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderOverviewSection(): TemplateResult {
     const showClockCard = this._config.show_clock_card !== false;
     const showSearchCard = this._config.show_search_card === true;
@@ -3494,7 +3610,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     allAreas: AreaRegistryEntry[],
     hiddenAreas: string[],
     areaOrder: string[],
-    navItems: string[]
+    navItems: string[],
+    basic = false
   ): TemplateResult | TemplateResult[] {
     if (allAreas.length === 0) {
       return html`<div class="empty-state">${localize('editor.no_areas')}</div>`;
@@ -3550,7 +3667,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${isExpanded
             ? html`
               <div class="area-content" data-area-id=${area.area_id}>
-                ${cachedData
+                ${basic
+                  ? this._renderAreaViewOverride(area.area_id)
+                  : cachedData
                   ? this._renderAreaEntities(area.area_id, cachedData)
                   : html`<div class="loading-placeholder">${localize('editor.loading_entities')}</div>`}
               </div>
@@ -3559,6 +3678,65 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
       `;
     });
+  }
+
+  private _renderAreaViewOverride(areaId: string): TemplateResult {
+    const override = this._config.areas_options?.[areaId]?.view_override;
+    const validation = override?._yaml_error
+      ? html`<span style="color: var(--error-color);">&#x274C; ${override._yaml_error}</span>`
+      : override?.parsed_config
+        ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+        : nothing;
+
+    return html`
+      <div class="custom-item" style="margin-bottom: 0;">
+        <div class="custom-item-header">
+          <strong>${localize('editor.area_view_override_title')}</strong>
+          ${override?.yaml ? html`
+            <button class="btn-remove" title=${localize('editor.area_view_override_remove')}
+              @click=${() => this._updateAreaViewOverride(areaId, '')}>&#x2715;</button>
+          ` : nothing}
+        </div>
+        <div class="description" style="margin: 0 0 10px 0;">
+          ${localize('editor.area_view_override_help')}
+        </div>
+        <textarea rows="12"
+          placeholder="type: sections&#10;sections:&#10;  - type: grid&#10;    cards: []"
+          .value=${override?.yaml || ''}
+          style="width: 100%;"
+          @change=${(e: Event) => this._updateAreaViewOverride(areaId, (e.target as HTMLTextAreaElement).value)}>
+        </textarea>
+        <div class="custom-item-validation">${validation}</div>
+      </div>
+    `;
+  }
+
+  private _updateAreaViewOverride(areaId: string, yamlString: string): void {
+    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
+    const newAreaOptions = { ...currentAreaOptions };
+
+    if (!yamlString.trim()) {
+      delete newAreaOptions.view_override;
+    } else {
+      const parsed = parseEditorYamlConfig(yamlString, localize('editor.area_view_override_object_error'));
+      const parsedConfig = parsed.parsed_config;
+      const isObject = parsedConfig && !Array.isArray(parsedConfig);
+      newAreaOptions.view_override = {
+        yaml: yamlString,
+        parsed_config: isObject ? parsedConfig as Record<string, any> : undefined,
+        _yaml_error: isObject ? parsed._yaml_error : (parsed._yaml_error || localize('editor.area_view_override_object_error')),
+      };
+    }
+
+    const newAreasOptions = { ...this._config.areas_options };
+    if (Object.keys(newAreaOptions).length === 0) delete newAreasOptions[areaId];
+    else newAreasOptions[areaId] = newAreaOptions;
+
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (Object.keys(newAreasOptions).length === 0) delete newConfig.areas_options;
+    else newConfig.areas_options = newAreasOptions;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
   }
 
   private _renderAreaEntities(
@@ -5269,12 +5447,22 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 }),
               }
               : {}),
+            ...(areaOptions.view_override
+              ? {
+                view_override: (() => {
+                  const clean = { ...areaOptions.view_override };
+                  delete clean._yaml_error;
+                  return clean;
+                })(),
+              }
+              : {}),
           },
         ])
       );
     }
 
-    this._config = cleanConfig;
+    // Keep editor-only validation errors locally while emitting only persistent fields.
+    this._config = config;
 
     const event = new CustomEvent('config-changed', {
       detail: { config: cleanConfig },

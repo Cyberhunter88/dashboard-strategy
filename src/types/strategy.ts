@@ -267,6 +267,16 @@ export interface AreaOptions {
   custom_cards?: AreaCustomCard[];
   webrtc_cameras?: AreaWebrtcCameraConfig[];
   stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
+  view_override?: AreaViewOverride;
+}
+
+export interface AreaViewOverride {
+  /** Raw full Lovelace view YAML entered in the editor */
+  yaml?: string;
+  /** Parsed Lovelace view config used by the strategy at runtime */
+  parsed_config?: Record<string, any> | null;
+  /** Editor-only YAML parse error */
+  _yaml_error?: string;
 }
 
 export interface GroupOptions {

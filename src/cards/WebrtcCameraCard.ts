@@ -139,24 +139,25 @@ class DashboardStrategyWebrtcCameraCard extends HTMLElement {
       shell.appendChild(placeholder);
     }
 
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.style.cssText =
-      'position:absolute;top:8px;right:8px;z-index:2;width:40px;height:40px;border:0;border-radius:50%;' +
-      'display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;' +
-      'background:rgba(0,0,0,.55);backdrop-filter:blur(4px);';
-    const buttonIcon = document.createElement('ha-icon');
-    buttonIcon.setAttribute('icon', this._active ? 'mdi:stop' : 'mdi:play');
-    button.appendChild(buttonIcon);
-    button.title = localize(this._active ? 'room.stop_camera_stream' : 'room.start_camera_stream');
-    button.setAttribute('aria-label', button.title);
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (this._active) this._stop();
-      else this._start();
-    });
-    shell.appendChild(button);
+    if (!this._active) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.style.cssText =
+        'position:absolute;top:8px;right:8px;z-index:2;width:40px;height:40px;border:0;border-radius:50%;' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;' +
+        'background:rgba(0,0,0,.55);backdrop-filter:blur(4px);';
+      const buttonIcon = document.createElement('ha-icon');
+      buttonIcon.setAttribute('icon', 'mdi:play');
+      button.appendChild(buttonIcon);
+      button.title = localize('room.start_camera_stream');
+      button.setAttribute('aria-label', button.title);
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this._start();
+      });
+      shell.appendChild(button);
+    }
     this.replaceChildren(shell);
   }
 }
@@ -167,5 +168,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'dashboard-strategy-webrtc-camera-card',
   name: 'Dashboard Strategy WebRTC Camera Card',
-  description: 'go2rtc WebRTC camera card with configurable Play/Stop lifecycle',
+  description: 'go2rtc WebRTC camera card with configurable manual or automatic start',
 });

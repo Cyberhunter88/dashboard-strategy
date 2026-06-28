@@ -269,6 +269,27 @@ sections:
         content: "Meine eigene View"
 ```
 
+#### Automatische Bereichs-View durch YAML ersetzen
+
+Im einfachen Editor einen Bereich wie **Garten** aufklappen und unter **Eigene Bereichsansicht** die vollständige View aus einem anderen Dashboard einfügen. Die Strategy übernimmt weiterhin Name, Pfad und Icon des HA-Bereichs; `title`, `path` und `icon` aus dem kopierten YAML werden ignoriert.
+
+```yaml
+type: sections
+max_columns: 3
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Garten
+        icon: mdi:flower
+      - type: tile
+        entity: light.garten
+      - type: tile
+        entity: switch.garten_bewaesserung
+```
+
+Leeres oder ungültiges YAML verwendet weiterhin die automatisch erzeugte Bereichsansicht.
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-View-hinzufugen.gif" alt="Custom View hinzufügen" width="800" />
 </p>
@@ -339,6 +360,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `areas_options.*.webrtc_cameras[].name` | string | - | Optionaler Kameraname |
 | `areas_options.*.webrtc_cameras[].url` | string | - | go2rtc-Streamname oder vollständige Stream-URL |
 | `areas_options.*.webrtc_cameras[].start_mode` | `manual` / `auto` | `manual` | Stream erst per Play oder automatisch starten |
+| `areas_options.*.view_override` | object | - | Vollständige YAML-View, die die automatisch erzeugte Bereichsansicht ersetzt |
 | `room_pin_entities` | string[] | `[]` | Raum-Pin Entitäten |
 | `room_pins_show_state` | boolean | `false` | Status auf Raum-Pin-Kacheln anzeigen |
 | `room_pins_hide_last_changed` | boolean | `false` | `last_changed` auf Raum-Pin-Kacheln ausblenden |
