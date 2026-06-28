@@ -15,6 +15,7 @@ Do not regress these public identifiers:
   - `dashboard-strategy-summary-card`
   - `dashboard-strategy-lights-group-card`
   - `dashboard-strategy-covers-group-card`
+  - `dashboard-strategy-batteries-card`
   - `dashboard-strategy-area-card`
   - `dashboard-strategy-camera-card`
   - `dashboard-strategy-editable-card`
