@@ -233,7 +233,6 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       // Sensors for badges
       if (domain === 'sensor') {
         if (deviceClass && ROOM_ENERGY_SENSOR_CLASS_SET.has(deviceClass)) {
-          roomEntities.energy.push(entityId);
           continue;
         }
         if (entityId.includes('battery') || deviceClass === 'battery') {
