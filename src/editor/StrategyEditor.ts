@@ -2833,54 +2833,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
-    const weatherEntitySelected = this._config.weather_entity || '';
-    const weatherEntities = this._getWeatherEntities();
-    const selectedTheme = this._config.theme || '';
-    const themeNames = this._getThemeNames();
     const overviewLayout = this._config.overview_layout || 'default';
 
     return html`
       <div class="section">
-        <div class="section-title">${localize('editor.section_overview')}</div>
-
-        <div class="form-row">
-          <label for="dashboard-theme" style="margin-right: 8px; min-width: 120px;">${localize('editor.theme')}</label>
-          <select id="dashboard-theme"
-            style="flex: 1;"
-            @change=${this._themeChanged}>
-            <option value="" ?selected=${!selectedTheme}>${localize('editor.theme_default')}</option>
-            ${themeNames.map((theme) => html`
-              <option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option>
-            `)}
-          </select>
-        </div>
-        <div class="description">${localize('editor.theme_desc')}</div>
-
-        <div class="form-row">
-          <label for="overview-layout" style="margin-right: 8px; min-width: 120px;">${localize('editor.overview_layout')}</label>
-          <select id="overview-layout"
-            style="flex: 1;"
-            @change=${this._overviewLayoutChanged}>
-            <option value="default" ?selected=${overviewLayout === 'default'}>${localize('editor.overview_layout_default')}</option>
-            <option value="weather_start" ?selected=${overviewLayout === 'weather_start'}>${localize('editor.overview_layout_weather_start')}</option>
-          </select>
-        </div>
-        <div class="description">${localize('editor.overview_layout_desc')}</div>
-
-        <div class="form-row">
-          <label for="weather-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_entity')}</label>
-          <select id="weather-entity"
-            style="flex: 1;"
-            @change=${this._weatherEntityChanged}>
-            <option value="" ?selected=${!weatherEntitySelected}>${localize('editor.weather_entity_auto')}</option>
-            ${weatherEntities.map((entity) => html`
-              <option value=${entity.entity_id} ?selected=${entity.entity_id === weatherEntitySelected}>
-                ${entity.name}
-              </option>
-            `)}
-          </select>
-        </div>
-        <div class="description">${localize('editor.weather_entity_desc')}</div>
+        <div class="section-title">${localize('editor.section_overview_details')}</div>
 
         ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
 
@@ -2919,21 +2876,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _renderSummariesSection(): TemplateResult {
     const summariesColumns = this._config.summaries_columns || 2;
-    const showLightSummary = this._config.show_light_summary !== false;
     const groupLightsByFloors = this._config.group_lights_by_floors === true;
     const nestedLightGroups = this._config.nested_light_groups === true;
-    const showCoversSummary = this._config.show_covers_summary !== false;
     const showPartiallyOpenCovers = this._config.show_partially_open_covers === true;
-    const showSecuritySummary = this._config.show_security_summary !== false;
-    const showClimateSummary = this._config.show_climate_summary === true;
-    const showBatterySummary = this._config.show_battery_summary !== false;
     const hideMobileAppBatteries = this._config.hide_mobile_app_batteries === true;
     const batteryCriticalThreshold = this._config.battery_critical_threshold ?? 20;
     const batteryLowThreshold = this._config.battery_low_threshold ?? 50;
 
     return html`
       <div class="section">
-        <div class="section-title">${localize('editor.section_summaries')}</div>
+        <div class="section-title">${localize('editor.section_summary_details')}</div>
 
         <div class="form-row">
           <input type="radio" id="summaries-2-columns" name="summaries-columns" value="2"
@@ -2949,9 +2901,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
         <div class="description">${localize('editor.columns_desc')}</div>
 
-        ${this._renderCheckbox('show-light-summary', localize('editor.show_light_summary'), showLightSummary,
-          (checked) => this._toggleChanged('show_light_summary', checked, true))}
-
         ${this._renderCheckbox('group-lights-by-floors', localize('editor.group_lights_by_floors'), groupLightsByFloors,
           (checked) => this._toggleChanged('group_lights_by_floors', checked, false))}
         <div class="description">${localize('editor.group_lights_by_floors_desc')}</div>
@@ -2960,24 +2909,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
           (checked) => this._toggleChanged('nested_light_groups', checked, false))}
         <div class="description">${localize('editor.nested_light_groups_desc')}</div>
 
-        ${this._renderCheckbox('show-covers-summary', localize('editor.show_covers_summary'), showCoversSummary,
-          (checked) => this._toggleChanged('show_covers_summary', checked, true))}
-
         <div style="margin-left: 26px; margin-bottom: 8px;">
           ${this._renderCheckbox('show-partially-open-covers', localize('editor.show_partially_open_covers'), showPartiallyOpenCovers,
             (checked) => this._toggleChanged('show_partially_open_covers', checked, false))}
           <div class="description">${localize('editor.show_partially_open_covers_desc')}</div>
         </div>
-
-        ${this._renderCheckbox('show-security-summary', localize('editor.show_security_summary'), showSecuritySummary,
-          (checked) => this._toggleChanged('show_security_summary', checked, true))}
-
-        ${this._renderCheckbox('show-climate-summary', localize('editor.show_climate_summary'), showClimateSummary,
-          (checked) => this._toggleChanged('show_climate_summary', checked, false))}
-        <div class="description">${localize('editor.show_climate_summary_desc')}</div>
-
-        ${this._renderCheckbox('show-battery-summary', localize('editor.show_battery_summary'), showBatterySummary,
-          (checked) => this._toggleChanged('show_battery_summary', checked, true))}
 
         <div style="margin-left: 26px; margin-bottom: 8px;">
           ${this._renderCheckbox('hide-mobile-app-batteries', localize('editor.hide_mobile_app_batteries'), hideMobileAppBatteries,
@@ -3093,9 +3029,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
     const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
-    const hiddenAreas = this._config.areas_display?.hidden || [];
-    const areaOrder = this._config.areas_display?.order || [];
-    const navItems = this._config.areas_display?.nav_items || [];
 
     return html`
       <div class="section">
@@ -3162,11 +3095,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
 
         <div class="description" style="margin-left: 0; margin-top: 16px; margin-bottom: 12px;">
-          ${localize('editor.areas_manage_desc')}
+          ${localize('editor.area_entity_settings_desc')}
         </div>
 
         <div class="area-list" id="area-list">
-          ${this._renderAreaItems(allAreas, hiddenAreas, areaOrder, navItems)}
+          ${this._renderAreaItems(
+            allAreas,
+            this._config.areas_display?.hidden || [],
+            this._config.areas_display?.order || [],
+            this._config.areas_display?.nav_items || [],
+            false,
+            true
+          )}
         </div>
       </div>
     `;
@@ -3611,7 +3551,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     hiddenAreas: string[],
     areaOrder: string[],
     navItems: string[],
-    basic = false
+    basic = false,
+    advancedOnly = false
   ): TemplateResult | TemplateResult[] {
     if (allAreas.length === 0) {
       return html`<div class="empty-state">${localize('editor.no_areas')}</div>`;
@@ -3637,29 +3578,33 @@ class Simon42DashboardStrategyEditor extends LitElement {
       return html`
         <div class="area-item"
           data-area-id=${area.area_id}
-          draggable="true"
+          draggable=${String(!advancedOnly)}
           @dragstart=${this._handleDragStart}
           @dragend=${this._handleDragEnd}
           @dragover=${this._handleDragOver}
           @dragleave=${this._handleDragLeave}
           @drop=${this._handleDrop}>
           <div class="area-header">
-            <span class="drag-handle" draggable="true">&#x2630;</span>
-            <input type="checkbox" class="area-checkbox"
-              data-area-id=${area.area_id}
-              ?checked=${!isHidden}
-              @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)} />
+            ${advancedOnly ? nothing : html`
+              <span class="drag-handle" draggable="true">&#x2630;</span>
+              <input type="checkbox" class="area-checkbox"
+                data-area-id=${area.area_id}
+                ?checked=${!isHidden}
+                @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)} />
+            `}
             <span class="area-name">${area.name}</span>
             ${area.icon ? html`<ha-icon class="area-icon" icon=${area.icon}></ha-icon>` : nothing}
-            <button class="nav-pin-button ${isPinned ? 'pinned' : ''}"
-              title="${localize('editor.area_pin_nav')}"
-              ?disabled=${isHidden}
-              @click=${(e: Event) => { e.stopPropagation(); this._areaNavPinChanged(area.area_id, !isPinned); }}>
-              <ha-icon icon="${isPinned ? 'mdi:pin' : 'mdi:pin-outline'}"></ha-icon>
-            </button>
+            ${advancedOnly ? nothing : html`
+              <button class="nav-pin-button ${isPinned ? 'pinned' : ''}"
+                title="${localize('editor.area_pin_nav')}"
+                ?disabled=${isHidden}
+                @click=${(e: Event) => { e.stopPropagation(); this._areaNavPinChanged(area.area_id, !isPinned); }}>
+                <ha-icon icon="${isPinned ? 'mdi:pin' : 'mdi:pin-outline'}"></ha-icon>
+              </button>
+            `}
             <button class="expand-button ${isExpanded ? 'expanded' : ''}"
               data-area-id=${area.area_id}
-              ?disabled=${isHidden}
+              ?disabled=${isHidden && !advancedOnly}
               @click=${(e: Event) => this._toggleAreaExpand(e, area.area_id)}>
               <span class="expand-icon">&#x25B6;</span>
             </button>
