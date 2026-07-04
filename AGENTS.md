@@ -101,7 +101,6 @@ It builds:
 | `_entitiesByArea` | `area_id` | entity registry entries | raw |
 | `_visibleEntitiesByArea` | `area_id` | entity registry entries | pre-filtered |
 | `_visibleEntitiesByDomain` | domain | `entity_id[]` | pre-filtered |
-| `_configDiagEntitiesByArea` | `area_id` | config/diagnostic entries | config/diagnostic only |
 
 Visibility filtering happens once in `Registry._isEntityVisible()`:
 

@@ -137,6 +137,15 @@ class Simon42SummaryCard extends LitElement {
     this.requestUpdate();
   }
 
+  protected shouldUpdate(changedProps: PropertyValues): boolean {
+    if (!changedProps.has('hass') || !this.hass) return true;
+
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (!oldHass || oldHass.entities !== this.hass.entities) return true;
+    if (!this._relevantEntityIds) return true;
+    return haveEntityStatesChanged(oldHass, this.hass, this._relevantEntityIds);
+  }
+
   protected willUpdate(changedProps: PropertyValues): void {
     if (!changedProps.has('hass') || !this.hass) return;
 

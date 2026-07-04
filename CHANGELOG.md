@@ -4,6 +4,21 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.13.3...HEAD).
 
+<a name="1.19.5"></a>
+## [1.19.5] - 2026-07-04
+### Performance
+- reduce runtime JavaScript chunks and avoid unnecessary summary-card renders
+- keep registry state, floor, and language data current without rebuilding lookup maps
+- cache sorted area options in the strategy editor
+
+### Stability
+- report runtime chunk and strategy registration failures clearly
+- invalidate pending native camera-card creation after disconnect
+- add focused regression tests for registry visibility, ordering, and availability behavior
+
+### Chores
+- remove unused registry data and unreferenced image assets
+
 <a name="1.18.2"></a>
 ## [1.18.2] - 2026-06-17
 ### Chores

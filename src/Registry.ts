@@ -75,9 +75,6 @@ class Registry {
   /** Visible entity IDs grouped by domain (pre-filtered during init) */
   private static _visibleEntitiesByDomain: Map<string, string[]> = new Map();
 
-  /** Config/diagnostic entities grouped by area (for potential future use) */
-  private static _configDiagEntitiesByArea: Map<string, EntityRegistryEntry[]>;
-
   // === Pre-computed exclusion Sets ===
 
   /** Entities with the "no_dboard" label — excluded from all dashboard views */
@@ -107,7 +104,15 @@ class Registry {
       hass.areas === Registry._hass?.areas &&
       hass.devices === Registry._hass?.devices &&
       config === Registry._config
-    ) return;
+    ) {
+      const languageChanged =
+        hass.locale?.language !== Registry._hass.locale?.language ||
+        hass.language !== Registry._hass.language;
+      // Keep live state, floor and locale data current without rebuilding maps.
+      Registry._hass = hass;
+      if (languageChanged) setupLocalize(hass);
+      return;
+    }
     Registry._initialized = false;
 
     timeStart('registry-init');
@@ -169,13 +174,6 @@ class Registry {
     return true;
   }
 
-  /**
-   * Check if an entity is config or diagnostic category.
-   */
-  private static _isConfigOrDiagnostic(entity: EntityRegistryEntry): boolean {
-    return entity.entity_category === 'config' || entity.entity_category === 'diagnostic';
-  }
-
   // =====================================================================
   // Map building (private)
   // =====================================================================
@@ -191,7 +189,7 @@ class Registry {
    * - _entityById, _entitiesByDomain, _entitiesByDevice, _entitiesByArea
    *
    * Pre-filtered maps:
-   * - _visibleEntitiesByArea, _visibleEntitiesByDomain, _configDiagEntitiesByArea
+   * - _visibleEntitiesByArea, _visibleEntitiesByDomain
    */
   private static _buildEntityMaps(): void {
     const entities = Registry._fetchedEntities;
@@ -238,10 +236,9 @@ class Registry {
       }
     }
 
-    // Entities by area — raw + visible + config/diagnostic
+    // Entities by area — raw + visible
     Registry._entitiesByArea = new Map();
     Registry._visibleEntitiesByArea = new Map();
-    Registry._configDiagEntitiesByArea = new Map();
 
     for (const e of entities) {
       const areaId = e.area_id || (e.device_id ? Registry._deviceById.get(e.device_id)?.area_id : undefined);
@@ -252,14 +249,6 @@ class Registry {
         Registry._entitiesByArea.set(areaId, []);
       }
       Registry._entitiesByArea.get(areaId)?.push(e);
-
-      // Config/diagnostic map (separate bucket)
-      if (Registry._isConfigOrDiagnostic(e)) {
-        if (!Registry._configDiagEntitiesByArea.has(areaId)) {
-          Registry._configDiagEntitiesByArea.set(areaId, []);
-        }
-        Registry._configDiagEntitiesByArea.get(areaId)?.push(e);
-      }
 
       // Visible map (pre-filtered — excludes hidden/disabled/labeled/category)
       if (Registry._isEntityVisible(e)) {
@@ -393,14 +382,6 @@ class Registry {
    */
   static getVisibleEntitiesForArea(areaId: string): EntityRegistryEntry[] {
     return Registry._visibleEntitiesByArea.get(areaId) || [];
-  }
-
-  /**
-   * Get config/diagnostic entities for an area. O(1).
-   * Only entities with entity_category = 'config' or 'diagnostic'.
-   */
-  static getConfigDiagEntitiesForArea(areaId: string): EntityRegistryEntry[] {
-    return Registry._configDiagEntitiesByArea.get(areaId) || [];
   }
 
   // =====================================================================

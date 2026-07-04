@@ -56,6 +56,13 @@ class DashboardStrategyCameraCard extends HTMLElement {
     this._ensureCard();
   }
 
+  disconnectedCallback(): void {
+    // Invalidate card-helper work that may still be awaiting custom elements.
+    this._renderToken++;
+    this._card = undefined;
+    this._streamButton = undefined;
+  }
+
   getCardSize(): number {
     return this._card?.getCardSize?.() ?? 3;
   }

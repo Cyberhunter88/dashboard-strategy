@@ -182,6 +182,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     areas: AreaRegistryEntry[];
     options: WeatherStartFloorOption[];
   } | null = null;
+  private _sortedAreasCache: {
+    areas: HomeAssistant['areas'];
+    options: AreaRegistryEntry[];
+  } | null = null;
 
   // Drag state (not reactive — no render needed)
   private _draggedElement: HTMLElement | null = null;
@@ -213,6 +217,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (oldHass && (oldHass.areas !== hass.areas || oldHass.floors !== hass.floors)) {
       this._weatherStartAreaOptionsCache = null;
       this._weatherStartFloorOptionsCache = null;
+      this._sortedAreasCache = null;
     }
     if (!oldHass) this.requestUpdate();
   }
@@ -325,6 +330,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _getThemeNames(): string[] {
     if (!this._hass?.themes?.themes) return [];
     return Object.keys(this._hass.themes.themes).sort((a, b) => a.localeCompare(b));
+  }
+
+  private _getSortedAreas(): AreaRegistryEntry[] {
+    if (!this._hass) return [];
+    if (this._sortedAreasCache?.areas === this._hass.areas) {
+      return this._sortedAreasCache.options;
+    }
+
+    const options = Object.values(this._hass.areas).sort((a, b) => a.name.localeCompare(b.name));
+    this._sortedAreasCache = { areas: this._hass.areas, options };
+    return options;
   }
 
   private _getFilteredEntities(query: string, filterWithArea = false): EntitySelectOption[] {
@@ -2811,7 +2827,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderBasicAreasSection(): TemplateResult {
-    const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
+    const allAreas = this._getSortedAreas();
     const hiddenAreas = this._config.areas_display?.hidden || [];
     const areaOrder = this._config.areas_display?.order || [];
     const navItems = this._config.areas_display?.nav_items || [];
@@ -3028,7 +3044,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
-    const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
+    const allAreas = this._getSortedAreas();
 
     return html`
       <div class="section">
@@ -3115,7 +3131,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _renderRoomPinsSection(): TemplateResult {
     const roomPinEntities = this._config.room_pin_entities || [];
     const allEntities = this._getAllEntitiesForSelect();
-    const allAreas = Object.values(this._hass!.areas).sort((a, b) => a.name.localeCompare(b.name));
+    const allAreas = this._getSortedAreas();
     const roomPinsShowState = this._config.room_pins_show_state === true;
     const roomPinsHideLastChanged = this._config.room_pins_hide_last_changed === true;
 

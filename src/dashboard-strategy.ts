@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.19.4';
+const STRATEGY_VERSION = '1.19.5';
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -19,41 +19,42 @@ const t = (label: string) => {
 };
 let generateCallCount = 0;
 
-// Start loading all chunks IMMEDIATELY
-const modulesPromise = Promise.all([
-  import('./cards/SummaryCard'),
-  import('./cards/LightsGroupCard'),
-  import('./cards/CoversGroupCard'),
-  import('./cards/BatteriesCard'),
-  import('./cards/AreaNavigationCard'),
-  import('./cards/CameraCard'),
-  import('./cards/WebrtcCameraCard'),
-  import('./views/OverviewViewStrategy'),
-  import('./views/LightsViewStrategy'),
-  import('./views/CoversViewStrategy'),
-  import('./views/SecurityViewStrategy'),
-  import('./views/BatteriesViewStrategy'),
-  import('./views/ClimateViewStrategy'),
-  import('./views/RoomViewStrategy'),
-]);
+type StrategyGenerator = {
+  generate(config: Record<string, unknown>, hass: HomeAssistant): Promise<LovelaceViewConfig>;
+};
 
-void modulesPromise.then(() => { t('all chunks loaded'); });
+// Start loading all runtime chunks IMMEDIATELY. The two loader modules avoid
+// creating one mostly-empty async chunk for every card and view module.
+const modulesPromise = Promise.all([
+  import('./loaders/core-modules'),
+  import('./loaders/view-modules'),
+]).catch((error: unknown) => {
+  const detail = error instanceof Error ? `: ${error.message}` : '';
+  throw new Error(`Dashboard Strategy runtime modules could not be loaded${detail}`);
+});
+
+// Attach a rejection handler immediately so an early network failure does not
+// surface as an unhandled promise rejection before Home Assistant calls generate().
+void modulesPromise.then(() => { t('all chunks loaded'); }).catch(() => undefined);
 
 class Simon42DashboardStrategy extends HTMLElement {
   static async generate(config: Simon42StrategyConfig, hass: HomeAssistant): Promise<LovelaceConfig> {
     generateCallCount++;
     t(`generate() called (#${generateCallCount})`);
 
-    await modulesPromise;
+    const [runtime] = await modulesPromise;
     t('modules ready');
 
-    const { Registry } = await import('./Registry');
-    const { getVisibleAreasFromHass } = await import('./utils/name-utils');
-    const { localize } = await import('./utils/localize');
-    const { withUnavailableEntitiesHidden } = await import('./utils/availability-utils');
+    const { Registry, getVisibleAreasFromHass, localize, withUnavailableEntitiesHidden } = runtime;
     t('imports done');
 
-    const getStrategy = (tag: string): any => customElements.get(tag);
+    const getStrategy = (tag: string): StrategyGenerator => {
+      const strategy = customElements.get(tag) as (CustomElementConstructor & Partial<StrategyGenerator>) | undefined;
+      if (!strategy || typeof strategy.generate !== 'function') {
+        throw new Error(`Dashboard Strategy module registration missing: ${tag}`);
+      }
+      return strategy as CustomElementConstructor & StrategyGenerator;
+    };
 
     Registry.initialize(hass, config);
     t('registry initialized');
