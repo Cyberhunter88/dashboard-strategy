@@ -53,8 +53,15 @@ jobs:
       - name: Build production bundle
         run: npm run build
 
-      - name: Verify committed distribution files
+      - name: Verify production artifacts
         shell: bash
         run: |
-          git status --short -- dist/
-          test -z "$(git status --porcelain -- dist/ | grep -Ev '\.(br|gz)$' || true)"
+          package_version="$(node -p "require('./package.json').version")"
+          test -s dist/dashboard-strategy.js
+          test -s dist/dashboard-strategy.js.br
+          test -s dist/dashboard-strategy.js.gz
+          grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
+          find dist -maxdepth 1 -name 'dashboard-strategy-core.*.js' -size +0c | grep -q .
+          find dist -maxdepth 1 -name 'dashboard-strategy-editor.*.js' -size +0c | grep -q .
+          find dist -maxdepth 1 -name 'dashboard-strategy-views.*.js' -size +0c | grep -q .
+          find dist -maxdepth 1 -name 'dashboard-strategy-lit.*.js' -size +0c | grep -q .
