@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, lint, test, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify synchronized version files
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          lock_version="$(node -p "require('./package-lock.json').version")"
+          strategy_version="$(sed -n "s/^const STRATEGY_VERSION = '\([^']*\)';$/\1/p" src/dashboard-strategy.ts)"
+          test "$lock_version" = "$package_version"
+          test "$strategy_version" = "$package_version"
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Verify production artifacts
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          test -s dist/dashboard-strategy.js
+          test -s dist/dashboard-strategy.js.br
+          test -s dist/dashboard-strategy.js.gz
+          grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
+          find dist -maxdepth 1 -name 'dashboard-strategy-core.*.js' -size +0c | grep -q .
+          find dist -maxdepth 1 -name 'dashboard-strategy-editor.*.js' -size +0c | grep -q .
+          find dist -maxdepth 1 -name 'dashboard-strategy-views.*.js' -size +0c | grep -q .
+          find dist -maxdepth 1 -name 'dashboard-strategy-lit.*.js' -size +0c | grep -q .
