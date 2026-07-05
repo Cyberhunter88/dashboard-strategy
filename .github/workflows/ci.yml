@@ -35,11 +35,22 @@ jobs:
       - name: Verify synchronized version files
         shell: bash
         run: |
-          package_version="$(node -p "require('./package.json').version")"
-          lock_version="$(node -p "require('./package-lock.json').version")"
-          strategy_version="$(sed -n "s/^const STRATEGY_VERSION = '\([^']*\)';$/\1/p" src/dashboard-strategy.ts)"
-          test "$lock_version" = "$package_version"
-          test "$strategy_version" = "$package_version"
+          node <<'NODE'
+          const fs = require('fs');
+          const packageVersion = require('./package.json').version;
+          const lock = require('./package-lock.json');
+          const lockVersion = lock.packages?.['']?.version ?? lock.version;
+          const strategySource = fs.readFileSync('src/dashboard-strategy.ts', 'utf8');
+          const strategyVersion = strategySource.match(/const STRATEGY_VERSION = '([^']+)';/)?.[1];
+
+          if (lockVersion !== packageVersion) {
+            throw new Error(`package-lock.json version ${lockVersion ?? '<missing>'} does not match package.json version ${packageVersion}`);
+          }
+
+          if (strategyVersion !== packageVersion) {
+            throw new Error(`src/dashboard-strategy.ts version ${strategyVersion ?? '<missing>'} does not match package.json version ${packageVersion}`);
+          }
+          NODE
 
       - name: Typecheck
         run: npm run typecheck
