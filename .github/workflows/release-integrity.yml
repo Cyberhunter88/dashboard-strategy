@@ -26,30 +26,7 @@ jobs:
 
       - name: Verify tag and version files
         if: github.ref_type == 'tag'
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const packageVersion = require('./package.json').version;
-          const lock = require('./package-lock.json');
-          const lockVersion = lock.packages?.['']?.version ?? lock.version;
-          const strategySource = fs.readFileSync('src/dashboard-strategy.ts', 'utf8');
-          const strategyVersion = strategySource.match(/const STRATEGY_VERSION = '([^']+)';/)?.[1];
-          const expectedTag = `v${packageVersion}`;
-          const actualTag = process.env.GITHUB_REF_NAME;
-
-          if (actualTag !== expectedTag) {
-            throw new Error(`Git tag ${actualTag ?? '<missing>'} does not match expected ${expectedTag}`);
-          }
-
-          if (lockVersion !== packageVersion) {
-            throw new Error(`package-lock.json version ${lockVersion ?? '<missing>'} does not match package.json version ${packageVersion}`);
-          }
-
-          if (strategyVersion !== packageVersion) {
-            throw new Error(`src/dashboard-strategy.ts version ${strategyVersion ?? '<missing>'} does not match package.json version ${packageVersion}`);
-          }
-          NODE
+        run: node scripts/verify-version-sync.mjs --require-tag
 
       - name: Install dependencies
         run: npm ci

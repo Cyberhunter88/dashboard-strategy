@@ -33,24 +33,7 @@ jobs:
         run: npm ci
 
       - name: Verify synchronized version files
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const packageVersion = require('./package.json').version;
-          const lock = require('./package-lock.json');
-          const lockVersion = lock.packages?.['']?.version ?? lock.version;
-          const strategySource = fs.readFileSync('src/dashboard-strategy.ts', 'utf8');
-          const strategyVersion = strategySource.match(/const STRATEGY_VERSION = '([^']+)';/)?.[1];
-
-          if (lockVersion !== packageVersion) {
-            throw new Error(`package-lock.json version ${lockVersion ?? '<missing>'} does not match package.json version ${packageVersion}`);
-          }
-
-          if (strategyVersion !== packageVersion) {
-            throw new Error(`src/dashboard-strategy.ts version ${strategyVersion ?? '<missing>'} does not match package.json version ${packageVersion}`);
-          }
-          NODE
+        run: node scripts/verify-version-sync.mjs
 
       - name: Typecheck
         run: npm run typecheck
