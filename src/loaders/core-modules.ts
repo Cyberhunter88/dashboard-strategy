@@ -4,7 +4,6 @@ import '../cards/CoversGroupCard';
 import '../cards/BatteriesCard';
 import '../cards/AreaNavigationCard';
 import '../cards/CameraCard';
-import '../cards/WebrtcCameraCard';
 import '../views/OverviewViewStrategy';
 
 export { Registry } from '../Registry';

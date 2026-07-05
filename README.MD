@@ -356,10 +356,6 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `areas_options` | object | `{}` | Entity-Filterung pro Bereich |
 | `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View |
 | `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln oder Sections pro Raum |
-| `areas_options.*.webrtc_cameras` | object[] | `[]` | go2rtc-WebRTC-Kameras für die jeweilige Raum-View |
-| `areas_options.*.webrtc_cameras[].name` | string | - | Optionaler Kameraname |
-| `areas_options.*.webrtc_cameras[].url` | string | - | go2rtc-Streamname oder vollständige Stream-URL |
-| `areas_options.*.webrtc_cameras[].start_mode` | `manual` / `auto` | `manual` | Stream erst per Play oder automatisch starten |
 | `areas_options.*.view_override` | object | - | Vollständige YAML-View, die die automatisch erzeugte Bereichsansicht ersetzt |
 | `room_pin_entities` | string[] | `[]` | Raum-Pin Entitäten |
 | `room_pins_show_state` | boolean | `false` | Status auf Raum-Pin-Kacheln anzeigen |
