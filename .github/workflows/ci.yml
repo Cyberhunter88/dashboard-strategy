@@ -33,13 +33,7 @@ jobs:
         run: npm ci
 
       - name: Verify synchronized version files
-        shell: bash
-        run: |
-          package_version="$(node -p "require('./package.json').version")"
-          lock_version="$(node -p "require('./package-lock.json').version")"
-          strategy_version="$(sed -n "s/^const STRATEGY_VERSION = '\([^']*\)';$/\1/p" src/dashboard-strategy.ts)"
-          test "$lock_version" = "$package_version"
-          test "$strategy_version" = "$package_version"
+        run: node scripts/verify-version-sync.mjs
 
       - name: Typecheck
         run: npm run typecheck
