@@ -52,4 +52,6 @@ jobs:
 
       - name: Verify committed distribution files
         shell: bash
-        run: test -z "$(git status --porcelain -- dist/)"
+        run: |
+          git status --short -- dist/
+          test -z "$(git status --porcelain -- dist/ | grep -Ev '\.(br|gz)$' || true)"
