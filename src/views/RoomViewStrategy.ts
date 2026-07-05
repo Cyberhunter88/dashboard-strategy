@@ -17,7 +17,6 @@ import type {
   StackKey,
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
-  AreaWebrtcCameraConfig,
 } from '../types/strategy';
 import { stripAreaName, sortByLastChanged, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
@@ -92,15 +91,6 @@ function buildNativeCameraCard(
     ...(entities?.length ? { entities } : {}),
     fit_mode: 'cover',
     aspect_ratio: '16:9',
-  };
-}
-
-function buildAreaWebrtcCameraCard(camera: AreaWebrtcCameraConfig): LovelaceCardConfig {
-  return {
-    type: 'custom:dashboard-strategy-webrtc-camera-card',
-    url: camera.url.trim(),
-    ...(camera.name?.trim() ? { name: camera.name.trim() } : {}),
-    start_mode: camera.start_mode ?? 'manual',
   };
 }
 
@@ -509,12 +499,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     }
 
     // Cameras
-    const configuredWebrtcCameras: AreaWebrtcCameraConfig[] = (
-      (areaOptions?.webrtc_cameras || []) as AreaWebrtcCameraConfig[]
-    ).filter(
-      (camera: AreaWebrtcCameraConfig) => typeof camera.url === 'string' && camera.url.trim().length > 0
-    );
-    if (roomEntities.cameras.length > 0 || configuredWebrtcCameras.length > 0) {
+    if (roomEntities.cameras.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
@@ -589,7 +574,6 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           cameraCards.push(buildNativeCameraCard(cameraId, cameraName));
         }
       }
-      cameraCards.push(...configuredWebrtcCameras.map(buildAreaWebrtcCameraCard));
       if (cameraCards.length > 0) {
         pushStack('cameras', {
           type: 'grid',

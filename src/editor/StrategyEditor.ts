@@ -17,7 +17,6 @@ import type {
   CustomBadge,
   CustomSection,
   AreaCustomCard,
-  AreaWebrtcCameraConfig,
   OverviewLayout,
   SectionKey,
   StackKey,
@@ -29,6 +28,7 @@ import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder } from '../utils/name-utils';
+import { stripLegacyAreaWebrtcCameras } from './editor-config-utils';
 import {
   createRoomEntities,
   findUpsEntityGroups,
@@ -1546,7 +1546,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
         </div>
 
-        ${this._renderBasicAreasSection()}
+        ${this._renderAreasListSection()}
 
         <button class="advanced-toggle"
           aria-expanded=${String(this._advancedExpanded)}
@@ -2826,7 +2826,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _renderBasicAreasSection(): TemplateResult {
+  private _renderAreasListSection(): TemplateResult {
     const allAreas = this._getSortedAreas();
     const hiddenAreas = this._config.areas_display?.hidden || [];
     const areaOrder = this._config.areas_display?.order || [];
@@ -2836,8 +2836,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="section">
         <div class="section-title">${localize('editor.section_area_views')}</div>
         <div class="description" style="margin-left: 0;">${localize('editor.area_view_override_intro')}</div>
-        <div class="area-list">
-          ${this._renderAreaItems(allAreas, hiddenAreas, areaOrder, navItems, true)}
+        <div class="description" style="margin-left: 0;">${localize('editor.area_entity_settings_desc')}</div>
+        <div class="area-list" id="area-list">
+          ${this._renderAreaItems(allAreas, hiddenAreas, areaOrder, navItems)}
         </div>
       </div>
     `;
@@ -3044,8 +3045,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
 
-    const allAreas = this._getSortedAreas();
-
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_areas')}</div>
@@ -3110,20 +3109,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
         </div>
 
-        <div class="description" style="margin-left: 0; margin-top: 16px; margin-bottom: 12px;">
-          ${localize('editor.area_entity_settings_desc')}
-        </div>
-
-        <div class="area-list" id="area-list">
-          ${this._renderAreaItems(
-            allAreas,
-            this._config.areas_display?.hidden || [],
-            this._config.areas_display?.order || [],
-            this._config.areas_display?.nav_items || [],
-            false,
-            true
-          )}
-        </div>
       </div>
     `;
   }
@@ -3566,9 +3551,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     allAreas: AreaRegistryEntry[],
     hiddenAreas: string[],
     areaOrder: string[],
-    navItems: string[],
-    basic = false,
-    advancedOnly = false
+    navItems: string[]
   ): TemplateResult | TemplateResult[] {
     if (allAreas.length === 0) {
       return html`<div class="empty-state">${localize('editor.no_areas')}</div>`;
@@ -3594,33 +3577,28 @@ class Simon42DashboardStrategyEditor extends LitElement {
       return html`
         <div class="area-item"
           data-area-id=${area.area_id}
-          draggable=${String(!advancedOnly)}
+          draggable="true"
           @dragstart=${this._handleDragStart}
           @dragend=${this._handleDragEnd}
           @dragover=${this._handleDragOver}
           @dragleave=${this._handleDragLeave}
           @drop=${this._handleDrop}>
           <div class="area-header">
-            ${advancedOnly ? nothing : html`
-              <span class="drag-handle" draggable="true">&#x2630;</span>
-              <input type="checkbox" class="area-checkbox"
-                data-area-id=${area.area_id}
-                ?checked=${!isHidden}
-                @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)} />
-            `}
+            <span class="drag-handle" draggable="true">&#x2630;</span>
+            <input type="checkbox" class="area-checkbox"
+              data-area-id=${area.area_id}
+              ?checked=${!isHidden}
+              @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)} />
             <span class="area-name">${area.name}</span>
             ${area.icon ? html`<ha-icon class="area-icon" icon=${area.icon}></ha-icon>` : nothing}
-            ${advancedOnly ? nothing : html`
-              <button class="nav-pin-button ${isPinned ? 'pinned' : ''}"
-                title="${localize('editor.area_pin_nav')}"
-                ?disabled=${isHidden}
-                @click=${(e: Event) => { e.stopPropagation(); this._areaNavPinChanged(area.area_id, !isPinned); }}>
-                <ha-icon icon="${isPinned ? 'mdi:pin' : 'mdi:pin-outline'}"></ha-icon>
-              </button>
-            `}
+            <button class="nav-pin-button ${isPinned ? 'pinned' : ''}"
+              title="${localize('editor.area_pin_nav')}"
+              ?disabled=${isHidden}
+              @click=${(e: Event) => { e.stopPropagation(); this._areaNavPinChanged(area.area_id, !isPinned); }}>
+              <ha-icon icon="${isPinned ? 'mdi:pin' : 'mdi:pin-outline'}"></ha-icon>
+            </button>
             <button class="expand-button ${isExpanded ? 'expanded' : ''}"
               data-area-id=${area.area_id}
-              ?disabled=${isHidden && !advancedOnly}
               @click=${(e: Event) => this._toggleAreaExpand(e, area.area_id)}>
               <span class="expand-icon">&#x25B6;</span>
             </button>
@@ -3628,9 +3606,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${isExpanded
             ? html`
               <div class="area-content" data-area-id=${area.area_id}>
-                ${basic
-                  ? this._renderAreaViewOverride(area.area_id)
-                  : cachedData
+                ${this._renderAreaViewOverride(area.area_id)}
+                ${cachedData
                   ? this._renderAreaEntities(area.area_id, cachedData)
                   : html`<div class="loading-placeholder">${localize('editor.loading_entities')}</div>`}
               </div>
@@ -3759,13 +3736,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     areaPickerEntities.sort((a, b) => a.name.localeCompare(b.name));
 
     const customCardsSection = this._renderAreaCustomCardsSection(areaId, areaPickerEntities);
-    const webrtcCamerasSection = this._renderAreaWebrtcCamerasSection(areaId);
-
     if (!hasEntities && !hasBadges) {
       return html`
         <div class="empty-state">${localize('editor.no_entities_in_area')}</div>
         ${this._renderStackOrderPanel(areaId, data)}
-        ${webrtcCamerasSection}
         ${customCardsSection}
       `;
     }
@@ -3834,129 +3808,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
           : nothing}
         ${this._renderStackOrderPanel(areaId, data)}
       </div>
-      ${webrtcCamerasSection}
       ${customCardsSection}
-    `;
-  }
-
-  // -- Area go2rtc cameras ----------------------------------------------
-
-  private _getAreaWebrtcCameras(areaId: string): AreaWebrtcCameraConfig[] {
-    return [...(this._config.areas_options?.[areaId]?.webrtc_cameras || [])];
-  }
-
-  private _writeAreaWebrtcCameras(areaId: string, cameras: AreaWebrtcCameraConfig[]): void {
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const newAreaOptions = { ...currentAreaOptions };
-    if (cameras.length > 0) newAreaOptions.webrtc_cameras = cameras;
-    else delete newAreaOptions.webrtc_cameras;
-
-    const newAreasOptions = { ...this._config.areas_options, [areaId]: newAreaOptions };
-    if (Object.keys(newAreaOptions).length === 0) delete newAreasOptions[areaId];
-
-    const newConfig: Simon42StrategyConfig = { ...this._config, areas_options: newAreasOptions };
-    if (Object.keys(newAreasOptions).length === 0) delete newConfig.areas_options;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _addAreaWebrtcCamera(areaId: string): void {
-    const cameras = this._getAreaWebrtcCameras(areaId);
-    cameras.push({
-      id: globalThis.crypto?.randomUUID?.() ?? `camera-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      name: '',
-      url: '',
-      start_mode: 'manual',
-    });
-    this._writeAreaWebrtcCameras(areaId, cameras);
-  }
-
-  private _updateAreaWebrtcCamera(
-    areaId: string,
-    index: number,
-    field: 'name' | 'url' | 'start_mode',
-    value: string
-  ): void {
-    const cameras = this._getAreaWebrtcCameras(areaId);
-    if (!cameras[index]) return;
-    cameras[index] = { ...cameras[index], [field]: value };
-    this._writeAreaWebrtcCameras(areaId, cameras);
-  }
-
-  private _removeAreaWebrtcCamera(areaId: string, index: number): void {
-    const cameras = this._getAreaWebrtcCameras(areaId);
-    cameras.splice(index, 1);
-    this._writeAreaWebrtcCameras(areaId, cameras);
-  }
-
-  private _moveAreaWebrtcCamera(areaId: string, index: number, direction: -1 | 1): void {
-    const cameras = this._getAreaWebrtcCameras(areaId);
-    const target = index + direction;
-    if (target < 0 || target >= cameras.length) return;
-    [cameras[index], cameras[target]] = [cameras[target], cameras[index]];
-    this._writeAreaWebrtcCameras(areaId, cameras);
-  }
-
-  private _renderAreaWebrtcCamerasSection(areaId: string): TemplateResult {
-    const cameras = this._getAreaWebrtcCameras(areaId);
-    return html`
-      <div class="area-custom-cards">
-        <div class="area-custom-cards-header">
-          <ha-icon icon="mdi:cctv"></ha-icon>
-          <span class="group-name">${localize('editor.area_webrtc_cameras_title')}</span>
-        </div>
-        <div class="area-custom-cards-help">${localize('editor.area_webrtc_cameras_help')}</div>
-        ${cameras.map((camera, index) => html`
-          <div class="custom-item" data-camera-id=${camera.id}>
-            <div class="custom-item-header">
-              <strong>${camera.name || localize('editor.area_webrtc_camera_new')}</strong>
-              <div>
-                <button class="btn-remove" title=${localize('editor.move_up')}
-                  ?disabled=${index === 0}
-                  @click=${() => this._moveAreaWebrtcCamera(areaId, index, -1)}>&#x2191;</button>
-                <button class="btn-remove" title=${localize('editor.move_down')}
-                  ?disabled=${index === cameras.length - 1}
-                  @click=${() => this._moveAreaWebrtcCamera(areaId, index, 1)}>&#x2193;</button>
-                <button class="btn-remove"
-                  @click=${() => this._removeAreaWebrtcCamera(areaId, index)}>&#x2715;</button>
-              </div>
-            </div>
-            <div class="custom-item-fields">
-              <label>${localize('editor.area_webrtc_camera_name')}</label>
-              <input type="text" .value=${camera.name || ''}
-                placeholder=${localize('editor.area_webrtc_camera_name_placeholder')}
-                @change=${(e: Event) => this._updateAreaWebrtcCamera(
-                  areaId, index, 'name', (e.target as HTMLInputElement).value
-                )} />
-              <label>${localize('editor.area_webrtc_camera_url')}</label>
-              <input type="text" .value=${camera.url || ''}
-                placeholder=${localize('editor.area_webrtc_camera_url_placeholder')}
-                @change=${(e: Event) => this._updateAreaWebrtcCamera(
-                  areaId, index, 'url', (e.target as HTMLInputElement).value
-                )} />
-              <div class="description">${localize('editor.area_webrtc_camera_url_help')}</div>
-              <div class="custom-card-target">
-                <label>${localize('editor.area_webrtc_camera_start_mode')}</label>
-                <select @change=${(e: Event) => this._updateAreaWebrtcCamera(
-                  areaId, index, 'start_mode', (e.target as HTMLSelectElement).value
-                )}>
-                  <option value="manual" ?selected=${(camera.start_mode ?? 'manual') === 'manual'}>
-                    ${localize('editor.area_webrtc_camera_start_manual')}
-                  </option>
-                  <option value="auto" ?selected=${camera.start_mode === 'auto'}>
-                    ${localize('editor.area_webrtc_camera_start_auto')}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-        `)}
-        <div class="area-custom-card-actions">
-          <button class="btn-primary" @click=${() => this._addAreaWebrtcCamera(areaId)}>
-            ${localize('editor.area_webrtc_camera_add')}
-          </button>
-        </div>
-      </div>
     `;
   }
 
@@ -5394,32 +5246,29 @@ class Simon42DashboardStrategyEditor extends LitElement {
       });
     }
     if (cleanConfig.areas_options) {
-      cleanConfig.areas_options = Object.fromEntries(
-        Object.entries(cleanConfig.areas_options).map(([areaId, areaOptions]) => [
-          areaId,
-          {
-            ...areaOptions,
-            ...(areaOptions.custom_cards
-              ? {
-                custom_cards: areaOptions.custom_cards.map((cc) => {
-                  const clean = { ...cc };
-                  delete clean._yaml_error;
-                  return clean;
-                }),
-              }
-              : {}),
-            ...(areaOptions.view_override
-              ? {
-                view_override: (() => {
-                  const clean = { ...areaOptions.view_override };
-                  delete clean._yaml_error;
-                  return clean;
-                })(),
-              }
-              : {}),
-          },
-        ])
-      );
+      const areasOptionsWithoutLegacy = stripLegacyAreaWebrtcCameras(cleanConfig.areas_options);
+      const cleanedAreasOptions: NonNullable<Simon42StrategyConfig['areas_options']> = {};
+      for (const [areaId, areaOptions] of Object.entries(areasOptionsWithoutLegacy || {})) {
+        const cleanAreaOptions = { ...(areaOptions as Record<string, unknown>) };
+
+        if (areaOptions.custom_cards) {
+          cleanAreaOptions.custom_cards = areaOptions.custom_cards.map((cc) => {
+            const clean = { ...cc };
+            delete clean._yaml_error;
+            return clean;
+          });
+        }
+        if (areaOptions.view_override) {
+          const clean = { ...areaOptions.view_override };
+          delete clean._yaml_error;
+          cleanAreaOptions.view_override = clean;
+        }
+        if (Object.keys(cleanAreaOptions).length > 0) {
+          cleanedAreasOptions[areaId] = cleanAreaOptions;
+        }
+      }
+      if (Object.keys(cleanedAreasOptions).length > 0) cleanConfig.areas_options = cleanedAreasOptions;
+      else delete cleanConfig.areas_options;
     }
 
     // Keep editor-only validation errors locally while emitting only persistent fields.

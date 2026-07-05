@@ -104,17 +104,6 @@ export interface CameraWebrtcStreamConfig {
 
 export type CameraWebrtcStreamsConfig = Record<string, string | CameraWebrtcStreamConfig>;
 
-export interface AreaWebrtcCameraConfig {
-  /** Stable id used by the editor for ordering and updates */
-  id: string;
-  /** Optional title shown above the stream */
-  name?: string;
-  /** go2rtc stream name or a complete URL supported by the WebRTC card */
-  url: string;
-  /** Whether the stream is created immediately or only after pressing Play */
-  start_mode?: 'manual' | 'auto'; // default: 'manual'
-}
-
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -265,7 +254,6 @@ export interface AreasDisplay {
 export interface AreaOptions {
   groups_options?: Record<string, GroupOptions>;
   custom_cards?: AreaCustomCard[];
-  webrtc_cameras?: AreaWebrtcCameraConfig[];
   stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
   view_override?: AreaViewOverride;
 }

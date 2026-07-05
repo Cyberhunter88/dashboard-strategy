@@ -114,10 +114,13 @@ export function createRoomEntities(
     energy: [],
   };
   const usedByUps = new Set(upsGroups.flatMap(({ entityIds }) => entityIds));
+  const seenEntityIds = new Set<string>();
   result.ups.push(...usedByUps);
 
   for (const entity of entities) {
     const entityId = entity.entity_id;
+    if (seenEntityIds.has(entityId)) continue;
+    seenEntityIds.add(entityId);
     if (usedByUps.has(entityId)) continue;
 
     const state = hass.states[entityId];
