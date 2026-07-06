@@ -4,6 +4,7 @@
 
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import type { HomeAssistant } from '../types/homeassistant';
+import type { AreaRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
@@ -23,11 +24,19 @@ interface CoversGroupConfig {
   group_type: 'open' | 'closed' | 'partially_open';
   show_partially_open?: boolean;
   device_classes?: string[];
+  group_by_floors?: boolean;
   heading_open?: string;
   heading_closed?: string;
   heading_partial?: string;
   batch_open_text?: string;
   batch_close_text?: string;
+}
+
+interface CoversFloorGroup {
+  floorId: string | null;
+  floorName: string;
+  floorIcon: string;
+  covers: string[];
 }
 
 const DEFAULT_DEVICE_CLASSES = ['awning', 'blind', 'curtain', 'shade', 'shutter', 'window'];
@@ -41,13 +50,16 @@ class Simon42CoversGroupCard extends LitElement {
   private _config!: CoversGroupConfig;
   private _deviceClasses!: string[];
   private _cachedFilteredIds: Set<string> | null = null;
+  private _cachedAreaForEntity: Map<string, string | null> | null = null;
   private _lastCoversList = '';
   private _renderedCovers: string[] = [];
   private _renderedCoversKey = '';
+  private _renderedFloorGroups: CoversFloorGroup[] = [];
 
   // Reusable card pool
   private _tileCards: Map<string, LovelaceCardElement> = new Map();
   private _headingCard: LovelaceCardElement | null = null;
+  private _floorHeadingCards: Map<string, LovelaceCardElement> = new Map();
 
   static styles = css`
     :host {
@@ -67,15 +79,22 @@ class Simon42CoversGroupCard extends LitElement {
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 8px;
     }
+    .floor-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
   `;
 
   setConfig(config: CoversGroupConfig): void {
     this._config = config;
     this._deviceClasses = config.device_classes || DEFAULT_DEVICE_CLASSES;
     this._cachedFilteredIds = null;
+    this._cachedAreaForEntity = null;
     this._lastCoversList = '';
     this._renderedCovers = [];
     this._renderedCoversKey = '';
+    this._renderedFloorGroups = [];
     this.requestUpdate();
   }
 
@@ -98,6 +117,7 @@ class Simon42CoversGroupCard extends LitElement {
 
     if (!oldHass || oldHass.entities !== this.hass.entities) {
       this._cachedFilteredIds = null;
+      this._cachedAreaForEntity = null;
     }
 
     // Build cache if needed
@@ -123,6 +143,64 @@ class Simon42CoversGroupCard extends LitElement {
       if (!deviceClass) return this._deviceClasses.length > 1;
       return this._deviceClasses.includes(deviceClass);
     });
+  }
+
+  private _getAreaForEntity(entityId: string): string | null {
+    if (!this._cachedAreaForEntity) {
+      this._cachedAreaForEntity = new Map();
+    }
+    if (this._cachedAreaForEntity.has(entityId)) {
+      return this._cachedAreaForEntity.get(entityId) ?? null;
+    }
+
+    const entity = Registry.getEntity(entityId);
+    let areaId: string | null = entity?.area_id ?? null;
+    if (!areaId && entity?.device_id) {
+      const device = Registry.getDevice(entity.device_id);
+      areaId = device?.area_id ?? null;
+    }
+
+    this._cachedAreaForEntity.set(entityId, areaId);
+    return areaId;
+  }
+
+  private _groupByFloors(covers: string[]): CoversFloorGroup[] {
+    if (!this.hass) return [];
+
+    const areas: AreaRegistryEntry[] = Registry.areas;
+    const areaFloorMap = new Map<string, string | null>();
+    for (const area of areas) {
+      areaFloorMap.set(area.area_id, area.floor_id ?? null);
+    }
+
+    const floorMap = new Map<string | null, string[]>();
+    for (const id of covers) {
+      const areaId = this._getAreaForEntity(id);
+      const floorId = areaId ? (areaFloorMap.get(areaId) ?? null) : null;
+      if (!floorMap.has(floorId)) floorMap.set(floorId, []);
+      floorMap.get(floorId)?.push(id);
+    }
+
+    const floors = this.hass.floors;
+    const floorOrder = Object.keys(floors);
+    const sortedKeys: Array<string | null> = [
+      ...floorOrder.filter((id) => floorMap.has(id)),
+      ...(floorMap.has(null) ? [null] : []),
+    ];
+
+    return sortedKeys.map((floorId) => {
+      const floor = floorId ? floors[floorId] : null;
+      return {
+        floorId,
+        floorName: floor?.name || localize('lights.floor_other'),
+        floorIcon: floor?.icon || 'mdi:home-outline',
+        covers: floorMap.get(floorId) ?? [],
+      };
+    });
+  }
+
+  private _getFloorDomKey(floorId: string | null): string {
+    return floorId ?? '_none';
   }
 
   private _getRelevantCovers(): string[] {
@@ -178,17 +256,17 @@ class Simon42CoversGroupCard extends LitElement {
     return relevant;
   }
 
-  private _buildHeadingConfig(covers: string[]): any {
+  private _buildHeadingConfig(covers: string[], floorLabel?: string, floorIcon?: string): any {
     const groupType = this._config.group_type;
     const openText = this._config.batch_open_text || localize('covers.open_all');
     const closeText = this._config.batch_close_text || localize('covers.close_all');
 
     if (groupType === 'partially_open') {
-      const headingLabel = this._config.heading_partial || localize('covers.partially_open');
+      const headingLabel = floorLabel || this._config.heading_partial || localize('covers.partially_open');
       return {
         type: 'heading',
         heading: `${headingLabel} (${covers.length})`,
-        icon: 'mdi:blinds-horizontal',
+        icon: floorIcon || 'mdi:blinds-horizontal',
         badges: [
           {
             type: 'button',
@@ -215,13 +293,13 @@ class Simon42CoversGroupCard extends LitElement {
     }
 
     const isOpen = groupType === 'open';
-    const headingLabel = isOpen
+    const headingLabel = floorLabel || (isOpen
       ? (this._config.heading_open || localize('covers.open'))
-      : (this._config.heading_closed || localize('covers.closed'));
+      : (this._config.heading_closed || localize('covers.closed')));
     return {
       type: 'heading',
       heading: `${headingLabel} (${covers.length})`,
-      icon: isOpen ? 'mdi:blinds-horizontal' : 'mdi:blinds',
+      icon: floorIcon || (isOpen ? 'mdi:blinds-horizontal' : 'mdi:blinds'),
       badges: [
         {
           type: 'button',
@@ -274,6 +352,27 @@ class Simon42CoversGroupCard extends LitElement {
     this._renderedCoversKey = this._calculateRenderKey(covers);
     this.hidden = covers.length === 0;
 
+    if (this._config.group_by_floors && covers.length > 0) {
+      const floorGroups = this._groupByFloors(covers);
+      this._renderedFloorGroups = floorGroups;
+      return html`
+        <div class="covers-section">
+          <div id="heading"></div>
+          ${floorGroups.map((group) => {
+            const key = this._getFloorDomKey(group.floorId);
+            return html`
+              <div class="floor-section">
+                <div id=${`floor-heading-${key}`}></div>
+                <div class="cover-grid" id=${`floor-grid-${key}`}></div>
+              </div>
+            `;
+          })}
+        </div>
+      `;
+    }
+
+    this._renderedFloorGroups = [];
+
     return html`
       <div class="covers-section">
         <div id="heading"></div>
@@ -294,11 +393,80 @@ class Simon42CoversGroupCard extends LitElement {
     if (covers.length === 0) {
       const headingSlot = this.shadowRoot?.getElementById('heading');
       if (headingSlot) headingSlot.innerHTML = '';
+      for (const card of this._floorHeadingCards.values()) {
+        if (card.parentNode) card.parentNode.removeChild(card);
+      }
+      this._floorHeadingCards.clear();
       const grid = this.shadowRoot?.getElementById('grid');
       if (grid) grid.innerHTML = '';
       this._headingCard = null;
       this._tileCards.clear();
       this._lastCoversList = '';
+      return;
+    }
+
+    if (this._config.group_by_floors) {
+      const headingSlot = this.shadowRoot?.getElementById('heading');
+      if (headingSlot) {
+        if (!this._headingCard) {
+          this._headingCard = createHeadingCardElement();
+          headingSlot.appendChild(this._headingCard);
+        }
+        this._headingCard.hass = this.hass;
+        this._headingCard.setConfig(this._buildHeadingConfig(covers));
+      }
+
+      const activeIds = new Set(covers);
+      const activeFloorKeys = new Set<string>();
+
+      for (const group of this._renderedFloorGroups) {
+        const key = this._getFloorDomKey(group.floorId);
+        activeFloorKeys.add(key);
+
+        const floorHeadingSlot = this.shadowRoot?.getElementById(`floor-heading-${key}`);
+        if (floorHeadingSlot) {
+          let headingCard = this._floorHeadingCards.get(key);
+          if (!headingCard) {
+            headingCard = createHeadingCardElement();
+            this._floorHeadingCards.set(key, headingCard);
+          }
+          if (!headingCard.parentNode) floorHeadingSlot.appendChild(headingCard);
+          headingCard.hass = this.hass;
+          headingCard.setConfig(this._buildHeadingConfig(group.covers, group.floorName, group.floorIcon));
+        }
+
+        const floorGrid = this.shadowRoot?.getElementById(`floor-grid-${key}`);
+        if (!floorGrid) continue;
+
+        let prevNode: Node | null = null;
+        for (const entityId of group.covers) {
+          const card = this._getOrCreateTileCard(entityId);
+          const nextSibling: ChildNode | null = prevNode ? prevNode.nextSibling : floorGrid.firstChild;
+          if (card !== nextSibling) {
+            floorGrid.insertBefore(card, nextSibling);
+          }
+          prevNode = card;
+        }
+
+        while (prevNode && prevNode.nextSibling) {
+          floorGrid.removeChild(prevNode.nextSibling);
+        }
+      }
+
+      for (const [id, card] of this._tileCards) {
+        if (!activeIds.has(id)) {
+          if (card.parentNode) card.parentNode.removeChild(card);
+          this._tileCards.delete(id);
+        }
+      }
+
+      for (const [key, card] of this._floorHeadingCards) {
+        if (!activeFloorKeys.has(key)) {
+          if (card.parentNode) card.parentNode.removeChild(card);
+          this._floorHeadingCards.delete(key);
+        }
+      }
+
       return;
     }
 

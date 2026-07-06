@@ -22,6 +22,7 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
 ];
 
 export type OverviewLayout = 'default' | 'weather_start';
+export type LightsSortBy = 'last_changed' | 'name';
 
 // -- Weather-Start Block Ordering --------------------------------------
 
@@ -151,19 +152,24 @@ export interface Simon42StrategyConfig {
   show_summary_views?: boolean; // default: false
   show_room_views?: boolean; // default: false
   group_by_floors?: boolean; // default: false
+  group_covers_by_floors?: boolean; // default: false
   show_covers_summary?: boolean; // default: true
   show_partially_open_covers?: boolean; // default: false
   show_clock_card?: boolean; // default: true
   show_light_summary?: boolean; // default: true
   group_lights_by_floors?: boolean; // default: false
   nested_light_groups?: boolean; // default: false
+  lights_sort_by?: LightsSortBy; // default: 'last_changed'
   show_security_summary?: boolean; // default: true
   show_battery_summary?: boolean; // default: true
   show_battery_view?: boolean; // default: false (summary remains the main trigger)
   show_climate_summary?: boolean; // default: false
   hide_mobile_app_batteries?: boolean; // default: false
+  hide_battery_notes_entities?: boolean; // default: false
   battery_critical_threshold?: number; // default: 20
   battery_low_threshold?: number; // default: 50
+  show_area_in_battery_view?: boolean; // default: false
+  unavailable_batteries_bucket?: 'critical' | 'good'; // default: 'good'
   show_locks_in_rooms?: boolean; // default: false
   show_automations_in_rooms?: boolean; // default: false
   show_scripts_in_rooms?: boolean; // default: false
@@ -374,6 +380,9 @@ export interface RoomEntities {
   media_player: string[];
   vacuum: string[];
   fan: string[];
+  humidifier: string[];
+  valve: string[];
+  water_heater: string[];
   switches: string[];
   locks: string[];
   automations: string[];

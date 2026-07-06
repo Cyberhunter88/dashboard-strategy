@@ -81,6 +81,12 @@ function buildAdaptiveFeatures(
     }
     case 'vacuum':
       return [{ type: 'vacuum-commands' }];
+    case 'humidifier':
+      return [{ type: 'humidifier-toggle' }];
+    case 'valve':
+      return [{ type: 'valve-open-close' }];
+    case 'water_heater':
+      return [{ type: 'water-heater-operation-modes' }];
     case 'select':
     case 'input_select':
       return [{ type: 'select-options' }];

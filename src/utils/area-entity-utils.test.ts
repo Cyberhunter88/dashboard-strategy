@@ -24,4 +24,29 @@ describe('createRoomEntities', () => {
     expect(result.cameras).toEqual(['camera.driveway']);
     expect(result.lights).toEqual(['light.driveway']);
   });
+
+  it('classifies humidifiers, valves, and water heaters into room misc groups', () => {
+    const humidifier = {
+      entity_id: 'humidifier.office',
+    } as EntityRegistryEntry;
+    const valve = {
+      entity_id: 'valve.radiator',
+    } as EntityRegistryEntry;
+    const waterHeater = {
+      entity_id: 'water_heater.boiler',
+    } as EntityRegistryEntry;
+    const hass = {
+      states: {
+        'humidifier.office': { attributes: {} },
+        'valve.radiator': { attributes: {} },
+        'water_heater.boiler': { attributes: {} },
+      },
+    } as unknown as HomeAssistant;
+
+    const result = createRoomEntities([humidifier, valve, waterHeater], hass, []);
+
+    expect(result.humidifier).toEqual(['humidifier.office']);
+    expect(result.valve).toEqual(['valve.radiator']);
+    expect(result.water_heater).toEqual(['water_heater.boiler']);
+  });
 });

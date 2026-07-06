@@ -88,6 +88,9 @@ export function getBatteryEntities(hass: HomeAssistant, config: Simon42StrategyC
     if (config.hide_mobile_app_batteries) {
       if (entry?.platform === 'mobile_app') return false;
     }
+    if (config.hide_battery_notes_entities) {
+      if (entry?.platform === 'battery_notes') return false;
+    }
 
     // Use device_class from state attributes for correct battery detection.
     // binary_sensor batteries have device_class='battery' but no unit_of_measurement.

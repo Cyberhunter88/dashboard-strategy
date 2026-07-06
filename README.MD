@@ -155,7 +155,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Klima-Zusammenfassung.gif" alt="Klima-Zusammenfassung aktivieren" width="800" />
 </p>
 
-**Batterie-Optionen** — Mobile-App-Batterien (Smartphones, Tablets) können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Nicht erreichbare Sensoren werden automatisch als kritisch eingestuft.
+**Batterie-Optionen** — Mobile-App-Batterien und Battery-Notes-Helfer können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Optional kann der Bereichsname in Batterie-Kacheln angezeigt werden. Nicht erreichbare Sensoren lassen sich wahlweise der guten oder kritischen Gruppe zuordnen.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
@@ -210,6 +210,10 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden.
 
 **Lichter nach Etagen** — In der Lichter-View können Lichter nach Etagen gruppiert werden, mit Ein-/Ausschalt-Button pro Etage.
+
+**Lichter alphabetisch sortieren** — Optional lassen sich Lichter nach Anzeigenamen statt nach letzter Änderung sortieren (`lights_sort_by: name`). Das gilt für Lichter-Ansicht, Raum-Ansichten und verschachtelte Lichtgruppen.
+
+**Rollos nach Etagen** — Optional kann die Hauptgruppe der Rollos in der Rollos-Ansicht nach Etagen gegliedert werden (`group_covers_by_floors`). Markisen und Fenster bleiben dabei weiterhin eigene, ungeteilte Gruppen.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
@@ -328,8 +332,11 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
 | `summaries_columns` | 2 \| 4 | `2` | Spalten-Layout der Zusammenfassungen |
 | `hide_mobile_app_batteries` | boolean | `false` | Mobile-App-Batterien ausblenden |
+| `hide_battery_notes_entities` | boolean | `false` | Battery-Notes-Helfer in Batterie-Ansicht und -Zusammenfassung ausblenden |
 | `battery_critical_threshold` | number | `20` | Schwellwert für kritische Batterien (%) |
 | `battery_low_threshold` | number | `50` | Schwellwert für niedrige Batterien (%) |
+| `show_area_in_battery_view` | boolean | `false` | Bereichsnamen in Batterie-Kacheln vor dem Entitätsnamen anzeigen |
+| `unavailable_batteries_bucket` | `'critical' \| 'good'` | `'good'` | Nicht auswertbare Batterien als kritisch oder gut einsortieren |
 | `show_weather` | boolean | `true` | Wetter-Karte |
 | `show_energy` | boolean | `true` | Energie-Dashboard |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
@@ -368,7 +375,9 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_summary_views` | boolean | `false` | Summary-Views in Navigation |
 | `show_room_views` | boolean | `false` | Raum-Views in Navigation |
 | `group_lights_by_floors` | boolean | `false` | Lichter nach Etagen gruppieren |
+| `group_covers_by_floors` | boolean | `false` | Hauptgruppe der Rollos in der Rollos-Ansicht nach Etagen gruppieren |
 | `nested_light_groups` | boolean | `false` | Lichtgruppen als aufklappbare Container mit Mitgliedern anzeigen |
+| `lights_sort_by` | `"last_changed"` \| `"name"` | `"last_changed"` | Lichter nach letzter Änderung oder alphabetisch nach Anzeigename sortieren |
 | `custom_cards` | object[] | `[]` | Eigene Karten via YAML |
 | `custom_cards_heading` | string | `"Eigene Karten"` | Überschrift der Custom Cards Section |
 | `custom_cards_icon` | string | `"mdi:cards"` | Icon der Custom Cards Section |
