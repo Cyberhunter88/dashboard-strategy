@@ -742,6 +742,32 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           state_content: 'last_changed',
         })
       );
+    for (const e of roomEntities.humidifier)
+      miscCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          preferFeaturePosition: 'inline',
+          state_content: ['action', 'current_humidity'],
+        })
+      );
+    for (const e of roomEntities.valve)
+      miscCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          preferFeaturePosition: 'inline',
+          state_content: 'last_changed',
+        })
+      );
+    for (const e of roomEntities.water_heater)
+      miscCards.push(
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: ['current_operation', 'current_temperature'],
+        })
+      );
 
     miscCards.sort((a, b) => {
       const sA = hass.states[a.entity];

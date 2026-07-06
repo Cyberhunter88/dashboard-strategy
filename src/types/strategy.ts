@@ -380,6 +380,9 @@ export interface RoomEntities {
   media_player: string[];
   vacuum: string[];
   fan: string[];
+  humidifier: string[];
+  valve: string[];
+  water_heater: string[];
   switches: string[];
   locks: string[];
   automations: string[];

@@ -105,6 +105,9 @@ export function createRoomEntities(
     media_player: [],
     vacuum: [],
     fan: [],
+    humidifier: [],
+    valve: [],
+    water_heater: [],
     switches: [],
     locks: [],
     automations: [],
@@ -139,6 +142,9 @@ export function createRoomEntities(
     else if (domain === 'media_player') result.media_player.push(entityId);
     else if (domain === 'vacuum') result.vacuum.push(entityId);
     else if (domain === 'fan') result.fan.push(entityId);
+    else if (domain === 'humidifier') result.humidifier.push(entityId);
+    else if (domain === 'valve') result.valve.push(entityId);
+    else if (domain === 'water_heater') result.water_heater.push(entityId);
     else if (domain === 'switch') result.switches.push(entityId);
     else if (domain === 'lock' && options.includeLocks !== false) result.locks.push(entityId);
     else if (domain === 'automation' && options.includeAutomations !== false) {
