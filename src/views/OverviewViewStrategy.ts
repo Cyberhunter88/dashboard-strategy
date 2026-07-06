@@ -7,7 +7,15 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { Simon42StrategyConfig, SectionKey, WeatherStartKey, CustomCard, WeatherStartBlockConfig, WeatherStartLayoutItem, CustomSection } from '../types/strategy';
+import type {
+  Simon42StrategyConfig,
+  SectionKey,
+  WeatherStartKey,
+  CustomCard,
+  WeatherStartBlockConfig,
+  WeatherStartLayoutItem,
+  CustomSection,
+} from '../types/strategy';
 import { DEFAULT_SECTIONS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { LovelaceViewConfig, LovelaceSectionConfig, LovelaceBadgeConfig, LovelaceCardConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
@@ -17,6 +25,12 @@ import { createPersonBadges } from '../utils/badge-builder';
 import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createWeatherStartSummariesSection } from '../sections/OverviewSection';
 import { buildAreaCard, createAreaCardBuildContext, createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
+import { createPlantsSection } from '../sections/PlantsSection';
+import { createAgendaSection } from '../sections/AgendaSection';
+import { createTodosSection } from '../sections/TodosSection';
+import { createPersonsSection } from '../sections/PersonsSection';
+import { createVacuumsSection } from '../sections/VacuumsSection';
+import { createMaintenanceSection } from '../sections/MaintenanceSection';
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
@@ -458,7 +472,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
 
     // Person badges
     const personBadges = dashboardConfig.show_person_badges !== false
-      ? createPersonBadges(persons, hass)
+      ? createPersonBadges(persons, hass, dashboardConfig.person_badge_layout || 'with_state')
       : [];
     const hiddenHeadings = new Set(dashboardConfig.hidden_section_headings || []);
 
@@ -486,7 +500,112 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       dashboardConfig.custom_cards_icon,
       hiddenHeadings.has('custom_cards')
     );
-    const areasSections = createAreasSection(visibleAreas, groupByFloors, hass, hiddenHeadings.has('areas'));
+    const areasSections = createAreasSection(
+      visibleAreas,
+      groupByFloors,
+      hass,
+      hiddenHeadings.has('areas'),
+      hiddenHeadings.has('areas_other')
+    );
+
+    const customBadges = (dashboardConfig.custom_badges || [])
+      .filter((b) => b.parsed_config)
+      .map((b) => b.parsed_config as LovelaceBadgeConfig);
+    const powerBadges: LovelaceBadgeConfig[] = [];
+    const powerEntity = dashboardConfig.power_badge_entity;
+    if (powerEntity && hass.states[powerEntity]) {
+      powerBadges.push({
+        type: 'entity',
+        entity: powerEntity,
+        show_name: false,
+        color: 'orange',
+      });
+    }
+
+    const alertBadges: LovelaceBadgeConfig[] = [];
+    if (dashboardConfig.show_unavailable_alert_badge === true) {
+      let count = 0;
+      for (const [entityId, state] of Object.entries(hass.states)) {
+        if (state.state !== 'unavailable') continue;
+        if (Registry.isExcludedByLabel(entityId)) continue;
+        if (Registry.isHiddenByConfig(entityId)) continue;
+        const entry = Registry.getEntity(entityId);
+        if (entry?.hidden) continue;
+        count++;
+      }
+      if (count > 0 && someSensorId) {
+        alertBadges.push({
+          type: 'entity',
+          entity: someSensorId,
+          name: String(count),
+          icon: 'mdi:alert-circle-outline',
+          color: 'red',
+          show_state: false,
+        });
+      }
+    }
+
+    const nowPlayingBadges: LovelaceBadgeConfig[] = [];
+    if (dashboardConfig.show_now_playing_badge === true) {
+      const playing = Registry.getVisibleEntityIdsForDomain('media_player').find(
+        (id) => hass.states[id]?.state === 'playing'
+      );
+      if (playing) {
+        nowPlayingBadges.push({
+          type: 'entity',
+          entity: playing,
+          icon: 'mdi:play-circle',
+          color: 'green',
+          show_state: false,
+          tap_action: { action: 'more-info' },
+        });
+      }
+    }
+
+    const sunBadges: LovelaceBadgeConfig[] = [];
+    if (dashboardConfig.show_sun_badge === true && hass.states['sun.sun']) {
+      const isAbove = hass.states['sun.sun'].state === 'above_horizon';
+      sunBadges.push({
+        type: 'entity',
+        entity: 'sun.sun',
+        name: '',
+        icon: isAbove ? 'mdi:weather-sunset-down' : 'mdi:weather-sunset-up',
+        color: isAbove ? 'amber' : 'indigo',
+        tap_action: { action: 'more-info' },
+      });
+    }
+
+    const updatesBadges: LovelaceBadgeConfig[] = [];
+    if (dashboardConfig.show_updates_badge === true) {
+      let count = 0;
+      let firstId: string | undefined;
+      for (const id of Registry.getVisibleEntityIdsForDomain('update')) {
+        if (hass.states[id]?.state === 'on') {
+          count++;
+          if (!firstId) firstId = id;
+        }
+      }
+      if (count > 0 && firstId) {
+        updatesBadges.push({
+          type: 'entity',
+          entity: firstId,
+          name: String(count),
+          icon: 'mdi:update',
+          color: 'orange',
+          show_state: false,
+          tap_action: { action: 'navigate', navigation_path: '/config/updates' },
+        });
+      }
+    }
+    const overviewBadges = [
+      ...personBadges,
+      ...powerBadges,
+      ...alertBadges,
+      ...nowPlayingBadges,
+      ...sunBadges,
+      ...updatesBadges,
+      ...customBadges,
+    ];
 
     if (dashboardConfig.overview_layout === 'weather_start') {
       const overviewSections = dashboardConfig.weather_start_layout_items?.length
@@ -515,11 +634,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       timeEnd('overview-generate');
       debugLog(`Weather start: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`);
 
-      const customBadges = (dashboardConfig.custom_badges || [])
-        .filter((b) => b.parsed_config)
-        .map((b) => b.parsed_config as LovelaceBadgeConfig);
-
-      return createOverviewView(overviewSections, [...personBadges, ...customBadges], dashboardConfig);
+      return createOverviewView(overviewSections, overviewBadges, dashboardConfig);
     }
 
     // Section map: key → section(s) or null
@@ -528,8 +643,55 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       ['custom_cards', customCardsSection],
       ['custom_sections', createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections'))],
       ['areas', areasSections],
-      ['weather', createWeatherSection(weatherEntity ?? null, showWeather, hiddenHeadings.has('weather'))],
-      ['energy', createEnergySection(showEnergy, dashboardConfig.energy_link_dashboard !== false, hiddenHeadings.has('energy'))],
+      [
+        'weather',
+        createWeatherSection(
+          weatherEntity ?? null,
+          showWeather,
+          dashboardConfig.show_weather_forecast_card !== false,
+          dashboardConfig.weather_sensors || [],
+          dashboardConfig.weather_presentation,
+          hiddenHeadings.has('weather')
+        ),
+      ],
+      [
+        'energy',
+        createEnergySection(
+          showEnergy,
+          dashboardConfig.energy_link_dashboard !== false,
+          dashboardConfig.show_energy_distribution_card !== false,
+          hiddenHeadings.has('energy')
+        ),
+      ],
+      ['plants', createPlantsSection(hass, dashboardConfig.show_plants_section === true, hiddenHeadings.has('plants'))],
+      [
+        'agenda',
+        createAgendaSection(
+          hass,
+          dashboardConfig.show_agenda_section === true,
+          dashboardConfig.agenda_calendar_entities,
+          hiddenHeadings.has('agenda')
+        ),
+      ],
+      [
+        'todos',
+        createTodosSection(
+          hass,
+          dashboardConfig.show_todos_section === true,
+          dashboardConfig.todos_entities,
+          hiddenHeadings.has('todos')
+        ),
+      ],
+      ['persons', createPersonsSection(hass, dashboardConfig.show_persons_section === true, hiddenHeadings.has('persons'))],
+      ['vacuums', createVacuumsSection(hass, dashboardConfig.show_vacuums_section === true, hiddenHeadings.has('vacuums'))],
+      [
+        'maintenance',
+        createMaintenanceSection(
+          hass,
+          dashboardConfig.show_maintenance_section === true,
+          hiddenHeadings.has('maintenance')
+        ),
+      ],
     ]);
 
     // Assemble in configured order, appending assigned custom cards to each section
@@ -564,12 +726,11 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     timeEnd('overview-generate');
     debugLog(`Overview: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`);
 
-    // Custom badges from YAML config
-    const customBadges = (dashboardConfig.custom_badges || [])
-      .filter((b) => b.parsed_config)
-      .map((b) => b.parsed_config as LovelaceBadgeConfig);
-
-    return createOverviewView(overviewSections, [...personBadges, ...customBadges], dashboardConfig);
+    return createOverviewView(
+      overviewSections,
+      overviewBadges,
+      dashboardConfig
+    );
   }
 }
 

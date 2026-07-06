@@ -10,7 +10,19 @@ import type { LovelaceCardConfig } from './lovelace';
 
 // -- Section Ordering -------------------------------------------------
 
-export type SectionKey = 'overview' | 'custom_cards' | 'custom_sections' | 'areas' | 'weather' | 'energy';
+export type SectionKey =
+  | 'overview'
+  | 'custom_cards'
+  | 'custom_sections'
+  | 'areas'
+  | 'weather'
+  | 'energy'
+  | 'plants'
+  | 'agenda'
+  | 'todos'
+  | 'persons'
+  | 'vacuums'
+  | 'maintenance';
 
 export type HeadingKey =
   | 'overview'
@@ -19,8 +31,15 @@ export type HeadingKey =
   | 'custom_cards'
   | 'custom_sections'
   | 'areas'
+  | 'areas_other'
   | 'weather'
-  | 'energy';
+  | 'energy'
+  | 'plants'
+  | 'agenda'
+  | 'todos'
+  | 'persons'
+  | 'vacuums'
+  | 'maintenance';
 
 export const ALL_HEADING_KEYS: HeadingKey[] = [
   'overview',
@@ -29,8 +48,15 @@ export const ALL_HEADING_KEYS: HeadingKey[] = [
   'custom_cards',
   'custom_sections',
   'areas',
+  'areas_other',
   'weather',
   'energy',
+  'plants',
+  'agenda',
+  'todos',
+  'persons',
+  'vacuums',
+  'maintenance',
 ];
 
 export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
@@ -40,10 +66,30 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
   'areas',
   'weather',
   'energy',
+  'plants',
+  'agenda',
+  'todos',
+  'persons',
+  'vacuums',
+  'maintenance',
 ];
 
 export type OverviewLayout = 'default' | 'weather_start';
 export type LightsSortBy = 'last_changed' | 'name';
+export type PersonBadgeLayout = 'minimal' | 'with_state' | 'with_state_and_time';
+export type WeatherPresentation =
+  | 'forecast_daily'
+  | 'forecast_hourly'
+  | 'forecast_twice_daily'
+  | 'tile'
+  | 'none';
+
+export interface WeatherSensorConfig {
+  entity: string;
+  icon?: string;
+  unit?: string;
+  round?: number;
+}
 
 // -- Weather-Start Block Ordering --------------------------------------
 
@@ -168,7 +214,11 @@ export interface Simon42StrategyConfig {
 
   // Global toggles
   show_weather?: boolean; // default: true
+  show_weather_forecast_card?: boolean; // legacy bool; default: true
+  weather_presentation?: WeatherPresentation; // default: 'forecast_daily'
+  weather_sensors?: WeatherSensorConfig[]; // default: []
   show_energy?: boolean; // default: true
+  show_energy_distribution_card?: boolean; // default: true
   show_search_card?: boolean; // default: false
   show_summary_views?: boolean; // default: false
   show_room_views?: boolean; // default: false
@@ -178,6 +228,7 @@ export interface Simon42StrategyConfig {
   show_partially_open_covers?: boolean; // default: false
   show_clock_card?: boolean; // default: true
   show_person_badges?: boolean; // default: true
+  person_badge_layout?: PersonBadgeLayout; // default: 'with_state'
   show_light_summary?: boolean; // default: true
   group_lights_by_floors?: boolean; // default: false
   nested_light_groups?: boolean; // default: false
@@ -202,7 +253,20 @@ export interface Simon42StrategyConfig {
   show_switches_on_areas?: boolean; // default: false
   show_alerts_on_areas?: boolean; // default: false
   energy_link_dashboard?: boolean; // default: true
+  power_badge_entity?: string;
+  show_unavailable_alert_badge?: boolean; // default: false
+  show_now_playing_badge?: boolean; // default: false
+  show_sun_badge?: boolean; // default: false
+  show_updates_badge?: boolean; // default: false
   hide_unavailable_entities?: boolean; // default: false
+  show_plants_section?: boolean; // default: false
+  show_agenda_section?: boolean; // default: false
+  agenda_calendar_entities?: string[];
+  show_todos_section?: boolean; // default: false
+  todos_entities?: string[];
+  show_persons_section?: boolean; // default: false
+  show_vacuums_section?: boolean; // default: false
+  show_maintenance_section?: boolean; // default: false
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 

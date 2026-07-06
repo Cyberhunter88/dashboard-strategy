@@ -151,6 +151,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Personen-Badges** — Die automatisch erzeugten Personen-Badges im Header der Übersicht lassen sich separat ein- oder ausblenden (`show_person_badges`). Das ist nützlich, wenn eigene Header-Badges die Personenanzeige ersetzen sollen.
 
+**Header-Badges & Personen-Layout** — Zusätzlich zu den Personen-Badges können optionale Header-Badges für Stromverbrauch, nicht verfügbare Entitäten, Now Playing, Sonne und Updates eingeblendet werden. Für Personen-Badges lässt sich außerdem wählen, ob nur der Name oder auch Status und relative Zeit gezeigt werden.
+
 **Zusammenfassungen** — Kacheln die den Status aller Lichter, Rollos, Sicherheits-Entitäten, Batterien und Klimageräte zusammenfassen. Jede Zusammenfassung kann einzeln ein- oder ausgeschaltet werden. Das Layout ist als 2-Spalten-Grid (Standard) oder 4-Spalten-Reihe konfigurierbar. Für Rollos kann optional eine **Teiloffen-Gruppe** aktiviert werden, die Rollos mit Position zwischen 1-99% separat anzeigt — inkl. Live-Übergängen während des Fahrens.
 
 <p align="center">
@@ -166,6 +168,10 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Startseiten-Layout** — Standardmäßig zeigt die Übersicht klassische Sections. Alternativ kann die **Wetter-Startseite** aktiviert werden: große Uhr, Datum, aktuelle Wetterkarte, stündliche und tägliche Vorhersage, Zusammenfassungen, Bereiche, Etagen, eigene Karten und eigene Abschnitte können per Drag & Drop frei angeordnet werden. Einzelne Startseiten-Blöcke lassen sich zusätzlich mit eigenem Lovelace-YAML überschreiben.
 
 **Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht. Die Wetter-Entität kann automatisch erkannt oder im Editor festgelegt werden. Die Energie-Karte kann optional direkt auf das Home-Assistant-Energie-Dashboard verlinken.
+
+**Erweiterte Wetter-/Energie-Abschnitte** — Die Wetter-Section unterstützt jetzt eine frei wählbare Darstellung (`weather_presentation`), eine optionale Sensorzeile (`weather_sensors`) und den Legacy-Schalter `show_weather_forecast_card`. In der Energie-Section lässt sich die Verteilungskarte separat steuern (`show_energy_distribution_card`), während ein zusätzliches Power-Badge über `power_badge_entity` konfiguriert werden kann.
+
+**Zusätzliche Overview-Sections** — Optional können auf der klassischen Übersicht weitere automatisch erzeugte Sections für Pflanzen, Agenda, Todos, Personen, Staubsauger und Wartung aktiviert und in `sections_order` einsortiert werden.
 
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
 
@@ -326,9 +332,14 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `theme` | string | HA-Standard | Theme für alle automatisch generierten Views |
 | `show_clock_card` | boolean | `true` | Uhr auf der Übersicht |
 | `show_person_badges` | boolean | `true` | Automatische Personen-Badges im Header der Übersicht anzeigen |
+| `person_badge_layout` | `"minimal"` \| `"with_state"` \| `"with_state_and_time"` | `"with_state"` | Layout der automatischen Personen-Badges |
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
 | `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
 | `show_search_card` | boolean | `false` | Such-Karte (benötigt custom:search-card) |
+| `show_unavailable_alert_badge` | boolean | `false` | Badge mit Anzahl nicht verfügbarer sichtbarer Entitäten im Header |
+| `show_now_playing_badge` | boolean | `false` | Badge für den ersten gerade spielenden Media-Player im Header |
+| `show_sun_badge` | boolean | `false` | Sonnenauf-/untergangs-Badge im Header |
+| `show_updates_badge` | boolean | `false` | Badge mit Anzahl sichtbarer Update-Entitäten mit ausstehenden Updates |
 | `show_light_summary` | boolean | `true` | Lichter-Zusammenfassung |
 | `show_covers_summary` | boolean | `true` | Rollo-Zusammenfassung |
 | `show_security_summary` | boolean | `true` | Sicherheits-Zusammenfassung |
@@ -343,8 +354,13 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_area_in_battery_view` | boolean | `false` | Bereichsnamen in Batterie-Kacheln vor dem Entitätsnamen anzeigen |
 | `unavailable_batteries_bucket` | `'critical' \| 'good'` | `'good'` | Nicht auswertbare Batterien als kritisch oder gut einsortieren |
 | `show_weather` | boolean | `true` | Wetter-Karte |
+| `show_weather_forecast_card` | boolean | `true` | Legacy-Schalter für die klassische Wettervorhersage |
+| `weather_presentation` | `"forecast_daily"` \| `"forecast_hourly"` \| `"forecast_twice_daily"` \| `"tile"` \| `"none"` | `"forecast_daily"` | Darstellung der Wetter-Section |
+| `weather_sensors` | object[] | `[]` | Zusätzliche Sensorzeile über der Wetter-Section (`entity`, optional `icon`, `unit`, `round`) |
 | `show_energy` | boolean | `true` | Energie-Dashboard |
+| `show_energy_distribution_card` | boolean | `true` | Energieverteilungs-Karte in der Energy-Section |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
+| `power_badge_entity` | string | — | Zusätzliche Entity als Power-Badge im Header |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
 | `dense_section_placement` | boolean | `false` | Generierte Sections-Views dicht platzieren, um Raster-Lücken aufzufüllen |
 | `hidden_section_headings` | string[] | `[]` | Erzeugte Überschriften für Overview-, Summary-, Favoriten-, Bereichs-, Wetter- und Energie-Abschnitte ausblenden |
@@ -353,6 +369,14 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
 | `overview_layout` | `"default"` \| `"weather_start"` | `"default"` | Startseiten-Layout |
 | `sections_order` | string[] | Standard-Reihenfolge | Reihenfolge der Standard-Übersichts-Sections |
+| `show_plants_section` | boolean | `false` | Pflanzen-Section auf der Übersicht |
+| `show_agenda_section` | boolean | `false` | Agenda-Section auf der Übersicht |
+| `agenda_calendar_entities` | string[] | Auto | Kalender-Entitäten für die Agenda-Section |
+| `show_todos_section` | boolean | `false` | Todo-Section auf der Übersicht |
+| `todos_entities` | string[] | Auto | Todo-Entitäten für die Todo-Section |
+| `show_persons_section` | boolean | `false` | Personen-Section auf der Übersicht |
+| `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
+| `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
 | `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
