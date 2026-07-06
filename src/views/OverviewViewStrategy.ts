@@ -25,6 +25,7 @@ import {
   parsedConfigToSections,
   renderParsedCustomCardAsSection,
   renderParsedCustomCards,
+  withSectionVisibility,
 } from '../utils/lovelace-utils';
 
 function createLargeTimeCard(): LovelaceCardConfig {
@@ -456,7 +457,10 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const someSensorId = findDummySensor(hass);
 
     // Person badges
-    const personBadges = createPersonBadges(persons, hass);
+    const personBadges = dashboardConfig.show_person_badges !== false
+      ? createPersonBadges(persons, hass)
+      : [];
+    const hiddenHeadings = new Set(dashboardConfig.hidden_section_headings || []);
 
     // Config flags
     const showWeather = dashboardConfig.show_weather !== false;
@@ -479,9 +483,10 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const customCardsSection = createCustomCardsSection(
       customCardsBySection.get('custom_cards') || [],
       dashboardConfig.custom_cards_heading,
-      dashboardConfig.custom_cards_icon
+      dashboardConfig.custom_cards_icon,
+      hiddenHeadings.has('custom_cards')
     );
-    const areasSections = createAreasSection(visibleAreas, groupByFloors, hass);
+    const areasSections = createAreasSection(visibleAreas, groupByFloors, hass, hiddenHeadings.has('areas'));
 
     if (dashboardConfig.overview_layout === 'weather_start') {
       const overviewSections = dashboardConfig.weather_start_layout_items?.length
@@ -498,9 +503,10 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           createCustomCardsSection(
             customCardsBySection.get('custom_cards') || [],
             dashboardConfig.custom_cards_heading,
-            dashboardConfig.custom_cards_icon
+            dashboardConfig.custom_cards_icon,
+            hiddenHeadings.has('custom_cards')
           ),
-          createCustomSectionsArray(dashboardConfig.custom_sections || []),
+          createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections')),
           dashboardConfig,
           dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
           dashboardConfig.weather_start_blocks_config ?? {}
@@ -520,10 +526,10 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const sectionMap = new Map<SectionKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>([
       ['overview', overviewSection],
       ['custom_cards', customCardsSection],
-      ['custom_sections', createCustomSectionsArray(dashboardConfig.custom_sections || [])],
+      ['custom_sections', createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections'))],
       ['areas', areasSections],
-      ['weather', createWeatherSection(weatherEntity ?? null, showWeather)],
-      ['energy', createEnergySection(showEnergy, dashboardConfig.energy_link_dashboard !== false)],
+      ['weather', createWeatherSection(weatherEntity ?? null, showWeather, hiddenHeadings.has('weather'))],
+      ['energy', createEnergySection(showEnergy, dashboardConfig.energy_link_dashboard !== false, hiddenHeadings.has('energy'))],
     ]);
 
     // Assemble in configured order, appending assigned custom cards to each section
@@ -532,10 +538,11 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     for (const key of sectionsOrder) {
       const result = sectionMap.get(key);
       if (!result) continue;
+      const visibilityRule = dashboardConfig.section_visibility?.[key];
       if (Array.isArray(result)) {
-        overviewSections.push(...result);
+        overviewSections.push(...result.map((section) => withSectionVisibility(section, visibilityRule)));
       } else {
-        overviewSections.push(result);
+        overviewSections.push(withSectionVisibility(result, visibilityRule));
       }
       // Append custom cards assigned to this section (skip 'custom_cards' — handled by createCustomCardsSection)
       if (key !== 'custom_cards') {

@@ -14,19 +14,20 @@ import { localize } from '../utils/localize';
  */
 export function createWeatherSection(
   weatherEntity: string | null,
-  showWeather: boolean
+  showWeather: boolean,
+  hideHeading = false
 ): LovelaceSectionConfig | null {
   if (!weatherEntity || !showWeather) return null;
 
   return {
     type: 'grid',
     cards: [
-      {
+      ...(!hideHeading ? [{
         type: 'heading',
         heading: localize('sections.weather'),
         heading_style: 'title',
         icon: 'mdi:weather-partly-cloudy',
-      },
+      }] : []),
       {
         type: 'weather-forecast',
         entity: weatherEntity,
@@ -42,19 +43,20 @@ export function createWeatherSection(
  */
 export function createEnergySection(
   showEnergy: boolean,
-  linkDashboard: boolean = true
+  linkDashboard: boolean = true,
+  hideHeading = false
 ): LovelaceSectionConfig | null {
   if (!showEnergy) return null;
 
   return {
     type: 'grid',
     cards: [
-      {
+      ...(!hideHeading ? [{
         type: 'heading',
         heading: localize('sections.energy'),
         heading_style: 'title',
         icon: 'mdi:lightning-bolt',
-      },
+      }] : []),
       {
         type: 'energy-distribution',
         link_dashboard: linkDashboard,

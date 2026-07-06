@@ -12,6 +12,27 @@ import type { LovelaceCardConfig } from './lovelace';
 
 export type SectionKey = 'overview' | 'custom_cards' | 'custom_sections' | 'areas' | 'weather' | 'energy';
 
+export type HeadingKey =
+  | 'overview'
+  | 'summaries'
+  | 'favorites'
+  | 'custom_cards'
+  | 'custom_sections'
+  | 'areas'
+  | 'weather'
+  | 'energy';
+
+export const ALL_HEADING_KEYS: HeadingKey[] = [
+  'overview',
+  'summaries',
+  'favorites',
+  'custom_cards',
+  'custom_sections',
+  'areas',
+  'weather',
+  'energy',
+];
+
 export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
   'overview',
   'custom_cards',
@@ -156,6 +177,7 @@ export interface Simon42StrategyConfig {
   show_covers_summary?: boolean; // default: true
   show_partially_open_covers?: boolean; // default: false
   show_clock_card?: boolean; // default: true
+  show_person_badges?: boolean; // default: true
   show_light_summary?: boolean; // default: true
   group_lights_by_floors?: boolean; // default: false
   nested_light_groups?: boolean; // default: false
@@ -187,10 +209,12 @@ export interface Simon42StrategyConfig {
   // Layout
   overview_layout?: OverviewLayout; // default: 'default'
   sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
+  section_visibility?: Partial<Record<SectionKey, { entity: string; state: string }>>;
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   weather_start_layout_items?: WeatherStartLayoutItem[];
   summaries_columns?: 2 | 4; // default: 2
   dense_section_placement?: boolean; // default: false
+  hidden_section_headings?: HeadingKey[]; // default: []
 
   // Favorites display
   favorites_show_state?: boolean; // default: false
