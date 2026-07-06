@@ -18,7 +18,7 @@ import type {
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
 } from '../types/strategy';
-import { stripAreaName, sortByLastChanged, mergeStacksOrder } from '../utils/name-utils';
+import { stripAreaName, sortLights, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { localize } from '../utils/localize';
@@ -585,7 +585,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // Sort lights by last_changed (unless custom order)
     if (!groupsOptions.lights?.order) {
-      roomEntities.lights.sort((a, b) => sortByLastChanged(a, b, hass));
+      roomEntities.lights.sort((a, b) =>
+        sortLights(a, b, hass, dashboardConfig.lights_sort_by, (entityId) => stripAreaName(entityId, area, hass))
+      );
     }
 
     // Helper: create a domain section

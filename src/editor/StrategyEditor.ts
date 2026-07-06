@@ -2900,6 +2900,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const summariesColumns = this._config.summaries_columns || 2;
     const groupLightsByFloors = this._config.group_lights_by_floors === true;
     const nestedLightGroups = this._config.nested_light_groups === true;
+    const lightsSortByName = this._config.lights_sort_by === 'name';
     const showPartiallyOpenCovers = this._config.show_partially_open_covers === true;
     const hideMobileAppBatteries = this._config.hide_mobile_app_batteries === true;
     const showBatteryView = this._config.show_battery_view === true;
@@ -2931,6 +2932,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${this._renderCheckbox('nested-light-groups', localize('editor.nested_light_groups'), nestedLightGroups,
           (checked) => this._toggleChanged('nested_light_groups', checked, false))}
         <div class="description">${localize('editor.nested_light_groups_desc')}</div>
+
+        ${this._renderCheckbox('lights-sort-by-name', localize('editor.lights_sort_by_name'), lightsSortByName,
+          (checked) => this._lightsSortByNameChanged(checked))}
+        <div class="description">${localize('editor.lights_sort_by_name_desc')}</div>
 
         <div style="margin-left: 26px; margin-bottom: 8px;">
           ${this._renderCheckbox('show-partially-open-covers', localize('editor.show_partially_open_covers'), showPartiallyOpenCovers,
@@ -4160,6 +4165,22 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     if (columns === 2) {
       delete newConfig.summaries_columns;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _lightsSortByNameChanged(enabled: boolean): void {
+    if (!this._hass) return;
+
+    const newConfig: Simon42StrategyConfig = {
+      ...this._config,
+      lights_sort_by: enabled ? 'name' : 'last_changed',
+    };
+
+    if (!enabled) {
+      delete newConfig.lights_sort_by;
     }
 
     this._config = newConfig;

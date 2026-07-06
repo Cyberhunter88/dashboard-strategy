@@ -22,6 +22,7 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
 ];
 
 export type OverviewLayout = 'default' | 'weather_start';
+export type LightsSortBy = 'last_changed' | 'name';
 
 // -- Weather-Start Block Ordering --------------------------------------
 
@@ -157,6 +158,7 @@ export interface Simon42StrategyConfig {
   show_light_summary?: boolean; // default: true
   group_lights_by_floors?: boolean; // default: false
   nested_light_groups?: boolean; // default: false
+  lights_sort_by?: LightsSortBy; // default: 'last_changed'
   show_security_summary?: boolean; // default: true
   show_battery_summary?: boolean; // default: true
   show_battery_view?: boolean; // default: false (summary remains the main trigger)

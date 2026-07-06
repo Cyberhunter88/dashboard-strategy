@@ -8,7 +8,7 @@ import type { AreaRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
-import { stripAreaName } from '../utils/name-utils';
+import { stripAreaName, sortLights } from '../utils/name-utils';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
@@ -209,7 +209,7 @@ class Simon42LightsGroupCard extends LitElement {
     if (availableSourceIds.length === 0) return [];
 
     if (this._config.group_type === 'all') {
-      return availableSourceIds.sort((a, b) => this._sortByLastChanged(a, b));
+      return availableSourceIds.sort((a, b) => this._compareLightIds(a, b));
     }
 
     const targetState = this._config.group_type === 'on' ? 'on' : 'off';
@@ -220,13 +220,12 @@ class Simon42LightsGroupCard extends LitElement {
       if (state && state.state === targetState) relevant.push(id);
     }
 
-    return relevant.sort((a, b) => this._sortByLastChanged(a, b));
+    return relevant.sort((a, b) => this._compareLightIds(a, b));
   }
 
-  private _sortByLastChanged(a: string, b: string): number {
-    const lastA = this._getState(a)?.last_changed ?? '';
-    const lastB = this._getState(b)?.last_changed ?? '';
-    return lastB > lastA ? 1 : lastB < lastA ? -1 : 0;
+  private _compareLightIds(a: string, b: string): number {
+    if (!this.hass) return 0;
+    return sortLights(a, b, this.hass, this._config.config?.lights_sort_by, (entityId) => this._getDisplayName(entityId));
   }
 
   private _getAreaForEntity(entityId: string): string | null {
@@ -263,7 +262,7 @@ class Simon42LightsGroupCard extends LitElement {
       (id): id is string => typeof id === 'string' && id.startsWith('light.') && id !== entityId && candidateSet.has(id)
     );
 
-    return [...new Set(childIds)].sort((a, b) => this._sortByLastChanged(a, b));
+    return [...new Set(childIds)].sort((a, b) => this._compareLightIds(a, b));
   }
 
   private _collectDescendants(
@@ -323,7 +322,7 @@ class Simon42LightsGroupCard extends LitElement {
 
     const topLevelIds = lightIds
       .filter((entityId) => !allNestedChildIds.has(entityId))
-      .sort((a, b) => this._sortByLastChanged(a, b));
+      .sort((a, b) => this._compareLightIds(a, b));
 
     return { topLevelIds, nodes };
   }

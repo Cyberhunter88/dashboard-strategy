@@ -8,7 +8,7 @@
 import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
-import { DEFAULT_STACKS_ORDER, type StackKey, type AreasDisplay } from '../types/strategy';
+import { DEFAULT_STACKS_ORDER, type StackKey, type AreasDisplay, type LightsSortBy } from '../types/strategy';
 import { mergeConfiguredOrder } from './order-utils';
 
 // -- Module-level RegExp caches (shared across all calls) -------------
@@ -65,6 +65,10 @@ function getFriendlyName(entityId: string, hass: HomeAssistant): string | null {
   const state = hass.states[entityId];
   if (!state) return null;
   return (state.attributes?.friendly_name as string | undefined) ?? entityId.split('.')[1].replace(/_/g, ' ');
+}
+
+export function getEntityDisplayName(entityId: string, hass: HomeAssistant): string {
+  return getFriendlyName(entityId, hass) ?? entityId;
 }
 
 // -- Exported functions -----------------------------------------------
@@ -206,6 +210,30 @@ export function sortByLastChanged(a: string, b: string, hass: HomeAssistant): nu
   const lastA = hass.states[a]?.last_changed ?? '';
   const lastB = hass.states[b]?.last_changed ?? '';
   return lastB > lastA ? 1 : lastB < lastA ? -1 : 0;
+}
+
+export function sortByName(
+  a: string,
+  b: string,
+  hass: HomeAssistant,
+  getName?: (entityId: string) => string | undefined
+): number {
+  const nameA = (getName?.(a) ?? getEntityDisplayName(a, hass)).trim();
+  const nameB = (getName?.(b) ?? getEntityDisplayName(b, hass)).trim();
+  const byName = nameA.localeCompare(nameB, undefined, { sensitivity: 'base', numeric: true });
+  if (byName !== 0) return byName;
+  return a.localeCompare(b);
+}
+
+export function sortLights(
+  a: string,
+  b: string,
+  hass: HomeAssistant,
+  sortBy: LightsSortBy | undefined,
+  getName?: (entityId: string) => string | undefined
+): number {
+  if (sortBy === 'name') return sortByName(a, b, hass, getName);
+  return sortByLastChanged(a, b, hass);
 }
 
 /**

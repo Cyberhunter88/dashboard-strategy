@@ -211,6 +211,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Lichter nach Etagen** — In der Lichter-View können Lichter nach Etagen gruppiert werden, mit Ein-/Ausschalt-Button pro Etage.
 
+**Lichter alphabetisch sortieren** — Optional lassen sich Lichter nach Anzeigenamen statt nach letzter Änderung sortieren (`lights_sort_by: name`). Das gilt für Lichter-Ansicht, Raum-Ansichten und verschachtelte Lichtgruppen.
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
 </p>
@@ -369,6 +371,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_room_views` | boolean | `false` | Raum-Views in Navigation |
 | `group_lights_by_floors` | boolean | `false` | Lichter nach Etagen gruppieren |
 | `nested_light_groups` | boolean | `false` | Lichtgruppen als aufklappbare Container mit Mitgliedern anzeigen |
+| `lights_sort_by` | `"last_changed"` \| `"name"` | `"last_changed"` | Lichter nach letzter Änderung oder alphabetisch nach Anzeigename sortieren |
 | `custom_cards` | object[] | `[]` | Eigene Karten via YAML |
 | `custom_cards_heading` | string | `"Eigene Karten"` | Überschrift der Custom Cards Section |
 | `custom_cards_icon` | string | `"mdi:cards"` | Icon der Custom Cards Section |
