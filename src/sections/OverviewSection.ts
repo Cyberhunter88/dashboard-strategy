@@ -67,7 +67,9 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       summary_type: 'batteries',
       areas_options: config.areas_options || {},
       hide_mobile_app_batteries: config.hide_mobile_app_batteries,
+      hide_battery_notes_entities: config.hide_battery_notes_entities,
       battery_critical_threshold: config.battery_critical_threshold,
+      unavailable_batteries_bucket: config.unavailable_batteries_bucket,
       hide_unavailable_entities: config.hide_unavailable_entities,
       ...compactConfig,
     });
@@ -93,12 +95,15 @@ export function appendSummaryCards(
 ): void {
   const summaryCards = createSummaryCards(config, compact);
   if (summaryCards.length === 0) return;
+  const hidden = new Set(config.hidden_section_headings || []);
 
-  cards.push({
-    type: 'heading',
-    heading: localize('sections.summaries'),
-    ...(compact ? { heading_style: 'subtitle' } : {}),
-  });
+  if (!hidden.has('summaries')) {
+    cards.push({
+      type: 'heading',
+      heading: localize('sections.summaries'),
+      ...(compact ? { heading_style: 'subtitle' } : {}),
+    });
+  }
 
   const summariesColumns = config.summaries_columns || 2;
   if (summariesColumns === 4) {
@@ -142,6 +147,7 @@ export function createWeatherStartSummariesSection(
 export function createOverviewSection(data: OverviewSectionParams): LovelaceSectionConfig | null {
   const { showSearchCard, config, hass } = data;
   const showClockCard = config.show_clock_card !== false;
+  const hidden = new Set(config.hidden_section_headings || []);
 
   // Check if alarm entity is configured
   const alarmEntity = config.alarm_entity;
@@ -149,7 +155,7 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
   const cards: LovelaceCardConfig[] = [];
 
   // Only show "Übersicht" heading if clock or alarm is visible
-  if (showClockCard || alarmEntity) {
+  if ((showClockCard || alarmEntity) && !hidden.has('overview')) {
     cards.push({
       type: 'heading',
       heading: localize('sections.overview'),
@@ -206,10 +212,12 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
   const favoriteEntities = (config.favorite_entities || []).filter((entityId) => hass.states[entityId] !== undefined);
 
   if (favoriteEntities.length > 0) {
-    cards.push({
-      type: 'heading',
-      heading: localize('sections.favorites'),
-    });
+    if (!hidden.has('favorites')) {
+      cards.push({
+        type: 'heading',
+        heading: localize('sections.favorites'),
+      });
+    }
 
     const showState = config.favorites_show_state === true;
     const hideLastChanged = config.favorites_hide_last_changed === true;
@@ -246,14 +254,16 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 export function createCustomCardsSection(
   customCards: CustomCard[],
   heading?: string,
-  icon?: string
+  icon?: string,
+  hideHeading = false
 ): LovelaceSectionConfig | null {
   const validCards = customCards.filter((c) => c.parsed_config);
   if (validCards.length === 0) return null;
 
-  const cards: LovelaceCardConfig[] = [
-    createHeadingCard(heading || localize('sections.custom_cards'), { icon: icon || 'mdi:cards' }),
-  ];
+  const cards: LovelaceCardConfig[] = [];
+  if (!hideHeading) {
+    cards.push(createHeadingCard(heading || localize('sections.custom_cards'), { icon: icon || 'mdi:cards' }));
+  }
 
   cards.push(...renderParsedCustomCards(validCards));
 
@@ -265,17 +275,19 @@ export function createCustomCardsSection(
  * Each CustomSection becomes its own grid section with a heading card + its cards.
  * Returns an empty array if no valid custom sections are configured.
  */
-export function createCustomSectionsArray(customSections: CustomSection[]): LovelaceSectionConfig[] {
+export function createCustomSectionsArray(customSections: CustomSection[], hideHeadings = false): LovelaceSectionConfig[] {
   const result: LovelaceSectionConfig[] = [];
 
   for (const section of customSections) {
     const cards: LovelaceCardConfig[] = [];
 
-    cards.push({
-      type: 'heading',
-      heading: section.title || localize('sections.custom_sections'),
-      ...(section.icon ? { icon: section.icon } : {}),
-    });
+    if (!hideHeadings) {
+      cards.push({
+        type: 'heading',
+        heading: section.title || localize('sections.custom_sections'),
+        ...(section.icon ? { icon: section.icon } : {}),
+      });
+    }
 
     cards.push(...renderParsedCustomCards(section.cards || [], 'subtitle'));
 

@@ -2,7 +2,7 @@
 // Lovelace config helpers
 // ====================================================================
 
-import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
+import type { LovelaceCardConfig, LovelaceCondition, LovelaceSectionConfig } from '../types/lovelace';
 
 interface HeadingCardOptions {
   heading_style?: LovelaceCardConfig['heading_style'];
@@ -79,4 +79,34 @@ export function parsedConfigToSections(
     return [parsed as LovelaceSectionConfig];
   }
   return [{ type: 'grid', cards: [parsed as LovelaceCardConfig] }];
+}
+
+export function hideFirstHeadingCard(section: LovelaceSectionConfig): LovelaceSectionConfig {
+  if (!Array.isArray(section.cards) || section.cards.length === 0) return section;
+  const [firstCard, ...rest] = section.cards;
+  if (firstCard?.type !== 'heading') return section;
+  return {
+    ...section,
+    cards: rest,
+  };
+}
+
+export function withSectionVisibility(
+  section: LovelaceSectionConfig,
+  rule?: { entity?: string; state?: string }
+): LovelaceSectionConfig {
+  const entity = rule?.entity?.trim();
+  const state = rule?.state?.trim();
+  if (!entity || !state) return section;
+
+  const visibility: LovelaceCondition = {
+    condition: 'state',
+    entity,
+    state,
+  };
+
+  return {
+    ...section,
+    visibility: [...(section.visibility || []), visibility],
+  };
 }

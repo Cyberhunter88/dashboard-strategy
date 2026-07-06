@@ -212,7 +212,8 @@ function getFloorIcon(level: number | null | undefined): string {
 export function createAreasSection(
   visibleAreas: AreaRegistryEntry[],
   groupByFloors: boolean = false,
-  hass: HomeAssistant | null = null
+  hass: HomeAssistant | null = null,
+  hideHeading = false
 ): LovelaceSectionConfig | LovelaceSectionConfig[] {
   const buildContext = createAreaCardBuildContext();
 
@@ -221,11 +222,11 @@ export function createAreasSection(
     return {
       type: 'grid',
       cards: [
-        {
+        ...(!hideHeading ? [{
           type: 'heading',
           heading_style: 'title',
           heading: localize('sections.areas'),
-        },
+        }] : []),
         ...visibleAreas.map((area) => buildAreaCard(area, hass as HomeAssistant, buildContext)),
       ],
     };
@@ -257,24 +258,24 @@ export function createAreasSection(
     const floorIcon = floor?.icon || getFloorIcon(floor?.level);
 
     return [
-      {
+      ...(!hideHeading ? [{
         type: 'heading',
         heading_style: 'title',
         heading: floorName,
         icon: floorIcon,
-      },
+      }] : []),
       ...areas.map((area) => buildAreaCard(area, hass, buildContext)),
     ];
   };
 
   const buildOtherAreasCards = (): LovelaceCardConfig[] => {
     return [
-      {
+      ...(!hideHeading ? [{
         type: 'heading',
         heading_style: 'title',
         heading: localize('sections.areas_other'),
         icon: 'mdi:home-outline',
-      },
+      }] : []),
       ...areasWithoutFloor.map((area) => buildAreaCard(area, hass, buildContext)),
     ];
   };

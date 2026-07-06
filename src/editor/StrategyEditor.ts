@@ -23,7 +23,7 @@ import type {
   WeatherStartKey,
   WeatherStartLayoutItem,
 } from '../types/strategy';
-import { DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
+import { ALL_HEADING_KEYS, DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
 import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
@@ -1647,13 +1647,43 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
   }
 
-  private _renderSectionOrderPanel(): TemplateResult {
-    const order = this._getSectionsOrder();
-    const energyLinkDashboard = this._config.energy_link_dashboard !== false;
-    const showEnergy = this._config.show_energy !== false;
+  private _toggleHiddenHeading(key: string, hide: boolean): void {
+    const current = new Set(this._config.hidden_section_headings || []);
+    if (hide) current.add(key as any);
+    else current.delete(key as any);
 
-    return html`
-      <div class="section">
+    const updated: Simon42StrategyConfig = { ...this._config };
+    if (current.size === 0) delete updated.hidden_section_headings;
+    else updated.hidden_section_headings = [...current] as any;
+
+    this._config = updated;
+    this._fireConfigChanged(updated);
+  }
+
+  private _sectionVisibilityChanged(sectionKey: SectionKey, field: 'entity' | 'state', value: string): void {
+    const updated: Simon42StrategyConfig = { ...this._config };
+    const current = { ...(updated.section_visibility || {}) };
+    const rule = { ...(current[sectionKey] || { entity: '', state: '' }) };
+    rule[field] = value.trim();
+
+    if (!rule.entity && !rule.state) delete current[sectionKey];
+    else current[sectionKey] = rule;
+
+    if (Object.keys(current).length === 0) delete updated.section_visibility;
+    else updated.section_visibility = current;
+
+    this._config = updated;
+    this._fireConfigChanged(updated);
+  }
+
+  private _renderSectionOrderPanel(): TemplateResult {
+      const order = this._getSectionsOrder();
+      const energyLinkDashboard = this._config.energy_link_dashboard !== false;
+      const showEnergy = this._config.show_energy !== false;
+      const hiddenHeadings = new Set(this._config.hidden_section_headings || []);
+
+      return html`
+        <div class="section">
         <div class="section-title">${localize('editor.section_order')}</div>
         <div class="description" style="margin-left: 0; margin-bottom: 12px;">
           ${localize('editor.section_order_desc')}
@@ -1695,11 +1725,59 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </div>
               ` : nothing}
             `;
-          })}
+            })}
+          </div>
+          <details style="margin-top: 12px;">
+            <summary style="cursor: pointer; font-weight: 500;">${localize('editor.hidden_section_headings')}</summary>
+            <div style="margin-left: 14px; margin-top: 6px;">
+              <div class="description" style="margin-left: 0; margin-bottom: 8px;">
+                ${localize('editor.hidden_section_headings_desc')}
+              </div>
+              ${ALL_HEADING_KEYS.map((key) => html`
+                <div class="form-row">
+                  <input type="checkbox" id=${`hide-heading-${key}`}
+                    ?checked=${hiddenHeadings.has(key)}
+                    @change=${(e: Event) => this._toggleHiddenHeading(key, (e.target as HTMLInputElement).checked)} />
+                  <label for=${`hide-heading-${key}`}>${localize(`sections.${key}`)}</label>
+                </div>
+              `)}
+            </div>
+          </details>
+          <details style="margin-top: 12px;">
+            <summary style="cursor: pointer; font-weight: 500;">${localize('editor.section_visibility')}</summary>
+            <div style="margin-left: 14px; margin-top: 6px;">
+              <div class="description" style="margin-left: 0; margin-bottom: 8px;">
+                ${localize('editor.section_visibility_desc')}
+              </div>
+              ${order.map((key) => {
+                const meta = Simon42DashboardStrategyEditor._sectionMeta.get(key);
+                if (!meta) return nothing;
+                const rule = this._config.section_visibility?.[key];
+                return html`
+                  <div style="border: 1px solid var(--divider-color); border-radius: 6px; padding: 8px; margin-bottom: 8px;">
+                    <div style="font-weight: 500; margin-bottom: 6px;">${localize(meta.labelKey)}</div>
+                    <div class="form-row">
+                      <label for=${`visibility-entity-${key}`} style="min-width: 80px; font-size: 12px;">${localize('editor.section_visibility_entity')}</label>
+                      <input type="text" id=${`visibility-entity-${key}`} style="flex: 1;"
+                        placeholder="input_boolean.guest_mode"
+                        .value=${rule?.entity || ''}
+                        @change=${(e: Event) => this._sectionVisibilityChanged(key, 'entity', (e.target as HTMLInputElement).value)} />
+                    </div>
+                    <div class="form-row">
+                      <label for=${`visibility-state-${key}`} style="min-width: 80px; font-size: 12px;">${localize('editor.section_visibility_state')}</label>
+                      <input type="text" id=${`visibility-state-${key}`} style="flex: 1;"
+                        placeholder="on"
+                        .value=${rule?.state || ''}
+                        @change=${(e: Event) => this._sectionVisibilityChanged(key, 'state', (e.target as HTMLInputElement).value)} />
+                    </div>
+                  </div>
+                `;
+              })}
+            </div>
+          </details>
         </div>
-      </div>
-    `;
-  }
+      `;
+    }
 
   // -- Weather-start block order panel -----------------------------------
 
@@ -2850,25 +2928,30 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderOverviewSection(): TemplateResult {
-    const showClockCard = this._config.show_clock_card !== false;
-    const showSearchCard = this._config.show_search_card === true;
-    const hasSearchCardDeps = this._checkSearchCardDependencies();
+      const showClockCard = this._config.show_clock_card !== false;
+      const showSearchCard = this._config.show_search_card === true;
+      const showPersonBadges = this._config.show_person_badges !== false;
+      const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
     const overviewLayout = this._config.overview_layout || 'default';
 
     return html`
       <div class="section">
-        <div class="section-title">${localize('editor.section_overview_details')}</div>
+          <div class="section-title">${localize('editor.section_overview_details')}</div>
 
-        ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
+          ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
 
-        ${overviewLayout !== 'weather_start' ? html`
-          ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
-            (checked) => this._toggleChanged('show_clock_card', checked, true))}
-          <div class="description">${localize('editor.show_clock_card_desc')}</div>
+          ${this._renderCheckbox('show-person-badges', localize('editor.show_person_badges'), showPersonBadges,
+            (checked) => this._toggleChanged('show_person_badges', checked, true))}
+          <div class="description">${localize('editor.show_person_badges_desc')}</div>
 
-          <div class="form-row">
+          ${overviewLayout !== 'weather_start' ? html`
+            ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
+              (checked) => this._toggleChanged('show_clock_card', checked, true))}
+            <div class="description">${localize('editor.show_clock_card_desc')}</div>
+
+            <div class="form-row">
             <label for="alarm-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.alarm_entity')}</label>
             <select id="alarm-entity"
               style="flex: 1;"

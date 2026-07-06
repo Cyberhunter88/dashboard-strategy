@@ -149,6 +149,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Uhr & Alarm** — Die Uhr wird standardmäßig angezeigt. Optional kann eine Alarmanlage daneben eingeblendet werden.
 
+**Personen-Badges** — Die automatisch erzeugten Personen-Badges im Header der Übersicht lassen sich separat ein- oder ausblenden (`show_person_badges`). Das ist nützlich, wenn eigene Header-Badges die Personenanzeige ersetzen sollen.
+
 **Zusammenfassungen** — Kacheln die den Status aller Lichter, Rollos, Sicherheits-Entitäten, Batterien und Klimageräte zusammenfassen. Jede Zusammenfassung kann einzeln ein- oder ausgeschaltet werden. Das Layout ist als 2-Spalten-Grid (Standard) oder 4-Spalten-Reihe konfigurierbar. Für Rollos kann optional eine **Teiloffen-Gruppe** aktiviert werden, die Rollos mit Position zwischen 1-99% separat anzeigt — inkl. Live-Übergängen während des Fahrens.
 
 <p align="center">
@@ -208,6 +210,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Fenster- & Türkontakte** — Optional können Fensterkontakte und Türkontakte als Badges in den Raum-Views angezeigt werden. Zwei getrennte Toggles im Editor, standardmäßig aus. Absolute Luftfeuchtigkeit (z.B. von der Thermal Comfort Integration, `g/m³`) wird automatisch als Badge erkannt.
 
 **Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden.
+
+**Abschnitts-Metasteuerung** — Für die klassische Übersicht können erzeugte Überschriften gezielt ausgeblendet (`hidden_section_headings`) und ganze Abschnitte an Entity-Zustände gebunden werden (`section_visibility`).
 
 **Lichter nach Etagen** — In der Lichter-View können Lichter nach Etagen gruppiert werden, mit Ein-/Ausschalt-Button pro Etage.
 
@@ -321,6 +325,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 |--------|-----|----------|-------------|
 | `theme` | string | HA-Standard | Theme für alle automatisch generierten Views |
 | `show_clock_card` | boolean | `true` | Uhr auf der Übersicht |
+| `show_person_badges` | boolean | `true` | Automatische Personen-Badges im Header der Übersicht anzeigen |
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
 | `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
 | `show_search_card` | boolean | `false` | Such-Karte (benötigt custom:search-card) |
@@ -342,11 +347,13 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
 | `dense_section_placement` | boolean | `false` | Generierte Sections-Views dicht platzieren, um Raster-Lücken aufzufüllen |
+| `hidden_section_headings` | string[] | `[]` | Erzeugte Überschriften für Overview-, Summary-, Favoriten-, Bereichs-, Wetter- und Energie-Abschnitte ausblenden |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
 | `overview_layout` | `"default"` \| `"weather_start"` | `"default"` | Startseiten-Layout |
 | `sections_order` | string[] | Standard-Reihenfolge | Reihenfolge der Standard-Übersichts-Sections |
+| `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
 | `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
 | `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |
