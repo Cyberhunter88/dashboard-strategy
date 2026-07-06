@@ -18,8 +18,11 @@ import type {
   CustomSection,
   AreaCustomCard,
   OverviewLayout,
+  PersonBadgeLayout,
   SectionKey,
   StackKey,
+  WeatherPresentation,
+  WeatherSensorConfig,
   WeatherStartKey,
   WeatherStartLayoutItem,
 } from '../types/strategy';
@@ -325,6 +328,56 @@ class Simon42DashboardStrategyEditor extends LitElement {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private _getEntitiesByDomains(domains: string[]): { entity_id: string; name: string }[] {
+    if (!this._hass) return [];
+    const allowed = new Set(domains);
+    return Object.keys(this._hass.states)
+      .filter((entityId) => allowed.has(entityId.split('.')[0]))
+      .map((entityId) => {
+        const stateObj = this._hass!.states[entityId];
+        return {
+          entity_id: entityId,
+          name: stateObj.attributes?.friendly_name || entityId,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private _formatEntityList(value?: string[]): string {
+    return (value || []).join(', ');
+  }
+
+  private _formatWeatherSensors(value?: WeatherSensorConfig[]): string {
+    return (value || [])
+      .map((sensor) => [sensor.entity, sensor.icon || '', sensor.unit || '', sensor.round ?? ''].join('|'))
+      .join('\n');
+  }
+
+  private _parseEntityList(value: string): string[] {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  private _parseWeatherSensors(value: string): WeatherSensorConfig[] {
+    return value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [entity, icon, unit, round] = line.split('|').map((part) => part.trim());
+        const parsedRound = round === undefined || round === '' ? undefined : Number.parseInt(round, 10);
+        return {
+          entity,
+          ...(icon ? { icon } : {}),
+          ...(unit ? { unit } : {}),
+          ...(Number.isInteger(parsedRound) ? { round: parsedRound } : {}),
+        };
+      })
+      .filter((sensor) => sensor.entity.includes('.'));
   }
 
   private _getThemeNames(): string[] {
@@ -1621,6 +1674,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
         return this._config.show_weather === false;
       case 'energy':
         return this._config.show_energy === false;
+      case 'plants':
+        return this._config.show_plants_section !== true;
+      case 'agenda':
+        return this._config.show_agenda_section !== true;
+      case 'todos':
+        return this._config.show_todos_section !== true;
+      case 'persons':
+        return this._config.show_persons_section !== true;
+      case 'vacuums':
+        return this._config.show_vacuums_section !== true;
+      case 'maintenance':
+        return this._config.show_maintenance_section !== true;
       default:
         return false;
     }
@@ -1633,10 +1698,25 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ['areas', { icon: 'mdi:floor-plan', labelKey: 'sections.areas' }],
     ['weather', { icon: 'mdi:weather-partly-cloudy', labelKey: 'sections.weather' }],
     ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'sections.energy' }],
+    ['plants', { icon: 'mdi:flower-outline', labelKey: 'sections.plants' }],
+    ['agenda', { icon: 'mdi:calendar-outline', labelKey: 'sections.agenda' }],
+    ['todos', { icon: 'mdi:checkbox-marked-circle-outline', labelKey: 'sections.todos' }],
+    ['persons', { icon: 'mdi:account-group-outline', labelKey: 'sections.persons' }],
+    ['vacuums', { icon: 'mdi:robot-vacuum', labelKey: 'sections.vacuums' }],
+    ['maintenance', { icon: 'mdi:wrench-outline', labelKey: 'sections.maintenance' }],
   ]);
 
   private _isSectionToggleable(key: SectionKey): boolean {
-    return key === 'weather' || key === 'energy';
+    return [
+      'weather',
+      'energy',
+      'plants',
+      'agenda',
+      'todos',
+      'persons',
+      'vacuums',
+      'maintenance',
+    ].includes(key);
   }
 
   private _toggleSectionVisibility(key: SectionKey, visible: boolean): void {
@@ -1644,6 +1724,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._toggleChanged('show_weather', visible, true);
     } else if (key === 'energy') {
       this._toggleChanged('show_energy', visible, true);
+    } else if (key === 'plants') {
+      this._toggleChanged('show_plants_section', visible, false);
+    } else if (key === 'agenda') {
+      this._toggleChanged('show_agenda_section', visible, false);
+    } else if (key === 'todos') {
+      this._toggleChanged('show_todos_section', visible, false);
+    } else if (key === 'persons') {
+      this._toggleChanged('show_persons_section', visible, false);
+    } else if (key === 'vacuums') {
+      this._toggleChanged('show_vacuums_section', visible, false);
+    } else if (key === 'maintenance') {
+      this._toggleChanged('show_maintenance_section', visible, false);
     }
   }
 
@@ -1680,6 +1772,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const order = this._getSectionsOrder();
       const energyLinkDashboard = this._config.energy_link_dashboard !== false;
       const showEnergy = this._config.show_energy !== false;
+      const weatherPresentation = this._config.weather_presentation || 'forecast_daily';
+      const showDistributionCard = this._config.show_energy_distribution_card !== false;
+      const powerBadgeEntity = this._config.power_badge_entity || '';
+      const powerBadgeEntities = this._getEntitiesByDomains(['sensor', 'binary_sensor', 'number', 'input_number']);
       const hiddenHeadings = new Set(this._config.hidden_section_headings || []);
 
       return html`
@@ -1723,6 +1819,62 @@ class Simon42DashboardStrategyEditor extends LitElement {
                     @change=${(e: Event) => { this._toggleChanged('energy_link_dashboard', (e.target as HTMLInputElement).checked, true); }} />
                   <label for="energy-link-dashboard">${localize('editor.energy_link_dashboard')}</label>
                 </div>
+                <div class="section-order-sub">
+                  <input type="checkbox" id="show-energy-distribution-card"
+                    ?checked=${showDistributionCard}
+                    @change=${(e: Event) => { this._toggleChanged('show_energy_distribution_card', (e.target as HTMLInputElement).checked, true); }} />
+                  <label for="show-energy-distribution-card">${localize('editor.show_energy_distribution_card')}</label>
+                </div>
+                <div class="section-order-sub">
+                  <label for="power-badge-entity" style="min-width: 140px;">${localize('editor.power_badge_entity')}</label>
+                  <select id="power-badge-entity" style="flex: 1;" @change=${this._powerBadgeEntityChanged}>
+                    <option value="" ?selected=${!powerBadgeEntity}>${localize('editor.power_badge_none')}</option>
+                    ${powerBadgeEntities.map((entity) => html`
+                      <option value=${entity.entity_id} ?selected=${entity.entity_id === powerBadgeEntity}>${entity.name}</option>
+                    `)}
+                  </select>
+                </div>
+                <div class="description">${localize('editor.power_badge_entity_desc')}</div>
+              ` : nothing}
+              ${key === 'weather' && !disabled ? html`
+                <div class="section-order-sub">
+                  <label for="weather-presentation" style="min-width: 140px;">${localize('editor.weather_presentation')}</label>
+                  <select id="weather-presentation" style="flex: 1;" @change=${this._weatherPresentationChanged}>
+                    <option value="forecast_daily" ?selected=${weatherPresentation === 'forecast_daily'}>${localize('editor.weather_presentation_forecast_daily')}</option>
+                    <option value="forecast_hourly" ?selected=${weatherPresentation === 'forecast_hourly'}>${localize('editor.weather_presentation_forecast_hourly')}</option>
+                    <option value="forecast_twice_daily" ?selected=${weatherPresentation === 'forecast_twice_daily'}>${localize('editor.weather_presentation_forecast_twice_daily')}</option>
+                    <option value="tile" ?selected=${weatherPresentation === 'tile'}>${localize('editor.weather_presentation_tile')}</option>
+                    <option value="none" ?selected=${weatherPresentation === 'none'}>${localize('editor.weather_presentation_none')}</option>
+                  </select>
+                </div>
+                ${this._renderCheckbox('show-weather-forecast-card', localize('editor.show_weather_forecast_card'), this._config.show_weather_forecast_card !== false,
+                  (checked) => this._toggleChanged('show_weather_forecast_card', checked, true))}
+                <div class="description">${localize('editor.show_weather_forecast_card_desc')}</div>
+                <div class="form-row" style="align-items: flex-start;">
+                  <label for="weather-sensors" style="min-width: 140px; margin-top: 6px;">${localize('editor.section_weather_sensors')}</label>
+                  <textarea id="weather-sensors" rows="4" style="flex: 1;"
+                    placeholder="sensor.outside_temperature|mdi:thermometer|°C|1"
+                    @change=${this._weatherSensorsChanged}>${this._formatWeatherSensors(this._config.weather_sensors)}</textarea>
+                </div>
+                <div class="description">${localize('editor.weather_sensors_desc')}</div>
+              ` : nothing}
+              ${key === 'agenda' && !disabled ? html`
+                <div class="form-row" style="align-items: flex-start;">
+                  <label for="agenda-calendar-entities" style="min-width: 140px; margin-top: 6px;">${localize('editor.agenda_calendar_entities')}</label>
+                  <textarea id="agenda-calendar-entities" rows="3" style="flex: 1;"
+                    placeholder="calendar.family, calendar.work"
+                    @change=${this._agendaCalendarEntitiesChanged}>${this._formatEntityList(this._config.agenda_calendar_entities)}</textarea>
+                </div>
+                <div class="description">${localize('editor.agenda_calendar_entities_desc')}</div>
+              ` : nothing}
+              ${key === 'todos' && !disabled ? html`
+                <div class="form-row" style="align-items: flex-start;">
+                  <label for="todos-entities" style="min-width: 140px; margin-top: 6px;">${localize('editor.todos_entities')}</label>
+                  <textarea id="todos-entities" rows="3" style="flex: 1;"
+                    placeholder="todo.home, todo.shopping"
+                    @change=${this._todosEntitiesChanged}>${this._formatEntityList(this._config.todos_entities)}</textarea>
+                </div>
+                <div class="description">${localize('editor.todos_entities_desc')}</div>
               ` : nothing}
             `;
             })}
@@ -2931,6 +3083,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const showClockCard = this._config.show_clock_card !== false;
       const showSearchCard = this._config.show_search_card === true;
       const showPersonBadges = this._config.show_person_badges !== false;
+      const personBadgeLayout = this._config.person_badge_layout || 'with_state';
       const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
@@ -2945,6 +3098,32 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${this._renderCheckbox('show-person-badges', localize('editor.show_person_badges'), showPersonBadges,
             (checked) => this._toggleChanged('show_person_badges', checked, true))}
           <div class="description">${localize('editor.show_person_badges_desc')}</div>
+
+          <div class="form-row">
+            <label for="person-badge-layout" style="margin-right: 8px; min-width: 120px;">${localize('editor.person_badge_layout')}</label>
+            <select id="person-badge-layout" style="flex: 1;" @change=${this._personBadgeLayoutChanged}>
+              <option value="minimal" ?selected=${personBadgeLayout === 'minimal'}>${localize('editor.person_badge_layout_minimal')}</option>
+              <option value="with_state" ?selected=${personBadgeLayout === 'with_state'}>${localize('editor.person_badge_layout_with_state')}</option>
+              <option value="with_state_and_time" ?selected=${personBadgeLayout === 'with_state_and_time'}>${localize('editor.person_badge_layout_with_state_and_time')}</option>
+            </select>
+          </div>
+          <div class="description">${localize('editor.person_badge_layout_desc')}</div>
+
+          ${this._renderCheckbox('show-unavailable-alert-badge', localize('editor.show_unavailable_alert_badge'), this._config.show_unavailable_alert_badge === true,
+            (checked) => this._toggleChanged('show_unavailable_alert_badge', checked, false))}
+          <div class="description">${localize('editor.show_unavailable_alert_badge_desc')}</div>
+
+          ${this._renderCheckbox('show-now-playing-badge', localize('editor.show_now_playing_badge'), this._config.show_now_playing_badge === true,
+            (checked) => this._toggleChanged('show_now_playing_badge', checked, false))}
+          <div class="description">${localize('editor.show_now_playing_badge_desc')}</div>
+
+          ${this._renderCheckbox('show-sun-badge', localize('editor.show_sun_badge'), this._config.show_sun_badge === true,
+            (checked) => this._toggleChanged('show_sun_badge', checked, false))}
+          <div class="description">${localize('editor.show_sun_badge_desc')}</div>
+
+          ${this._renderCheckbox('show-updates-badge', localize('editor.show_updates_badge'), this._config.show_updates_badge === true,
+            (checked) => this._toggleChanged('show_updates_badge', checked, false))}
+          <div class="description">${localize('editor.show_updates_badge_desc')}</div>
 
           ${overviewLayout !== 'weather_start' ? html`
             ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
@@ -4363,6 +4542,60 @@ class Simon42DashboardStrategyEditor extends LitElement {
       delete newConfig.overview_layout;
     }
 
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _personBadgeLayoutChanged = (e: Event): void => {
+    const value = (e.target as HTMLSelectElement).value as PersonBadgeLayout;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (value === 'with_state') delete newConfig.person_badge_layout;
+    else newConfig.person_badge_layout = value;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _weatherPresentationChanged = (e: Event): void => {
+    const value = (e.target as HTMLSelectElement).value as WeatherPresentation;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (value === 'forecast_daily') delete newConfig.weather_presentation;
+    else newConfig.weather_presentation = value;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _powerBadgeEntityChanged = (e: Event): void => {
+    const value = (e.target as HTMLSelectElement).value.trim();
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (!value) delete newConfig.power_badge_entity;
+    else newConfig.power_badge_entity = value;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _agendaCalendarEntitiesChanged = (e: Event): void => {
+    const values = this._parseEntityList((e.target as HTMLTextAreaElement).value);
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (values.length === 0) delete newConfig.agenda_calendar_entities;
+    else newConfig.agenda_calendar_entities = values;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _todosEntitiesChanged = (e: Event): void => {
+    const values = this._parseEntityList((e.target as HTMLTextAreaElement).value);
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (values.length === 0) delete newConfig.todos_entities;
+    else newConfig.todos_entities = values;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  };
+
+  private _weatherSensorsChanged = (e: Event): void => {
+    const values = this._parseWeatherSensors((e.target as HTMLTextAreaElement).value);
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (values.length === 0) delete newConfig.weather_sensors;
+    else newConfig.weather_sensors = values;
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   };

@@ -213,7 +213,8 @@ export function createAreasSection(
   visibleAreas: AreaRegistryEntry[],
   groupByFloors: boolean = false,
   hass: HomeAssistant | null = null,
-  hideHeading = false
+  hideHeading = false,
+  hideOtherHeading = false
 ): LovelaceSectionConfig | LovelaceSectionConfig[] {
   const buildContext = createAreaCardBuildContext();
 
@@ -270,7 +271,7 @@ export function createAreasSection(
 
   const buildOtherAreasCards = (): LovelaceCardConfig[] => {
     return [
-      ...(!hideHeading ? [{
+      ...(!hideOtherHeading ? [{
         type: 'heading',
         heading_style: 'title',
         heading: localize('sections.areas_other'),

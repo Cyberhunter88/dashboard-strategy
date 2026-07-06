@@ -10,6 +10,8 @@ import type { LovelaceBadgeConfig } from '../types/lovelace';
 import type { PersonData } from '../types/strategy';
 import { isEntityRegistryHidden } from '../types/registries';
 
+export type PersonBadgeLayout = 'minimal' | 'with_state' | 'with_state_and_time';
+
 /**
  * Creates Lovelace entity badges for a list of persons.
  *
@@ -18,8 +20,15 @@ import { isEntityRegistryHidden } from '../types/registries';
  * - Hidden entities (registry hidden === true) are excluded
  * - Name is trimmed to first name only
  */
-export function createPersonBadges(persons: PersonData[], hass: HomeAssistant): LovelaceBadgeConfig[] {
+export function createPersonBadges(
+  persons: PersonData[],
+  hass: HomeAssistant,
+  layout: PersonBadgeLayout = 'with_state'
+): LovelaceBadgeConfig[] {
   const badges: LovelaceBadgeConfig[] = [];
+  const stateContent: string[] = [];
+  if (layout === 'with_state' || layout === 'with_state_and_time') stateContent.push('state');
+  if (layout === 'with_state_and_time') stateContent.push('last_changed');
 
   for (const person of persons) {
     const state = hass.states[person.entity_id];
@@ -36,8 +45,10 @@ export function createPersonBadges(persons: PersonData[], hass: HomeAssistant): 
       entity: person.entity_id,
       name: firstName,
       show_entity_picture: true,
-      show_state: true,
-      state_content: 'state',
+      show_state: stateContent.length > 0,
+      ...(stateContent.length > 0
+        ? { state_content: stateContent.length === 1 ? stateContent[0] : stateContent }
+        : {}),
       show_name: true,
       show_icon: true,
       tap_action: { action: 'more-info' },
