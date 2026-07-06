@@ -10,6 +10,7 @@ import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { getBatteryEntities } from '../utils/entity-filter';
 import { getBatteryStatus, type BatteryStatus } from '../utils/battery-utils';
+import { getEntityDisplayName } from '../utils/name-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
@@ -217,6 +218,25 @@ class DashboardStrategyBatteriesCard extends LitElement {
     };
   }
 
+  private _getAreaNameForEntity(entityId: string): string | null {
+    const entity = Registry.getEntity(entityId);
+    let areaId = entity?.area_id ?? null;
+    if (!areaId && entity?.device_id) {
+      areaId = Registry.getDevice(entity.device_id)?.area_id ?? null;
+    }
+    if (!areaId) return null;
+    return this.hass?.areas[areaId]?.name ?? null;
+  }
+
+  private _getTileName(entityId: string): string | undefined {
+    if (this._config.show_area_in_battery_view !== true || !this.hass) return undefined;
+
+    const areaName = this._getAreaNameForEntity(entityId);
+    if (!areaName) return undefined;
+
+    return `${areaName} • ${getEntityDisplayName(entityId, this.hass)}`;
+  }
+
   private _getOrCreateHeading(status: BatteryStatus): LovelaceCardElement {
     let heading = this._headingCards.get(status);
     if (!heading) {
@@ -239,6 +259,7 @@ class DashboardStrategyBatteriesCard extends LitElement {
           vertical: false,
           state_content: ['state', 'last_changed'],
           color: STATUS_COLOR[status],
+          name: this._getTileName(entityId),
         })
       );
       this._tileStatuses.set(entityId, status);

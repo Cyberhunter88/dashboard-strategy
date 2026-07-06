@@ -16,7 +16,9 @@ import { getBatteryStatus } from '../utils/battery-utils';
 interface SummaryCardConfig {
   summary_type: SummaryType;
   hide_mobile_app_batteries?: boolean;
+  hide_battery_notes_entities?: boolean;
   battery_critical_threshold?: number;
+  unavailable_batteries_bucket?: 'critical' | 'good';
   hide_unavailable_entities?: boolean;
   compact?: boolean;
   alignment?: 'start' | 'center';

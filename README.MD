@@ -155,7 +155,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Klima-Zusammenfassung.gif" alt="Klima-Zusammenfassung aktivieren" width="800" />
 </p>
 
-**Batterie-Optionen** — Mobile-App-Batterien (Smartphones, Tablets) können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Nicht erreichbare Sensoren werden automatisch als kritisch eingestuft.
+**Batterie-Optionen** — Mobile-App-Batterien und Battery-Notes-Helfer können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Optional kann der Bereichsname in Batterie-Kacheln angezeigt werden. Nicht erreichbare Sensoren lassen sich wahlweise der guten oder kritischen Gruppe zuordnen.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
@@ -332,8 +332,11 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
 | `summaries_columns` | 2 \| 4 | `2` | Spalten-Layout der Zusammenfassungen |
 | `hide_mobile_app_batteries` | boolean | `false` | Mobile-App-Batterien ausblenden |
+| `hide_battery_notes_entities` | boolean | `false` | Battery-Notes-Helfer in Batterie-Ansicht und -Zusammenfassung ausblenden |
 | `battery_critical_threshold` | number | `20` | Schwellwert für kritische Batterien (%) |
 | `battery_low_threshold` | number | `50` | Schwellwert für niedrige Batterien (%) |
+| `show_area_in_battery_view` | boolean | `false` | Bereichsnamen in Batterie-Kacheln vor dem Entitätsnamen anzeigen |
+| `unavailable_batteries_bucket` | `'critical' \| 'good'` | `'good'` | Nicht auswertbare Batterien als kritisch oder gut einsortieren |
 | `show_weather` | boolean | `true` | Wetter-Karte |
 | `show_energy` | boolean | `true` | Energie-Dashboard |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
