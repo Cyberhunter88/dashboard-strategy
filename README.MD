@@ -213,6 +213,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Lichter alphabetisch sortieren** — Optional lassen sich Lichter nach Anzeigenamen statt nach letzter Änderung sortieren (`lights_sort_by: name`). Das gilt für Lichter-Ansicht, Raum-Ansichten und verschachtelte Lichtgruppen.
 
+**Rollos nach Etagen** — Optional kann die Hauptgruppe der Rollos in der Rollos-Ansicht nach Etagen gegliedert werden (`group_covers_by_floors`). Markisen und Fenster bleiben dabei weiterhin eigene, ungeteilte Gruppen.
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
 </p>
@@ -370,6 +372,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_summary_views` | boolean | `false` | Summary-Views in Navigation |
 | `show_room_views` | boolean | `false` | Raum-Views in Navigation |
 | `group_lights_by_floors` | boolean | `false` | Lichter nach Etagen gruppieren |
+| `group_covers_by_floors` | boolean | `false` | Hauptgruppe der Rollos in der Rollos-Ansicht nach Etagen gruppieren |
 | `nested_light_groups` | boolean | `false` | Lichtgruppen als aufklappbare Container mit Mitgliedern anzeigen |
 | `lights_sort_by` | `"last_changed"` \| `"name"` | `"last_changed"` | Lichter nach letzter Änderung oder alphabetisch nach Anzeigename sortieren |
 | `custom_cards` | object[] | `[]` | Eigene Karten via YAML |

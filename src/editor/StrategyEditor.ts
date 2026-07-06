@@ -2899,6 +2899,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _renderSummariesSection(): TemplateResult {
     const summariesColumns = this._config.summaries_columns || 2;
     const groupLightsByFloors = this._config.group_lights_by_floors === true;
+    const groupCoversByFloors = this._config.group_covers_by_floors === true;
     const nestedLightGroups = this._config.nested_light_groups === true;
     const lightsSortByName = this._config.lights_sort_by === 'name';
     const showPartiallyOpenCovers = this._config.show_partially_open_covers === true;
@@ -2928,6 +2929,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${this._renderCheckbox('group-lights-by-floors', localize('editor.group_lights_by_floors'), groupLightsByFloors,
           (checked) => this._toggleChanged('group_lights_by_floors', checked, false))}
         <div class="description">${localize('editor.group_lights_by_floors_desc')}</div>
+
+        ${this._renderCheckbox('group-covers-by-floors', localize('editor.group_covers_by_floors'), groupCoversByFloors,
+          (checked) => this._toggleChanged('group_covers_by_floors', checked, false))}
+        <div class="description">${localize('editor.group_covers_by_floors_desc')}</div>
 
         ${this._renderCheckbox('nested-light-groups', localize('editor.nested_light_groups'), nestedLightGroups,
           (checked) => this._toggleChanged('nested_light_groups', checked, false))}

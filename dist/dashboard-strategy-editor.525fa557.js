@@ -379,7 +379,7 @@
           </div>
         `:r.s6}
       </div>
-    `}_renderSummariesSection(){const e=this._config.summaries_columns||2,t=!0===this._config.group_lights_by_floors,i=!0===this._config.nested_light_groups,o="name"===this._config.lights_sort_by,a=!0===this._config.show_partially_open_covers,s=!0===this._config.hide_mobile_app_batteries,n=!0===this._config.show_battery_view,c=this._config.battery_critical_threshold??20,d=this._config.battery_low_threshold??50;return r.qy`
+    `}_renderSummariesSection(){const e=this._config.summaries_columns||2,t=!0===this._config.group_lights_by_floors,i=!0===this._config.group_covers_by_floors,o=!0===this._config.nested_light_groups,a="name"===this._config.lights_sort_by,s=!0===this._config.show_partially_open_covers,n=!0===this._config.hide_mobile_app_batteries,c=!0===this._config.show_battery_view,d=this._config.battery_critical_threshold??20,l=this._config.battery_low_threshold??50;return r.qy`
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_summary_details")}</div>
 
@@ -400,22 +400,25 @@
         ${this._renderCheckbox("group-lights-by-floors",(0,ee.k)("editor.group_lights_by_floors"),t,e=>this._toggleChanged("group_lights_by_floors",e,!1))}
         <div class="description">${(0,ee.k)("editor.group_lights_by_floors_desc")}</div>
 
-        ${this._renderCheckbox("nested-light-groups",(0,ee.k)("editor.nested_light_groups"),i,e=>this._toggleChanged("nested_light_groups",e,!1))}
+        ${this._renderCheckbox("group-covers-by-floors",(0,ee.k)("editor.group_covers_by_floors"),i,e=>this._toggleChanged("group_covers_by_floors",e,!1))}
+        <div class="description">${(0,ee.k)("editor.group_covers_by_floors_desc")}</div>
+
+        ${this._renderCheckbox("nested-light-groups",(0,ee.k)("editor.nested_light_groups"),o,e=>this._toggleChanged("nested_light_groups",e,!1))}
         <div class="description">${(0,ee.k)("editor.nested_light_groups_desc")}</div>
 
-        ${this._renderCheckbox("lights-sort-by-name",(0,ee.k)("editor.lights_sort_by_name"),o,e=>this._lightsSortByNameChanged(e))}
+        ${this._renderCheckbox("lights-sort-by-name",(0,ee.k)("editor.lights_sort_by_name"),a,e=>this._lightsSortByNameChanged(e))}
         <div class="description">${(0,ee.k)("editor.lights_sort_by_name_desc")}</div>
 
         <div style="margin-left: 26px; margin-bottom: 8px;">
-          ${this._renderCheckbox("show-partially-open-covers",(0,ee.k)("editor.show_partially_open_covers"),a,e=>this._toggleChanged("show_partially_open_covers",e,!1))}
+          ${this._renderCheckbox("show-partially-open-covers",(0,ee.k)("editor.show_partially_open_covers"),s,e=>this._toggleChanged("show_partially_open_covers",e,!1))}
           <div class="description">${(0,ee.k)("editor.show_partially_open_covers_desc")}</div>
         </div>
 
         <div style="margin-left: 26px; margin-bottom: 8px;">
-          ${this._renderCheckbox("hide-mobile-app-batteries",(0,ee.k)("editor.hide_mobile_app_batteries"),s,e=>this._toggleChanged("hide_mobile_app_batteries",e,!1))}
+          ${this._renderCheckbox("hide-mobile-app-batteries",(0,ee.k)("editor.hide_mobile_app_batteries"),n,e=>this._toggleChanged("hide_mobile_app_batteries",e,!1))}
           <div class="description">${(0,ee.k)("editor.hide_mobile_app_batteries_desc")}</div>
 
-          ${this._renderCheckbox("show-battery-view",(0,ee.k)("editor.show_battery_view"),n,e=>this._toggleChanged("show_battery_view",e,!1))}
+          ${this._renderCheckbox("show-battery-view",(0,ee.k)("editor.show_battery_view"),c,e=>this._toggleChanged("show_battery_view",e,!1))}
           <div class="description">${(0,ee.k)("editor.show_battery_view_desc")}</div>
 
           <div style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;">
@@ -424,14 +427,14 @@
           <div class="form-row">
             <label for="battery-critical-threshold" style="min-width: 140px;">${(0,ee.k)("editor.battery_critical_below")}</label>
             <input type="number" id="battery-critical-threshold" min="1" max="99"
-              .value=${String(c)}
+              .value=${String(d)}
               style="width: 70px;"
               @change=${this._batteryCriticalChanged} /> %
           </div>
           <div class="form-row">
             <label for="battery-low-threshold" style="min-width: 140px;">${(0,ee.k)("editor.battery_low_below")}</label>
             <input type="number" id="battery-low-threshold" min="1" max="99"
-              .value=${String(d)}
+              .value=${String(l)}
               style="width: 70px;"
               @change=${this._batteryLowChanged} /> %
           </div>
