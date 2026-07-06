@@ -8,6 +8,7 @@ import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
+import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewSecurityStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
@@ -227,7 +228,7 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
       if (cards.length > 0) sections.push({ type: 'grid', cards });
     }
 
-    return { type: 'sections', sections };
+    return createSectionsView(sections, strategyConfig);
   }
 }
 

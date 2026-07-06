@@ -25,6 +25,7 @@ import { localize } from '../utils/localize';
 import { BADGE_COLOR_MAP, getColorForEntity, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
+import { createSectionsView } from '../utils/view-builder';
 import {
   createRoomEntities,
   findUpsEntityGroups,
@@ -470,7 +471,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       }
     }
 
-    if (roomEntities.energy.length > 0) {
+    if (dashboardConfig.show_energy_in_rooms !== false && roomEntities.energy.length > 0) {
       const energyEntities = roomEntities.energy
         .map((entityId) => {
           const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
@@ -801,7 +802,10 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       `Room ${area.area_id}: ${visibleEntities.length} visible entities, ${sections.length} sections, ${badges.length} badges`
     );
     timeEnd(`room-generate-${area.area_id}`);
-    return { type: 'sections', header: { badges_position: 'bottom' }, sections, badges };
+    return createSectionsView(sections, dashboardConfig, {
+      header: { badges_position: 'bottom' },
+      badges,
+    });
   }
 }
 

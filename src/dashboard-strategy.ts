@@ -68,6 +68,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     const showCovers = config.show_covers_summary !== false;
     const showSecurity = config.show_security_summary !== false;
     const showBatteries = config.show_battery_summary !== false;
+    const showBatteryView = config.show_battery_view === true || showBatteries;
     const showClimate = config.show_climate_summary === true;
     const selectedTheme = config.theme?.trim();
     const withConfiguredTheme = (view: LovelaceViewConfig): LovelaceViewConfig => {
@@ -91,7 +92,7 @@ class Simon42DashboardStrategy extends HTMLElement {
           { device_classes: ['awning', 'blind', 'curtain', 'shade', 'shutter', 'window'], config }, hass) },
       { enabled: showSecurity, title: localize('views.security'), path: 'security', icon: 'mdi:security',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-security').generate({ config }, hass) },
-      { enabled: showBatteries, title: localize('views.batteries'), path: 'batteries', icon: 'mdi:battery-alert',
+      { enabled: showBatteryView, title: localize('views.batteries'), path: 'batteries', icon: 'mdi:battery-alert',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-batteries').generate({ config }, hass) },
       { enabled: showClimate, title: localize('views.climate'), path: 'climate', icon: 'mdi:thermostat',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-climate').generate({ config }, hass) },

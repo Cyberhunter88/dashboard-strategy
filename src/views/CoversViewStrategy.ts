@@ -4,6 +4,7 @@
 
 import type { LovelaceViewConfig } from '../types/lovelace';
 import { localize } from '../utils/localize';
+import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewCoversStrategy extends HTMLElement {
   static async generate(config: any, _hass: any): Promise<LovelaceViewConfig> {
@@ -119,10 +120,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
       });
     }
 
-    return {
-      type: 'sections',
-      sections: [{ type: 'grid', cards }],
-    };
+    return createSectionsView([{ type: 'grid', cards }], strategyConfig);
   }
 }
 

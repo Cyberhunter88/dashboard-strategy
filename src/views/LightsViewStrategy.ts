@@ -3,6 +3,7 @@
 // ====================================================================
 
 import type { LovelaceViewConfig } from '../types/lovelace';
+import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewLightsStrategy extends HTMLElement {
   static async generate(config: any, _hass: any): Promise<LovelaceViewConfig> {
@@ -10,9 +11,8 @@ class Simon42ViewLightsStrategy extends HTMLElement {
     const groupByFloors = dashboardConfig.group_lights_by_floors === true;
     const nestedGroups = dashboardConfig.nested_light_groups === true;
 
-    return {
-      type: 'sections',
-      sections: [
+    return createSectionsView(
+      [
         {
           type: 'grid',
           cards: [
@@ -35,7 +35,8 @@ class Simon42ViewLightsStrategy extends HTMLElement {
           ],
         },
       ],
-    };
+      dashboardConfig
+    );
   }
 }
 
