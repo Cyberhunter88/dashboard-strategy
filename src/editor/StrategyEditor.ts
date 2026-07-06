@@ -1581,6 +1581,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _renderAdvancedOptionsSection(): TemplateResult {
     const hideUnavailableEntities = this._config.hide_unavailable_entities === true;
+    const denseSectionPlacement = this._config.dense_section_placement === true;
 
     return html`
       <div class="section">
@@ -1589,6 +1590,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${this._renderCheckbox('hide-unavailable-entities', localize('editor.hide_unavailable_entities'), hideUnavailableEntities,
           (checked) => this._toggleChanged('hide_unavailable_entities', checked, false))}
         <div class="description">${localize('editor.hide_unavailable_entities_desc')}</div>
+
+        ${this._renderCheckbox('dense-section-placement', localize('editor.dense_section_placement'), denseSectionPlacement,
+          (checked) => this._toggleChanged('dense_section_placement', checked, false))}
+        <div class="description">${localize('editor.dense_section_placement_desc')}</div>
       </div>
     `;
   }
@@ -2897,6 +2902,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const nestedLightGroups = this._config.nested_light_groups === true;
     const showPartiallyOpenCovers = this._config.show_partially_open_covers === true;
     const hideMobileAppBatteries = this._config.hide_mobile_app_batteries === true;
+    const showBatteryView = this._config.show_battery_view === true;
     const batteryCriticalThreshold = this._config.battery_critical_threshold ?? 20;
     const batteryLowThreshold = this._config.battery_low_threshold ?? 50;
 
@@ -2936,6 +2942,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${this._renderCheckbox('hide-mobile-app-batteries', localize('editor.hide_mobile_app_batteries'), hideMobileAppBatteries,
             (checked) => this._toggleChanged('hide_mobile_app_batteries', checked, false))}
           <div class="description">${localize('editor.hide_mobile_app_batteries_desc')}</div>
+
+          ${this._renderCheckbox('show-battery-view', localize('editor.show_battery_view'), showBatteryView,
+            (checked) => this._toggleChanged('show_battery_view', checked, false))}
+          <div class="description">${localize('editor.show_battery_view_desc')}</div>
 
           <div style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;">
             ${localize('editor.battery_thresholds')}
@@ -3040,6 +3050,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showLocksInRooms = this._config.show_locks_in_rooms === true;
     const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
     const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
+    const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
@@ -3084,6 +3095,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
               (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('show-energy-in-rooms', localize('editor.show_energy_in_rooms'), showEnergyInRooms,
+              (checked) => this._toggleChanged('show_energy_in_rooms', checked, true))}
+            <div class="description">${localize('editor.show_energy_in_rooms_desc')}</div>
 
             ${this._renderCheckbox('show-ups-in-rooms', localize('editor.show_ups_in_rooms'), showUpsInRooms,
               (checked) => this._toggleChanged('show_ups_in_rooms', checked, true))}

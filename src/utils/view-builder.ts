@@ -3,7 +3,38 @@
 // ====================================================================
 
 import type { LovelaceViewConfig, LovelaceBadgeConfig, LovelaceSectionConfig } from '../types/lovelace';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import { localize } from './localize';
+
+type DensePlacementConfig = Pick<Simon42StrategyConfig, 'dense_section_placement'> | undefined;
+
+type SectionViewExtras = Omit<LovelaceViewConfig, 'type' | 'sections' | 'dense_section_placement'>;
+
+function withDenseSectionPlacement(
+  view: LovelaceViewConfig,
+  config?: DensePlacementConfig
+): LovelaceViewConfig {
+  if (config?.dense_section_placement !== true) return view;
+  return {
+    ...view,
+    dense_section_placement: true,
+  };
+}
+
+export function createSectionsView(
+  sections: LovelaceSectionConfig[],
+  config?: DensePlacementConfig,
+  extras: SectionViewExtras = {}
+): LovelaceViewConfig {
+  return withDenseSectionPlacement(
+    {
+      ...extras,
+      type: 'sections',
+      sections,
+    },
+    config
+  );
+}
 
 /**
  * Creates the main overview view.
@@ -13,13 +44,13 @@ import { localize } from './localize';
  */
 export function createOverviewView(
   sections: LovelaceSectionConfig[],
-  personBadges: LovelaceBadgeConfig[]
+  personBadges: LovelaceBadgeConfig[],
+  config?: DensePlacementConfig
 ): LovelaceViewConfig {
-  return {
+  return createSectionsView(sections, config, {
     title: localize('views.overview'),
     path: 'home',
     icon: 'mdi:home',
-    type: 'sections',
     max_columns: 3,
     badges: personBadges.length > 0 ? personBadges : undefined,
     header:
@@ -30,6 +61,5 @@ export function createOverviewView(
             badges_wrap: 'wrap',
           }
         : undefined,
-    sections,
-  };
+  });
 }

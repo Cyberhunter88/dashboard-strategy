@@ -199,6 +199,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Raum-Abschnitte sortieren** — Die Reihenfolge der automatischen Raum-Abschnitte (USV, Energie, Kameras, Lichter, Schlösser, Klima, Rollos, Medien, Szenen, Sonstiges, Raum-Pins) kann pro Bereich angepasst werden.
 
+**Energie-Block in Räumen** — Die Energie-Sensoren eines Bereichs lassen sich als eigener Raum-Block ein- oder ausblenden (`show_energy_in_rooms`). Standardmäßig bleibt das bisherige Verhalten erhalten.
+
 **UPS/USV** — Unterstützte USV-Geräte werden automatisch in Raum-Views gruppiert. Die Gruppe zeigt eine Batterie-Gauge und zugehörige Kacheln, z.B. NUT-/UPS-Signale. Die Erkennung ist standardmäßig aktiv und kann über `show_ups_in_rooms: false` deaktiviert werden.
 
 **Automationen & Skripte** — Optional können dem Bereich zugeordnete Automationen und Skripte in den Raum-Views angezeigt werden. Beide Optionen sind separat aktivierbar und standardmäßig aus.
@@ -323,6 +325,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_security_summary` | boolean | `true` | Sicherheits-Zusammenfassung |
 | `show_climate_summary` | boolean | `false` | Klima-Zusammenfassung |
 | `show_battery_summary` | boolean | `true` | Batterie-Zusammenfassung |
+| `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
 | `summaries_columns` | 2 \| 4 | `2` | Spalten-Layout der Zusammenfassungen |
 | `hide_mobile_app_batteries` | boolean | `false` | Mobile-App-Batterien ausblenden |
 | `battery_critical_threshold` | number | `20` | Schwellwert für kritische Batterien (%) |
@@ -331,6 +334,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_energy` | boolean | `true` | Energie-Dashboard |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
+| `dense_section_placement` | boolean | `false` | Generierte Sections-Views dicht platzieren, um Raster-Lücken aufzufüllen |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
@@ -346,6 +350,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_locks_in_rooms` | boolean | `false` | Schlösser in Raum-Views |
 | `show_automations_in_rooms` | boolean | `false` | Automationen in Raum-Views |
 | `show_scripts_in_rooms` | boolean | `false` | Skripte in Raum-Views |
+| `show_energy_in_rooms` | boolean | `true` | Energie-Block mit Leistungs-, Energie-, Wasser- und Gas-Sensoren in Raum-Views |
 | `show_ups_in_rooms` | boolean | `true` | UPS/USV-Gruppen in Raum-Views anzeigen |
 | `show_window_contacts_in_rooms` | boolean | `false` | Fensterkontakte als Badges in Raum-Views |
 | `show_door_contacts_in_rooms` | boolean | `false` | Türkontakte als Badges in Raum-Views |

@@ -33,12 +33,15 @@
         `:r.s6}
       </div>
       ${this._cardPickerOpen?this._renderCardPickerOverlay():r.s6}
-    `:r.s6}_renderAdvancedOptionsSection(){const e=!0===this._config.hide_unavailable_entities;return r.qy`
+    `:r.s6}_renderAdvancedOptionsSection(){const e=!0===this._config.hide_unavailable_entities,t=!0===this._config.dense_section_placement;return r.qy`
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_advanced_options")}</div>
 
         ${this._renderCheckbox("hide-unavailable-entities",(0,ee.k)("editor.hide_unavailable_entities"),e,e=>this._toggleChanged("hide_unavailable_entities",e,!1))}
         <div class="description">${(0,ee.k)("editor.hide_unavailable_entities_desc")}</div>
+
+        ${this._renderCheckbox("dense-section-placement",(0,ee.k)("editor.dense_section_placement"),t,e=>this._toggleChanged("dense_section_placement",e,!1))}
+        <div class="description">${(0,ee.k)("editor.dense_section_placement_desc")}</div>
       </div>
     `}_getSectionsOrder(){return this._config.sections_order||[...X.GC]}_updateSectionsOrder(e){const t={...this._config,sections_order:e};this._config=t,this._fireConfigChanged(t)}_isSectionDisabled(e){switch(e){case"custom_cards":return 0===(this._config.custom_cards||[]).length;case"custom_sections":return 0===(this._config.custom_sections||[]).length;case"weather":return!1===this._config.show_weather;case"energy":return!1===this._config.show_energy;default:return!1}}_isSectionToggleable(e){return"weather"===e||"energy"===e}_toggleSectionVisibility(e,t){"weather"===e?this._toggleChanged("show_weather",t,!0):"energy"===e&&this._toggleChanged("show_energy",t,!0)}_renderSectionOrderPanel(){const e=this._getSectionsOrder(),t=!1!==this._config.energy_link_dashboard,i=!1!==this._config.show_energy;return r.qy`
       <div class="section">
@@ -376,7 +379,7 @@
           </div>
         `:r.s6}
       </div>
-    `}_renderSummariesSection(){const e=this._config.summaries_columns||2,t=!0===this._config.group_lights_by_floors,i=!0===this._config.nested_light_groups,o=!0===this._config.show_partially_open_covers,a=!0===this._config.hide_mobile_app_batteries,s=this._config.battery_critical_threshold??20,n=this._config.battery_low_threshold??50;return r.qy`
+    `}_renderSummariesSection(){const e=this._config.summaries_columns||2,t=!0===this._config.group_lights_by_floors,i=!0===this._config.nested_light_groups,o=!0===this._config.show_partially_open_covers,a=!0===this._config.hide_mobile_app_batteries,s=!0===this._config.show_battery_view,n=this._config.battery_critical_threshold??20,c=this._config.battery_low_threshold??50;return r.qy`
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_summary_details")}</div>
 
@@ -409,20 +412,23 @@
           ${this._renderCheckbox("hide-mobile-app-batteries",(0,ee.k)("editor.hide_mobile_app_batteries"),a,e=>this._toggleChanged("hide_mobile_app_batteries",e,!1))}
           <div class="description">${(0,ee.k)("editor.hide_mobile_app_batteries_desc")}</div>
 
+          ${this._renderCheckbox("show-battery-view",(0,ee.k)("editor.show_battery_view"),s,e=>this._toggleChanged("show_battery_view",e,!1))}
+          <div class="description">${(0,ee.k)("editor.show_battery_view_desc")}</div>
+
           <div style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;">
             ${(0,ee.k)("editor.battery_thresholds")}
           </div>
           <div class="form-row">
             <label for="battery-critical-threshold" style="min-width: 140px;">${(0,ee.k)("editor.battery_critical_below")}</label>
             <input type="number" id="battery-critical-threshold" min="1" max="99"
-              .value=${String(s)}
+              .value=${String(n)}
               style="width: 70px;"
               @change=${this._batteryCriticalChanged} /> %
           </div>
           <div class="form-row">
             <label for="battery-low-threshold" style="min-width: 140px;">${(0,ee.k)("editor.battery_low_below")}</label>
             <input type="number" id="battery-low-threshold" min="1" max="99"
-              .value=${String(n)}
+              .value=${String(c)}
               style="width: 70px;"
               @change=${this._batteryLowChanged} /> %
           </div>
@@ -480,7 +486,7 @@
 
         ${this._renderCheckbox("favorites-hide-last-changed",(0,ee.k)("editor.hide_last_changed"),o,e=>this._toggleChanged("favorites_hide_last_changed",e,!1))}
       </div>
-    `}_renderAreasSection(){const e=!0===this._config.group_by_floors,t=!0===this._config.show_switches_on_areas,i=!0===this._config.show_alerts_on_areas,o=!0===this._config.show_locks_in_rooms,a=!0===this._config.show_automations_in_rooms,s=!0===this._config.show_scripts_in_rooms,n=!1!==this._config.show_ups_in_rooms,c=!0===this._config.show_window_contacts_in_rooms,d=!0===this._config.show_door_contacts_in_rooms,l=!0===this._config.use_default_area_sort;return r.qy`
+    `}_renderAreasSection(){const e=!0===this._config.group_by_floors,t=!0===this._config.show_switches_on_areas,i=!0===this._config.show_alerts_on_areas,o=!0===this._config.show_locks_in_rooms,a=!0===this._config.show_automations_in_rooms,s=!0===this._config.show_scripts_in_rooms,n=!1!==this._config.show_energy_in_rooms,c=!1!==this._config.show_ups_in_rooms,d=!0===this._config.show_window_contacts_in_rooms,l=!0===this._config.show_door_contacts_in_rooms,p=!0===this._config.use_default_area_sort;return r.qy`
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_areas")}</div>
 
@@ -514,13 +520,16 @@
             ${this._renderCheckbox("show-scripts-in-rooms",(0,ee.k)("editor.show_scripts_in_rooms"),s,e=>this._toggleChanged("show_scripts_in_rooms",e,!1))}
             <div class="description">${(0,ee.k)("editor.show_scripts_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-ups-in-rooms",(0,ee.k)("editor.show_ups_in_rooms"),n,e=>this._toggleChanged("show_ups_in_rooms",e,!0))}
+            ${this._renderCheckbox("show-energy-in-rooms",(0,ee.k)("editor.show_energy_in_rooms"),n,e=>this._toggleChanged("show_energy_in_rooms",e,!0))}
+            <div class="description">${(0,ee.k)("editor.show_energy_in_rooms_desc")}</div>
+
+            ${this._renderCheckbox("show-ups-in-rooms",(0,ee.k)("editor.show_ups_in_rooms"),c,e=>this._toggleChanged("show_ups_in_rooms",e,!0))}
             <div class="description">${(0,ee.k)("editor.show_ups_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-window-contacts-in-rooms",(0,ee.k)("editor.show_window_contacts_in_rooms"),c,e=>this._toggleChanged("show_window_contacts_in_rooms",e,!1))}
+            ${this._renderCheckbox("show-window-contacts-in-rooms",(0,ee.k)("editor.show_window_contacts_in_rooms"),d,e=>this._toggleChanged("show_window_contacts_in_rooms",e,!1))}
             <div class="description">${(0,ee.k)("editor.show_window_contacts_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-door-contacts-in-rooms",(0,ee.k)("editor.show_door_contacts_in_rooms"),d,e=>this._toggleChanged("show_door_contacts_in_rooms",e,!1))}
+            ${this._renderCheckbox("show-door-contacts-in-rooms",(0,ee.k)("editor.show_door_contacts_in_rooms"),l,e=>this._toggleChanged("show_door_contacts_in_rooms",e,!1))}
             <div class="description">${(0,ee.k)("editor.show_door_contacts_in_rooms_desc")}</div>
           </div>
 
@@ -529,7 +538,7 @@
               <ha-icon icon="mdi:sort-alphabetical-ascending"></ha-icon>
               <span>${(0,ee.k)("editor.area_management_options")}</span>
             </div>
-            ${this._renderCheckbox("use-default-area-sort",(0,ee.k)("editor.use_default_area_sort"),l,e=>this._toggleChanged("use_default_area_sort",e,!1))}
+            ${this._renderCheckbox("use-default-area-sort",(0,ee.k)("editor.use_default_area_sort"),p,e=>this._toggleChanged("use_default_area_sort",e,!1))}
             <div class="description">${(0,ee.k)("editor.use_default_area_sort_desc")}</div>
           </div>
         </div>

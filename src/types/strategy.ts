@@ -159,6 +159,7 @@ export interface Simon42StrategyConfig {
   nested_light_groups?: boolean; // default: false
   show_security_summary?: boolean; // default: true
   show_battery_summary?: boolean; // default: true
+  show_battery_view?: boolean; // default: false (summary remains the main trigger)
   show_climate_summary?: boolean; // default: false
   hide_mobile_app_batteries?: boolean; // default: false
   battery_critical_threshold?: number; // default: 20
@@ -167,6 +168,7 @@ export interface Simon42StrategyConfig {
   show_automations_in_rooms?: boolean; // default: false
   show_scripts_in_rooms?: boolean; // default: false
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
+  show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
   show_window_contacts_in_rooms?: boolean; // default: false
   show_door_contacts_in_rooms?: boolean; // default: false
   show_switches_on_areas?: boolean; // default: false
@@ -182,6 +184,7 @@ export interface Simon42StrategyConfig {
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   weather_start_layout_items?: WeatherStartLayoutItem[];
   summaries_columns?: 2 | 4; // default: 2
+  dense_section_placement?: boolean; // default: false
 
   // Favorites display
   favorites_show_state?: boolean; // default: false

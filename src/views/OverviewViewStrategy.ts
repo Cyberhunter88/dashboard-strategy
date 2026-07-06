@@ -513,7 +513,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
         .filter((b) => b.parsed_config)
         .map((b) => b.parsed_config as LovelaceBadgeConfig);
 
-      return createOverviewView(overviewSections, [...personBadges, ...customBadges]);
+      return createOverviewView(overviewSections, [...personBadges, ...customBadges], dashboardConfig);
     }
 
     // Section map: key → section(s) or null
@@ -562,7 +562,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       .filter((b) => b.parsed_config)
       .map((b) => b.parsed_config as LovelaceBadgeConfig);
 
-    return createOverviewView(overviewSections, [...personBadges, ...customBadges]);
+    return createOverviewView(overviewSections, [...personBadges, ...customBadges], dashboardConfig);
   }
 }
 

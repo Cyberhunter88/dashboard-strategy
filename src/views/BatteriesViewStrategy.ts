@@ -5,6 +5,7 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceViewConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
+import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewBatteriesStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
@@ -14,10 +15,8 @@ class Simon42ViewBatteriesStrategy extends HTMLElement {
       Registry.initialize(hass, strategyConfig);
     }
 
-    return {
-      type: 'sections',
-      max_columns: 4,
-      sections: [
+    return createSectionsView(
+      [
         {
           type: 'grid',
           column_span: 4,
@@ -30,7 +29,9 @@ class Simon42ViewBatteriesStrategy extends HTMLElement {
           ],
         },
       ],
-    };
+      strategyConfig,
+      { max_columns: 4 }
+    );
   }
 }
 

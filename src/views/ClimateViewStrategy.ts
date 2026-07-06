@@ -7,6 +7,7 @@ import type { LovelaceViewConfig, LovelaceSectionConfig } from '../types/lovelac
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
+import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewClimateStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
@@ -75,7 +76,7 @@ class Simon42ViewClimateStrategy extends HTMLElement {
     buildSection(idle, localize('climate.idle'), 'mdi:thermostat');
     buildSection(off, localize('climate.off'), 'mdi:power-off');
 
-    return { type: 'sections', sections };
+    return createSectionsView(sections, strategyConfig);
   }
 }
 
