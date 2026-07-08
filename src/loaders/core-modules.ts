@@ -7,6 +7,6 @@ import '../cards/CameraCard';
 import '../views/OverviewViewStrategy';
 
 export { Registry } from '../Registry';
-export { getVisibleAreasFromHass } from '../utils/name-utils';
+export { getVisibleAreasFromHass, normalizeAreasDisplay } from '../utils/name-utils';
 export { localize } from '../utils/localize';
 export { withUnavailableEntitiesHidden } from '../utils/availability-utils';

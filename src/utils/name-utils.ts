@@ -71,6 +71,19 @@ export function getEntityDisplayName(entityId: string, hass: HomeAssistant): str
   return getFriendlyName(entityId, hass) ?? entityId;
 }
 
+function uniqueValidAreaIds(areaIds: string[] | undefined, validAreaIds: Set<string>): string[] | undefined {
+  if (!areaIds || areaIds.length === 0) return undefined;
+
+  const seen = new Set<string>();
+  const normalized = areaIds.filter((areaId) => {
+    if (!validAreaIds.has(areaId) || seen.has(areaId)) return false;
+    seen.add(areaId);
+    return true;
+  });
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 // -- Exported functions -----------------------------------------------
 
 /**
@@ -148,7 +161,8 @@ export function getVisibleAreas(
   displayConfig?: AreasDisplay,
   useDefaultSort?: boolean
 ): AreaRegistryEntry[] {
-  const hiddenAreas = displayConfig?.hidden ?? [];
+  const normalizedDisplayConfig = normalizeAreasDisplay(areas, displayConfig);
+  const hiddenAreas = normalizedDisplayConfig?.hidden ?? [];
 
   // Filter out hidden areas
   const visibleAreas = areas.filter((area) => !hiddenAreas.includes(area.area_id));
@@ -158,7 +172,7 @@ export function getVisibleAreas(
     return visibleAreas;
   }
 
-  const orderConfig = displayConfig?.order ?? [];
+  const orderConfig = normalizedDisplayConfig?.order ?? [];
 
   // Sort by configured order, then alphabetically for unordered
   if (orderConfig.length > 0) {
@@ -189,6 +203,26 @@ export function getVisibleAreasFromHass(
   useDefaultSort?: boolean
 ): AreaRegistryEntry[] {
   return getVisibleAreas(Object.values(hass.areas), displayConfig, useDefaultSort);
+}
+
+export function normalizeAreasDisplay(
+  areas: AreaRegistryEntry[],
+  displayConfig?: AreasDisplay
+): AreasDisplay | undefined {
+  if (!displayConfig) return undefined;
+
+  const validAreaIds = new Set(areas.map((area) => area.area_id));
+  const hidden = uniqueValidAreaIds(displayConfig.hidden, validAreaIds);
+  const order = uniqueValidAreaIds(displayConfig.order, validAreaIds);
+  const navItems = uniqueValidAreaIds(displayConfig.nav_items, validAreaIds);
+
+  if (!hidden && !order && !navItems) return undefined;
+
+  return {
+    ...(hidden ? { hidden } : {}),
+    ...(order ? { order } : {}),
+    ...(navItems ? { nav_items: navItems } : {}),
+  };
 }
 
 /**

@@ -17,6 +17,7 @@ import type {
   CustomBadge,
   CustomSection,
   AreaCustomCard,
+  AreasDisplay,
   OverviewLayout,
   PersonBadgeLayout,
   SectionKey,
@@ -30,7 +31,7 @@ import { ALL_HEADING_KEYS, DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT
 import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
-import { mergeStacksOrder } from '../utils/name-utils';
+import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { stripLegacyAreaWebrtcCameras } from './editor-config-utils';
 import {
   createRoomEntities,
@@ -394,6 +395,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const options = Object.values(this._hass.areas).sort((a, b) => a.name.localeCompare(b.name));
     this._sortedAreasCache = { areas: this._hass.areas, options };
     return options;
+  }
+
+  private _getNormalizedAreasDisplay(config: Simon42StrategyConfig = this._config): AreasDisplay | undefined {
+    if (!this._hass) return config.areas_display;
+    return normalizeAreasDisplay(Object.values(this._hass.areas), config.areas_display);
   }
 
   private _getFilteredEntities(query: string, filterWithArea = false): EntitySelectOption[] {
@@ -1976,8 +1982,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _getWeatherStartAreaOptions(): AreaRegistryEntry[] {
     if (!this._hass) return [];
-    const hiddenList = this._config.areas_display?.hidden || [];
-    const order = this._config.areas_display?.order || [];
+    const normalizedAreasDisplay = this._getNormalizedAreasDisplay();
+    const hiddenList = normalizedAreasDisplay?.hidden || [];
+    const order = normalizedAreasDisplay?.order || [];
     const hiddenKey = hiddenList.join('\u0000');
     const orderKey = order.join('\u0000');
     if (
@@ -3063,9 +3070,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _renderAreasListSection(): TemplateResult {
     const allAreas = this._getSortedAreas();
-    const hiddenAreas = this._config.areas_display?.hidden || [];
-    const areaOrder = this._config.areas_display?.order || [];
-    const navItems = this._config.areas_display?.nav_items || [];
+    const normalizedAreasDisplay = this._getNormalizedAreasDisplay();
+    const hiddenAreas = normalizedAreasDisplay?.hidden || [];
+    const areaOrder = normalizedAreasDisplay?.order || [];
+    const navItems = normalizedAreasDisplay?.nav_items || [];
 
     return html`
       <div class="section">
@@ -5505,7 +5513,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _getAreaOrder(): string[] {
     if (!this._hass) return [];
-    const configOrder = this._config.areas_display?.order;
+    const configOrder = this._getNormalizedAreasDisplay()?.order;
     if (configOrder && configOrder.length > 0) return [...configOrder];
     return Object.keys(this._hass.areas || {});
   }
@@ -5638,10 +5646,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
         return clean;
       });
     }
+    const normalizedAreasDisplay = this._getNormalizedAreasDisplay(cleanConfig);
+    if (normalizedAreasDisplay) cleanConfig.areas_display = normalizedAreasDisplay;
+    else delete cleanConfig.areas_display;
+
+    const validAreaIds = this._hass ? new Set(Object.keys(this._hass.areas || {})) : null;
     if (cleanConfig.areas_options) {
       const areasOptionsWithoutLegacy = stripLegacyAreaWebrtcCameras(cleanConfig.areas_options);
       const cleanedAreasOptions: NonNullable<Simon42StrategyConfig['areas_options']> = {};
       for (const [areaId, areaOptions] of Object.entries(areasOptionsWithoutLegacy || {})) {
+        if (validAreaIds && !validAreaIds.has(areaId)) continue;
         const cleanAreaOptions = { ...(areaOptions as Record<string, unknown>) };
 
         if (areaOptions.custom_cards) {

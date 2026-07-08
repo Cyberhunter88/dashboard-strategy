@@ -20,7 +20,7 @@ import { DEFAULT_SECTIONS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/st
 import type { LovelaceViewConfig, LovelaceSectionConfig, LovelaceBadgeConfig, LovelaceCardConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
 import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/entity-filter';
-import { getVisibleAreas } from '../utils/name-utils';
+import { getVisibleAreas, normalizeAreasDisplay } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
 import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createWeatherStartSummariesSection } from '../sections/OverviewSection';
 import { buildAreaCard, createAreaCardBuildContext, createAreasSection } from '../sections/AreasSection';
@@ -463,7 +463,8 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     }
 
     // Visible areas (filtered + sorted by config)
-    const visibleAreas = getVisibleAreas(Registry.areas, dashboardConfig.areas_display, dashboardConfig.use_default_area_sort);
+    const normalizedAreasDisplay = normalizeAreasDisplay(Registry.areas, dashboardConfig.areas_display);
+    const visibleAreas = getVisibleAreas(Registry.areas, normalizedAreasDisplay, dashboardConfig.use_default_area_sort);
 
     // Collect data for overview
     const persons = collectPersons(hass, dashboardConfig);

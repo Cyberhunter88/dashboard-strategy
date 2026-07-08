@@ -45,7 +45,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     const [runtime] = await modulesPromise;
     t('modules ready');
 
-    const { Registry, getVisibleAreasFromHass, localize, withUnavailableEntitiesHidden } = runtime;
+    const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden } = runtime;
     t('imports done');
 
     const getStrategy = (tag: string): StrategyGenerator => {
@@ -59,11 +59,12 @@ class Simon42DashboardStrategy extends HTMLElement {
     Registry.initialize(hass, config);
     t('registry initialized');
 
-    const visibleAreas = getVisibleAreasFromHass(hass, config.areas_display, config.use_default_area_sort);
+    const normalizedAreasDisplay = normalizeAreasDisplay(Object.values(hass.areas), config.areas_display);
+    const visibleAreas = getVisibleAreasFromHass(hass, normalizedAreasDisplay, config.use_default_area_sort);
 
     const showSummaryViews = config.show_summary_views === true;
     const showRoomViews = config.show_room_views === true;
-    const navItems = new Set(config.areas_display?.nav_items || []);
+    const navItems = new Set(normalizedAreasDisplay?.nav_items || []);
     const showLights = config.show_light_summary !== false;
     const showCovers = config.show_covers_summary !== false;
     const showSecurity = config.show_security_summary !== false;
