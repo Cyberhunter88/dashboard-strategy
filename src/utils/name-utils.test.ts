@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { AreaRegistryEntry } from '../types/registries';
 
-import { sortLights } from './name-utils';
+import { normalizeAreasDisplay, sortLights } from './name-utils';
+
+const areas: AreaRegistryEntry[] = [
+  { area_id: 'wohnzimmer', name: 'Wohnzimmer' } as AreaRegistryEntry,
+  { area_id: 'garten', name: 'Garten' } as AreaRegistryEntry,
+  { area_id: 'innen_kameras', name: 'Innen Kameras' } as AreaRegistryEntry,
+];
 
 const hass = {
   states: {
@@ -18,6 +25,28 @@ const hass = {
     },
   },
 } as any;
+
+describe('normalizeAreasDisplay', () => {
+  it('drops invalid and duplicate area ids from display lists', () => {
+    expect(normalizeAreasDisplay(areas, {
+      hidden: ['cams', 'garten', 'garten'],
+      order: ['wohnzimmer', 'cams', 'wohnzimmer', 'innen_kameras'],
+      nav_items: ['garten', 'cams', 'innen_kameras', 'garten'],
+    })).toEqual({
+      hidden: ['garten'],
+      order: ['wohnzimmer', 'innen_kameras'],
+      nav_items: ['garten', 'innen_kameras'],
+    });
+  });
+
+  it('returns undefined when no valid area ids remain', () => {
+    expect(normalizeAreasDisplay(areas, {
+      hidden: ['cams'],
+      order: ['deleted_area'],
+      nav_items: ['missing'],
+    })).toBeUndefined();
+  });
+});
 
 describe('sortLights', () => {
   it('sorts by last_changed by default', () => {
