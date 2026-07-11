@@ -402,9 +402,5 @@ class Simon42SummaryCard extends LitElement {
 
 customElements.define('dashboard-strategy-summary-card', Simon42SummaryCard);
 
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: 'dashboard-strategy-summary-card',
-  name: 'Dashboard Strategy Summary Card',
-  description: 'Summary card that counts dashboard entities dynamically',
-});
+// Deliberately not registered in the card picker: this card depends on the
+// strategy lifecycle and will not work correctly as a standalone custom card.

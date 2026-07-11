@@ -28,7 +28,8 @@ import { setupLocalize } from './utils/localize';
  * any other access.
  *
  * Reads directly from hass.entities/devices/areas (synchronous, no WebSocket
- * calls). All members are static, all maps are built once on initialize().
+ * calls). All members are static, all maps are built once on initialize()
+ * and rebuilt when one of the tracked registry references changes.
  */
 class Registry {
   // Prevent instantiation
@@ -86,6 +87,10 @@ class Registry {
   /** Initialization flag */
   private static _initialized: boolean = false;
 
+  static resetForTesting(): void {
+    Registry._initialized = false;
+  }
+
   // =====================================================================
   // Initialization
   // =====================================================================
@@ -103,6 +108,7 @@ class Registry {
       hass.entities === Registry._hass?.entities &&
       hass.areas === Registry._hass?.areas &&
       hass.devices === Registry._hass?.devices &&
+      hass.floors === Registry._hass?.floors &&
       config === Registry._config
     ) {
       const languageChanged =
@@ -332,6 +338,7 @@ class Registry {
       hass.entities === Registry._hass?.entities &&
       hass.areas === Registry._hass?.areas &&
       hass.devices === Registry._hass?.devices &&
+      hass.floors === Registry._hass?.floors &&
       config === Registry._config
     );
   }
