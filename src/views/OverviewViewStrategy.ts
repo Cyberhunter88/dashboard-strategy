@@ -652,7 +652,8 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           dashboardConfig.show_weather_forecast_card !== false,
           dashboardConfig.weather_sensors || [],
           dashboardConfig.weather_presentation,
-          hiddenHeadings.has('weather')
+          hiddenHeadings.has('weather'),
+          dashboardConfig.pollen_entities || []
         ),
       ],
       [

@@ -73,6 +73,7 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     const showSummaryViews = config.show_summary_views === true;
     const showRoomViews = config.show_room_views === true;
+    const showCctvView = config.show_cctv_view === true;
     const navItems = new Set(normalizedAreasDisplay?.nav_items || []);
     const showLights = config.show_light_summary !== false;
     const showCovers = config.show_covers_summary !== false;
@@ -106,6 +107,8 @@ class Simon42DashboardStrategy extends HTMLElement {
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-batteries').generate({ config }, hass) },
       { enabled: showClimate, title: localize('views.climate'), path: 'climate', icon: 'mdi:thermostat',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-climate').generate({ config }, hass) },
+      { enabled: showCctvView, title: localize('views.cctv'), path: 'cctv', icon: 'mdi:cctv',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-cctv').generate({ config }, hass) },
     ];
 
     const enabledDefs = utilityViewDefs.filter((d) => d.enabled);

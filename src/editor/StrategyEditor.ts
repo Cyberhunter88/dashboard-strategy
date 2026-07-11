@@ -3591,6 +3591,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _renderViewsSection(): TemplateResult {
     const showSummaryViews = this._config.show_summary_views === true;
     const showRoomViews = this._config.show_room_views === true;
+    const showCctvView = this._config.show_cctv_view === true;
+    const cctvShowActivity = this._config.cctv_show_activity === true;
 
     return html`
       <div class="section">
@@ -3603,6 +3605,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${this._renderCheckbox('show-room-views', localize('editor.show_room_views'), showRoomViews,
           (checked) => this._toggleChanged('show_room_views', checked, false))}
         <div class="description">${localize('editor.show_room_views_desc')}</div>
+
+        ${this._renderCheckbox('show-cctv-view', localize('editor.show_cctv_view'), showCctvView,
+          (checked) => this._toggleChanged('show_cctv_view', checked, false))}
+        <div class="description">${localize('editor.show_cctv_view_desc')}</div>
+
+        ${this._renderCheckbox('cctv-show-activity', localize('editor.cctv_show_activity'), cctvShowActivity,
+          (checked) => this._toggleChanged('cctv_show_activity', checked, false))}
+        <div class="description">${localize('editor.cctv_show_activity_desc')}</div>
       </div>
     `;
   }

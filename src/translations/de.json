@@ -9,6 +9,7 @@
     "security": "Sicherheit",
     "batteries": "Batterien",
     "climate": "Klima"
+    ,"cctv": "CCTV"
   },
   "sections": {
     "overview": "Übersicht",
@@ -286,6 +287,10 @@
     "show_summary_views_desc": "Zeigt die Zusammenfassungs-Views (Lichter, Rollos, Sicherheit, Batterien) in der oberen Navigation an.",
     "show_room_views": "Raum-Views anzeigen",
     "show_room_views_desc": "Zeigt die einzelnen Raum-Views in der oberen Navigation an.",
+    "show_cctv_view": "Experimentelle CCTV-Ansicht anzeigen",
+    "show_cctv_view_desc": "Erzeugt eine optionale Kameraansicht, gruppiert nach Bereichen.",
+    "cctv_show_activity": "CCTV-Aktivitätsverlauf anzeigen",
+    "cctv_show_activity_desc": "Zeigt Bewegungs-, Anwesenheits- und Klingelereignisse der letzten zwölf Stunden.",
     "section_advanced": "Erweitert",
     "section_area_views": "Bereiche und eigene Ansichten",
     "area_view_override_intro": "Bereiche verwalten oder aufklappen, um eine vollständige Lovelace-View als YAML einzufügen.",

@@ -222,6 +222,9 @@ export interface Simon42StrategyConfig {
   show_search_card?: boolean; // default: false
   show_summary_views?: boolean; // default: false
   show_room_views?: boolean; // default: false
+  show_cctv_view?: boolean; // default: false
+  cctv_show_activity?: boolean; // default: false
+  pollen_entities?: string[];
   group_by_floors?: boolean; // default: false
   group_covers_by_floors?: boolean; // default: false
   show_covers_summary?: boolean; // default: true

@@ -9,6 +9,7 @@
     "security": "Security",
     "batteries": "Batteries",
     "climate": "Climate"
+    ,"cctv": "CCTV"
   },
   "sections": {
     "overview": "Overview",
@@ -286,6 +287,10 @@
     "show_summary_views_desc": "Shows the summary views (Lights, Covers, Security, Batteries) in the top navigation.",
     "show_room_views": "Show room views",
     "show_room_views_desc": "Shows individual room views in the top navigation.",
+    "show_cctv_view": "Show experimental CCTV view",
+    "show_cctv_view_desc": "Creates an optional camera view grouped by area.",
+    "cctv_show_activity": "Show CCTV activity history",
+    "cctv_show_activity_desc": "Shows motion, occupancy, and doorbell activity for the last twelve hours.",
     "section_advanced": "Advanced",
     "section_area_views": "Areas and custom views",
     "area_view_override_intro": "Manage areas or expand one to paste a complete Lovelace view as YAML.",
