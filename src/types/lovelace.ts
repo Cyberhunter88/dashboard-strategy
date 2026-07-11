@@ -78,6 +78,10 @@ export interface VacuumCommandsTileFeature extends LovelaceTileCardFeatureBase {
   type: 'vacuum-commands';
 }
 
+export interface LawnMowerCommandsTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'lawn-mower-commands';
+}
+
 export type LovelaceTileCardFeatureConfig =
   | LightBrightnessTileFeature
   | ClimateHvacModesTileFeature
@@ -92,6 +96,7 @@ export type LovelaceTileCardFeatureConfig =
   | ToggleTileFeature
   | UpdateActionsTileFeature
   | VacuumCommandsTileFeature
+  | LawnMowerCommandsTileFeature
   | LovelaceTileCardFeatureBase;
 
 export interface LovelaceTileCardConfig extends LovelaceCardConfig {
