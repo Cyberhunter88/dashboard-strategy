@@ -433,6 +433,11 @@ export interface CustomSection {
   icon?: string;
   /** Cards within this section */
   cards?: CustomCard[];
+  /** Complete Lovelace section YAML; legacy cards remain supported. */
+  yaml?: string;
+  /** Parsed complete section, single card, or card list. */
+  parsed_config?: unknown;
+  _yaml_error?: string;
 }
 
 // -- Area Custom Cards (per-area room view) ---------------------------

@@ -3863,6 +3863,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <button class="btn-remove" @click=${() => this._removeCustomSection(sectionIndex)}>&#x2715;</button>
         </div>
         <div class="custom-item-fields">
+          <textarea rows="8" placeholder="type: grid&#10;cards:&#10;  - type: tile&#10;    entity: light.example"
+            .value=${section.yaml || ''}
+            style="width: 100%;"
+            @change=${(e: Event) => this._updateCustomSectionYaml(sectionIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+          <div class="custom-item-validation">
+            ${section._yaml_error
+              ? html`<span style="color: var(--error-color);">&#x274C; ${section._yaml_error}</span>`
+              : section.yaml
+                ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+                : nothing}
+          </div>
           <div class="custom-item-row">
             <input type="text" .value=${section.title || ''} placeholder=${localize('editor.custom_section_title_placeholder')}
               style="flex: 2;"
@@ -4940,6 +4951,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  private _updateCustomSectionYaml(sectionIndex: number, yamlString: string): void {
+    const customSections = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    const updated: CustomSection = { ...customSections[sectionIndex], yaml: yamlString };
+    const parsed = parseEditorYamlConfig(yamlString, localize('editor.custom_section_yaml_invalid'));
+    updated.parsed_config = parsed.parsed_config;
+    updated._yaml_error = parsed._yaml_error;
+    customSections[sectionIndex] = updated;
+    const newConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    if (updated._yaml_error) this.requestUpdate();
+    else this._fireConfigChanged(newConfig);
   }
 
   private _removeCardFromSection(sectionIndex: number, cardIndex: number): void {
