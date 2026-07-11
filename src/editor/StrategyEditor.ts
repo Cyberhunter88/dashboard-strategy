@@ -33,6 +33,9 @@ import { localize } from '../utils/localize';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { stripLegacyAreaWebrtcCameras } from './editor-config-utils';
+import { dispatchStrategyConfigChanged } from './editor-host';
+import { extractedPanelStyles } from './editor-styles';
+import { renderViewsPanel } from './panels/ViewsPanel';
 import {
   loadExpandedPanels,
   renderCollapsiblePanel,
@@ -450,7 +453,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Styles -----------------------------------------------------------
 
-  static styles = css`
+  static styles = [extractedPanelStyles, css`
     /* -- Base layout --------------------------------------------------- */
     .card-config {
       padding: 16px;
@@ -1649,7 +1652,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       padding-left: 12px;
       border-left: 3px solid var(--divider-color);
     }
-  `;
+  `];
 
   // -- Main render ------------------------------------------------------
 
@@ -3595,31 +3598,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const cctvShowActivity = this._config.cctv_show_activity === true;
     const showMaintenanceView = this._config.show_maintenance_view === true;
 
-    return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.section_views')}</div>
-
-        ${this._renderCheckbox('show-summary-views', localize('editor.show_summary_views'), showSummaryViews,
-          (checked) => this._toggleChanged('show_summary_views', checked, false))}
-        <div class="description">${localize('editor.show_summary_views_desc')}</div>
-
-        ${this._renderCheckbox('show-room-views', localize('editor.show_room_views'), showRoomViews,
-          (checked) => this._toggleChanged('show_room_views', checked, false))}
-        <div class="description">${localize('editor.show_room_views_desc')}</div>
-
-        ${this._renderCheckbox('show-cctv-view', localize('editor.show_cctv_view'), showCctvView,
-          (checked) => this._toggleChanged('show_cctv_view', checked, false))}
-        <div class="description">${localize('editor.show_cctv_view_desc')}</div>
-
-        ${this._renderCheckbox('cctv-show-activity', localize('editor.cctv_show_activity'), cctvShowActivity,
-          (checked) => this._toggleChanged('cctv_show_activity', checked, false))}
-        <div class="description">${localize('editor.cctv_show_activity_desc')}</div>
-
-        ${this._renderCheckbox('show-maintenance-view', localize('editor.show_maintenance_view'), showMaintenanceView,
-          (checked) => this._toggleChanged('show_maintenance_view', checked, false))}
-        <div class="description">${localize('editor.show_maintenance_view_desc')}</div>
-      </div>
-    `;
+    return renderViewsPanel({
+      showSummaryViews, showRoomViews, showCctvView, cctvShowActivity, showMaintenanceView,
+      checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
+      change: (key, checked) => this._toggleChanged(key, checked, false),
+    });
   }
 
   private _renderCustomContentSection(): TemplateResult {
@@ -5742,14 +5725,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
       });
     }
     if (cleanConfig.custom_sections) {
-      cleanConfig.custom_sections = cleanConfig.custom_sections.map((cs) => ({
-        ...cs,
-        cards: (cs.cards || []).map((cc) => {
+      cleanConfig.custom_sections = cleanConfig.custom_sections.map((cs) => {
+        const cleanSection = { ...cs };
+        delete cleanSection._yaml_error;
+        cleanSection.cards = (cs.cards || []).map((cc) => {
           const clean = { ...cc };
           delete clean._yaml_error;
           return clean;
-        }),
-      }));
+        });
+        return cleanSection;
+      });
     }
     if (cleanConfig.weather_start_layout_items) {
       cleanConfig.weather_start_layout_items = cleanConfig.weather_start_layout_items.map((item) => {
@@ -5793,12 +5778,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     // Keep editor-only validation errors locally while emitting only persistent fields.
     this._config = config;
 
-    const event = new CustomEvent('config-changed', {
-      detail: { config: cleanConfig },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    dispatchStrategyConfigChanged(this, cleanConfig);
 
     // Reset flag after one tick
     setTimeout(() => {
