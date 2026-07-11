@@ -768,7 +768,7 @@
 
         ${this._renderCheckbox("room-pins-hide-last-changed",(0,ee.k)("editor.hide_last_changed"),s,e=>this._toggleChanged("room_pins_hide_last_changed",e,!1))}
       </div>
-    `}_renderViewsSection(){const e=!0===this._config.show_summary_views,t=!0===this._config.show_room_views,i=!0===this._config.show_cctv_view,o=!0===this._config.cctv_show_activity;return r.qy`
+    `}_renderViewsSection(){const e=!0===this._config.show_summary_views,t=!0===this._config.show_room_views,i=!0===this._config.show_cctv_view,o=!0===this._config.cctv_show_activity,a=!0===this._config.show_maintenance_view;return r.qy`
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_views")}</div>
 
@@ -783,6 +783,9 @@
 
         ${this._renderCheckbox("cctv-show-activity",(0,ee.k)("editor.cctv_show_activity"),o,e=>this._toggleChanged("cctv_show_activity",e,!1))}
         <div class="description">${(0,ee.k)("editor.cctv_show_activity_desc")}</div>
+
+        ${this._renderCheckbox("show-maintenance-view",(0,ee.k)("editor.show_maintenance_view"),a,e=>this._toggleChanged("show_maintenance_view",e,!1))}
+        <div class="description">${(0,ee.k)("editor.show_maintenance_view_desc")}</div>
       </div>
     `}_renderCustomContentSection(){const e="weather_start"===(this._config.overview_layout||"default");return r.qy`
       <div class="section">

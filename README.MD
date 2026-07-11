@@ -377,6 +377,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_persons_section` | boolean | `false` | Personen-Section auf der Übersicht |
 | `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
+| `show_maintenance_view` | boolean | `false` | Eigene Wartungsansicht mit Updates und nicht verfügbaren Entitäten |
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
 | `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |

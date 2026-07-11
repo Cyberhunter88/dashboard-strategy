@@ -9,7 +9,8 @@
     "security": "Sicherheit",
     "batteries": "Batterien",
     "climate": "Klima"
-    ,"cctv": "CCTV"
+    ,"cctv": "CCTV",
+    "maintenance": "Wartung"
   },
   "sections": {
     "overview": "Übersicht",
@@ -291,6 +292,8 @@
     "show_cctv_view_desc": "Erzeugt eine optionale Kameraansicht, gruppiert nach Bereichen.",
     "cctv_show_activity": "CCTV-Aktivitätsverlauf anzeigen",
     "cctv_show_activity_desc": "Zeigt Bewegungs-, Anwesenheits- und Klingelereignisse der letzten zwölf Stunden.",
+    "show_maintenance_view": "Wartungsansicht anzeigen",
+    "show_maintenance_view_desc": "Zeigt ausstehende Updates, nicht verfügbare Entitäten und Wartungstipps.",
     "section_advanced": "Erweitert",
     "section_area_views": "Bereiche und eigene Ansichten",
     "area_view_override_intro": "Bereiche verwalten oder aufklappen, um eine vollständige Lovelace-View als YAML einzufügen.",

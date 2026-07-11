@@ -3593,6 +3593,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showRoomViews = this._config.show_room_views === true;
     const showCctvView = this._config.show_cctv_view === true;
     const cctvShowActivity = this._config.cctv_show_activity === true;
+    const showMaintenanceView = this._config.show_maintenance_view === true;
 
     return html`
       <div class="section">
@@ -3613,6 +3614,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${this._renderCheckbox('cctv-show-activity', localize('editor.cctv_show_activity'), cctvShowActivity,
           (checked) => this._toggleChanged('cctv_show_activity', checked, false))}
         <div class="description">${localize('editor.cctv_show_activity_desc')}</div>
+
+        ${this._renderCheckbox('show-maintenance-view', localize('editor.show_maintenance_view'), showMaintenanceView,
+          (checked) => this._toggleChanged('show_maintenance_view', checked, false))}
+        <div class="description">${localize('editor.show_maintenance_view_desc')}</div>
       </div>
     `;
   }

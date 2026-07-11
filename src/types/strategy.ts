@@ -271,6 +271,7 @@ export interface Simon42StrategyConfig {
   show_persons_section?: boolean; // default: false
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
+  show_maintenance_view?: boolean; // default: false
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_live_toggle?: boolean; // default: false
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
