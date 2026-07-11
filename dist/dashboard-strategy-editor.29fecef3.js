@@ -652,7 +652,7 @@
 
         ${this._renderCheckbox("favorites-hide-last-changed",(0,ee.k)("editor.hide_last_changed"),o,e=>this._toggleChanged("favorites_hide_last_changed",e,!1))}
       </div>
-    `}_renderAreasSection(){const e=!0===this._config.group_by_floors,t=!0===this._config.show_switches_on_areas,i=!0===this._config.show_alerts_on_areas,o=!0===this._config.show_locks_in_rooms,a=!0===this._config.show_automations_in_rooms,s=!0===this._config.show_scripts_in_rooms,n=!1!==this._config.show_energy_in_rooms,c=!1!==this._config.show_ups_in_rooms,d=!0===this._config.show_window_contacts_in_rooms,l=!0===this._config.show_door_contacts_in_rooms,h=!0===this._config.use_default_area_sort;return r.qy`
+    `}_renderAreasSection(){const e=!0===this._config.group_by_floors,t=!0===this._config.show_switches_on_areas,i=!0===this._config.show_alerts_on_areas,o=!0===this._config.show_locks_in_rooms,a=!0===this._config.show_automations_in_rooms,s=!0===this._config.show_scripts_in_rooms,n=!0===this._config.show_vacuums_section_in_rooms,c=!0===this._config.camera_live_toggle,d=!1!==this._config.show_energy_in_rooms,l=!1!==this._config.show_ups_in_rooms,h=!0===this._config.show_window_contacts_in_rooms,p=!0===this._config.show_door_contacts_in_rooms,_=!0===this._config.use_default_area_sort;return r.qy`
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_areas")}</div>
 
@@ -686,16 +686,22 @@
             ${this._renderCheckbox("show-scripts-in-rooms",(0,ee.k)("editor.show_scripts_in_rooms"),s,e=>this._toggleChanged("show_scripts_in_rooms",e,!1))}
             <div class="description">${(0,ee.k)("editor.show_scripts_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-energy-in-rooms",(0,ee.k)("editor.show_energy_in_rooms"),n,e=>this._toggleChanged("show_energy_in_rooms",e,!0))}
+            ${this._renderCheckbox("show-vacuums-section-in-rooms",(0,ee.k)("editor.show_vacuums_section_in_rooms"),n,e=>this._toggleChanged("show_vacuums_section_in_rooms",e,!1))}
+            <div class="description">${(0,ee.k)("editor.show_vacuums_section_in_rooms_desc")}</div>
+
+            ${this._renderCheckbox("camera-live-toggle",(0,ee.k)("editor.camera_live_toggle"),c,e=>this._toggleChanged("camera_live_toggle",e,!1))}
+            <div class="description">${(0,ee.k)("editor.camera_live_toggle_desc")}</div>
+
+            ${this._renderCheckbox("show-energy-in-rooms",(0,ee.k)("editor.show_energy_in_rooms"),d,e=>this._toggleChanged("show_energy_in_rooms",e,!0))}
             <div class="description">${(0,ee.k)("editor.show_energy_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-ups-in-rooms",(0,ee.k)("editor.show_ups_in_rooms"),c,e=>this._toggleChanged("show_ups_in_rooms",e,!0))}
+            ${this._renderCheckbox("show-ups-in-rooms",(0,ee.k)("editor.show_ups_in_rooms"),l,e=>this._toggleChanged("show_ups_in_rooms",e,!0))}
             <div class="description">${(0,ee.k)("editor.show_ups_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-window-contacts-in-rooms",(0,ee.k)("editor.show_window_contacts_in_rooms"),d,e=>this._toggleChanged("show_window_contacts_in_rooms",e,!1))}
+            ${this._renderCheckbox("show-window-contacts-in-rooms",(0,ee.k)("editor.show_window_contacts_in_rooms"),h,e=>this._toggleChanged("show_window_contacts_in_rooms",e,!1))}
             <div class="description">${(0,ee.k)("editor.show_window_contacts_in_rooms_desc")}</div>
 
-            ${this._renderCheckbox("show-door-contacts-in-rooms",(0,ee.k)("editor.show_door_contacts_in_rooms"),l,e=>this._toggleChanged("show_door_contacts_in_rooms",e,!1))}
+            ${this._renderCheckbox("show-door-contacts-in-rooms",(0,ee.k)("editor.show_door_contacts_in_rooms"),p,e=>this._toggleChanged("show_door_contacts_in_rooms",e,!1))}
             <div class="description">${(0,ee.k)("editor.show_door_contacts_in_rooms_desc")}</div>
           </div>
 
@@ -704,7 +710,7 @@
               <ha-icon icon="mdi:sort-alphabetical-ascending"></ha-icon>
               <span>${(0,ee.k)("editor.area_management_options")}</span>
             </div>
-            ${this._renderCheckbox("use-default-area-sort",(0,ee.k)("editor.use_default_area_sort"),h,e=>this._toggleChanged("use_default_area_sort",e,!1))}
+            ${this._renderCheckbox("use-default-area-sort",(0,ee.k)("editor.use_default_area_sort"),_,e=>this._toggleChanged("use_default_area_sort",e,!1))}
             <div class="description">${(0,ee.k)("editor.use_default_area_sort_desc")}</div>
           </div>
         </div>

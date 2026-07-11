@@ -246,6 +246,7 @@ export interface Simon42StrategyConfig {
   show_locks_in_rooms?: boolean; // default: false
   show_automations_in_rooms?: boolean; // default: false
   show_scripts_in_rooms?: boolean; // default: false
+  show_vacuums_section_in_rooms?: boolean; // default: false
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
   show_window_contacts_in_rooms?: boolean; // default: false
@@ -268,6 +269,7 @@ export interface Simon42StrategyConfig {
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
   camera_renderer?: CameraRenderer; // default: 'native'
+  camera_live_toggle?: boolean; // default: false
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 
   // Layout

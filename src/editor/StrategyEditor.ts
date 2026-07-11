@@ -3420,6 +3420,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showLocksInRooms = this._config.show_locks_in_rooms === true;
     const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
     const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
+    const showVacuumsSectionInRooms = this._config.show_vacuums_section_in_rooms === true;
+    const cameraLiveToggle = this._config.camera_live_toggle === true;
     const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
@@ -3465,6 +3467,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
               (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('show-vacuums-section-in-rooms', localize('editor.show_vacuums_section_in_rooms'), showVacuumsSectionInRooms,
+              (checked) => this._toggleChanged('show_vacuums_section_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_vacuums_section_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('camera-live-toggle', localize('editor.camera_live_toggle'), cameraLiveToggle,
+              (checked) => this._toggleChanged('camera_live_toggle', checked, false))}
+            <div class="description">${localize('editor.camera_live_toggle_desc')}</div>
 
             ${this._renderCheckbox('show-energy-in-rooms', localize('editor.show_energy_in_rooms'), showEnergyInRooms,
               (checked) => this._toggleChanged('show_energy_in_rooms', checked, true))}
