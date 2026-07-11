@@ -33,6 +33,9 @@ import { localize } from '../utils/localize';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { stripLegacyAreaWebrtcCameras } from './editor-config-utils';
+import { dispatchStrategyConfigChanged } from './editor-host';
+import { extractedPanelStyles } from './editor-styles';
+import { renderViewsPanel } from './panels/ViewsPanel';
 import {
   loadExpandedPanels,
   renderCollapsiblePanel,
@@ -450,7 +453,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Styles -----------------------------------------------------------
 
-  static styles = css`
+  static styles = [extractedPanelStyles, css`
     /* -- Base layout --------------------------------------------------- */
     .card-config {
       padding: 16px;
@@ -1649,7 +1652,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       padding-left: 12px;
       border-left: 3px solid var(--divider-color);
     }
-  `;
+  `];
 
   // -- Main render ------------------------------------------------------
 
@@ -3420,6 +3423,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showLocksInRooms = this._config.show_locks_in_rooms === true;
     const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
     const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
+    const showVacuumsSectionInRooms = this._config.show_vacuums_section_in_rooms === true;
+    const cameraLiveToggle = this._config.camera_live_toggle === true;
     const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
@@ -3465,6 +3470,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
             ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
               (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
             <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('show-vacuums-section-in-rooms', localize('editor.show_vacuums_section_in_rooms'), showVacuumsSectionInRooms,
+              (checked) => this._toggleChanged('show_vacuums_section_in_rooms', checked, false))}
+            <div class="description">${localize('editor.show_vacuums_section_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox('camera-live-toggle', localize('editor.camera_live_toggle'), cameraLiveToggle,
+              (checked) => this._toggleChanged('camera_live_toggle', checked, false))}
+            <div class="description">${localize('editor.camera_live_toggle_desc')}</div>
 
             ${this._renderCheckbox('show-energy-in-rooms', localize('editor.show_energy_in_rooms'), showEnergyInRooms,
               (checked) => this._toggleChanged('show_energy_in_rooms', checked, true))}
@@ -3581,20 +3594,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _renderViewsSection(): TemplateResult {
     const showSummaryViews = this._config.show_summary_views === true;
     const showRoomViews = this._config.show_room_views === true;
+    const showCctvView = this._config.show_cctv_view === true;
+    const cctvShowActivity = this._config.cctv_show_activity === true;
+    const showMaintenanceView = this._config.show_maintenance_view === true;
 
-    return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.section_views')}</div>
-
-        ${this._renderCheckbox('show-summary-views', localize('editor.show_summary_views'), showSummaryViews,
-          (checked) => this._toggleChanged('show_summary_views', checked, false))}
-        <div class="description">${localize('editor.show_summary_views_desc')}</div>
-
-        ${this._renderCheckbox('show-room-views', localize('editor.show_room_views'), showRoomViews,
-          (checked) => this._toggleChanged('show_room_views', checked, false))}
-        <div class="description">${localize('editor.show_room_views_desc')}</div>
-      </div>
-    `;
+    return renderViewsPanel({
+      showSummaryViews, showRoomViews, showCctvView, cctvShowActivity, showMaintenanceView,
+      checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
+      change: (key, checked) => this._toggleChanged(key, checked, false),
+    });
   }
 
   private _renderCustomContentSection(): TemplateResult {
@@ -3853,6 +3861,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <button class="btn-remove" @click=${() => this._removeCustomSection(sectionIndex)}>&#x2715;</button>
         </div>
         <div class="custom-item-fields">
+          <textarea rows="8" placeholder="type: grid&#10;cards:&#10;  - type: tile&#10;    entity: light.example"
+            .value=${section.yaml || ''}
+            style="width: 100%;"
+            @change=${(e: Event) => this._updateCustomSectionYaml(sectionIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+          <div class="custom-item-validation">
+            ${section._yaml_error
+              ? html`<span style="color: var(--error-color);">&#x274C; ${section._yaml_error}</span>`
+              : section.yaml
+                ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+                : nothing}
+          </div>
           <div class="custom-item-row">
             <input type="text" .value=${section.title || ''} placeholder=${localize('editor.custom_section_title_placeholder')}
               style="flex: 2;"
@@ -4932,6 +4951,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _updateCustomSectionYaml(sectionIndex: number, yamlString: string): void {
+    const customSections = [...(this._config.custom_sections || [])];
+    if (!customSections[sectionIndex]) return;
+    const updated: CustomSection = { ...customSections[sectionIndex], yaml: yamlString };
+    const parsed = parseEditorYamlConfig(yamlString, localize('editor.custom_section_yaml_invalid'));
+    updated.parsed_config = parsed.parsed_config;
+    updated._yaml_error = parsed._yaml_error;
+    customSections[sectionIndex] = updated;
+    const newConfig = { ...this._config, custom_sections: customSections };
+    this._config = newConfig;
+    if (updated._yaml_error) this.requestUpdate();
+    else this._fireConfigChanged(newConfig);
+  }
+
   private _removeCardFromSection(sectionIndex: number, cardIndex: number): void {
     const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
     if (!customSections[sectionIndex]) return;
@@ -5692,14 +5725,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
       });
     }
     if (cleanConfig.custom_sections) {
-      cleanConfig.custom_sections = cleanConfig.custom_sections.map((cs) => ({
-        ...cs,
-        cards: (cs.cards || []).map((cc) => {
+      cleanConfig.custom_sections = cleanConfig.custom_sections.map((cs) => {
+        const cleanSection = { ...cs };
+        delete cleanSection._yaml_error;
+        cleanSection.cards = (cs.cards || []).map((cc) => {
           const clean = { ...cc };
           delete clean._yaml_error;
           return clean;
-        }),
-      }));
+        });
+        return cleanSection;
+      });
     }
     if (cleanConfig.weather_start_layout_items) {
       cleanConfig.weather_start_layout_items = cleanConfig.weather_start_layout_items.map((item) => {
@@ -5743,12 +5778,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     // Keep editor-only validation errors locally while emitting only persistent fields.
     this._config = config;
 
-    const event = new CustomEvent('config-changed', {
-      detail: { config: cleanConfig },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    dispatchStrategyConfigChanged(this, cleanConfig);
 
     // Reset flag after one tick
     setTimeout(() => {

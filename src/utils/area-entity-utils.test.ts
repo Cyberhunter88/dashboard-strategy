@@ -49,4 +49,19 @@ describe('createRoomEntities', () => {
     expect(result.valve).toEqual(['valve.radiator']);
     expect(result.water_heater).toEqual(['water_heater.boiler']);
   });
+
+  it('groups lawn mowers with vacuums for room rendering', () => {
+    const vacuum = { entity_id: 'vacuum.downstairs' } as EntityRegistryEntry;
+    const mower = { entity_id: 'lawn_mower.garden' } as EntityRegistryEntry;
+    const hass = {
+      states: {
+        'vacuum.downstairs': { attributes: {} },
+        'lawn_mower.garden': { attributes: {} },
+      },
+    } as unknown as HomeAssistant;
+
+    const result = createRoomEntities([vacuum, mower], hass, []);
+
+    expect(result.vacuum).toEqual(['vacuum.downstairs', 'lawn_mower.garden']);
+  });
 });

@@ -377,6 +377,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_persons_section` | boolean | `false` | Personen-Section auf der Übersicht |
 | `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
+| `show_maintenance_view` | boolean | `false` | Eigene Wartungsansicht mit Updates und nicht verfügbaren Entitäten |
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
 | `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
@@ -388,6 +389,11 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_locks_in_rooms` | boolean | `false` | Schlösser in Raum-Views |
 | `show_automations_in_rooms` | boolean | `false` | Automationen in Raum-Views |
 | `show_scripts_in_rooms` | boolean | `false` | Skripte in Raum-Views |
+| `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
+| `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
+| `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
+| `cctv_show_activity` | boolean | `false` | Aktivitätsverlauf in der CCTV-Ansicht |
+| `pollen_entities` | string[] | `[]` | Pollen-Sensoren im Wetterabschnitt |
 | `show_energy_in_rooms` | boolean | `true` | Energie-Block mit Leistungs-, Energie-, Wasser- und Gas-Sensoren in Raum-Views |
 | `show_ups_in_rooms` | boolean | `true` | UPS/USV-Gruppen in Raum-Views anzeigen |
 | `show_window_contacts_in_rooms` | boolean | `false` | Fensterkontakte als Badges in Raum-Views |

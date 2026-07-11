@@ -140,7 +140,7 @@ export function createRoomEntities(
     } else if (domain === 'scene') result.scenes.push(entityId);
     else if (domain === 'climate') result.climate.push(entityId);
     else if (domain === 'media_player') result.media_player.push(entityId);
-    else if (domain === 'vacuum') result.vacuum.push(entityId);
+    else if (domain === 'vacuum' || domain === 'lawn_mower') result.vacuum.push(entityId);
     else if (domain === 'fan') result.fan.push(entityId);
     else if (domain === 'humidifier') result.humidifier.push(entityId);
     else if (domain === 'valve') result.valve.push(entityId);

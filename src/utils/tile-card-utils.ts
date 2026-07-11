@@ -81,6 +81,8 @@ function buildAdaptiveFeatures(
     }
     case 'vacuum':
       return [{ type: 'vacuum-commands' }];
+    case 'lawn_mower':
+      return [{ type: 'lawn-mower-commands' }];
     case 'humidifier':
       return [{ type: 'humidifier-toggle' }];
     case 'valve':

@@ -83,8 +83,31 @@ function buildWebrtcCameraCard(
 function buildNativeCameraCard(
   cameraId: string,
   name: string,
-  entities?: Array<string | Record<string, unknown>>
+  liveToggle: boolean,
+  entities?: Array<string | Record<string, unknown>>,
+  isAqara: boolean = false
 ): LovelaceCardConfig {
+  if (!liveToggle) {
+    if (entities) {
+      return {
+        type: 'picture-glance',
+        camera_image: cameraId,
+        camera_view: isAqara ? 'live' : 'auto',
+        fit_mode: 'cover',
+        title: name,
+        entities,
+      };
+    }
+    return {
+      type: 'picture-entity',
+      entity: cameraId,
+      camera_image: cameraId,
+      camera_view: 'auto',
+      name,
+      show_name: true,
+      show_state: false,
+    };
+  }
   return {
     type: 'custom:dashboard-strategy-camera-card',
     entity: cameraId,
@@ -504,6 +527,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const cameraCards: LovelaceCardConfig[] = [];
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
+      const cameraLiveToggle = dashboardConfig.camera_live_toggle === true;
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
         const cameraName = stripAreaName(cameraId, area, hass);
@@ -570,9 +594,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
             if (doorbell) glanceEntities.push({ entity: doorbell });
           }
 
-          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, glanceEntities));
+          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle, glanceEntities, isAqara));
         } else {
-          cameraCards.push(buildNativeCameraCard(cameraId, cameraName));
+          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle));
         }
       }
       if (cameraCards.length > 0) {
@@ -724,16 +748,28 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    // Switches block (keeps vacuum tiles for backward-compatible grouping).
-    const miscCards: LovelaceCardConfig[] = [];
+    const vacuumCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.vacuum)
-      miscCards.push(
+      vacuumCards.push(
         buildAdaptiveTileCardConfig(hass, e, {
           name: stripAreaName(e, area, hass),
           vertical: false,
           state_content: 'last_changed',
         })
       );
+    const ownVacuumSection = dashboardConfig.show_vacuums_section_in_rooms === true;
+    if (ownVacuumSection && vacuumCards.length > 0) {
+      pushStack('misc', {
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('room.vacuums'), heading_style: 'title', icon: 'mdi:robot-vacuum' },
+          ...vacuumCards,
+        ],
+      });
+    }
+
+    // Switches block (keeps vacuum tiles here unless the opt-in section is enabled).
+    const miscCards: LovelaceCardConfig[] = ownVacuumSection ? [] : [...vacuumCards];
     for (const e of roomEntities.switches)
       miscCards.push(
         buildAdaptiveTileCardConfig(hass, e, {

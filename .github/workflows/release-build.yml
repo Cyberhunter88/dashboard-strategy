@@ -1,0 +1,55 @@
+name: Release build
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag to rebuild
+        required: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+      - name: Require release commit on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Verify release version and bundle
+        shell: bash
+        run: |
+          node scripts/verify-version-sync.mjs --require-tag
+          test -s dist/dashboard-strategy.js
+          test -s dist/dashboard-strategy.js.gz
+          test -s dist/dashboard-strategy.js.br
+          package_version="$(node -p "require('./package.json').version")"
+          grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ steps.release.outputs.tag }}" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber -R "${{ github.repository }}"

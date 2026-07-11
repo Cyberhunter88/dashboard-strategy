@@ -13,6 +13,7 @@ import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelac
 import { localize } from '../utils/localize';
 import { createHeadingCard, renderParsedCustomCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
+import { buildCompleteCustomSection } from './CustomSections';
 
 export interface OverviewSectionParams {
   someSensorId: string | null;
@@ -279,6 +280,11 @@ export function createCustomSectionsArray(customSections: CustomSection[], hideH
   const result: LovelaceSectionConfig[] = [];
 
   for (const section of customSections) {
+    if (section.parsed_config !== undefined) {
+      const complete = buildCompleteCustomSection(section.parsed_config);
+      if (complete) result.push(complete);
+      continue;
+    }
     const cards: LovelaceCardConfig[] = [];
 
     if (!hideHeadings) {

@@ -222,6 +222,9 @@ export interface Simon42StrategyConfig {
   show_search_card?: boolean; // default: false
   show_summary_views?: boolean; // default: false
   show_room_views?: boolean; // default: false
+  show_cctv_view?: boolean; // default: false
+  cctv_show_activity?: boolean; // default: false
+  pollen_entities?: string[];
   group_by_floors?: boolean; // default: false
   group_covers_by_floors?: boolean; // default: false
   show_covers_summary?: boolean; // default: true
@@ -246,6 +249,7 @@ export interface Simon42StrategyConfig {
   show_locks_in_rooms?: boolean; // default: false
   show_automations_in_rooms?: boolean; // default: false
   show_scripts_in_rooms?: boolean; // default: false
+  show_vacuums_section_in_rooms?: boolean; // default: false
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
   show_window_contacts_in_rooms?: boolean; // default: false
@@ -267,7 +271,9 @@ export interface Simon42StrategyConfig {
   show_persons_section?: boolean; // default: false
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
+  show_maintenance_view?: boolean; // default: false
   camera_renderer?: CameraRenderer; // default: 'native'
+  camera_live_toggle?: boolean; // default: false
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 
   // Layout
@@ -431,6 +437,11 @@ export interface CustomSection {
   icon?: string;
   /** Cards within this section */
   cards?: CustomCard[];
+  /** Complete Lovelace section YAML; legacy cards remain supported. */
+  yaml?: string;
+  /** Parsed complete section, single card, or card list. */
+  parsed_config?: unknown;
+  _yaml_error?: string;
 }
 
 // -- Area Custom Cards (per-area room view) ---------------------------
