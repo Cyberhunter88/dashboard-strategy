@@ -38,6 +38,15 @@ const modulesPromise = Promise.all([
 void modulesPromise.then(() => { t('all chunks loaded'); }).catch(() => undefined);
 
 class Simon42DashboardStrategy extends HTMLElement {
+  // HA 2026.7+: tell the dashboard picker/runtime which registry updates
+  // require regeneration. This matches the data the singleton Registry tracks.
+  static registryDependencies = ['entities', 'devices', 'areas', 'floors'] as const;
+
+  // HA 2026.5+: suggested title/icon when creating a new dashboard from the UI.
+  static getCreateSuggestions(): { title: string; icon: string } {
+    return { title: 'Dashboard Strategy', icon: 'mdi:view-dashboard' };
+  }
+
   static async generate(config: Simon42StrategyConfig, hass: HomeAssistant): Promise<LovelaceConfig> {
     generateCallCount++;
     t(`generate() called (#${generateCallCount})`);
@@ -177,5 +186,29 @@ class Simon42DashboardStrategy extends HTMLElement {
 // Register strategy custom element IMMEDIATELY — no heavy imports needed.
 // This ensures HA's 5-second timeout is satisfied even on slow networks.
 customElements.define('ll-strategy-dashboard-strategy', Simon42DashboardStrategy);
+
+declare global {
+  interface Window {
+    customStrategies?: Array<{
+      type: string;
+      strategyType: 'dashboard' | 'view' | 'section';
+      name?: string;
+      description?: string;
+      documentationURL?: string;
+    }>;
+  }
+}
+
+window.customStrategies = window.customStrategies || [];
+if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashboard-strategy')) {
+  window.customStrategies.push({
+    type: 'custom:dashboard-strategy',
+    strategyType: 'dashboard',
+    name: 'Dashboard Strategy',
+    description:
+      'Automatisch generiertes Dashboard aus Bereichen, Geraeten und Entitaeten mit Zusammenfassungen und Raum-Ansichten.',
+    documentationURL: 'https://github.com/Cyberhunter88/dashboard-strategy',
+  });
+}
 
 console.log(`Dashboard Strategy v${STRATEGY_VERSION} loaded`);

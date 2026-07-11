@@ -10,7 +10,13 @@ export function createMaintenanceSection(
 ): LovelaceSectionConfig | null {
   if (!enabled) return null;
 
-  const pending = Registry.getVisibleEntityIdsForDomain('update').filter((id) => hass.states[id]?.state === 'on');
+  // Update entities are commonly categorized as config (for example firmware
+  // updates). Keep those while still honoring dashboard-specific exclusions.
+  const pending = Registry.getEntityIdsForDomain('update').filter((id) => {
+    if (Registry.isExcludedByLabel(id) || Registry.isHiddenByConfig(id)) return false;
+    if (Registry.getEntity(id)?.hidden) return false;
+    return hass.states[id]?.state === 'on';
+  });
   if (pending.length === 0) return null;
 
   const cards: LovelaceCardConfig[] = [];

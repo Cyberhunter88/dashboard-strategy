@@ -34,6 +34,11 @@ import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { stripLegacyAreaWebrtcCameras } from './editor-config-utils';
 import {
+  loadExpandedPanels,
+  renderCollapsiblePanel,
+  type PanelMeta,
+} from './panels/panel-shell';
+import {
   createRoomEntities,
   findUpsEntityGroups,
   getAreaBadgeCandidates,
@@ -71,6 +76,21 @@ interface ParsedEditorYaml {
   parsed_config?: Record<string, any> | Record<string, any>[];
   _yaml_error?: string;
 }
+
+const PANELS: Record<string, PanelMeta> = {
+  overview: { key: 'overview', icon: 'mdi:view-dashboard-outline', label: 'Dashboard' },
+  summaries: { key: 'summaries', icon: 'mdi:counter', label: 'Zusammenfassungen' },
+  areas: { key: 'areas', icon: 'mdi:floor-plan', label: 'Bereiche und R\u00e4ume' },
+  appearance: { key: 'appearance', icon: 'mdi:palette-outline', label: 'Darstellung' },
+  details: { key: 'details', icon: 'mdi:tune-variant', label: 'Details' },
+  favorites: { key: 'favorites', icon: 'mdi:star-outline', label: 'Favoriten' },
+  areaOptions: { key: 'area-options', icon: 'mdi:home-cog-outline', label: 'Bereichsoptionen' },
+  roomPins: { key: 'room-pins', icon: 'mdi:pin-outline', label: 'Raum-Pins' },
+  views: { key: 'views', icon: 'mdi:tab', label: 'Ansichten' },
+  advanced: { key: 'advanced-options', icon: 'mdi:cog-outline', label: 'Erweiterte Optionen' },
+  sectionOrder: { key: 'section-order', icon: 'mdi:sort', label: 'Abschnittsreihenfolge' },
+  customContent: { key: 'custom-content', icon: 'mdi:view-grid-plus-outline', label: 'Eigene Inhalte' },
+};
 
 function getYamlErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message.split('\n')[0] : 'UngÃ¼ltiges YAML';
@@ -157,6 +177,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   // Entity search state (NOT @state — we call requestUpdate manually)
   private _favoriteSearch = '';
   private _roomPinSearch = '';
+  _expandedPanels = loadExpandedPanels();
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<string, {
     groupedEntities: Record<string, string[]>;
@@ -444,6 +465,47 @@ class Simon42DashboardStrategyEditor extends LitElement {
       border-radius: var(--ha-card-border-radius, 12px);
       padding: 16px;
       transition: box-shadow 0.2s ease;
+    }
+    .section.panel {
+      padding: 0;
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 13px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      color: var(--primary-text-color);
+      text-align: left;
+    }
+    .panel-header:hover {
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+    }
+    .panel-icon {
+      --mdc-icon-size: 20px;
+      color: var(--primary-color);
+    }
+    .panel-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .panel-chevron {
+      --mdc-icon-size: 22px;
+      color: var(--secondary-text-color);
+      transition: transform 0.2s ease;
+    }
+    .panel.collapsed .panel-chevron {
+      transform: rotate(-90deg);
+    }
+    .panel-body {
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--divider-color, #e8e8e8);
     }
     .section-title {
       font-size: 15px;
@@ -1596,8 +1658,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        ${this._renderBasicOverviewSection()}
-        ${this._renderBasicSummariesSection()}
+        ${renderCollapsiblePanel(this, PANELS.overview, () => this._renderBasicOverviewSection())}
+        ${renderCollapsiblePanel(this, PANELS.summaries, () => this._renderBasicSummariesSection())}
 
         <div class="section-divider">
           <div class="section-divider-title">
@@ -1605,7 +1667,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
         </div>
 
-        ${this._renderAreasListSection()}
+        ${renderCollapsiblePanel(this, PANELS.areas, () => this._renderAreasListSection())}
 
         <button class="advanced-toggle"
           aria-expanded=${String(this._advancedExpanded)}
@@ -1616,15 +1678,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </button>
         ${this._advancedExpanded ? html`
           <div class="advanced-content">
-            ${this._renderOverviewSection()}
-            ${this._renderSummariesSection()}
-            ${this._renderFavoritesSection()}
-            ${this._renderAreasSection()}
-            ${this._renderRoomPinsSection()}
-            ${this._renderViewsSection()}
-            ${this._renderAdvancedOptionsSection()}
-            ${this._renderSectionOrderPanel()}
-            ${this._renderCustomContentSection()}
+            ${renderCollapsiblePanel(this, PANELS.appearance, () => this._renderOverviewSection())}
+            ${renderCollapsiblePanel(this, PANELS.details, () => this._renderSummariesSection())}
+            ${renderCollapsiblePanel(this, PANELS.favorites, () => this._renderFavoritesSection())}
+            ${renderCollapsiblePanel(this, PANELS.areaOptions, () => this._renderAreasSection())}
+            ${renderCollapsiblePanel(this, PANELS.roomPins, () => this._renderRoomPinsSection())}
+            ${renderCollapsiblePanel(this, PANELS.views, () => this._renderViewsSection())}
+            ${renderCollapsiblePanel(this, PANELS.advanced, () => this._renderAdvancedOptionsSection())}
+            ${renderCollapsiblePanel(this, PANELS.sectionOrder, () => this._renderSectionOrderPanel())}
+            ${renderCollapsiblePanel(this, PANELS.customContent, () => this._renderCustomContentSection())}
           </div>
         ` : nothing}
       </div>

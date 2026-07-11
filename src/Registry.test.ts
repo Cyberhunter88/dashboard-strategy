@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { Registry } from './Registry';
 import type { HomeAssistant } from './types/homeassistant';
 import type { EntityRegistryEntry, FloorRegistryEntry } from './types/registries';
@@ -17,7 +17,10 @@ function entity(
   };
 }
 
-function hassWith(entities: EntityRegistryEntry[]): HomeAssistant {
+function hassWith(
+  entities: EntityRegistryEntry[],
+  overrides: Partial<Pick<HomeAssistant, 'areas' | 'devices' | 'floors' | 'language' | 'locale' | 'states'>> = {}
+): HomeAssistant {
   const states = Object.fromEntries(
     entities.map(({ entity_id }) => [
       entity_id,
@@ -40,8 +43,13 @@ function hassWith(entities: EntityRegistryEntry[]): HomeAssistant {
     states,
     language: 'en',
     locale: { language: 'en' },
+    ...overrides,
   } as HomeAssistant;
 }
+
+beforeEach(() => {
+  Registry.resetForTesting();
+});
 
 describe('Registry', () => {
   it('keeps raw entries while filtering hidden, excluded, and diagnostic entries', () => {
@@ -83,17 +91,9 @@ describe('Registry', () => {
     Registry.initialize(hass, config);
     const visibleEntries = Registry.getVisibleEntitiesForArea('living_room');
 
-    const floor: FloorRegistryEntry = {
-      floor_id: 'ground',
-      name: 'Ground floor',
-      level: 0,
-      icon: null,
-      aliases: [],
-    };
     const stateOnlyUpdate = {
       ...hass,
       states: { ...hass.states },
-      floors: { ground: floor },
       language: 'de',
       locale: { ...hass.locale, language: 'de' as const },
     };
@@ -102,7 +102,31 @@ describe('Registry', () => {
     expect(Registry.isCurrent(stateOnlyUpdate, config)).toBe(true);
     expect(Registry.hass).toBe(stateOnlyUpdate);
     expect(Registry.getVisibleEntitiesForArea('living_room')).toBe(visibleEntries);
-    expect(Registry.floors).toEqual([floor]);
     expect(localize('views.lights')).toBe('Lichter');
+  });
+
+  it('rebuilds when floors change so floor metadata stays current', () => {
+    const hass = hassWith([entity('light.visible')]);
+    const config = {} as Simon42StrategyConfig;
+    Registry.initialize(hass, config);
+    const visibleEntries = Registry.getVisibleEntitiesForArea('living_room');
+
+    const floor: FloorRegistryEntry = {
+      floor_id: 'ground',
+      name: 'Ground floor',
+      level: 0,
+      icon: null,
+      aliases: [],
+    };
+    const updated = hassWith([entity('light.visible')], {
+      floors: { ground: floor },
+    });
+
+    Registry.initialize(updated, config);
+
+    expect(Registry.isCurrent(updated, config)).toBe(true);
+    expect(Registry.hass).toBe(updated);
+    expect(Registry.getVisibleEntitiesForArea('living_room')).not.toBe(visibleEntries);
+    expect(Registry.floors).toEqual([floor]);
   });
 });
