@@ -532,6 +532,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
       .section.panel {
         padding: 0;
+        overflow: visible;
+      }
+      .section.panel.collapsed {
         overflow: hidden;
       }
       .panel-header {
@@ -4327,7 +4330,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const cctvShowActivity = this._config.cctv_show_activity === true;
     const showMaintenanceView = this._config.show_maintenance_view === true;
 
-    return renderViewsPanel({
+    return html`${renderViewsPanel({
       showSummaryViews,
       showRoomViews,
       showCctvView,
@@ -4335,7 +4338,51 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       showMaintenanceView,
       checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
       change: (key, checked) => this._toggleChanged(key, checked, false),
+    })}${this._renderUserVisibilityRules()}`;
+  }
+
+  private _renderUserVisibilityRules(): TemplateResult {
+    if (!this._hass) return html``;
+    const users = Object.entries(this._hass.states)
+      .filter(([id, state]) => id.startsWith('person.') && typeof state.attributes.user_id === 'string')
+      .map(([id, state]) => ({ id: state.attributes.user_id as string, name: String(state.attributes.friendly_name || id) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (users.length === 0) return html``;
+    const viewOptions = [
+      ['home', localize('views.overview')], ['lights', localize('views.lights')],
+      ['covers', localize('views.covers')], ['security', localize('views.security')],
+      ['batteries', localize('views.batteries')], ['climate', localize('views.climate')],
+      ['cctv', localize('views.cctv')], ['maintenance', localize('views.maintenance')],
+      ...Object.values(this._hass.areas).map((area) => [area.area_id, area.name]),
+      ...(this._config.custom_views || []).filter((view) => view.path && view.title).map((view) => [view.path, view.title]),
+    ] as [string, string][];
+    const sectionOptions = DEFAULT_WEATHER_START_ORDER.map((key) => [key, localize(`weather_start_blocks.${key}`)] as [string, string]);
+    const renderRules = (kind: 'view' | 'section', options: [string, string][]) => options.map(([key, title]) => {
+      const map = kind === 'view' ? this._config.view_visible_users : this._config.section_visible_users;
+      const selected = Object.prototype.hasOwnProperty.call(map || {}, key) ? map?.[key] || [] : users.map((user) => user.id);
+      return html`<div class="option-group"><div class="option-group-title">${title}</div>${users.map((user) =>
+        this._renderCheckbox(`${kind}-${key}-${user.id}`, user.name, selected.includes(user.id), (checked) =>
+          this._userVisibilityChanged(kind, key, user.id, users.map((entry) => entry.id), checked))
+      )}</div>`;
     });
+    return html`<div class="section"><div class="section-title">${localize('editor.user_visibility')}</div>
+      <div class="description" style="margin-left: 0;">${localize('editor.user_visibility_warning')}</div>
+      <div class="option-group-title">${localize('editor.user_visibility_views')}</div>${renderRules('view', viewOptions)}
+      <div class="option-group-title">${localize('editor.user_visibility_sections')}</div>${renderRules('section', sectionOptions)}
+    </div>`;
+  }
+
+  private _userVisibilityChanged(kind: 'view' | 'section', key: string, userId: string, knownUsers: string[], checked: boolean): void {
+    const current = { ...((kind === 'view' ? this._config.view_visible_users : this._config.section_visible_users) || {}) };
+    const selected = new Set(Object.prototype.hasOwnProperty.call(current, key) ? current[key] : knownUsers);
+    if (checked) selected.add(userId); else selected.delete(userId);
+    if (knownUsers.every((id) => selected.has(id)) && [...selected].every((id) => knownUsers.includes(id))) delete current[key];
+    else current[key] = [...selected];
+    const updated = { ...this._config };
+    if (kind === 'view') {
+      if (Object.keys(current).length) updated.view_visible_users = current; else delete updated.view_visible_users;
+    } else if (Object.keys(current).length) updated.section_visible_users = current; else delete updated.section_visible_users;
+    this._fireConfigChanged(updated);
   }
 
   private _renderCustomContentSection(): TemplateResult {

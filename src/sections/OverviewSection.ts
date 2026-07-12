@@ -14,6 +14,7 @@ import { localize } from '../utils/localize';
 import { createHeadingCard, renderParsedCustomCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { buildCompleteCustomSection } from './CustomSections';
+import { getViewVisibleUsers, unionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 
 export interface OverviewSectionParams {
   someSensorId: string | null;
@@ -86,6 +87,11 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
     });
   }
 
+  for (const card of summaryCards) {
+    const users = getViewVisibleUsers(config, String(card.summary_type));
+    const visibility = userVisibilityConditions(users);
+    if (visibility) card.visibility = visibility;
+  }
   return summaryCards;
 }
 
@@ -93,11 +99,14 @@ export function appendSummaryCards(cards: LovelaceCardConfig[], config: Simon42S
   const summaryCards = createSummaryCards(config, compact);
   if (summaryCards.length === 0) return;
   const hidden = new Set(config.hidden_section_headings || []);
+  const summaryRules = summaryCards.map((card) => getViewVisibleUsers(config, String(card.summary_type)));
+  const parentVisibility = userVisibilityConditions(unionVisibleUsers(summaryRules));
 
   if (!hidden.has('summaries')) {
     cards.push({
       type: 'heading',
       heading: localize('sections.summaries'),
+      ...(parentVisibility ? { visibility: parentVisibility } : {}),
       ...(compact ? { heading_style: 'subtitle' } : {}),
     });
   }
@@ -107,6 +116,7 @@ export function appendSummaryCards(cards: LovelaceCardConfig[], config: Simon42S
     cards.push({
       type: 'horizontal-stack',
       cards: summaryCards,
+      ...(parentVisibility ? { visibility: parentVisibility } : {}),
       ...(compact ? { grid_options: { columns: 'full', rows: 1 } } : {}),
     });
     return;
@@ -116,6 +126,10 @@ export function appendSummaryCards(cards: LovelaceCardConfig[], config: Simon42S
     cards.push({
       type: 'horizontal-stack',
       cards: summaryCards.slice(i, i + 2),
+      ...(() => {
+        const visibility = userVisibilityConditions(unionVisibleUsers(summaryRules.slice(i, i + 2)));
+        return visibility ? { visibility } : {};
+      })(),
       ...(compact ? { grid_options: { columns: 'full', rows: 1 } } : {}),
     });
   }

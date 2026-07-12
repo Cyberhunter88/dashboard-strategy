@@ -217,6 +217,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden.
 
+**Benutzersichtbarkeit** — Im Bereich „Ansichten“ des Strategy-Editors lassen sich Views, ihre Einstiegspunkte auf der Übersicht und einzelne Übersichtsabschnitte pro Home-Assistant-Benutzer einblenden. Das ist reine Anzeigelogik und keine Zugriffskontrolle: ausgeblendete Views bleiben über ihre URL erreichbar. Nach Änderungen das Dashboard neu laden.
+
 **Abschnitts-Metasteuerung** — Erzeugte Überschriften können gezielt ausgeblendet (`hidden_section_headings`) und Startseiten-Blöcke an Entity-Zustände gebunden werden (`section_visibility`).
 
 **Lichter nach Etagen** — In der Lichter-View können Lichter nach Etagen gruppiert werden, mit Ein-/Ausschalt-Button pro Etage.
@@ -381,6 +383,8 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
 | `show_maintenance_view` | boolean | `false` | Eigene Wartungsansicht mit Updates und nicht verfügbaren Entitäten |
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
+| `view_visible_users` | object | `{}` | Sichtbare Benutzer pro View-Pfad; leeres Array blendet die View für alle aus |
+| `section_visible_users` | object | `{}` | Sichtbare Benutzer pro Übersichtsabschnitt; leeres Array blendet den Abschnitt für alle aus |
 | `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
 | `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |

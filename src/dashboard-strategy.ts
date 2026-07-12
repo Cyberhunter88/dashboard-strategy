@@ -10,7 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.22.2'; // x-release-please-version
+const STRATEGY_VERSION = '1.22.3'; // x-release-please-version
 
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
 
@@ -63,7 +63,8 @@ class Simon42DashboardStrategy extends HTMLElement {
     const [runtime] = await modulesPromise;
     t('modules ready');
 
-    const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden } = runtime;
+    const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden,
+      applyViewVisibility } = runtime;
     t('imports done');
 
     const getStrategy = (tag: string): StrategyGenerator => {
@@ -187,7 +188,9 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     return {
       title: localize('dashboard.title'),
-      views: views.map((view) => withConfiguredTheme(withUnavailableEntitiesHidden(view, config))),
+      views: views.map((view) => applyViewVisibility(
+        withConfiguredTheme(withUnavailableEntitiesHidden(view, config)), config
+      )),
     };
   }
 
@@ -228,4 +231,4 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
 
 // Keep the version literal in the production bundle: the CI artifact check
 // validates this exact marker before HACS can publish the release.
-console.log('Dashboard Strategy v1.22.2 loaded');
+console.log('Dashboard Strategy v1.22.3 loaded');
