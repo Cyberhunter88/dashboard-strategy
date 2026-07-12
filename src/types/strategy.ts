@@ -28,6 +28,7 @@ export type HeadingKey =
   | 'overview'
   | 'summaries'
   | 'favorites'
+  | 'light_favorites'
   | 'custom_cards'
   | 'custom_sections'
   | 'areas'
@@ -45,6 +46,7 @@ export const ALL_HEADING_KEYS: HeadingKey[] = [
   'overview',
   'summaries',
   'favorites',
+  'light_favorites',
   'custom_cards',
   'custom_sections',
   'areas',
@@ -92,6 +94,7 @@ export type WeatherStartKey =
   | 'date'
   | 'summaries'
   | 'favorites'
+  | 'light_favorites'
   | 'alarm'
   | 'search'
   | 'overview'
@@ -115,6 +118,7 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'date',
   'summaries',
   'favorites',
+  'light_favorites',
   'alarm',
   'search',
   'overview',
@@ -238,10 +242,15 @@ export interface Simon42StrategyConfig {
   show_energy?: boolean; // default: true
   show_energy_distribution_card?: boolean; // default: true
   show_search_card?: boolean; // default: false
+  search_card_variant?: 'custom' | 'tip'; // default: 'custom'
   show_summary_views?: boolean; // default: false
   show_room_views?: boolean; // default: false
   show_cctv_view?: boolean; // default: false
   cctv_show_activity?: boolean; // default: false
+  group_security_by_areas?: boolean; // default: false
+  show_security_activity?: boolean; // default: false
+  security_activity_position?: 'start' | 'end'; // default: 'start'
+  security_extra_entities?: string[];
   pollen_entities?: string[];
   group_by_floors?: boolean; // default: false
   group_covers_by_floors?: boolean; // default: false
@@ -328,6 +337,7 @@ export interface Simon42StrategyConfig {
   alarm_entity?: string;
   weather_entity?: string;
   favorite_entities?: string[];
+  light_favorite_entities?: string[];
   room_pin_entities?: string[];
 
   // Per-block YAML overrides for weather_start layout blocks
@@ -337,6 +347,7 @@ export interface Simon42StrategyConfig {
   use_default_area_sort?: boolean; // default: false
   areas_display?: AreasDisplay;
   areas_options?: Record<string, AreaOptions>;
+  room_visibility?: Record<string, { entity: string; state: string }>;
 
   // Custom views
   custom_views?: CustomView[];

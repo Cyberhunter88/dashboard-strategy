@@ -186,15 +186,46 @@ export function createAlarmSection(hass: HomeAssistant, config: Simon42StrategyC
   };
 }
 
-export function createSearchSection(enabled: boolean): LovelaceSectionConfig | null {
+export function createSearchSection(
+  enabled: boolean,
+  variant: 'custom' | 'tip' = 'custom'
+): LovelaceSectionConfig | null {
   if (!enabled) return null;
+  const card: LovelaceCardConfig = variant === 'tip'
+    ? {
+        type: 'markdown',
+        content: `### 🔍 ${localize('editor.search_card_tip_title')}\n\n${localize('editor.search_card_tip_body')}`,
+        grid_options: { columns: 'full' },
+      }
+    : { type: 'custom:search-card', grid_options: { columns: 'full' } };
   return {
     type: 'grid',
     cards: [
       { type: 'heading', heading: localize('sections.search'), heading_style: 'title', icon: 'mdi:magnify' },
-      { type: 'custom:search-card', grid_options: { columns: 'full' } },
+      card,
     ],
   };
+}
+
+export function createLightFavoritesSection(
+  hass: HomeAssistant,
+  config: Simon42StrategyConfig
+): LovelaceSectionConfig | null {
+  const entities = (config.light_favorite_entities || []).filter(
+    (entityId) => entityId.startsWith('light.') && hass.states[entityId] !== undefined
+  );
+  if (entities.length === 0) return null;
+  const cards: LovelaceCardConfig[] = [];
+  if (!(config.hidden_section_headings || []).includes('light_favorites')) {
+    cards.push({
+      type: 'heading',
+      heading: localize('sections.light_favorites'),
+      heading_style: 'title',
+      icon: 'mdi:lightbulb-star-outline',
+    });
+  }
+  cards.push(...entities.map((entityId) => buildAdaptiveTileCardConfig(hass, entityId, { vertical: false })));
+  return { type: 'grid', cards };
 }
 
 /**
@@ -255,12 +286,8 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   // Add search card if enabled
   if (showSearchCard) {
-    cards.push({
-      type: 'custom:search-card',
-      grid_options: {
-        columns: 'full',
-      },
-    });
+    const searchSection = createSearchSection(true, config.search_card_variant);
+    cards.push(...(searchSection?.cards?.slice(1) || []));
   }
 
   appendSummaryCards(cards, config);

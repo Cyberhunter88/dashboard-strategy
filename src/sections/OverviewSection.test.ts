@@ -3,6 +3,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import {
   createAlarmSection,
   createFavoritesSection,
+  createLightFavoritesSection,
   createOverviewSection,
   createSearchSection,
 } from './OverviewSection';
@@ -51,5 +52,12 @@ describe('weather-start overview blocks', () => {
     expect(createAlarmSection(hass, { alarm_entity: 'alarm_control_panel.missing' })).toBeNull();
     expect(createSearchSection(false)).toBeNull();
     expect(createSearchSection(true)?.cards?.some((card: any) => card.type === 'custom:search-card')).toBe(true);
+    expect(createSearchSection(true, 'tip')?.cards?.some((card: any) => card.type === 'markdown')).toBe(true);
+  });
+
+  it('creates light favorites only from existing light entities', () => {
+    expect(createLightFavoritesSection(hass, { light_favorite_entities: ['light.favorite', 'sensor.missing'] })
+      ?.cards?.some((card: any) => card.entity === 'light.favorite')).toBe(true);
+    expect(createLightFavoritesSection(hass, { light_favorite_entities: [] })).toBeNull();
   });
 });
