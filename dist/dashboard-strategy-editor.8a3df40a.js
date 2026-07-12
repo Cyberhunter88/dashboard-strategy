@@ -639,7 +639,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       <div class="section">
         <div class="section-title">${(0,ee.k)("editor.section_overview_details")}</div>
 
-        ${this._renderWeatherStartOrderPanel()}
         ${this._renderCheckbox("show-person-badges",(0,ee.k)("editor.show_person_badges"),i,e=>this._toggleChanged("show_person_badges",e,!0))}
         <div class="description">${(0,ee.k)("editor.show_person_badges_desc")}</div>
 
