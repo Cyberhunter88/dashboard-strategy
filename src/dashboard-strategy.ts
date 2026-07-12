@@ -10,7 +10,16 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 
-const STRATEGY_VERSION = '1.22.1'; // x-release-please-version
+const STRATEGY_VERSION = '1.22.2'; // x-release-please-version
+
+declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
+
+// Home Assistant serves HACS files with a long-lived cache policy. The entry
+// resource has HACS' `hacstag` cache buster, but Webpack's lazy chunks did not.
+// Keep emitted filenames unchanged while versioning every chunk request as well.
+const getChunkScriptFilename = __webpack_get_script_filename__;
+__webpack_get_script_filename__ = (chunkId) =>
+  `${getChunkScriptFilename(chunkId)}?v=${STRATEGY_VERSION}`;
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -217,4 +226,6 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
   });
 }
 
-console.log(`Dashboard Strategy v${STRATEGY_VERSION} loaded`);
+// Keep the version literal in the production bundle: the CI artifact check
+// validates this exact marker before HACS can publish the release.
+console.log('Dashboard Strategy v1.22.2 loaded');
