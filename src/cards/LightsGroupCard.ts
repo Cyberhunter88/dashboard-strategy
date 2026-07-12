@@ -10,6 +10,7 @@ import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { stripAreaName, sortLights } from '../utils/name-utils';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
+import { createEntityRenderKey } from '../utils/entity-render-key';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
@@ -54,6 +55,7 @@ class Simon42LightsGroupCard extends LitElement {
   private _cachedAreaForEntity: Map<string, string | null> | null = null;
   private _lastLightsList = '';
   private _renderedLights: string[] = [];
+  private _renderedLightsKey = '';
   private _renderedFloorGroups: FloorGroup[] = [];
 
   // Reusable tile card pool (keyed by entity_id)
@@ -147,6 +149,7 @@ class Simon42LightsGroupCard extends LitElement {
     this._cachedAreaForEntity = null;
     this._lastLightsList = '';
     this._renderedLights = [];
+    this._renderedLightsKey = '';
     this._renderedFloorGroups = [];
     this.requestUpdate();
   }
@@ -170,9 +173,18 @@ class Simon42LightsGroupCard extends LitElement {
     trackHassUpdate('lights-group');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
 
-    if (!oldHass || oldHass.entities !== this.hass.entities) {
+    if (
+      !oldHass
+      || oldHass.entities !== this.hass.entities
+      || oldHass.devices !== this.hass.devices
+      || (this._config.group_by_floors && oldHass.floors !== this.hass.floors)
+    ) {
+      if (!Registry.isCurrent(this.hass, this._config.config || {})) {
+        Registry.initialize(this.hass, this._config.config || {});
+      }
       this._cachedSourceIds = null;
       this._cachedAreaForEntity = null;
+      this._lastLightsList = '';
     }
 
     // Build cache if needed
@@ -221,6 +233,14 @@ class Simon42LightsGroupCard extends LitElement {
     }
 
     return relevant.sort((a, b) => this._compareLightIds(a, b));
+  }
+
+  private _calculateRenderKey(lights: Iterable<string>): string {
+    return createEntityRenderKey(lights, (entityId) => {
+      if (this._config.nested_groups !== true) return null;
+      const members = this._getState(entityId)?.attributes?.entity_id;
+      return Array.isArray(members) ? members : null;
+    });
   }
 
   private _compareLightIds(a: string, b: string): number {
@@ -544,6 +564,7 @@ class Simon42LightsGroupCard extends LitElement {
 
     const lights = this._getRelevantLights();
     this._renderedLights = lights;
+    this._renderedLightsKey = this._calculateRenderKey(lights);
     if (lights.length === 0) {
       this.hidden = true;
       this._renderedFloorGroups = [];
@@ -594,7 +615,7 @@ class Simon42LightsGroupCard extends LitElement {
     if (!this.hass || !this._cachedSourceIds) return;
 
     const lights = this._renderedLights;
-    const lightsKey = lights.join(',');
+    const lightsKey = this._renderedLightsKey;
     if (this._lastLightsList === lightsKey) return;
     this._lastLightsList = lightsKey;
 
