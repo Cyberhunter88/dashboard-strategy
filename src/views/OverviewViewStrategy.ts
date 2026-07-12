@@ -16,13 +16,25 @@ import type {
   WeatherStartLayoutItem,
   CustomSection,
 } from '../types/strategy';
-import { DEFAULT_SECTIONS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
-import type { LovelaceViewConfig, LovelaceSectionConfig, LovelaceBadgeConfig, LovelaceCardConfig } from '../types/lovelace';
+import { DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
+import type {
+  LovelaceViewConfig,
+  LovelaceSectionConfig,
+  LovelaceBadgeConfig,
+  LovelaceCardConfig,
+} from '../types/lovelace';
 import { Registry } from '../Registry';
 import { collectPersons, findWeatherEntity, findDummySensor } from '../utils/entity-filter';
 import { getVisibleAreas, normalizeAreasDisplay } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
-import { createOverviewSection, createCustomCardsSection, createCustomSectionsArray, createWeatherStartSummariesSection } from '../sections/OverviewSection';
+import {
+  createAlarmSection,
+  createCustomCardsSection,
+  createCustomSectionsArray,
+  createFavoritesSection,
+  createSearchSection,
+  createWeatherStartSummariesSection,
+} from '../sections/OverviewSection';
 import { buildAreaCard, createAreaCardBuildContext, createAreasSection } from '../sections/AreasSection';
 import { createWeatherSection, createEnergySection } from '../sections/WeatherEnergySection';
 import { createPlantsSection } from '../sections/PlantsSection';
@@ -58,7 +70,15 @@ function createLargeTimeCard(): LovelaceCardConfig {
   };
 }
 
-function createLargeDateCard(): LovelaceCardConfig {
+function createLargeDateCard(config: Simon42StrategyConfig): LovelaceCardConfig {
+  if (config.weather_start_date_card === 'markdown') {
+    return {
+      type: 'markdown',
+      content: "# {{ now().strftime('%d.%m.%Y') }}",
+      text_only: true,
+      grid_options: { columns: 'full', rows: 1 },
+    };
+  }
   // custom:button-card injects CSS into its own shadow DOM, bypassing DOMPurify.
   // Uses HA CSS variables so the card background matches the native clock card style.
   return {
@@ -90,12 +110,7 @@ function createLargeDateCard(): LovelaceCardConfig {
         { 'justify-content': 'center' },
         { padding: '0' },
       ],
-      grid: [
-        { height: '100%' },
-        { display: 'flex' },
-        { 'align-items': 'center' },
-        { 'justify-content': 'center' },
-      ],
+      grid: [{ height: '100%' }, { display: 'flex' }, { 'align-items': 'center' }, { 'justify-content': 'center' }],
       name: [
         { 'font-size': '32px' },
         { 'font-weight': '600' },
@@ -106,6 +121,27 @@ function createLargeDateCard(): LovelaceCardConfig {
         { 'white-space': 'nowrap' },
       ],
     },
+  };
+}
+
+function createCompactWeatherSection(weatherEntity: string): LovelaceSectionConfig {
+  return {
+    type: 'grid',
+    cards: [
+      {
+        type: 'heading',
+        heading: localize('sections.weather'),
+        heading_style: 'title',
+        icon: 'mdi:weather-partly-cloudy',
+      },
+      {
+        type: 'tile',
+        entity: weatherEntity,
+        vertical: false,
+        features: [{ type: 'temperature-forecast', forecast_type: 'hourly', hours_to_show: 6, show_labels: true }],
+        grid_options: { columns: 'full', rows: 'auto' },
+      },
+    ],
   };
 }
 
@@ -131,9 +167,7 @@ const WEATHER_START_INFO_BLOCKS = new Set<WeatherStartKey>([
 ]);
 
 function shouldStackWeatherStartBlock(key: WeatherStartKey, previousKey: WeatherStartKey | null): boolean {
-  return previousKey !== null
-    && WEATHER_START_INFO_BLOCKS.has(previousKey)
-    && WEATHER_START_INFO_BLOCKS.has(key);
+  return previousKey !== null && WEATHER_START_INFO_BLOCKS.has(previousKey) && WEATHER_START_INFO_BLOCKS.has(key);
 }
 
 function appendWeatherStartBlock(
@@ -163,14 +197,18 @@ function renderCustomSection(section: CustomSection | undefined): LovelaceSectio
 
 function findCustomCard(config: Simon42StrategyConfig, item: WeatherStartLayoutItem): CustomCard | undefined {
   const cards = config.custom_cards || [];
-  return cards.find((card) => card.id === item.custom_card_id)
-    || cards[Number(item.custom_card_id?.replace(/^legacy-custom-card-/, ''))];
+  return (
+    cards.find((card) => card.id === item.custom_card_id) ||
+    cards[Number(item.custom_card_id?.replace(/^legacy-custom-card-/, ''))]
+  );
 }
 
 function findCustomSection(config: Simon42StrategyConfig, item: WeatherStartLayoutItem): CustomSection | undefined {
   const sections = config.custom_sections || [];
-  return sections.find((section) => section.id === item.custom_section_id)
-    || sections[Number(item.custom_section_id?.replace(/^legacy-custom-section-/, ''))];
+  return (
+    sections.find((section) => section.id === item.custom_section_id) ||
+    sections[Number(item.custom_section_id?.replace(/^legacy-custom-section-/, ''))]
+  );
 }
 
 function normalizeWeatherStartLayoutItemsForRender(
@@ -195,7 +233,9 @@ function normalizeWeatherStartLayoutItemsForRender(
   };
 
   const addFloorItem = (item: WeatherStartLayoutItem): void => {
-    const floorAreas = visibleAreas.filter((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+    const floorAreas = visibleAreas.filter((area) =>
+      item.floor_id ? area.floor_id === item.floor_id : !area.floor_id
+    );
     if (floorAreas.length === 0) return;
     for (const area of floorAreas) representedAreaIds.add(area.area_id);
     result.push({ ...item });
@@ -245,7 +285,8 @@ function createWeatherStartSectionsFromItems(
   weatherEntity: string | null,
   visibleAreas: ReturnType<typeof getVisibleAreas>,
   dashboardConfig: Simon42StrategyConfig,
-  hass: HomeAssistant
+  hass: HomeAssistant,
+  additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {}
 ): LovelaceSectionConfig[] {
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
   const normalizedItems = normalizeWeatherStartLayoutItemsForRender(items, visibleAreas, dashboardConfig, hass);
@@ -274,40 +315,181 @@ function createWeatherStartSectionsFromItems(
     let section: LovelaceSectionConfig | null = null;
     switch (item.type) {
       case 'clock':
-        section = { type: 'grid', cards: [createLargeTimeCard()] };
+        section = dashboardConfig.show_clock_card !== false ? { type: 'grid', cards: [createLargeTimeCard()] } : null;
         break;
       case 'date':
-        section = { type: 'grid', cards: [createLargeDateCard()] };
+        section = { type: 'grid', cards: [createLargeDateCard(dashboardConfig)] };
         break;
       case 'summaries':
         section = createWeatherStartSummariesSection(dashboardConfig, item.summary_size || 'mini');
         break;
+      case 'favorites':
+        section = additionalBlocks.favorites ?? createFavoritesSection(hass, dashboardConfig);
+        break;
+      case 'alarm':
+        section = additionalBlocks.alarm ?? createAlarmSection(hass, dashboardConfig);
+        break;
+      case 'search':
+        section = additionalBlocks.search ?? createSearchSection(dashboardConfig.show_search_card === true);
+        break;
+      case 'overview':
+        section = additionalBlocks.overview ?? null;
+        break;
       case 'weather_current':
-        section = weatherEntity ? {
-          type: 'grid',
-          cards: [
-            { type: 'heading', heading: localize('sections.weather'), heading_style: 'title', icon: 'mdi:weather-partly-cloudy' },
-            { type: 'weather-forecast', entity: weatherEntity, show_current: true, show_forecast: false, grid_options: { columns: 'full' } },
-          ],
-        } : null;
+        section =
+          weatherEntity && dashboardConfig.show_weather !== false
+            ? dashboardConfig.weather_start_weather_mode === 'compact_hourly'
+              ? createCompactWeatherSection(weatherEntity)
+              : {
+                  type: 'grid',
+                  cards: [
+                    {
+                      type: 'heading',
+                      heading: localize('sections.weather'),
+                      heading_style: 'title',
+                      icon: 'mdi:weather-partly-cloudy',
+                    },
+                    {
+                      type: 'weather-forecast',
+                      entity: weatherEntity,
+                      show_current: true,
+                      show_forecast: false,
+                      grid_options: { columns: 'full' },
+                    },
+                  ],
+                }
+            : null;
         break;
       case 'weather_hourly':
-        section = weatherEntity ? {
-          type: 'grid',
-          cards: [
-            { type: 'heading', heading: localize('sections.weather_today'), heading_style: 'title', icon: 'mdi:clock-outline' },
-            { type: 'weather-forecast', entity: weatherEntity, forecast_type: 'hourly', show_current: false, show_forecast: true, grid_options: { columns: 'full' } },
-          ],
-        } : null;
+        section =
+          weatherEntity &&
+          dashboardConfig.show_weather !== false &&
+          dashboardConfig.weather_start_weather_mode !== 'compact_hourly'
+            ? {
+                type: 'grid',
+                cards: [
+                  {
+                    type: 'heading',
+                    heading: localize('sections.weather_today'),
+                    heading_style: 'title',
+                    icon: 'mdi:clock-outline',
+                  },
+                  {
+                    type: 'weather-forecast',
+                    entity: weatherEntity,
+                    forecast_type: 'hourly',
+                    show_current: false,
+                    show_forecast: true,
+                    grid_options: { columns: 'full' },
+                  },
+                ],
+              }
+            : null;
         break;
       case 'weather_daily':
-        section = weatherEntity ? {
-          type: 'grid',
-          cards: [
-            { type: 'heading', heading: localize('sections.weather_next_days'), heading_style: 'title', icon: 'mdi:calendar-outline' },
-            { type: 'weather-forecast', entity: weatherEntity, forecast_type: 'daily', show_current: false, show_forecast: true, grid_options: { columns: 'full' } },
-          ],
-        } : null;
+        section =
+          weatherEntity && dashboardConfig.show_weather !== false
+            ? {
+                type: 'grid',
+                cards: [
+                  {
+                    type: 'heading',
+                    heading: localize('sections.weather_next_days'),
+                    heading_style: 'title',
+                    icon: 'mdi:calendar-outline',
+                  },
+                  {
+                    type: 'weather-forecast',
+                    entity: weatherEntity,
+                    forecast_type: 'daily',
+                    show_current: false,
+                    show_forecast: true,
+                    grid_options: { columns: 'full' },
+                  },
+                ],
+              }
+            : null;
+        break;
+      case 'weather_details':
+        section =
+          additionalBlocks.weather_details ??
+          (dashboardConfig.weather_sensors?.length || dashboardConfig.pollen_entities?.length
+            ? createWeatherSection(
+                weatherEntity,
+                dashboardConfig.show_weather !== false,
+                false,
+                dashboardConfig.weather_sensors || [],
+                'none',
+                (dashboardConfig.hidden_section_headings || []).includes('weather'),
+                dashboardConfig.pollen_entities || []
+              )
+            : null);
+        break;
+      case 'energy':
+        section =
+          additionalBlocks.energy ??
+          createEnergySection(
+            dashboardConfig.show_energy !== false,
+            dashboardConfig.energy_link_dashboard !== false,
+            dashboardConfig.show_energy_distribution_card !== false,
+            (dashboardConfig.hidden_section_headings || []).includes('energy')
+          );
+        break;
+      case 'plants':
+        section =
+          additionalBlocks.plants ??
+          createPlantsSection(
+            hass,
+            dashboardConfig.show_plants_section === true,
+            (dashboardConfig.hidden_section_headings || []).includes('plants')
+          );
+        break;
+      case 'agenda':
+        section =
+          additionalBlocks.agenda ??
+          createAgendaSection(
+            hass,
+            dashboardConfig.show_agenda_section === true,
+            dashboardConfig.agenda_calendar_entities,
+            (dashboardConfig.hidden_section_headings || []).includes('agenda')
+          );
+        break;
+      case 'todos':
+        section =
+          additionalBlocks.todos ??
+          createTodosSection(
+            hass,
+            dashboardConfig.show_todos_section === true,
+            dashboardConfig.todos_entities,
+            (dashboardConfig.hidden_section_headings || []).includes('todos')
+          );
+        break;
+      case 'persons':
+        section =
+          additionalBlocks.persons ??
+          createPersonsSection(
+            hass,
+            dashboardConfig.show_persons_section === true,
+            (dashboardConfig.hidden_section_headings || []).includes('persons')
+          );
+        break;
+      case 'vacuums':
+        section =
+          additionalBlocks.vacuums ??
+          createVacuumsSection(
+            hass,
+            dashboardConfig.show_vacuums_section === true,
+            (dashboardConfig.hidden_section_headings || []).includes('vacuums')
+          );
+        break;
+      case 'maintenance':
+        section =
+          additionalBlocks.maintenance ??
+          createMaintenanceSection(
+            hass,
+            dashboardConfig.show_maintenance_section === true,
+            (dashboardConfig.hidden_section_headings || []).includes('maintenance')
+          );
         break;
       case 'area': {
         const area = item.area_id ? areasById.get(item.area_id) : undefined;
@@ -315,7 +497,9 @@ function createWeatherStartSectionsFromItems(
         break;
       }
       case 'floor': {
-        const floorAreas = visibleAreas.filter((area) => (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id));
+        const floorAreas = visibleAreas.filter((area) =>
+          item.floor_id ? area.floor_id === item.floor_id : !area.floor_id
+        );
         if (floorAreas.length > 0) {
           const floor = item.floor_id ? hass.floors?.[item.floor_id] : undefined;
           section = {
@@ -356,89 +540,140 @@ function createWeatherStartSections(
   customSections: LovelaceSectionConfig[],
   dashboardConfig: Simon42StrategyConfig,
   order: WeatherStartKey[],
-  blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {}
+  blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {},
+  additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {}
 ): LovelaceSectionConfig[] {
   const normalizedOrder = mergeConfiguredOrder(order, DEFAULT_WEATHER_START_ORDER);
 
   const blockMap = new Map<WeatherStartKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>();
 
-  blockMap.set('clock', withBlockOverride('clock', {
-    type: 'grid',
-    cards: [createLargeTimeCard()],
-  }, blocksConfig));
+  blockMap.set(
+    'clock',
+    withBlockOverride(
+      'clock',
+      dashboardConfig.show_clock_card !== false
+        ? {
+            type: 'grid',
+            cards: [createLargeTimeCard()],
+          }
+        : null,
+      blocksConfig
+    )
+  );
 
-  blockMap.set('date', withBlockOverride('date', {
-    type: 'grid',
-    cards: [createLargeDateCard()],
-  }, blocksConfig));
+  blockMap.set(
+    'date',
+    withBlockOverride(
+      'date',
+      {
+        type: 'grid',
+        cards: [createLargeDateCard(dashboardConfig)],
+      },
+      blocksConfig
+    )
+  );
 
-  blockMap.set('summaries', withBlockOverride('summaries',
-    createWeatherStartSummariesSection(dashboardConfig),
-    blocksConfig
-  ));
+  blockMap.set(
+    'summaries',
+    withBlockOverride('summaries', createWeatherStartSummariesSection(dashboardConfig), blocksConfig)
+  );
 
-  blockMap.set('weather_current', withBlockOverride('weather_current', weatherEntity ? {
-    type: 'grid',
-    cards: [
-      {
-        type: 'heading',
-        heading: localize('sections.weather'),
-        heading_style: 'title',
-        icon: 'mdi:weather-partly-cloudy',
-      },
-      {
-        type: 'weather-forecast',
-        entity: weatherEntity,
-        show_current: true,
-        show_forecast: false,
-        grid_options: { columns: 'full' },
-      },
-    ],
-  } : null, blocksConfig));
+  blockMap.set(
+    'weather_current',
+    withBlockOverride(
+      'weather_current',
+      weatherEntity && dashboardConfig.show_weather !== false
+        ? dashboardConfig.weather_start_weather_mode === 'compact_hourly'
+          ? createCompactWeatherSection(weatherEntity)
+          : {
+              type: 'grid',
+              cards: [
+                {
+                  type: 'heading',
+                  heading: localize('sections.weather'),
+                  heading_style: 'title',
+                  icon: 'mdi:weather-partly-cloudy',
+                },
+                {
+                  type: 'weather-forecast',
+                  entity: weatherEntity,
+                  show_current: true,
+                  show_forecast: false,
+                  grid_options: { columns: 'full' },
+                },
+              ],
+            }
+        : null,
+      blocksConfig
+    )
+  );
 
-  blockMap.set('weather_hourly', withBlockOverride('weather_hourly', weatherEntity ? {
-    type: 'grid',
-    cards: [
-      {
-        type: 'heading',
-        heading: localize('sections.weather_today'),
-        heading_style: 'title',
-        icon: 'mdi:clock-outline',
-      },
-      {
-        type: 'weather-forecast',
-        entity: weatherEntity,
-        forecast_type: 'hourly',
-        show_current: false,
-        show_forecast: true,
-        grid_options: { columns: 'full' },
-      },
-    ],
-  } : null, blocksConfig));
+  blockMap.set(
+    'weather_hourly',
+    withBlockOverride(
+      'weather_hourly',
+      weatherEntity &&
+        dashboardConfig.show_weather !== false &&
+        dashboardConfig.weather_start_weather_mode !== 'compact_hourly'
+        ? {
+            type: 'grid',
+            cards: [
+              {
+                type: 'heading',
+                heading: localize('sections.weather_today'),
+                heading_style: 'title',
+                icon: 'mdi:clock-outline',
+              },
+              {
+                type: 'weather-forecast',
+                entity: weatherEntity,
+                forecast_type: 'hourly',
+                show_current: false,
+                show_forecast: true,
+                grid_options: { columns: 'full' },
+              },
+            ],
+          }
+        : null,
+      blocksConfig
+    )
+  );
 
-  blockMap.set('weather_daily', withBlockOverride('weather_daily', weatherEntity ? {
-    type: 'grid',
-    cards: [
-      {
-        type: 'heading',
-        heading: localize('sections.weather_next_days'),
-        heading_style: 'title',
-        icon: 'mdi:calendar-outline',
-      },
-      {
-        type: 'weather-forecast',
-        entity: weatherEntity,
-        forecast_type: 'daily',
-        show_current: false,
-        show_forecast: true,
-        grid_options: { columns: 'full' },
-      },
-    ],
-  } : null, blocksConfig));
+  blockMap.set(
+    'weather_daily',
+    withBlockOverride(
+      'weather_daily',
+      weatherEntity && dashboardConfig.show_weather !== false
+        ? {
+            type: 'grid',
+            cards: [
+              {
+                type: 'heading',
+                heading: localize('sections.weather_next_days'),
+                heading_style: 'title',
+                icon: 'mdi:calendar-outline',
+              },
+              {
+                type: 'weather-forecast',
+                entity: weatherEntity,
+                forecast_type: 'daily',
+                show_current: false,
+                show_forecast: true,
+                grid_options: { columns: 'full' },
+              },
+            ],
+          }
+        : null,
+      blocksConfig
+    )
+  );
 
   blockMap.set('custom_cards', customCardsSection);
   blockMap.set('custom_sections', customSections.length > 0 ? customSections : null);
   blockMap.set('areas', areasSections);
+  for (const [key, value] of Object.entries(additionalBlocks) as [WeatherStartKey, LovelaceSectionConfig | null][]) {
+    blockMap.set(key, withBlockOverride(key, value, blocksConfig));
+  }
 
   const sections: LovelaceSectionConfig[] = [];
   let previousKey: WeatherStartKey | null = null;
@@ -472,14 +707,13 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const someSensorId = findDummySensor(hass);
 
     // Person badges
-    const personBadges = dashboardConfig.show_person_badges !== false
-      ? createPersonBadges(persons, hass, dashboardConfig.person_badge_layout || 'with_state')
-      : [];
+    const personBadges =
+      dashboardConfig.show_person_badges !== false
+        ? createPersonBadges(persons, hass, dashboardConfig.person_badge_layout || 'with_state')
+        : [];
     const hiddenHeadings = new Set(dashboardConfig.hidden_section_headings || []);
 
     // Config flags
-    const showWeather = dashboardConfig.show_weather !== false;
-    const showEnergy = dashboardConfig.show_energy !== false;
     const showSearchCard = dashboardConfig.show_search_card === true;
     const groupByFloors = dashboardConfig.group_by_floors === true;
 
@@ -494,13 +728,6 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     }
 
     // Build sections
-    const overviewSection = createOverviewSection({ someSensorId, showSearchCard, config: dashboardConfig, hass });
-    const customCardsSection = createCustomCardsSection(
-      customCardsBySection.get('custom_cards') || [],
-      dashboardConfig.custom_cards_heading,
-      dashboardConfig.custom_cards_icon,
-      hiddenHeadings.has('custom_cards')
-    );
     const areasSections = createAreasSection(
       visibleAreas,
       groupByFloors,
@@ -608,131 +835,138 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       ...customBadges,
     ];
 
-    if (dashboardConfig.overview_layout === 'weather_start') {
-      const overviewSections = dashboardConfig.weather_start_layout_items?.length
-        ? createWeatherStartSectionsFromItems(
-          dashboardConfig.weather_start_layout_items,
-          weatherEntity ?? null,
-          visibleAreas,
-          dashboardConfig,
-          hass
+    const applyVisibility = (key: SectionKey, section: LovelaceSectionConfig | null): LovelaceSectionConfig | null => {
+      if (!section) return null;
+      return withSectionVisibility(section, dashboardConfig.section_visibility?.[key]);
+    };
+    const decorateBlock = (key: SectionKey, section: LovelaceSectionConfig | null): LovelaceSectionConfig | null => {
+      const result = applyVisibility(key, section);
+      if (!result) return null;
+      const assigned = customCardsBySection.get(key);
+      if (assigned?.length && result.cards) result.cards.push(...renderParsedCustomCards(assigned, 'subtitle'));
+      return result;
+    };
+    const additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {
+      favorites: applyVisibility('overview', createFavoritesSection(hass, dashboardConfig)),
+      alarm: applyVisibility('overview', createAlarmSection(hass, dashboardConfig)),
+      search: applyVisibility('overview', createSearchSection(showSearchCard)),
+      overview: decorateBlock(
+        'overview',
+        createCustomCardsSection(
+          customCardsBySection.get('overview') || [],
+          localize('sections.overview'),
+          'mdi:overscan',
+          hiddenHeadings.has('overview')
         )
-        : createWeatherStartSections(
-          weatherEntity ?? null,
-          areasSections,
-          createCustomCardsSection(
-            customCardsBySection.get('custom_cards') || [],
-            dashboardConfig.custom_cards_heading,
-            dashboardConfig.custom_cards_icon,
-            hiddenHeadings.has('custom_cards')
-          ),
-          createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections')),
-          dashboardConfig,
-          dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
-          dashboardConfig.weather_start_blocks_config ?? {}
-        );
-      const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
-      timeEnd('overview-generate');
-      debugLog(`Weather start: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`);
-
-      return createOverviewView(overviewSections, overviewBadges, dashboardConfig);
-    }
-
-    // Section map: key → section(s) or null
-    const sectionMap = new Map<SectionKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>([
-      ['overview', overviewSection],
-      ['custom_cards', customCardsSection],
-      ['custom_sections', createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections'))],
-      ['areas', areasSections],
-      [
+      ),
+      weather_details: decorateBlock(
         'weather',
-        createWeatherSection(
-          weatherEntity ?? null,
-          showWeather,
-          dashboardConfig.show_weather_forecast_card !== false,
-          dashboardConfig.weather_sensors || [],
-          dashboardConfig.weather_presentation,
-          hiddenHeadings.has('weather'),
-          dashboardConfig.pollen_entities || []
-        ),
-      ],
-      [
+        dashboardConfig.weather_sensors?.length ||
+          dashboardConfig.pollen_entities?.length ||
+          customCardsBySection.get('weather')?.length
+          ? createWeatherSection(
+              weatherEntity ?? null,
+              dashboardConfig.show_weather !== false,
+              false,
+              dashboardConfig.weather_sensors || [],
+              'none',
+              hiddenHeadings.has('weather'),
+              dashboardConfig.pollen_entities || []
+            )
+          : null
+      ),
+      energy: decorateBlock(
         'energy',
         createEnergySection(
-          showEnergy,
+          dashboardConfig.show_energy !== false,
           dashboardConfig.energy_link_dashboard !== false,
           dashboardConfig.show_energy_distribution_card !== false,
           hiddenHeadings.has('energy')
-        ),
-      ],
-      ['plants', createPlantsSection(hass, dashboardConfig.show_plants_section === true, hiddenHeadings.has('plants'))],
-      [
+        )
+      ),
+      plants: decorateBlock(
+        'plants',
+        createPlantsSection(hass, dashboardConfig.show_plants_section === true, hiddenHeadings.has('plants'))
+      ),
+      agenda: decorateBlock(
         'agenda',
         createAgendaSection(
           hass,
           dashboardConfig.show_agenda_section === true,
           dashboardConfig.agenda_calendar_entities,
           hiddenHeadings.has('agenda')
-        ),
-      ],
-      [
+        )
+      ),
+      todos: decorateBlock(
         'todos',
         createTodosSection(
           hass,
           dashboardConfig.show_todos_section === true,
           dashboardConfig.todos_entities,
           hiddenHeadings.has('todos')
-        ),
-      ],
-      ['persons', createPersonsSection(hass, dashboardConfig.show_persons_section === true, hiddenHeadings.has('persons'))],
-      ['vacuums', createVacuumsSection(hass, dashboardConfig.show_vacuums_section === true, hiddenHeadings.has('vacuums'))],
-      [
+        )
+      ),
+      persons: decorateBlock(
+        'persons',
+        createPersonsSection(hass, dashboardConfig.show_persons_section === true, hiddenHeadings.has('persons'))
+      ),
+      vacuums: decorateBlock(
+        'vacuums',
+        createVacuumsSection(hass, dashboardConfig.show_vacuums_section === true, hiddenHeadings.has('vacuums'))
+      ),
+      maintenance: decorateBlock(
         'maintenance',
         createMaintenanceSection(
           hass,
           dashboardConfig.show_maintenance_section === true,
           hiddenHeadings.has('maintenance')
-        ),
-      ],
-    ]);
+        )
+      ),
+    };
 
-    // Assemble in configured order, appending assigned custom cards to each section
-    const sectionsOrder = mergeConfiguredOrder(dashboardConfig.sections_order, DEFAULT_SECTIONS_ORDER);
-    const overviewSections: LovelaceSectionConfig[] = [];
-    for (const key of sectionsOrder) {
-      const result = sectionMap.get(key);
-      if (!result) continue;
-      const visibilityRule = dashboardConfig.section_visibility?.[key];
-      if (Array.isArray(result)) {
-        overviewSections.push(...result.map((section) => withSectionVisibility(section, visibilityRule)));
-      } else {
-        overviewSections.push(withSectionVisibility(result, visibilityRule));
-      }
-      // Append custom cards assigned to this section (skip 'custom_cards' — handled by createCustomCardsSection)
-      if (key !== 'custom_cards') {
-        const assigned = customCardsBySection.get(key);
-        if (assigned && assigned.length > 0) {
-          const extraCards = renderParsedCustomCards(assigned, 'subtitle');
-          if (extraCards.length > 0) {
-            // Append to the last section added (handles array sections like areas)
-            const lastSection = overviewSections[overviewSections.length - 1];
-            if (lastSection.cards) {
-              lastSection.cards.push(...extraCards);
-            }
+    {
+      const overviewSections = dashboardConfig.weather_start_layout_items?.length
+        ? createWeatherStartSectionsFromItems(
+            dashboardConfig.weather_start_layout_items,
+            weatherEntity ?? null,
+            visibleAreas,
+            dashboardConfig,
+            hass,
+            additionalBlocks
+          )
+        : createWeatherStartSections(
+            weatherEntity ?? null,
+            areasSections,
+            createCustomCardsSection(
+              customCardsBySection.get('custom_cards') || [],
+              dashboardConfig.custom_cards_heading,
+              dashboardConfig.custom_cards_icon,
+              hiddenHeadings.has('custom_cards')
+            ),
+            createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections')),
+            dashboardConfig,
+            dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
+            dashboardConfig.weather_start_blocks_config ?? {},
+            additionalBlocks
+          );
+      const areaExtras = renderParsedCustomCards(customCardsBySection.get('areas') || [], 'subtitle');
+      if (areaExtras.length > 0) {
+        for (let index = overviewSections.length - 1; index >= 0; index--) {
+          const section = overviewSections[index];
+          if (section.cards?.some((card) => card.type === 'custom:dashboard-strategy-area-card')) {
+            section.cards.push(...areaExtras);
+            break;
           }
         }
       }
+      const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
+      timeEnd('overview-generate');
+      debugLog(
+        `Weather start: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`
+      );
+
+      return createOverviewView(overviewSections, overviewBadges, dashboardConfig);
     }
-
-    const totalCards = overviewSections.reduce((sum, s) => sum + (s.cards?.length || 0), 0);
-    timeEnd('overview-generate');
-    debugLog(`Overview: ${overviewSections.length} sections, ${totalCards} cards, ${personBadges.length} badges`);
-
-    return createOverviewView(
-      overviewSections,
-      overviewBadges,
-      dashboardConfig
-    );
   }
 }
 

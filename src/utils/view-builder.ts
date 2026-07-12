@@ -6,14 +6,11 @@ import type { LovelaceViewConfig, LovelaceBadgeConfig, LovelaceSectionConfig } f
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { localize } from './localize';
 
-type DensePlacementConfig = Pick<Simon42StrategyConfig, 'dense_section_placement'> | undefined;
+type OverviewViewConfig = Pick<Simon42StrategyConfig, 'dense_section_placement' | 'overview_max_columns'> | undefined;
 
 type SectionViewExtras = Omit<LovelaceViewConfig, 'type' | 'sections' | 'dense_section_placement'>;
 
-function withDenseSectionPlacement(
-  view: LovelaceViewConfig,
-  config?: DensePlacementConfig
-): LovelaceViewConfig {
+function withDenseSectionPlacement(view: LovelaceViewConfig, config?: OverviewViewConfig): LovelaceViewConfig {
   if (config?.dense_section_placement !== true) return view;
   return {
     ...view,
@@ -23,7 +20,7 @@ function withDenseSectionPlacement(
 
 export function createSectionsView(
   sections: LovelaceSectionConfig[],
-  config?: DensePlacementConfig,
+  config?: OverviewViewConfig,
   extras: SectionViewExtras = {}
 ): LovelaceViewConfig {
   return withDenseSectionPlacement(
@@ -45,13 +42,13 @@ export function createSectionsView(
 export function createOverviewView(
   sections: LovelaceSectionConfig[],
   personBadges: LovelaceBadgeConfig[],
-  config?: DensePlacementConfig
+  config?: OverviewViewConfig
 ): LovelaceViewConfig {
   return createSectionsView(sections, config, {
     title: localize('views.overview'),
     path: 'home',
     icon: 'mdi:home',
-    max_columns: 3,
+    max_columns: config?.overview_max_columns ?? 3,
     badges: personBadges.length > 0 ? personBadges : undefined,
     header:
       personBadges.length > 0

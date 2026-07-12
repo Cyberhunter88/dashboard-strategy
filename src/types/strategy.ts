@@ -74,15 +74,9 @@ export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
   'maintenance',
 ];
 
-export type OverviewLayout = 'default' | 'weather_start';
 export type LightsSortBy = 'last_changed' | 'name';
 export type PersonBadgeLayout = 'minimal' | 'with_state' | 'with_state_and_time';
-export type WeatherPresentation =
-  | 'forecast_daily'
-  | 'forecast_hourly'
-  | 'forecast_twice_daily'
-  | 'tile'
-  | 'none';
+export type WeatherPresentation = 'forecast_daily' | 'forecast_hourly' | 'forecast_twice_daily' | 'tile' | 'none';
 
 export interface WeatherSensorConfig {
   entity: string;
@@ -97,9 +91,21 @@ export type WeatherStartKey =
   | 'clock'
   | 'date'
   | 'summaries'
+  | 'favorites'
+  | 'alarm'
+  | 'search'
+  | 'overview'
   | 'weather_current'
   | 'weather_hourly'
   | 'weather_daily'
+  | 'weather_details'
+  | 'energy'
+  | 'plants'
+  | 'agenda'
+  | 'todos'
+  | 'persons'
+  | 'vacuums'
+  | 'maintenance'
   | 'areas'
   | 'custom_cards'
   | 'custom_sections';
@@ -108,9 +114,21 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'clock',
   'date',
   'summaries',
+  'favorites',
+  'alarm',
+  'search',
+  'overview',
   'weather_current',
   'weather_hourly',
   'weather_daily',
+  'weather_details',
+  'energy',
+  'plants',
+  'agenda',
+  'todos',
+  'persons',
+  'vacuums',
+  'maintenance',
   'custom_cards',
   'custom_sections',
   'areas',
@@ -277,13 +295,19 @@ export interface Simon42StrategyConfig {
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 
   // Layout
-  overview_layout?: OverviewLayout; // default: 'default'
-  sections_order?: SectionKey[]; // default: DEFAULT_SECTIONS_ORDER
+  /** @deprecated Weather Start is now the only overview layout. */
+  overview_layout?: 'default' | 'weather_start';
+  /** @deprecated Use weather_start_layout_items. */
+  sections_order?: SectionKey[];
   section_visibility?: Partial<Record<SectionKey, { entity: string; state: string }>>;
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   weather_start_layout_items?: WeatherStartLayoutItem[];
   summaries_columns?: 2 | 4; // default: 2
   dense_section_placement?: boolean; // default: false
+  overview_max_columns?: 1 | 2 | 3 | 4; // default: 3
+  overview_area_card_columns?: 4 | 6 | 'full'; // default: 'full'
+  weather_start_weather_mode?: 'full' | 'compact_hourly'; // default: 'full'
+  weather_start_date_card?: 'button-card' | 'markdown'; // default: 'button-card'
   hidden_section_headings?: HeadingKey[]; // default: []
 
   // Favorites display

@@ -165,13 +165,13 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
 </p>
 
-**Startseiten-Layout** — Standardmäßig zeigt die Übersicht klassische Sections. Alternativ kann die **Wetter-Startseite** aktiviert werden: große Uhr, Datum, aktuelle Wetterkarte, stündliche und tägliche Vorhersage, Zusammenfassungen, Bereiche, Etagen, eigene Karten und eigene Abschnitte können per Drag & Drop frei angeordnet werden. Einzelne Startseiten-Blöcke lassen sich zusätzlich mit eigenem Lovelace-YAML überschreiben.
+**Wetter-Startseite** — Die Übersicht verwendet immer das frei anordenbare Wetter-Startlayout. Uhr, Datum, Zusammenfassungen, Favoriten, Alarm, Suche, Wetter, Energie, Pflanzen, Agenda, Aufgaben, Personen, Staubsauger, Wartung, Bereiche, Etagen und eigene Inhalte lassen sich per Drag & Drop anordnen. Optionale Blöcke erscheinen nur, wenn sie aktiviert sind und passende Daten besitzen; einzelne Blöcke können weiterhin mit eigenem Lovelace-YAML überschrieben werden.
 
 **Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht. Die Wetter-Entität kann automatisch erkannt oder im Editor festgelegt werden. Die Energie-Karte kann optional direkt auf das Home-Assistant-Energie-Dashboard verlinken.
 
-**Erweiterte Wetter-/Energie-Abschnitte** — Die Wetter-Section unterstützt jetzt eine frei wählbare Darstellung (`weather_presentation`), eine optionale Sensorzeile (`weather_sensors`) und den Legacy-Schalter `show_weather_forecast_card`. In der Energie-Section lässt sich die Verteilungskarte separat steuern (`show_energy_distribution_card`), während ein zusätzliches Power-Badge über `power_badge_entity` konfiguriert werden kann.
+**Erweiterte Wetter-/Energie-Blöcke** — Die Wetter-Startseite bietet aktuelle, stündliche und tägliche Vorhersagen sowie einen optionalen Detailblock für `weather_sensors` und Pollenwerte. In der Energie-Section lässt sich die Verteilungskarte separat steuern (`show_energy_distribution_card`), während ein zusätzliches Power-Badge über `power_badge_entity` konfiguriert werden kann.
 
-**Zusätzliche Overview-Sections** — Optional können auf der klassischen Übersicht weitere automatisch erzeugte Sections für Pflanzen, Agenda, Todos, Personen, Staubsauger und Wartung aktiviert und in `sections_order` einsortiert werden.
+**Zusätzliche Startseiten-Blöcke** — Pflanzen, Agenda, Todos, Personen, Staubsauger und Wartung können optional aktiviert und direkt in der Reihenfolge der Wetter-Startseite einsortiert werden.
 
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
 
@@ -217,7 +217,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden.
 
-**Abschnitts-Metasteuerung** — Für die klassische Übersicht können erzeugte Überschriften gezielt ausgeblendet (`hidden_section_headings`) und ganze Abschnitte an Entity-Zustände gebunden werden (`section_visibility`).
+**Abschnitts-Metasteuerung** — Erzeugte Überschriften können gezielt ausgeblendet (`hidden_section_headings`) und Startseiten-Blöcke an Entity-Zustände gebunden werden (`section_visibility`).
 
 **Lichter nach Etagen** — In der Lichter-View können Lichter nach Etagen gruppiert werden, mit Ein-/Ausschalt-Button pro Etage.
 
@@ -354,8 +354,8 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_area_in_battery_view` | boolean | `false` | Bereichsnamen in Batterie-Kacheln vor dem Entitätsnamen anzeigen |
 | `unavailable_batteries_bucket` | `'critical' \| 'good'` | `'good'` | Nicht auswertbare Batterien als kritisch oder gut einsortieren |
 | `show_weather` | boolean | `true` | Wetter-Karte |
-| `show_weather_forecast_card` | boolean | `true` | Legacy-Schalter für die klassische Wettervorhersage |
-| `weather_presentation` | `"forecast_daily"` \| `"forecast_hourly"` \| `"forecast_twice_daily"` \| `"tile"` \| `"none"` | `"forecast_daily"` | Darstellung der Wetter-Section |
+| `show_weather_forecast_card` | boolean | `true` | Veralteter Kompatibilitätswert; wird auf der einheitlichen Wetter-Startseite nicht mehr ausgewertet |
+| `weather_presentation` | `"forecast_daily"` \| `"forecast_hourly"` \| `"forecast_twice_daily"` \| `"tile"` \| `"none"` | `"forecast_daily"` | Veraltete Darstellung der früheren Wetter-Section |
 | `weather_sensors` | object[] | `[]` | Zusätzliche Sensorzeile über der Wetter-Section (`entity`, optional `icon`, `unit`, `round`) |
 | `show_energy` | boolean | `true` | Energie-Dashboard |
 | `show_energy_distribution_card` | boolean | `true` | Energieverteilungs-Karte in der Energy-Section |
@@ -367,8 +367,10 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
-| `overview_layout` | `"default"` \| `"weather_start"` | `"default"` | Startseiten-Layout |
-| `sections_order` | string[] | Standard-Reihenfolge | Reihenfolge der Standard-Übersichts-Sections |
+| `overview_max_columns` | 1 \| 2 \| 3 \| 4 | `3` | Maximale Spaltenzahl der Startseite |
+| `overview_area_card_columns` | 4 \| 6 \| `"full"` | `"full"` | Breite generierter Bereichskarten |
+| `weather_start_weather_mode` | `"full"` \| `"compact_hourly"` | `"full"` | Vollständiges Wetter oder kompakte 6-Stunden-Tile |
+| `weather_start_date_card` | `"button-card"` \| `"markdown"` | `"button-card"` | Datumskarte mit optionalem nativem Fallback |
 | `show_plants_section` | boolean | `false` | Pflanzen-Section auf der Übersicht |
 | `show_agenda_section` | boolean | `false` | Agenda-Section auf der Übersicht |
 | `agenda_calendar_entities` | string[] | Auto | Kalender-Entitäten für die Agenda-Section |
