@@ -4,6 +4,7 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceViewConfig, LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
@@ -13,7 +14,7 @@ import { createSectionsView } from '../utils/view-builder';
 class Simon42ViewSecurityStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     // Ensure Registry is initialized (idempotent — no-op if already done)
-    const strategyConfig = config.config || {};
+    const strategyConfig: Simon42StrategyConfig = config.config || {};
     if (!Registry.isCurrent(hass, strategyConfig)) {
       Registry.initialize(hass, strategyConfig);
     }
@@ -228,8 +229,91 @@ class Simon42ViewSecurityStrategy extends HTMLElement {
       if (cards.length > 0) sections.push({ type: 'grid', cards });
     }
 
-    return createSectionsView(sections, strategyConfig);
+    const securityIds = [...locks, ...doors, ...garages, ...windows, ...smokeGas];
+    const extraIds = (strategyConfig.security_extra_entities || []).filter(
+      (entityId) => hass.states[entityId] !== undefined && !securityIds.includes(entityId)
+    );
+
+    let resultSections = strategyConfig.group_security_by_areas === true
+      ? buildAreaSecuritySections(hass, [...securityIds, ...extraIds])
+      : sections;
+
+    if (extraIds.length > 0 && strategyConfig.group_security_by_areas !== true) {
+      resultSections.push({
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('security.extra_entities'), icon: 'mdi:shield-plus-outline' },
+          ...extraIds.map((entityId) => buildAdaptiveTileCardConfig(hass, entityId, { state_content: 'last_changed' })),
+        ],
+      });
+    }
+
+    const activity = buildSecurityActivitySection(hass, [...securityIds, ...extraIds], strategyConfig);
+    if (activity) {
+      resultSections = [...resultSections];
+      if (strategyConfig.security_activity_position === 'end') resultSections.push(activity);
+      else resultSections.unshift(activity);
+    }
+
+    return createSectionsView(resultSections, strategyConfig, {
+      ...(strategyConfig.group_security_by_areas === true ? { max_columns: 3 } : {}),
+    });
   }
+}
+
+export function buildSecurityActivitySection(
+  hass: HomeAssistant,
+  entityIds: string[],
+  config: Simon42StrategyConfig
+): LovelaceSectionConfig | null {
+  if (config.show_security_activity !== true || !hass.config?.components?.includes('logbook')) return null;
+  const entities = entityIds.filter((entityId) => !Registry.getEntity(entityId)?.labels.includes('no_seclog'));
+  if (entities.length === 0) return null;
+  return {
+    type: 'grid',
+    cards: [
+      { type: 'heading', heading: localize('security.activity'), icon: 'mdi:history' },
+      { type: 'logbook', entities, hours_to_show: 24, grid_options: { columns: 'full' } },
+    ],
+  };
+}
+
+export function buildAreaSecuritySections(hass: HomeAssistant, entityIds: string[]): LovelaceSectionConfig[] {
+  const wanted = new Set(entityIds);
+  const floorOrder = new Map(Registry.floors.map((floor, index) => [floor.floor_id, index]));
+  const areas = [...Registry.areas].sort((a, b) => {
+    const floorDelta = (floorOrder.get(a.floor_id || '') ?? 9999) - (floorOrder.get(b.floor_id || '') ?? 9999);
+    return floorDelta || a.name.localeCompare(b.name);
+  });
+  const sections: LovelaceSectionConfig[] = [];
+  for (const area of areas) {
+    const ids = Registry.getVisibleEntitiesForArea(area.area_id).map((entry) => entry.entity_id).filter((id) => wanted.has(id));
+    if (ids.length === 0) continue;
+    sections.push({
+      type: 'grid',
+      cards: [
+        {
+          type: 'heading',
+          heading: area.name,
+          icon: area.icon || 'mdi:shield-home-outline',
+          tap_action: { action: 'navigate', navigation_path: area.area_id },
+        },
+        ...ids.map((entityId) => buildAdaptiveTileCardConfig(hass, entityId, { state_content: 'last_changed' })),
+      ],
+    });
+  }
+  const assigned = new Set(sections.flatMap((section) => section.cards?.slice(1).map((card) => String(card.entity)) || []));
+  const unassigned = entityIds.filter((id) => !assigned.has(id));
+  if (unassigned.length > 0) {
+    sections.push({
+      type: 'grid',
+      cards: [
+        { type: 'heading', heading: localize('security.other'), icon: 'mdi:shield-outline' },
+        ...unassigned.map((entityId) => buildAdaptiveTileCardConfig(hass, entityId, { state_content: 'last_changed' })),
+      ],
+    });
+  }
+  return sections;
 }
 
 customElements.define('ll-strategy-dashboard-strategy-view-security', Simon42ViewSecurityStrategy);

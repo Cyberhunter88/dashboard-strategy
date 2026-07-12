@@ -337,7 +337,8 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `person_badge_layout` | `"minimal"` \| `"with_state"` \| `"with_state_and_time"` | `"with_state"` | Layout der automatischen Personen-Badges |
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
 | `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
-| `show_search_card` | boolean | `false` | Such-Karte (benötigt custom:search-card) |
+| `show_search_card` | boolean | `false` | Such-Karte oder nativen Suchhinweis anzeigen |
+| `search_card_variant` | `"custom"` \| `"tip"` | `"custom"` | Interaktive Custom-Suchkarte oder nativer Hinweis ohne Zusatzabhängigkeit |
 | `show_unavailable_alert_badge` | boolean | `false` | Badge mit Anzahl nicht verfügbarer sichtbarer Entitäten im Header |
 | `show_now_playing_badge` | boolean | `false` | Badge für den ersten gerade spielenden Media-Player im Header |
 | `show_sun_badge` | boolean | `false` | Sonnenauf-/untergangs-Badge im Header |
@@ -367,6 +368,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `dense_section_placement` | boolean | `false` | Generierte Sections-Views dicht platzieren, um Raster-Lücken aufzufüllen |
 | `hidden_section_headings` | string[] | `[]` | Erzeugte Überschriften für Overview-, Summary-, Favoriten-, Bereichs-, Wetter- und Energie-Abschnitte ausblenden |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
+| `light_favorite_entities` | string[] | `[]` | Eigener Schnellzugriffsabschnitt für ausgewählte Lichter |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
 | `overview_max_columns` | 1 \| 2 \| 3 \| 4 | `3` | Maximale Spaltenzahl der Startseite |
@@ -385,12 +387,17 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
 | `view_visible_users` | object | `{}` | Sichtbare Benutzer pro View-Pfad; leeres Array blendet die View für alle aus |
 | `section_visible_users` | object | `{}` | Sichtbare Benutzer pro Übersichtsabschnitt; leeres Array blendet den Abschnitt für alle aus |
+| `room_visibility` | object | `{}` | Raum-View und Navigation an einen Entity-Zustand binden |
 | `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
 | `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |
 | `group_by_floors` | boolean | `false` | Bereiche nach Etagen gliedern |
 | `show_partially_open_covers` | boolean | `false` | Teiloffene Rollos separat anzeigen |
 | `show_alerts_on_areas` | boolean | `false` | Alert-Icons auf Bereichskarten |
+| `group_security_by_areas` | boolean | `false` | Sicherheitsansicht nach Bereichen und Etagen gliedern |
+| `show_security_activity` | boolean | `false` | Native 24-Stunden-Logbuchkarte in der Sicherheitsansicht |
+| `security_activity_position` | `"start"` \| `"end"` | `"start"` | Position des Sicherheitsverlaufs im Kategorienmodus |
+| `security_extra_entities` | string[] | `[]` | Zusätzliche sichtbare Entitäten in der Sicherheitsansicht |
 | `show_switches_on_areas` | boolean | `false` | Switch-Steuerung auf Bereichskarten anzeigen |
 | `show_locks_in_rooms` | boolean | `false` | Schlösser in Raum-Views |
 | `show_automations_in_rooms` | boolean | `false` | Automationen in Raum-Views |

@@ -9,6 +9,7 @@
 import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
+import { isRoomViewVisible } from './utils/room-visibility';
 
 const STRATEGY_VERSION = '1.22.3'; // x-release-please-version
 
@@ -80,6 +81,7 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     const normalizedAreasDisplay = normalizeAreasDisplay(Object.values(hass.areas), config.areas_display);
     const visibleAreas = getVisibleAreasFromHass(hass, normalizedAreasDisplay, config.use_default_area_sort);
+    const roomAreas = visibleAreas.filter((area) => isRoomViewVisible(config, hass, area.area_id));
 
     const showSummaryViews = config.show_summary_views === true;
     const showRoomViews = config.show_room_views === true;
@@ -130,7 +132,7 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     const roomStrategy = getStrategy('ll-strategy-dashboard-strategy-view-room');
     const roomConfigs = await Promise.all(
-      visibleAreas.map((area) => {
+      roomAreas.map((area) => {
         const areaOptions = config.areas_options?.[area.area_id];
         const override = areaOptions?.view_override?.parsed_config;
         if (override && typeof override === 'object' && !Array.isArray(override)) {
@@ -147,7 +149,7 @@ class Simon42DashboardStrategy extends HTMLElement {
         );
       })
     );
-    t(`${visibleAreas.length} room views resolved`);
+    t(`${roomAreas.length} room views resolved`);
 
     const views: LovelaceViewConfig[] = [
       {
@@ -163,7 +165,7 @@ class Simon42DashboardStrategy extends HTMLElement {
         subview: !showSummaryViews,
         ...utilityConfigs[i],
       })),
-      ...visibleAreas.map((area, i) => ({
+      ...roomAreas.map((area, i) => ({
         ...roomConfigs[i],
         title: area.name,
         path: area.area_id,

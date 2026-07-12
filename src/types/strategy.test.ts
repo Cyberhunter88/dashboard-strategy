@@ -9,6 +9,7 @@ describe('weather-start defaults', () => {
       'date',
       'summaries',
       'favorites',
+      'light_favorites',
       'alarm',
       'search',
       'overview',

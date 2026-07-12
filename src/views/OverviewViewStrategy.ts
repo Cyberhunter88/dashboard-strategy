@@ -32,6 +32,7 @@ import {
   createCustomCardsSection,
   createCustomSectionsArray,
   createFavoritesSection,
+  createLightFavoritesSection,
   createSearchSection,
   createWeatherStartSummariesSection,
 } from '../sections/OverviewSection';
@@ -338,7 +339,13 @@ function createWeatherStartSectionsFromItems(
         section = additionalBlocks.alarm ?? createAlarmSection(hass, dashboardConfig);
         break;
       case 'search':
-        section = additionalBlocks.search ?? createSearchSection(dashboardConfig.show_search_card === true);
+        section = additionalBlocks.search ?? createSearchSection(
+          dashboardConfig.show_search_card === true,
+          dashboardConfig.search_card_variant
+        );
+        break;
+      case 'light_favorites':
+        section = createLightFavoritesSection(hass, dashboardConfig);
         break;
       case 'overview':
         section = additionalBlocks.overview ?? null;
@@ -548,6 +555,7 @@ function createWeatherStartSections(
   customCardsSection: LovelaceSectionConfig | null,
   customSections: LovelaceSectionConfig[],
   dashboardConfig: Simon42StrategyConfig,
+  hass: HomeAssistant,
   order: WeatherStartKey[],
   blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {},
   additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {}
@@ -586,6 +594,8 @@ function createWeatherStartSections(
     'summaries',
     withBlockOverride('summaries', createWeatherStartSummariesSection(dashboardConfig), blocksConfig)
   );
+
+  blockMap.set('light_favorites', createLightFavoritesSection(hass, dashboardConfig));
 
   blockMap.set(
     'weather_current',
@@ -867,7 +877,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {
       favorites: applyVisibility('overview', createFavoritesSection(hass, dashboardConfig)),
       alarm: applyVisibility('overview', createAlarmSection(hass, dashboardConfig)),
-      search: applyVisibility('overview', createSearchSection(showSearchCard)),
+      search: applyVisibility('overview', createSearchSection(showSearchCard, dashboardConfig.search_card_variant)),
       overview: decorateBlock(
         'overview',
         createCustomCardsSection(
@@ -963,6 +973,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
             ),
             createCustomSectionsArray(dashboardConfig.custom_sections || [], hiddenHeadings.has('custom_sections')),
             dashboardConfig,
+            hass,
             dashboardConfig.weather_start_order ?? [...DEFAULT_WEATHER_START_ORDER],
             dashboardConfig.weather_start_blocks_config ?? {},
             additionalBlocks

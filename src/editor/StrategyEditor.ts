@@ -40,7 +40,9 @@ import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from '.
 import { dispatchStrategyConfigChanged } from './editor-host';
 import { extractedPanelStyles } from './editor-styles';
 import { renderViewsPanel } from './panels/ViewsPanel';
-import { loadExpandedPanels, renderCollapsiblePanel, type PanelMeta } from './panels/panel-shell';
+import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
+import { loadExpandedPanels, renderCollapsiblePanel } from './panels/panel-shell';
+import { editorPanelMeta, WEATHER_START_BLOCK_META } from './editor-panel-registry';
 import {
   createRoomEntities,
   findUpsEntityGroups,
@@ -79,21 +81,6 @@ interface ParsedEditorYaml {
   parsed_config?: Record<string, any> | Record<string, any>[];
   _yaml_error?: string;
 }
-
-const PANELS: Record<string, PanelMeta> = {
-  overview: { key: 'overview', icon: 'mdi:view-dashboard-outline', label: 'Dashboard' },
-  summaries: { key: 'summaries', icon: 'mdi:counter', label: 'Zusammenfassungen' },
-  areas: { key: 'areas', icon: 'mdi:floor-plan', label: 'Bereiche und R\u00e4ume' },
-  appearance: { key: 'appearance', icon: 'mdi:palette-outline', label: 'Darstellung' },
-  details: { key: 'details', icon: 'mdi:tune-variant', label: 'Details' },
-  favorites: { key: 'favorites', icon: 'mdi:star-outline', label: 'Favoriten' },
-  areaOptions: { key: 'area-options', icon: 'mdi:home-cog-outline', label: 'Bereichsoptionen' },
-  roomPins: { key: 'room-pins', icon: 'mdi:pin-outline', label: 'Raum-Pins' },
-  views: { key: 'views', icon: 'mdi:tab', label: 'Ansichten' },
-  advanced: { key: 'advanced-options', icon: 'mdi:cog-outline', label: 'Erweiterte Optionen' },
-  sectionOrder: { key: 'section-order', icon: 'mdi:sort', label: 'Abschnittsreihenfolge' },
-  customContent: { key: 'custom-content', icon: 'mdi:view-grid-plus-outline', label: 'Eigene Inhalte' },
-};
 
 function getYamlErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message.split('\n')[0] : 'UngÃ¼ltiges YAML';
@@ -214,7 +201,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     _expandedAreas: { state: true },
     _expandedGroups: { state: true },
     _expandedWeatherBlocks: { state: true },
-    _advancedExpanded: { state: true },
     _cardPickerOpen: { state: true },
     _cardPickerStep: { state: true },
     _cardPickerSearch: { state: true },
@@ -224,14 +210,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
   };
 
   // hass is set externally by HA — use a setter, not a Lit property
-  private _hass: HomeAssistant | null = null;
+  _hass: HomeAssistant | null = null;
   private _isUpdatingConfig = false;
 
   _config: Simon42StrategyConfig = {};
   _expandedAreas = new Set<string>();
   _expandedGroups = new Map<string, Set<string>>();
   _expandedWeatherBlocks = new Set<string>();
-  _advancedExpanded = false;
 
   // Entity search state (NOT @state — we call requestUpdate manually)
   private _favoriteSearch = '';
@@ -469,7 +454,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return Object.keys(this._hass.themes.themes).sort((a, b) => a.localeCompare(b));
   }
 
-  private _getSortedAreas(): AreaRegistryEntry[] {
+  _getSortedAreas(): AreaRegistryEntry[] {
     if (!this._hass) return [];
     if (this._sortedAreasCache?.areas === this._hass.areas) {
       return this._sortedAreasCache.options;
@@ -1736,40 +1721,25 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        ${renderCollapsiblePanel(this, PANELS.overview, () => this._renderBasicOverviewSection())}
-        ${renderCollapsiblePanel(this, PANELS.summaries, () => this._renderBasicSummariesSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('overview'), () => this._renderBasicOverviewSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('summaries'), () => this._renderBasicSummariesSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('favorites'), () => this._renderFavoritesSection())}
 
         <div class="section-divider">
           <div class="section-divider-title">${localize('editor.section_areas_rooms')}</div>
         </div>
 
-        ${renderCollapsiblePanel(this, PANELS.areas, () => this._renderAreasListSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('areas'), () => this._renderAreasListSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('areaOptions'), () => this._renderAreasSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('roomPins'), () => this._renderRoomPinsSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('views'), () => this._renderViewsSection())}
 
-        <button
-          class="advanced-toggle"
-          aria-expanded=${String(this._advancedExpanded)}
-          @click=${() => {
-            this._advancedExpanded = !this._advancedExpanded;
-          }}
-        >
-          <ha-icon icon="mdi:tune-variant"></ha-icon>
-          ${localize('editor.section_advanced')}
-          <ha-icon icon="mdi:chevron-down"></ha-icon>
-        </button>
-        ${this._advancedExpanded
-          ? html`
-              <div class="advanced-content">
-                ${renderCollapsiblePanel(this, PANELS.appearance, () => this._renderOverviewSection())}
-                ${renderCollapsiblePanel(this, PANELS.details, () => this._renderSummariesSection())}
-                ${renderCollapsiblePanel(this, PANELS.favorites, () => this._renderFavoritesSection())}
-                ${renderCollapsiblePanel(this, PANELS.areaOptions, () => this._renderAreasSection())}
-                ${renderCollapsiblePanel(this, PANELS.roomPins, () => this._renderRoomPinsSection())}
-                ${renderCollapsiblePanel(this, PANELS.views, () => this._renderViewsSection())}
-                ${renderCollapsiblePanel(this, PANELS.advanced, () => this._renderAdvancedOptionsSection())}
-                ${renderCollapsiblePanel(this, PANELS.customContent, () => this._renderCustomContentSection())}
-              </div>
-            `
-          : nothing}
+        <div class="section-divider"><div class="section-divider-title">${localize('editor.section_advanced')}</div></div>
+        ${renderCollapsiblePanel(this, editorPanelMeta('appearance'), () => this._renderOverviewSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('details'), () => this._renderSummariesSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('sectionOrder'), () => this._renderWeatherStartOrderPanel())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('advanced'), () => this._renderAdvancedOptionsSection())}
+        ${renderCollapsiblePanel(this, editorPanelMeta('customContent'), () => this._renderCustomContentSection())}
       </div>
       ${this._cardPickerOpen ? this._renderCardPickerOverlay() : nothing}
     `;
@@ -2209,6 +2179,8 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         return (this._config.weather_sensors || []).length === 0 && (this._config.pollen_entities || []).length === 0;
       case 'favorites':
         return (this._config.favorite_entities || []).length === 0;
+      case 'light_favorites':
+        return (this._config.light_favorite_entities || []).length === 0;
       case 'alarm':
         return !this._config.alarm_entity;
       case 'search':
@@ -2248,29 +2220,9 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     }
   }
 
-  private static _weatherStartBlockMeta = new Map<WeatherStartKey, { icon: string; labelKey: string }>([
-    ['clock', { icon: 'mdi:clock-outline', labelKey: 'weather_start_blocks.clock' }],
-    ['date', { icon: 'mdi:calendar-today', labelKey: 'weather_start_blocks.date' }],
-    ['summaries', { icon: 'mdi:view-dashboard-outline', labelKey: 'weather_start_blocks.summaries' }],
-    ['favorites', { icon: 'mdi:star', labelKey: 'weather_start_blocks.favorites' }],
-    ['alarm', { icon: 'mdi:shield-home', labelKey: 'weather_start_blocks.alarm' }],
-    ['search', { icon: 'mdi:magnify', labelKey: 'weather_start_blocks.search' }],
-    ['overview', { icon: 'mdi:overscan', labelKey: 'weather_start_blocks.overview' }],
-    ['weather_current', { icon: 'mdi:weather-partly-cloudy', labelKey: 'weather_start_blocks.weather_current' }],
-    ['weather_hourly', { icon: 'mdi:clock-time-four-outline', labelKey: 'weather_start_blocks.weather_hourly' }],
-    ['weather_daily', { icon: 'mdi:calendar-week', labelKey: 'weather_start_blocks.weather_daily' }],
-    ['weather_details', { icon: 'mdi:gauge', labelKey: 'weather_start_blocks.weather_details' }],
-    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'weather_start_blocks.energy' }],
-    ['plants', { icon: 'mdi:flower', labelKey: 'weather_start_blocks.plants' }],
-    ['agenda', { icon: 'mdi:calendar', labelKey: 'weather_start_blocks.agenda' }],
-    ['todos', { icon: 'mdi:check-circle-outline', labelKey: 'weather_start_blocks.todos' }],
-    ['persons', { icon: 'mdi:account-group', labelKey: 'weather_start_blocks.persons' }],
-    ['vacuums', { icon: 'mdi:robot-vacuum', labelKey: 'weather_start_blocks.vacuums' }],
-    ['maintenance', { icon: 'mdi:wrench-clock', labelKey: 'weather_start_blocks.maintenance' }],
-    ['areas', { icon: 'mdi:floor-plan', labelKey: 'weather_start_blocks.areas' }],
-    ['custom_cards', { icon: 'mdi:cards', labelKey: 'weather_start_blocks.custom_cards' }],
-    ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'weather_start_blocks.custom_sections' }],
-  ]);
+  private static _weatherStartBlockMeta = new Map<WeatherStartKey, { icon: string; labelKey: string }>(
+    Object.entries(WEATHER_START_BLOCK_META) as [WeatherStartKey, { icon: string; labelKey: string }][]
+  );
 
   private _createWeatherStartItemId(prefix: string): string {
     return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -3684,7 +3636,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       <div class="section">
         <div class="section-title">${localize('editor.section_overview_details')}</div>
 
-        ${this._renderWeatherStartOrderPanel()}
         ${this._renderCheckbox(
           'show-person-badges',
           localize('editor.show_person_badges'),
@@ -3771,13 +3722,22 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
             localize('editor.show_search_card'),
             showSearchCard,
             (checked) => this._toggleChanged('show_search_card', checked, false),
-            !hasSearchCardDeps
+            this._config.search_card_variant !== 'tip' && !hasSearchCardDeps
           )}
           <div class="description">
-            ${hasSearchCardDeps
+            ${this._config.search_card_variant === 'tip' || hasSearchCardDeps
               ? localize('editor.show_search_card_desc')
               : html`<span>&#x26A0;&#xFE0F; ${unsafeHTML(localize('editor.show_search_card_missing'))}</span>`}
           </div>
+          ${showSearchCard ? html`
+            <div class="form-row">
+              <label>${localize('editor.search_card_variant')}</label>
+              <select @change=${(event: Event) => this._searchCardVariantChanged((event.target as HTMLSelectElement).value)}>
+                <option value="custom" ?selected=${this._config.search_card_variant !== 'tip'}>${localize('editor.search_card_variant_custom')}</option>
+                <option value="tip" ?selected=${this._config.search_card_variant === 'tip'}>${localize('editor.search_card_variant_tip')}</option>
+              </select>
+            </div>
+          ` : nothing}
         `}
       </div>
     `;
@@ -3797,6 +3757,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const batteryCriticalThreshold = this._config.battery_critical_threshold ?? 20;
     const batteryLowThreshold = this._config.battery_low_threshold ?? 50;
     const unavailableBatteriesBucket = this._config.unavailable_batteries_bucket === 'critical' ? 'critical' : 'good';
+    const securityExtraEntities = this._config.security_extra_entities || [];
 
     return html`
       <div class="section">
@@ -3825,6 +3786,34 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           <label for="summaries-4-columns">${localize('editor.columns_4')}</label>
         </div>
         <div class="description">${localize('editor.columns_desc')}</div>
+
+        <div class="subsection-title">${localize('editor.security_options')}</div>
+        ${this._renderCheckbox(
+          'group-security-by-areas',
+          localize('editor.group_security_by_areas'),
+          this._config.group_security_by_areas === true,
+          (checked) => this._toggleChanged('group_security_by_areas', checked, false)
+        )}
+        <div class="description">${localize('editor.group_security_by_areas_desc')}</div>
+        ${this._renderCheckbox(
+          'show-security-activity',
+          localize('editor.show_security_activity'),
+          this._config.show_security_activity === true,
+          (checked) => this._toggleChanged('show_security_activity', checked, false)
+        )}
+        <div class="description">${localize('editor.show_security_activity_desc')}</div>
+        <div class="form-row">
+          <label>${localize('editor.security_activity_position')}</label>
+          <select @change=${(event: Event) => this._securityActivityPositionChanged((event.target as HTMLSelectElement).value)}>
+            <option value="start" ?selected=${this._config.security_activity_position !== 'end'}>${localize('editor.position_start')}</option>
+            <option value="end" ?selected=${this._config.security_activity_position === 'end'}>${localize('editor.position_end')}</option>
+          </select>
+        </div>
+        <ha-textfield
+          .value=${securityExtraEntities.join(', ')}
+          label=${localize('editor.security_extra_entities')}
+          @change=${(event: Event) => this._securityExtraEntitiesChanged((event.target as HTMLInputElement).value)}
+        ></ha-textfield>
 
         ${this._renderCheckbox(
           'group-lights-by-floors',
@@ -3978,6 +3967,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const entityMap = new Map(allEntities.map((e) => [e.entity_id, e.name]));
     const filteredEntities = this._getFilteredEntities(this._favoriteSearch);
 
+    const lightFavorites = this._config.light_favorite_entities || [];
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_favorites')}</div>
@@ -4068,6 +4058,13 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           favoritesHideLastChanged,
           (checked) => this._toggleChanged('favorites_hide_last_changed', checked, false)
         )}
+        <div class="subsection-title">${localize('editor.light_favorites')}</div>
+        <ha-textfield
+          .value=${lightFavorites.join(', ')}
+          label=${localize('editor.light_favorites_entities')}
+          helper=${localize('editor.light_favorites_desc')}
+          @change=${(event: Event) => this._lightFavoritesChanged((event.target as HTMLInputElement).value)}
+        ></ha-textfield>
       </div>
     `;
   }
@@ -4338,7 +4335,38 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       showMaintenanceView,
       checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
       change: (key, checked) => this._toggleChanged(key, checked, false),
-    })}${this._renderUserVisibilityRules()}`;
+    })}${renderRoomVisibilityPanel(this)}${renderUserVisibilityPanel(this)}`;
+  }
+
+  private _renderRoomVisibilityRules(): TemplateResult {
+    if (!this._hass) return html``;
+    return html`<div class="section">
+      <div class="section-title">${localize('editor.room_visibility')}</div>
+      <div class="description" style="margin-left: 0;">${localize('editor.room_visibility_desc')}</div>
+      ${this._getSortedAreas().map((area) => {
+        const rule = this._config.room_visibility?.[area.area_id];
+        return html`<div class="option-group">
+          <div class="option-group-title">${area.name}</div>
+          <div class="form-row">
+            <ha-textfield label=${localize('editor.room_visibility_entity')} .value=${rule?.entity || ''}
+              @change=${(event: Event) => this._roomVisibilityChanged(area.area_id, 'entity', (event.target as HTMLInputElement).value)}></ha-textfield>
+            <ha-textfield label=${localize('editor.room_visibility_state')} .value=${rule?.state || ''}
+              @change=${(event: Event) => this._roomVisibilityChanged(area.area_id, 'state', (event.target as HTMLInputElement).value)}></ha-textfield>
+          </div>
+        </div>`;
+      })}
+    </div>`;
+  }
+
+  private _roomVisibilityChanged(areaId: string, field: 'entity' | 'state', value: string): void {
+    const rules = { ...(this._config.room_visibility || {}) };
+    const next = { entity: rules[areaId]?.entity || '', state: rules[areaId]?.state || '', [field]: value.trim() };
+    if (next.entity || next.state) rules[areaId] = next;
+    else delete rules[areaId];
+    const updated = { ...this._config };
+    if (Object.keys(rules).length > 0) updated.room_visibility = rules;
+    else delete updated.room_visibility;
+    this._fireConfigChanged(updated);
   }
 
   private _renderUserVisibilityRules(): TemplateResult {
@@ -4558,7 +4586,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
   // ITEM RENDERERS
   // ====================================================================
 
-  private _renderCheckbox(
+  _renderCheckbox(
     id: string,
     label: string,
     checked: boolean,
@@ -5536,6 +5564,36 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
 
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  private _searchCardVariantChanged(value: string): void {
+    const updated = { ...this._config };
+    if (value === 'tip') updated.search_card_variant = 'tip';
+    else delete updated.search_card_variant;
+    this._fireConfigChanged(updated);
+  }
+
+  private _lightFavoritesChanged(value: string): void {
+    const entities = value.split(',').map((entry) => entry.trim()).filter((entry) => entry.startsWith('light.'));
+    const updated = { ...this._config };
+    if (entities.length > 0) updated.light_favorite_entities = [...new Set(entities)];
+    else delete updated.light_favorite_entities;
+    this._fireConfigChanged(updated);
+  }
+
+  private _securityActivityPositionChanged(value: string): void {
+    const updated = { ...this._config };
+    if (value === 'end') updated.security_activity_position = 'end';
+    else delete updated.security_activity_position;
+    this._fireConfigChanged(updated);
+  }
+
+  private _securityExtraEntitiesChanged(value: string): void {
+    const entities = value.split(',').map((entry) => entry.trim()).filter((entry) => entry.includes('.'));
+    const updated = { ...this._config };
+    if (entities.length > 0) updated.security_extra_entities = [...new Set(entities)];
+    else delete updated.security_extra_entities;
+    this._fireConfigChanged(updated);
   }
 
   private _simpleOptionChanged(key: keyof Simon42StrategyConfig, value: unknown, defaultValue: unknown): void {
@@ -6688,7 +6746,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
   // CONFIG DISPATCH
   // ====================================================================
 
-  private _fireConfigChanged(config: Simon42StrategyConfig): void {
+  _fireConfigChanged(config: Simon42StrategyConfig): void {
     this._isUpdatingConfig = true;
 
     // Strip internal fields before saving
