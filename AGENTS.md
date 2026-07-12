@@ -28,7 +28,7 @@ strategy:
 
 - TypeScript, strict mode, ES2020; Webpack production build with code-split chunks.
 - Runtime source of truth is the Home Assistant `hass` object: `entities`, `devices`, `areas`, `floors`, and `states`.
-- `src/dashboard-strategy.ts` registers the main strategy immediately, starts chunk loading early, and `generate()` waits for modules, initializes `Registry`, and pre-resolves views.
+- `src/dashboard-strategy.ts` registers the main strategy immediately, starts chunk loading early, and `generate()` waits for modules, initializes `Registry`, applies state/user visibility rules, and pre-resolves views.
 - `src/Registry.ts` is a static singleton. It builds raw and pre-filtered entity/device/domain/area lookup maps. Prefer its APIs over rescanning Home Assistant registries.
 - Registry-only properties (`hidden_by`, `disabled_by`, `entity_category`, `platform`, `device_id`) must come from `hass.entities[id]` or `Registry.getEntity(id)`, never from state attributes.
 - Visibility is centralized in `Registry._isEntityVisible()`: `no_dboard`, area/group overrides, HA hidden state, config/diagnostic entities, and required state availability are handled there.
@@ -53,10 +53,10 @@ src/
 
 Keep `src/types/strategy.ts`, editor panels/rendering, translations, README, and generated behavior synchronized when adding or changing options. The current surface includes:
 
-- overview: clock/date sizing, person/search/status badges, summaries, favorites, section order/visibility, dense placement, plants, agenda, todos, persons, vacuums, and maintenance
+- overview: clock/date sizing, person/search/status badges, native/custom search variants, summaries, general and light favorites, section order/visibility, dense placement, plants, agenda, todos, persons, vacuums, and maintenance
 - weather/energy: weather presentation and sensors, pollen entities, weather-start free layout and YAML block overrides, energy distribution, power badge, and linked dashboard
-- views: summary, room, CCTV, battery, and maintenance views; camera renderer/live toggle/WebRTC settings
-- rooms/areas: floor grouping, area ordering/navigation, switches and alerts, room pins, locks, scripts, automations, vacuums/mowers, energy, UPS, and opt-in window/door contact badges
+- views: summary, room, CCTV, battery, security, and maintenance views; per-user visibility; opt-in security activity/area grouping; camera renderer/live toggle/WebRTC settings
+- rooms/areas: floor grouping, area ordering/navigation, entity-state room visibility, switches and alerts, room pins, locks, scripts, automations, vacuums/mowers, energy, UPS, and opt-in window/door contact badges
 - custom content: YAML cards, guided tiles, full sections, custom badges, custom views, per-room custom cards, and inline editor overrides
 - availability and battery behavior: hidden/unavailable filtering, mobile-app and note entities, critical/low thresholds, unavailable battery bucket
 
@@ -66,7 +66,11 @@ Important behavior:
 - UPS detection uses only visible pre-filtered entities and is enabled by default.
 - Camera behavior is controlled by `camera_renderer`, `camera_live_toggle`, and `camera_webrtc_streams`; do not assume native `camera.*` entities are always used.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
-- The editor is the main complexity hotspot: preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting.
+- The editor is the main complexity hotspot. Its navigation is a flat set of independently collapsible panels whose keys persist in local storage. Keep panel metadata in `src/editor/editor-panel-registry.ts`, reusable panels under `src/editor/panels/`, and shared contracts in `src/editor/editor-host.ts`.
+- Preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting when extracting or changing editor panels.
+- `search_card_variant: tip` must remain dependency-free; the default `custom` variant remains backwards-compatible with `custom:search-card`.
+- `room_visibility` controls generated room views/navigation only. Area cards remain present. User visibility remains display logic, not access control.
+- Security activity is opt-in, requires HA's `logbook` component, and excludes registry entities carrying `no_seclog` from the activity card without hiding them from the security view.
 
 ## Performance constraints
 
@@ -86,13 +90,16 @@ Useful checks:
 ```bash
 npm run typecheck
 npm run lint
+node scripts/lint-translations.mjs
 npm test
 npm run build
 node scripts/verify-version-sync.mjs
 git diff --check
 ```
 
-For source changes, run typecheck and lint; run tests/build when practical. User-facing behavior should also be validated against the live Home Assistant instance before publishing when that integration is available. Production builds update tracked `dist/` artifacts and must be included when the bundle changes.
+For source changes, run typecheck, lint, and the DE/EN translation lint; run tests/build when practical. User-facing behavior should also be validated against the live Home Assistant instance before publishing when that integration is available. Production builds update tracked `dist/` artifacts and must be included when the bundle changes.
+
+GitHub Actions are intentionally separated: `ci.yml` owns code/translation/build quality, `validate.yml` owns actionable HACS validation while ignoring only the known license check, `release-please.yml` owns release PRs, and `release-build.yml` builds and uploads release assets. Do not reintroduce a parallel tag-only integrity workflow that duplicates the release build.
 
 ## Version, Git, and release rules
 
