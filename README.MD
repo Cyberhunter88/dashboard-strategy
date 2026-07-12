@@ -14,18 +14,19 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 
 ## Features
 
-- **Grafischer Konfigurator** — Keine YAML-Kenntnisse erforderlich, Drag & Drop für Bereiche
+- **Grafischer Konfigurator** — Flache, einklappbare Einstellungs-Panels mit gespeichertem Zustand; Drag & Drop für Bereiche und Startseiten-Blöcke
 - **Automatische Raum-Erkennung** — Nutzt Home Assistant Areas, Devices & Floors
 - **Spezialisierte Views** — Lichter, Rollos, Sicherheit, Batterien, Klima — jeweils mit Status-Gruppierung
 - **Zusammenfassungskarten** — Einzeln ein-/ausschaltbar für Lichter, Rollos, Sicherheit, Batterien und Klima
 - **Etagen-Gruppierung** — Bereiche und Lichter optional nach Etagen gliedern
-- **Favoriten** — Beliebige Entitäten als Kacheln auf der Übersicht anpinnen
+- **Favoriten** — Beliebige Entitäten sowie eine eigene Schnellzugriffsreihe für Lieblingslichter
 - **Alarm-Panel** — Optionale Alarmanlage neben der Uhr
 - **Granulare Filterung** — Per Label (`no_dboard`), pro Bereich, pro Domain, pro Entity
 - **Wetter-Startseite** — Alternative Startseite mit großem Uhr-/Datumsblock, Wetterblöcken, freien Karten, Abschnitten, Bereichen und Etagen in eigener Reihenfolge
 - **Teiloffene Rollos** — Optionale dritte Gruppe (Offen / Teiloffen / Geschlossen) mit Live-Übergängen
 - **Alert-Icons** — Optionale Alert-Badges auf Bereichskarten (Bewegung, Feuchtigkeit, Rauch, Wärme u.a.)
 - **Rauch- & Gasmelder** — In der Sicherheits-Übersicht, im Security-Summary-Count und als Badges in Raum-Views
+- **Erweiterte Sicherheitsansicht** — Optional nach Bereichen gruppiert, mit Zusatzentitäten und nativem 24-Stunden-Logbuch
 - **UPS/USV-Erkennung** — Automatische USV-Gruppen in Raum-Views mit Gauge und zugehörigen Kacheln
 - **Batch-Aktionen** — Heading-Badges für Gruppensteuerung (alle ein/aus, alle öffnen/schließen)
 - **Automationen & Skripte in Räumen** — Bereichs-zugeordnete Automationen und Skripte in Raum-Views anzeigen
@@ -36,6 +37,7 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 - **Custom Views** — Eigene Dashboard-Views mit beliebigen Cards via YAML
 - **Reaktive Updates** — Echtzeit-Aktualisierung via LitElement Custom Cards
 - **Mehrsprachig** — Deutsch und Englisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
+- **Sichtbarkeitsregeln** — Views und Sections pro Benutzer sowie Raum-Views abhängig von Entity-Zuständen anzeigen
 - **Performance-optimiert** — Code-Split Bundles, Registry-Caching, Tile-Card-Pooling
 
 ## Installation
@@ -137,7 +139,7 @@ Anschließend öffnet sich über das **Stift-Icon** oben rechts in dem Strategy-
 
 ## Konfiguration
 
-Alle Einstellungen lassen sich bequem über den **grafischen Editor** vornehmen (Stift-Icon → Drei Punkte → Dashboard bearbeiten). Die folgenden Abschnitte dokumentieren die verfügbaren Optionen.
+Alle Einstellungen lassen sich bequem über den **grafischen Editor** vornehmen (Stift-Icon → Drei Punkte → Dashboard bearbeiten). Die Einstellungsbereiche werden als flache Liste einzeln einklappbarer Panels dargestellt; geöffnete Panels bleiben im Browser gespeichert. Die folgenden Abschnitte dokumentieren die verfügbaren Optionen.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Editor-oeffnen.gif" alt="Editor öffnen" width="800" />
@@ -165,7 +167,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
 </p>
 
-**Wetter-Startseite** — Die Übersicht verwendet immer das frei anordenbare Wetter-Startlayout. Uhr, Datum, Zusammenfassungen, Favoriten, Alarm, Suche, Wetter, Energie, Pflanzen, Agenda, Aufgaben, Personen, Staubsauger, Wartung, Bereiche, Etagen und eigene Inhalte lassen sich per Drag & Drop anordnen. Optionale Blöcke erscheinen nur, wenn sie aktiviert sind und passende Daten besitzen; einzelne Blöcke können weiterhin mit eigenem Lovelace-YAML überschrieben werden.
+**Wetter-Startseite** — Die Übersicht verwendet immer das frei anordenbare Wetter-Startlayout. Uhr, Datum, Zusammenfassungen, Favoriten, Licht-Favoriten, Alarm, Suche, Wetter, Energie, Pflanzen, Agenda, Aufgaben, Personen, Staubsauger, Wartung, Bereiche, Etagen und eigene Inhalte lassen sich per Drag & Drop anordnen. Optionale Blöcke erscheinen nur, wenn sie aktiviert sind und passende Daten besitzen; einzelne Blöcke können weiterhin mit eigenem Lovelace-YAML überschrieben werden.
 
 **Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht. Die Wetter-Entität kann automatisch erkannt oder im Editor festgelegt werden. Die Energie-Karte kann optional direkt auf das Home-Assistant-Energie-Dashboard verlinken.
 
@@ -174,6 +176,10 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Zusätzliche Startseiten-Blöcke** — Pflanzen, Agenda, Todos, Personen, Staubsauger und Wartung können optional aktiviert und direkt in der Reihenfolge der Wetter-Startseite einsortiert werden.
 
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
+
+**Licht-Favoriten** — Eine separate, frei einsortierbare Schnellzugriffs-Section für ausgewählte `light.*`-Entitäten. Sie wird automatisch ausgelassen, wenn keine gültigen Lichter konfiguriert sind.
+
+**Suche** — Standardmäßig bleibt die interaktive `custom:search-card` erhalten. Alternativ zeigt `search_card_variant: tip` einen nativen Hinweis auf die Home-Assistant-Suche und benötigt keine zusätzliche Custom Card.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Favoriten-entity-hinzufügen.gif" alt="Favoriten hinzufügen" width="800" />
@@ -218,6 +224,10 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden.
 
 **Benutzersichtbarkeit** — Im Bereich „Ansichten“ des Strategy-Editors lassen sich Views, ihre Einstiegspunkte auf der Übersicht und einzelne Übersichtsabschnitte pro Home-Assistant-Benutzer einblenden. Das ist reine Anzeigelogik und keine Zugriffskontrolle: ausgeblendete Views bleiben über ihre URL erreichbar. Nach Änderungen das Dashboard neu laden.
+
+**Zustandsabhängige Raum-Views** — Mit `room_visibility` kann eine Raum-View samt Navigations-Tab an einen Entity-Zustand gebunden werden, etwa ein Gästezimmer an einen aktivierten Gäste-Modus. Die Bereichskarte auf der Übersicht bleibt sichtbar.
+
+**Sicherheitsansicht** — Optional kann die Security-View nach Bereichen und Etagen gegliedert werden. `show_security_activity` ergänzt bei geladener Logbook-Integration eine native 24-Stunden-Aktivitätskarte; Entitäten mit dem Label `no_seclog` bleiben in der Ansicht sichtbar, werden aber nicht protokolliert. Alle neuen Security-Optionen sind standardmäßig deaktiviert.
 
 **Abschnitts-Metasteuerung** — Erzeugte Überschriften können gezielt ausgeblendet (`hidden_section_headings`) und Startseiten-Blöcke an Entity-Zustände gebunden werden (`section_visibility`).
 
@@ -482,11 +492,11 @@ Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lo
 
 | Chunk | Größe | Inhalt |
 |-------|-------|--------|
-| main | ~6 KB | Entry Point, Custom Element Registrierung |
+| main | ~8 KB | Entry Point, Custom Element Registrierung |
 | lit | ~15 KB | Lit Framework (shared) |
-| core | ~51 KB | Registry, Utils, Translations, Overview, Custom Cards |
-| views | ~19 KB | Lichter, Rollos, Sicherheit, Batterien, Klima, Raum-Detail |
-| editor | ~110 KB | Konfigurations-UI (nur bei Bedarf geladen) |
+| core | ~139 KB | Registry, Utils, Translations, Overview, Custom Cards |
+| views | ~24 KB | Lichter, Rollos, Sicherheit, Batterien, Klima, Raum-Detail |
+| editor | ~236 KB | Konfigurations-UI und Panels (nur bei Bedarf geladen) |
 
 ### Performance-Design
 
