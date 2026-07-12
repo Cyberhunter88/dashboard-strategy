@@ -7,10 +7,11 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
+import type { LovelaceCardConfig, LovelaceCondition, LovelaceSectionConfig } from '../types/lovelace';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
+import { getViewVisibleUsers, unionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 
 // Area control domains to check (same as HA, with optional 'switch')
 const CONTROL_DOMAINS = [
@@ -178,6 +179,7 @@ export function buildAreaCard(
   const sensorClasses = getAreaSensorClasses(area, hass, areaData.visibleEntityIds);
   const excludeEntities = areaData.excludedEntities;
   const roomPath = `${getDashboardBasePath()}/${area.area_id}`;
+  const userVisibility = userVisibilityConditions(getViewVisibleUsers(Registry.config, area.area_id));
 
   // Pre-filter alert classes if enabled
   const alertClasses = Registry.config.show_alerts_on_areas
@@ -196,7 +198,15 @@ export function buildAreaCard(
     navigation_path: roomPath,
     vertical: false,
     grid_options: { columns: Registry.config.overview_area_card_columns ?? 'full' },
+    ...(userVisibility ? { visibility: userVisibility } : {}),
   };
+}
+
+function areaHeadingVisibility(areas: AreaRegistryEntry[]): { visibility: LovelaceCondition[] } | Record<string, never> {
+  const visibility = userVisibilityConditions(
+    unionVisibleUsers(areas.map((area) => getViewVisibleUsers(Registry.config, area.area_id)))
+  );
+  return visibility ? { visibility } : {};
 }
 
 /**
@@ -237,6 +247,7 @@ export function createAreasSection(
                 type: 'heading',
                 heading_style: 'title',
                 heading: localize('sections.areas'),
+                ...areaHeadingVisibility(visibleAreas),
               },
             ]
           : []),
@@ -278,6 +289,7 @@ export function createAreasSection(
               heading_style: 'title',
               heading: floorName,
               icon: floorIcon,
+              ...areaHeadingVisibility(areas),
             },
           ]
         : []),
@@ -294,6 +306,7 @@ export function createAreasSection(
               heading_style: 'title',
               heading: localize('sections.areas_other'),
               icon: 'mdi:home-outline',
+              ...areaHeadingVisibility(areasWithoutFloor),
             },
           ]
         : []),

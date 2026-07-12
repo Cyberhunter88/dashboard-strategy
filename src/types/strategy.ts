@@ -300,6 +300,10 @@ export interface Simon42StrategyConfig {
   /** @deprecated Use weather_start_layout_items. */
   sections_order?: SectionKey[];
   section_visibility?: Partial<Record<SectionKey, { entity: string; state: string }>>;
+  /** Per-view display rules keyed by view path. Missing means all users; an empty array hides the view for everyone. */
+  view_visible_users?: Record<string, string[]>;
+  /** Per-overview-section display rules keyed by section key. Missing means all users; an empty array hides the section. */
+  section_visible_users?: Record<string, string[]>;
   weather_start_order?: WeatherStartKey[]; // default: DEFAULT_WEATHER_START_ORDER
   weather_start_layout_items?: WeatherStartLayoutItem[];
   summaries_columns?: 2 | 4; // default: 2

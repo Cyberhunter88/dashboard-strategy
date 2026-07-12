@@ -43,6 +43,7 @@ import { createTodosSection } from '../sections/TodosSection';
 import { createPersonsSection } from '../sections/PersonsSection';
 import { createVacuumsSection } from '../sections/VacuumsSection';
 import { createMaintenanceSection } from '../sections/MaintenanceSection';
+import { getSectionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
@@ -293,6 +294,13 @@ function createWeatherStartSectionsFromItems(
   const sections: LovelaceSectionConfig[] = [];
   const areaCardContext = createAreaCardBuildContext();
 
+  const applyUserVisibility = (key: string, section: LovelaceSectionConfig | null): LovelaceSectionConfig | null => {
+    if (!section) return null;
+    const visibility = userVisibilityConditions(getSectionVisibleUsers(dashboardConfig, key));
+    if (visibility) section.visibility = [...(section.visibility ?? []), ...visibility];
+    return section;
+  };
+
   const appendSection = (section: LovelaceSectionConfig | null, stackWithPrevious: boolean | undefined): void => {
     if (!section) return;
     const lastSection = sections[sections.length - 1];
@@ -527,7 +535,8 @@ function createWeatherStartSectionsFromItems(
         section = null;
     }
 
-    appendSection(section, item.stack_with_previous);
+    const visibleSection = applyUserVisibility(item.type, section);
+    appendSection(visibleSection, visibleSection?.visibility ? false : item.stack_with_previous);
   }
 
   return sections;
@@ -680,7 +689,16 @@ function createWeatherStartSections(
   for (const key of normalizedOrder) {
     const block = blockMap.get(key);
     if (!block) continue;
-    appendWeatherStartBlock(sections, block, shouldStackWeatherStartBlock(key, previousKey));
+    const visibility = userVisibilityConditions(getSectionVisibleUsers(dashboardConfig, key));
+    const decorated = Array.isArray(block) ? block : [block];
+    if (visibility) {
+      for (const section of decorated) section.visibility = [...(section.visibility ?? []), ...visibility];
+    }
+    appendWeatherStartBlock(
+      sections,
+      Array.isArray(block) ? decorated : decorated[0],
+      visibility ? false : shouldStackWeatherStartBlock(key, previousKey)
+    );
     previousKey = key;
   }
 
