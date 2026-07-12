@@ -18,7 +18,6 @@ import type {
   CustomSection,
   AreaCustomCard,
   AreasDisplay,
-  OverviewLayout,
   PersonBadgeLayout,
   SectionKey,
   StackKey,
@@ -27,20 +26,21 @@ import type {
   WeatherStartKey,
   WeatherStartLayoutItem,
 } from '../types/strategy';
-import { ALL_HEADING_KEYS, DEFAULT_SECTIONS_ORDER, DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
+import {
+  ALL_HEADING_KEYS,
+  DEFAULT_SECTIONS_ORDER,
+  DEFAULT_STACKS_ORDER,
+  DEFAULT_WEATHER_START_ORDER,
+} from '../types/strategy';
 import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
-import { stripLegacyAreaWebrtcCameras } from './editor-config-utils';
+import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
 import { dispatchStrategyConfigChanged } from './editor-host';
 import { extractedPanelStyles } from './editor-styles';
 import { renderViewsPanel } from './panels/ViewsPanel';
-import {
-  loadExpandedPanels,
-  renderCollapsiblePanel,
-  type PanelMeta,
-} from './panels/panel-shell';
+import { loadExpandedPanels, renderCollapsiblePanel, type PanelMeta } from './panels/panel-shell';
 import {
   createRoomEntities,
   findUpsEntityGroups,
@@ -126,26 +126,82 @@ declare global {
 // ====================================================================
 
 const CARD_TYPES: Array<{ type: string; name: string; icon: string; template: string }> = [
-  { type: 'tile',              name: 'Kachel',             icon: 'mdi:square-rounded',          template: 'type: tile\nentity: ""\n' },
-  { type: 'entities',         name: 'Entitätsliste',      icon: 'mdi:format-list-bulleted',     template: 'type: entities\nentities:\n  - entity: ""\n' },
-  { type: 'glance',           name: 'Glance',             icon: 'mdi:eye',                      template: 'type: glance\nentities:\n  - entity: ""\n' },
-  { type: 'button',           name: 'Button',             icon: 'mdi:gesture-tap-button',       template: 'type: button\nentity: ""\ntap_action:\n  action: toggle\n' },
-  { type: 'markdown',         name: 'Text / Markdown',    icon: 'mdi:language-markdown',        template: 'type: markdown\ncontent: "**Text**"\n' },
-  { type: 'heading',          name: 'Überschrift',        icon: 'mdi:format-header-1',          template: 'type: heading\nheading: "Überschrift"\nheading_style: title\nicon: mdi:home\n' },
-  { type: 'weather-forecast', name: 'Wettervorhersage',   icon: 'mdi:weather-partly-cloudy',    template: 'type: weather-forecast\nentity: ""\nshow_current: true\nshow_forecast: true\nforecast_type: daily\n' },
-  { type: 'gauge',            name: 'Messanzeige',        icon: 'mdi:gauge',                    template: 'type: gauge\nentity: ""\nmin: 0\nmax: 100\n' },
-  { type: 'thermostat',       name: 'Thermostat',         icon: 'mdi:thermostat',               template: 'type: thermostat\nentity: ""\n' },
-  { type: 'media-control',    name: 'Mediensteuerung',    icon: 'mdi:play-circle',              template: 'type: media-control\nentity: ""\n' },
-  { type: 'history-graph',    name: 'Verlaufsgraph',      icon: 'mdi:chart-line',               template: 'type: history-graph\nentities:\n  - entity: ""\nhours_to_show: 24\n' },
-  { type: 'statistics-graph', name: 'Statistikgraph',     icon: 'mdi:chart-bar',                template: 'type: statistics-graph\nentities:\n  - entity: ""\nstat_types:\n  - mean\nchart_type: line\nperiod: 5minute\n' },
-  { type: 'picture',          name: 'Bild',               icon: 'mdi:image',                    template: 'type: picture\nimage: ""\n' },
-  { type: 'picture-entity',   name: 'Entity-Bild',        icon: 'mdi:image-outline',            template: 'type: picture-entity\nentity: ""\n' },
-  { type: 'map',              name: 'Karte',              icon: 'mdi:map',                      template: 'type: map\nentities:\n  - entity: ""\n' },
-  { type: 'todo-list',        name: 'Aufgabenliste',      icon: 'mdi:checkbox-marked-circle',   template: 'type: todo-list\nentity: ""\n' },
-  { type: 'logbook',          name: 'Logbuch',            icon: 'mdi:history',                  template: 'type: logbook\nentity: ""\nhours_to_show: 24\n' },
-  { type: 'alarm-panel',      name: 'Alarmanlage',        icon: 'mdi:shield-home',              template: 'type: alarm-panel\nentity: ""\n' },
-  { type: 'energy-distribution', name: 'Energieverteilung', icon: 'mdi:lightning-bolt',         template: 'type: energy-distribution\n' },
-  { type: 'grid',             name: 'Raster',             icon: 'mdi:grid',                     template: 'type: grid\ncards: []\n' },
+  { type: 'tile', name: 'Kachel', icon: 'mdi:square-rounded', template: 'type: tile\nentity: ""\n' },
+  {
+    type: 'entities',
+    name: 'Entitätsliste',
+    icon: 'mdi:format-list-bulleted',
+    template: 'type: entities\nentities:\n  - entity: ""\n',
+  },
+  { type: 'glance', name: 'Glance', icon: 'mdi:eye', template: 'type: glance\nentities:\n  - entity: ""\n' },
+  {
+    type: 'button',
+    name: 'Button',
+    icon: 'mdi:gesture-tap-button',
+    template: 'type: button\nentity: ""\ntap_action:\n  action: toggle\n',
+  },
+  {
+    type: 'markdown',
+    name: 'Text / Markdown',
+    icon: 'mdi:language-markdown',
+    template: 'type: markdown\ncontent: "**Text**"\n',
+  },
+  {
+    type: 'heading',
+    name: 'Überschrift',
+    icon: 'mdi:format-header-1',
+    template: 'type: heading\nheading: "Überschrift"\nheading_style: title\nicon: mdi:home\n',
+  },
+  {
+    type: 'weather-forecast',
+    name: 'Wettervorhersage',
+    icon: 'mdi:weather-partly-cloudy',
+    template: 'type: weather-forecast\nentity: ""\nshow_current: true\nshow_forecast: true\nforecast_type: daily\n',
+  },
+  { type: 'gauge', name: 'Messanzeige', icon: 'mdi:gauge', template: 'type: gauge\nentity: ""\nmin: 0\nmax: 100\n' },
+  { type: 'thermostat', name: 'Thermostat', icon: 'mdi:thermostat', template: 'type: thermostat\nentity: ""\n' },
+  {
+    type: 'media-control',
+    name: 'Mediensteuerung',
+    icon: 'mdi:play-circle',
+    template: 'type: media-control\nentity: ""\n',
+  },
+  {
+    type: 'history-graph',
+    name: 'Verlaufsgraph',
+    icon: 'mdi:chart-line',
+    template: 'type: history-graph\nentities:\n  - entity: ""\nhours_to_show: 24\n',
+  },
+  {
+    type: 'statistics-graph',
+    name: 'Statistikgraph',
+    icon: 'mdi:chart-bar',
+    template:
+      'type: statistics-graph\nentities:\n  - entity: ""\nstat_types:\n  - mean\nchart_type: line\nperiod: 5minute\n',
+  },
+  { type: 'picture', name: 'Bild', icon: 'mdi:image', template: 'type: picture\nimage: ""\n' },
+  {
+    type: 'picture-entity',
+    name: 'Entity-Bild',
+    icon: 'mdi:image-outline',
+    template: 'type: picture-entity\nentity: ""\n',
+  },
+  { type: 'map', name: 'Karte', icon: 'mdi:map', template: 'type: map\nentities:\n  - entity: ""\n' },
+  {
+    type: 'todo-list',
+    name: 'Aufgabenliste',
+    icon: 'mdi:checkbox-marked-circle',
+    template: 'type: todo-list\nentity: ""\n',
+  },
+  { type: 'logbook', name: 'Logbuch', icon: 'mdi:history', template: 'type: logbook\nentity: ""\nhours_to_show: 24\n' },
+  { type: 'alarm-panel', name: 'Alarmanlage', icon: 'mdi:shield-home', template: 'type: alarm-panel\nentity: ""\n' },
+  {
+    type: 'energy-distribution',
+    name: 'Energieverteilung',
+    icon: 'mdi:lightning-bolt',
+    template: 'type: energy-distribution\n',
+  },
+  { type: 'grid', name: 'Raster', icon: 'mdi:grid', template: 'type: grid\ncards: []\n' },
 ];
 
 // ====================================================================
@@ -182,17 +238,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _roomPinSearch = '';
   _expandedPanels = loadExpandedPanels();
   // Cache for loaded area entities (avoid re-fetching on every render)
-  private _areaEntitiesCache = new Map<string, {
-    groupedEntities: Record<string, string[]>;
-    hiddenEntities: Record<string, string[]>;
-    entityOrders: Record<string, string[]>;
-    badgeCandidates: string[];
-    additionalBadges: string[];
-    availableEntities: Array<{ entity_id: string; name: string }>;
-    defaultShowNames: Set<string>;
-    namesVisible: string[];
-    namesHidden: string[];
-  }>();
+  private _areaEntitiesCache = new Map<
+    string,
+    {
+      groupedEntities: Record<string, string[]>;
+      hiddenEntities: Record<string, string[]>;
+      entityOrders: Record<string, string[]>;
+      badgeCandidates: string[];
+      additionalBadges: string[];
+      availableEntities: Array<{ entity_id: string; name: string }>;
+      defaultShowNames: Set<string>;
+      namesVisible: string[];
+      namesHidden: string[];
+    }
+  >();
   private _entitySelectOptionsCache: {
     entities: HomeAssistant['entities'];
     devices: HomeAssistant['devices'];
@@ -237,8 +296,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const oldHass = this._hass;
     this._hass = hass;
     if (
-      oldHass
-      && (oldHass.entities !== hass.entities || oldHass.devices !== hass.devices || oldHass.states !== hass.states)
+      oldHass &&
+      (oldHass.entities !== hass.entities || oldHass.devices !== hass.devices || oldHass.states !== hass.states)
     ) {
       this._entitySelectOptionsCache = null;
     }
@@ -253,9 +312,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
   setConfig(config: Simon42StrategyConfig): void {
     if (this._isUpdatingConfig) return;
     if (
-      this._config.areas_display?.hidden !== config.areas_display?.hidden
-      || this._config.areas_display?.order !== config.areas_display?.order
-      || this._config.areas_display?.nav_items !== config.areas_display?.nav_items
+      this._config.areas_display?.hidden !== config.areas_display?.hidden ||
+      this._config.areas_display?.order !== config.areas_display?.order ||
+      this._config.areas_display?.nav_items !== config.areas_display?.nav_items
     ) {
       this._invalidateWeatherStartOptionsCaches();
     }
@@ -280,10 +339,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _getAllEntitiesForSelect(): EntitySelectOption[] {
     if (!this._hass) return [];
     if (
-      this._entitySelectOptionsCache
-      && this._entitySelectOptionsCache.entities === this._hass.entities
-      && this._entitySelectOptionsCache.devices === this._hass.devices
-      && this._entitySelectOptionsCache.states === this._hass.states
+      this._entitySelectOptionsCache &&
+      this._entitySelectOptionsCache.entities === this._hass.entities &&
+      this._entitySelectOptionsCache.devices === this._hass.devices &&
+      this._entitySelectOptionsCache.states === this._hass.states
     ) {
       return this._entitySelectOptionsCache.options;
     }
@@ -453,1206 +512,1219 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Styles -----------------------------------------------------------
 
-  static styles = [extractedPanelStyles, css`
-    /* -- Base layout --------------------------------------------------- */
-    .card-config {
-      padding: 16px;
-      font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
-      font-size: var(--mdc-typography-body1-font-size, 14px);
-      color: var(--primary-text-color);
-    }
-    .section {
-      margin-bottom: 16px;
-      background: var(--card-background-color, #fff);
-      border: 1px solid var(--divider-color, #e8e8e8);
-      border-radius: var(--ha-card-border-radius, 12px);
-      padding: 16px;
-      transition: box-shadow 0.2s ease;
-    }
-    .section.panel {
-      padding: 0;
-      overflow: hidden;
-    }
-    .panel-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      padding: 13px 16px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font: inherit;
-      color: var(--primary-text-color);
-      text-align: left;
-    }
-    .panel-header:hover {
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
-    }
-    .panel-icon {
-      --mdc-icon-size: 20px;
-      color: var(--primary-color);
-    }
-    .panel-title {
-      flex: 1;
-      font-size: 15px;
-      font-weight: 500;
-    }
-    .panel-chevron {
-      --mdc-icon-size: 22px;
-      color: var(--secondary-text-color);
-      transition: transform 0.2s ease;
-    }
-    .panel.collapsed .panel-chevron {
-      transform: rotate(-90deg);
-    }
-    .panel-body {
-      padding: 12px 16px 16px;
-      border-top: 1px solid var(--divider-color, #e8e8e8);
-    }
-    .section-title {
-      font-size: 15px;
-      font-weight: 500;
-      margin: 0 0 12px 0;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--divider-color, #e8e8e8);
-      color: var(--primary-text-color);
-      letter-spacing: 0.01em;
-    }
-
-    /* -- Form rows ----------------------------------------------------- */
-    .form-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .form-row input[type="checkbox"],
-    .form-row input[type="radio"] {
-      margin-right: 8px;
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      accent-color: var(--primary-color);
-    }
-    .form-row input[type="checkbox"]:disabled,
-    .form-row input[type="radio"]:disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-    .form-row label {
-      cursor: pointer;
-      user-select: none;
-      font-size: 14px;
-      color: var(--primary-text-color);
-    }
-    .form-row label.disabled-label {
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-    .form-row .alarm-select {
-      flex: 1;
-      max-width: 300px;
-    }
-    .description {
-      font-size: 12px;
-      color: var(--secondary-text-color);
-      margin: 2px 0 12px 26px;
-      line-height: 1.4;
-    }
-    .description strong {
-      font-weight: 600;
-      color: var(--primary-text-color);
-    }
-    .option-groups {
-      display: grid;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .option-group {
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      padding: 12px;
-      background: var(--secondary-background-color);
-    }
-    .option-group-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--primary-text-color);
-    }
-    .option-group-title ha-icon {
-      --mdc-icon-size: 18px;
-      color: var(--secondary-text-color);
-    }
-    .option-group .description {
-      margin-bottom: 10px;
-    }
-    .option-group .description:last-child {
-      margin-bottom: 0;
-    }
-
-    /* -- Native <select> — HA-like ------------------------------------- */
-    select,
-    .form-row select {
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 14px;
-      padding: 10px 32px 10px 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      background-color: var(--card-background-color);
-      color: var(--primary-text-color);
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236e6e6e' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 16px;
-      transition: border-color 0.2s ease;
-    }
-    select:focus,
-    .form-row select:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 1px var(--primary-color);
-    }
-    select:hover,
-    .form-row select:hover {
-      border-color: var(--primary-color);
-    }
-
-    /* -- Native <input type="text/number"> — HA-like ------------------- */
-    input[type="text"],
-    input[type="number"] {
-      font-family: inherit;
-      font-size: 14px;
-      padding: 10px 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
-      transition: border-color 0.2s ease;
-      box-sizing: border-box;
-    }
-    input[type="text"]:focus,
-    input[type="number"]:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 1px var(--primary-color);
-    }
-    input[type="text"]:hover,
-    input[type="number"]:hover {
-      border-color: var(--primary-color);
-    }
-    input[type="text"]::placeholder {
-      color: var(--secondary-text-color);
-      opacity: 0.7;
-    }
-
-    /* -- Native <textarea> — YAML editors ------------------------------ */
-    textarea {
-      font-family: "Roboto Mono", "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      padding: 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
-      resize: vertical;
-      min-height: 80px;
-      box-sizing: border-box;
-      transition: border-color 0.2s ease;
-      tab-size: 2;
-    }
-    textarea:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 1px var(--primary-color);
-    }
-    textarea:hover {
-      border-color: var(--primary-color);
-    }
-    textarea::placeholder {
-      color: var(--secondary-text-color);
-      opacity: 0.7;
-      font-family: inherit;
-    }
-
-    /* -- Buttons — HA-like --------------------------------------------- */
-    button {
-      font-family: inherit;
-      font-size: 14px;
-    }
-    .btn-primary {
-      padding: 10px 20px;
-      border-radius: var(--ha-card-border-radius, 12px);
-      border: none;
-      background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
-      cursor: pointer;
-      font-weight: 500;
-      transition: opacity 0.2s ease, box-shadow 0.2s ease;
-      white-space: nowrap;
-    }
-    .btn-primary:hover {
-      opacity: 0.85;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    }
-    .btn-primary:active {
-      opacity: 0.75;
-    }
-    .btn-remove {
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--divider-color);
-      background: var(--card-background-color);
-      color: var(--secondary-text-color);
-      cursor: pointer;
-      font-size: 14px;
-      transition: color 0.2s ease, border-color 0.2s ease;
-      line-height: 1;
-    }
-    .btn-remove:hover {
-      color: var(--error-color, #db4437);
-      border-color: var(--error-color, #db4437);
-    }
-    .icon-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--secondary-text-color);
-      padding: 4px;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      transition: color 0.15s ease;
-    }
-    .icon-btn:hover {
-      color: var(--primary-text-color);
-    }
-    .text-btn {
-      background: none;
-      border: 1px solid var(--divider-color);
-      cursor: pointer;
-      color: var(--secondary-text-color);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      transition: color 0.15s ease, border-color 0.15s ease;
-    }
-    .text-btn:hover {
-      color: var(--primary-text-color);
-      border-color: var(--primary-color);
-    }
-
-    /* -- Area list ----------------------------------------------------- */
-    .area-list {
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      overflow: hidden;
-    }
-    .area-item {
-      border-bottom: 1px solid var(--divider-color);
-      background: var(--card-background-color);
-    }
-    .area-item:last-child {
-      border-bottom: none;
-    }
-    .area-item.dragging {
-      opacity: 0.5;
-    }
-    .area-item.drag-over {
-      border-top: 2px solid var(--primary-color);
-    }
-    .area-header {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-    }
-    .drag-handle {
-      margin-right: 12px;
-      color: var(--secondary-text-color);
-      cursor: grab;
-      user-select: none;
-      padding: 4px;
-    }
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-    .area-checkbox {
-      margin-right: 12px;
-      accent-color: var(--primary-color);
-    }
-    .area-name {
-      flex: 1;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .area-icon {
-      margin-left: 8px;
-      margin-right: 12px;
-      color: var(--secondary-text-color);
-    }
-    .nav-pin-button {
-      background: none;
-      border: none;
-      padding: 4px;
-      cursor: pointer;
-      color: var(--secondary-text-color);
-      opacity: 0.4;
-      transition: opacity 0.15s, color 0.15s;
-      display: flex;
-      align-items: center;
-    }
-    .nav-pin-button.pinned {
-      color: var(--primary-color);
-      opacity: 1;
-    }
-    .nav-pin-button:hover:not(:disabled) {
-      opacity: 1;
-    }
-    .nav-pin-button:disabled {
-      opacity: 0.2;
-      cursor: not-allowed;
-    }
-    .expand-button {
-      background: none;
-      border: none;
-      padding: 4px 8px;
-      cursor: pointer;
-      color: var(--secondary-text-color);
-      transition: transform 0.2s;
-    }
-    .expand-button:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-    .expand-button.expanded .expand-icon {
-      transform: rotate(90deg);
-    }
-    .expand-icon {
-      display: inline-block;
-      transition: transform 0.2s;
-    }
-    .area-content {
-      padding: 0 12px 12px 48px;
-      background: var(--secondary-background-color);
-    }
-    .loading-placeholder {
-      padding: 12px;
-      text-align: center;
-      color: var(--secondary-text-color);
-      font-style: italic;
-    }
-
-    /* -- Section order list --------------------------------------------- */
-    .section-order-list {
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      overflow: hidden;
-    }
-    .section-order-item {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--divider-color);
-      background: var(--card-background-color);
-      transition: opacity 0.2s;
-    }
-    .section-order-item:last-child {
-      border-bottom: none;
-    }
-    .section-order-item.dragging {
-      opacity: 0.4;
-    }
-    .section-order-item.drag-over {
-      border-top: 2px solid var(--primary-color);
-    }
-    .section-order-item.disabled {
-      opacity: 0.5;
-    }
-    .section-order-item .drag-handle {
-      margin-right: 12px;
-      color: var(--secondary-text-color);
-      cursor: grab;
-      user-select: none;
-      padding: 4px;
-    }
-    .section-order-item .drag-handle:active {
-      cursor: grabbing;
-    }
-    .section-order-item .section-icon {
-      margin-right: 10px;
-      color: var(--secondary-text-color);
-      --mdc-icon-size: 20px;
-    }
-    .section-order-item .section-label {
-      flex: 1;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .section-order-item .section-hidden-tag {
-      font-size: 12px;
-      color: var(--secondary-text-color);
-      font-style: italic;
-      margin-left: 8px;
-    }
-    .section-order-item .section-toggle {
-      margin-left: auto;
-      cursor: pointer;
-    }
-    .section-order-item .section-toggle input {
-      cursor: pointer;
-      width: 16px;
-      height: 16px;
-    }
-    .section-order-sub {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px 8px 56px;
-      border-bottom: 1px solid var(--divider-color);
-      font-size: 13px;
-      color: var(--secondary-text-color);
-    }
-    .section-order-sub input {
-      cursor: pointer;
-    }
-    .section-order-sub label {
-      cursor: pointer;
-    }
-    .section-order-compact {
-      margin-top: 8px;
-      padding: 10px 12px;
-      border: 1px dashed var(--divider-color);
-      border-radius: 8px;
-      background: var(--secondary-background-color);
-    }
-    .compact-title {
-      margin-bottom: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--secondary-text-color);
-    }
-    .compact-chip-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .compact-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: var(--card-background-color);
-      color: var(--secondary-text-color);
-      font-size: 12px;
-      border: 1px solid var(--divider-color);
-    }
-    .compact-chip ha-icon {
-      --mdc-icon-size: 14px;
-    }
-
-    /* -- Entity groups ------------------------------------------------- */
-    .entity-groups {
-      padding-top: 8px;
-    }
-    .entity-group {
-      margin-bottom: 8px;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      background: var(--card-background-color);
-      overflow: hidden;
-    }
-    .entity-group-header {
-      display: flex;
-      align-items: center;
-      padding: 10px 12px;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.15s ease;
-    }
-    .entity-group-header:hover {
-      background: var(--secondary-background-color);
-    }
-    .group-checkbox {
-      margin-right: 8px;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: var(--primary-color);
-    }
-    .group-checkbox[data-indeterminate="true"] {
-      opacity: 0.6;
-    }
-    .entity-group-header ha-icon {
-      margin-right: 8px;
-      --mdc-icon-size: 18px;
-      color: var(--secondary-text-color);
-    }
-    .group-name {
-      flex: 1;
-      font-weight: 500;
-      font-size: 14px;
-    }
-    .entity-count {
-      color: var(--secondary-text-color);
-      font-size: 12px;
-      margin-right: 8px;
-    }
-    .expand-button-small {
-      background: none;
-      border: none;
-      padding: 4px;
-      cursor: pointer;
-      color: var(--secondary-text-color);
-    }
-    .expand-button-small.expanded .expand-icon-small {
-      transform: rotate(90deg);
-    }
-    .expand-icon-small {
-      display: inline-block;
-      font-size: 12px;
-      transition: transform 0.2s;
-    }
-
-    /* -- Entity list --------------------------------------------------- */
-    .entity-list {
-      padding: 8px 12px 8px 36px;
-      border-top: 1px solid var(--divider-color);
-    }
-    .entity-item {
-      display: flex;
-      align-items: center;
-      padding: 6px 0;
-    }
-    .entity-checkbox {
-      margin-right: 8px;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: var(--primary-color);
-    }
-    .entity-name {
-      flex: 1;
-      font-size: 14px;
-    }
-    .entity-id {
-      font-size: 11px;
-      color: var(--secondary-text-color);
-      font-family: "Roboto Mono", monospace;
-      margin-left: 8px;
-    }
-    .empty-state {
-      padding: 24px;
-      text-align: center;
-      color: var(--secondary-text-color);
-      font-style: italic;
-    }
-
-    /* -- Badge entity management --------------------------------------- */
-    .badge-separator {
-      padding: 8px 0 4px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--secondary-text-color);
-      border-top: 1px dashed var(--divider-color);
-      margin-top: 4px;
-    }
-    .badge-additional-item {
-      padding-left: 0;
-    }
-    .badge-remove-btn {
-      background: none;
-      border: none;
-      padding: 2px 6px;
-      cursor: pointer;
-      color: var(--error-color, #db4437);
-      font-size: 14px;
-      margin-left: 8px;
-      border-radius: 4px;
-      transition: background-color 0.15s ease;
-    }
-    .badge-remove-btn:hover {
-      background: var(--secondary-background-color);
-    }
-    .badge-add-section {
-      display: flex;
-      gap: 8px;
-      padding: 8px 0 4px;
-      align-items: center;
-    }
-    .badge-entity-picker {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
-      font-size: 13px;
-    }
-    .badge-add-button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      transition: opacity 0.2s ease;
-    }
-    .badge-add-button:hover {
-      opacity: 0.85;
-    }
-    .badge-name-checkbox {
-      margin-left: auto;
-      margin-right: 2px;
-      width: 14px;
-      height: 14px;
-      cursor: pointer;
-      accent-color: var(--primary-color);
-    }
-    .badge-name-label {
-      font-size: 11px;
-      color: var(--secondary-text-color);
-      margin-right: 8px;
-      white-space: nowrap;
-    }
-
-    /* -- Entity search picker ------------------------------------------ */
-    .entity-search-picker {
-      position: relative;
-      flex: 1;
-      min-width: 0;
-    }
-    .entity-search-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
-      font-family: inherit;
-      font-size: 14px;
-      box-sizing: border-box;
-      transition: border-color 0.2s ease;
-    }
-    .entity-search-input:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 1px var(--primary-color);
-    }
-    .entity-search-input::placeholder {
-      color: var(--secondary-text-color);
-      opacity: 0.7;
-    }
-    .entity-search-results {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      z-index: 10;
-      margin-top: 4px;
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      background: var(--card-background-color);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-      overflow: hidden;
-      max-height: 320px;
-      overflow-y: auto;
-    }
-    .entity-search-result {
-      display: flex;
-      flex-direction: column;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: background-color 0.1s ease;
-      border-bottom: 1px solid var(--divider-color);
-    }
-    .entity-search-result:last-child {
-      border-bottom: none;
-    }
-    .entity-search-result:hover {
-      background: var(--secondary-background-color);
-    }
-    .entity-search-result .entity-search-name {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--primary-text-color);
-    }
-    .entity-search-result .entity-search-id {
-      font-size: 11px;
-      color: var(--secondary-text-color);
-      font-family: "Roboto Mono", monospace;
-      margin-top: 2px;
-    }
-    .entity-search-no-results {
-      padding: 12px 14px;
-      color: var(--secondary-text-color);
-      font-style: italic;
-      font-size: 13px;
-    }
-
-    /* -- Favorites / Room Pins list items ------------------------------ */
-    .entity-list-container {
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      overflow: hidden;
-    }
-    .entity-list-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--divider-color);
-      background: var(--card-background-color);
-      transition: background-color 0.1s ease;
-    }
-    .entity-list-item:last-child {
-      border-bottom: none;
-    }
-    .entity-list-item:hover {
-      background: var(--secondary-background-color);
-    }
-    .entity-list-item .drag-icon {
-      margin-right: 12px;
-      color: var(--secondary-text-color);
-      font-size: 16px;
-      cursor: grab;
-      user-select: none;
-      padding: 4px;
-    }
-    .entity-list-item .drag-icon:active {
-      cursor: grabbing;
-    }
-    .entity-list-item.dragging {
-      opacity: 0.5;
-    }
-    .entity-list-item.drag-over {
-      border-top: 2px solid var(--primary-color);
-    }
-    .entity-list-item .item-info {
-      flex: 1;
-      min-width: 0;
-      font-size: 14px;
-    }
-    .entity-list-item .item-name {
-      font-weight: 500;
-      color: var(--primary-text-color);
-    }
-    .entity-list-item .item-entity-id {
-      margin-left: 8px;
-      font-size: 12px;
-      color: var(--secondary-text-color);
-      font-family: "Roboto Mono", monospace;
-    }
-    .entity-list-item .item-area {
-      display: block;
-      font-size: 11px;
-      color: var(--secondary-text-color);
-      margin-top: 2px;
-    }
-
-    /* -- Custom view/card/badge items ---------------------------------- */
-    .custom-item {
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      padding: 16px;
-      margin-bottom: 12px;
-      background: var(--card-background-color);
-    }
-    .custom-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .custom-item-header strong {
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .custom-item-fields {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .area-custom-card-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .custom-card-target {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-    }
-    .custom-card-target label {
-      color: var(--secondary-text-color);
-      white-space: nowrap;
-    }
-    .custom-card-target select {
-      flex: 1;
-      padding: 4px 8px;
-      border: 1px solid var(--divider-color);
-      border-radius: 4px;
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
-      font-size: 13px;
-    }
-    .custom-item-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      min-width: 0;
-    }
-    .custom-item-row > * {
-      min-width: 0;
-    }
-    .weather-start-add-row {
-      align-items: stretch;
-      margin-top: 10px;
-    }
-    .weather-start-add-row .btn-primary {
-      flex: 0 1 auto;
-      padding: 10px 14px;
-    }
-    .weather-start-add-row select {
-      flex: 1 1 180px;
-      min-width: 160px;
-    }
-    .custom-item-validation {
-      font-size: 12px;
-      min-height: 16px;
-    }
-    .custom-content-grid {
-      display: grid;
-      gap: 12px;
-    }
-    .editor-subsection {
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      background: var(--secondary-background-color);
-      padding: 12px;
-    }
-    .subsection-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--primary-text-color);
-    }
-    .subsection-title a {
-      margin-left: auto;
-      color: var(--primary-color);
-      text-decoration: none;
-      font-size: 16px;
-    }
-
-    /* -- Section dividers ---------------------------------------------- */
-    .section-divider {
-      margin: 28px 0 12px;
-      padding: 0;
-    }
-    .section-divider-title {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--secondary-text-color);
-    }
-
-    /* -- Mobile responsive --------------------------------------------- */
-    @media (max-width: 600px) {
+  static styles = [
+    extractedPanelStyles,
+    css`
+      /* -- Base layout --------------------------------------------------- */
       .card-config {
-        padding: 12px 8px;
+        padding: 16px;
+        font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
+        font-size: var(--mdc-typography-body1-font-size, 14px);
+        color: var(--primary-text-color);
       }
       .section {
         margin-bottom: 16px;
+        background: var(--card-background-color, #fff);
+        border: 1px solid var(--divider-color, #e8e8e8);
+        border-radius: var(--ha-card-border-radius, 12px);
+        padding: 16px;
+        transition: box-shadow 0.2s ease;
+      }
+      .section.panel {
+        padding: 0;
+        overflow: hidden;
+      }
+      .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 13px 16px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font: inherit;
+        color: var(--primary-text-color);
+        text-align: left;
+      }
+      .panel-header:hover {
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+      }
+      .panel-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+      }
+      .panel-title {
+        flex: 1;
+        font-size: 15px;
+        font-weight: 500;
+      }
+      .panel-chevron {
+        --mdc-icon-size: 22px;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s ease;
+      }
+      .panel.collapsed .panel-chevron {
+        transform: rotate(-90deg);
+      }
+      .panel-body {
+        padding: 12px 16px 16px;
+        border-top: 1px solid var(--divider-color, #e8e8e8);
       }
       .section-title {
         font-size: 15px;
+        font-weight: 500;
+        margin: 0 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color, #e8e8e8);
+        color: var(--primary-text-color);
+        letter-spacing: 0.01em;
+      }
+
+      /* -- Form rows ----------------------------------------------------- */
+      .form-row {
+        display: flex;
+        align-items: center;
         margin-bottom: 8px;
       }
-      .form-row {
-        flex-wrap: wrap;
-        gap: 4px;
+      .form-row input[type='checkbox'],
+      .form-row input[type='radio'] {
+        margin-right: 8px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--primary-color);
+      }
+      .form-row input[type='checkbox']:disabled,
+      .form-row input[type='radio']:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
       }
       .form-row label {
-        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 14px;
+        color: var(--primary-text-color);
+      }
+      .form-row label.disabled-label {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      .form-row .alarm-select {
+        flex: 1;
+        max-width: 300px;
       }
       .description {
-        margin-left: 26px;
-        margin-bottom: 12px;
-        font-size: 11px;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin: 2px 0 12px 26px;
+        line-height: 1.4;
+      }
+      .description strong {
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .option-groups {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .option-group {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 12px;
+        background: var(--secondary-background-color);
+      }
+      .option-group-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .option-group-title ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--secondary-text-color);
+      }
+      .option-group .description {
+        margin-bottom: 10px;
+      }
+      .option-group .description:last-child {
+        margin-bottom: 0;
       }
 
+      /* -- Native <select> — HA-like ------------------------------------- */
       select,
       .form-row select {
-        width: 100%;
-        min-width: 0;
-        font-size: 13px;
-        padding: 8px 28px 8px 10px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 14px;
+        padding: 10px 32px 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        background-color: var(--card-background-color);
+        color: var(--primary-text-color);
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236e6e6e' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+        transition: border-color 0.2s ease;
       }
-      input[type="text"],
-      input[type="number"] {
-        width: 100%;
-        font-size: 13px;
-        padding: 8px 10px;
+      select:focus,
+      .form-row select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
       }
-      textarea {
-        font-size: 11px;
-        padding: 10px;
-        min-height: 60px;
+      select:hover,
+      .form-row select:hover {
+        border-color: var(--primary-color);
       }
 
-      .entity-search-picker {
-        width: 100%;
-      }
-      .entity-search-results {
-        max-height: 240px;
-      }
-      .entity-search-result {
-        padding: 8px 10px;
-      }
-
-      .area-header {
+      /* -- Native <input type="text/number"> — HA-like ------------------- */
+      input[type='text'],
+      input[type='number'] {
+        font-family: inherit;
+        font-size: 14px;
         padding: 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        transition: border-color 0.2s ease;
+        box-sizing: border-box;
+      }
+      input[type='text']:focus,
+      input[type='number']:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+      input[type='text']:hover,
+      input[type='number']:hover {
+        border-color: var(--primary-color);
+      }
+      input[type='text']::placeholder {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+      }
+
+      /* -- Native <textarea> — YAML editors ------------------------------ */
+      textarea {
+        font-family: 'Roboto Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        resize: vertical;
+        min-height: 80px;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+        tab-size: 2;
+      }
+      textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+      textarea:hover {
+        border-color: var(--primary-color);
+      }
+      textarea::placeholder {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+        font-family: inherit;
+      }
+
+      /* -- Buttons — HA-like --------------------------------------------- */
+      button {
+        font-family: inherit;
+        font-size: 14px;
+      }
+      .btn-primary {
+        padding: 10px 20px;
+        border-radius: var(--ha-card-border-radius, 12px);
+        border: none;
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        cursor: pointer;
+        font-weight: 500;
+        transition:
+          opacity 0.2s ease,
+          box-shadow 0.2s ease;
+        white-space: nowrap;
+      }
+      .btn-primary:hover {
+        opacity: 0.85;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      }
+      .btn-primary:active {
+        opacity: 0.75;
+      }
+      .btn-remove {
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        font-size: 14px;
+        transition:
+          color 0.2s ease,
+          border-color 0.2s ease;
+        line-height: 1;
+      }
+      .btn-remove:hover {
+        color: var(--error-color, #db4437);
+        border-color: var(--error-color, #db4437);
+      }
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 4px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        transition: color 0.15s ease;
+      }
+      .icon-btn:hover {
+        color: var(--primary-text-color);
+      }
+      .text-btn {
+        background: none;
+        border: 1px solid var(--divider-color);
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        transition:
+          color 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .text-btn:hover {
+        color: var(--primary-text-color);
+        border-color: var(--primary-color);
+      }
+
+      /* -- Area list ----------------------------------------------------- */
+      .area-list {
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        overflow: hidden;
+      }
+      .area-item {
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+      }
+      .area-item:last-child {
+        border-bottom: none;
+      }
+      .area-item.dragging {
+        opacity: 0.5;
+      }
+      .area-item.drag-over {
+        border-top: 2px solid var(--primary-color);
+      }
+      .area-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+      }
+      .drag-handle {
+        margin-right: 12px;
+        color: var(--secondary-text-color);
+        cursor: grab;
+        user-select: none;
+        padding: 4px;
+      }
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+      .area-checkbox {
+        margin-right: 12px;
+        accent-color: var(--primary-color);
+      }
+      .area-name {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .area-icon {
+        margin-left: 8px;
+        margin-right: 12px;
+        color: var(--secondary-text-color);
+      }
+      .nav-pin-button {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        opacity: 0.4;
+        transition:
+          opacity 0.15s,
+          color 0.15s;
+        display: flex;
+        align-items: center;
+      }
+      .nav-pin-button.pinned {
+        color: var(--primary-color);
+        opacity: 1;
+      }
+      .nav-pin-button:hover:not(:disabled) {
+        opacity: 1;
+      }
+      .nav-pin-button:disabled {
+        opacity: 0.2;
+        cursor: not-allowed;
+      }
+      .expand-button {
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s;
+      }
+      .expand-button:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .expand-button.expanded .expand-icon {
+        transform: rotate(90deg);
+      }
+      .expand-icon {
+        display: inline-block;
+        transition: transform 0.2s;
       }
       .area-content {
-        padding: 0 8px 8px 24px;
+        padding: 0 12px 12px 48px;
+        background: var(--secondary-background-color);
       }
-      .entity-list {
-        padding: 6px 8px 6px 16px;
-      }
-
-      .custom-item {
+      .loading-placeholder {
         padding: 12px;
-      }
-      .custom-item-row {
-        flex-direction: column;
-      }
-      .weather-start-add-row .btn-primary,
-      .weather-start-add-row select {
-        width: 100%;
+        text-align: center;
+        color: var(--secondary-text-color);
+        font-style: italic;
       }
 
+      /* -- Section order list --------------------------------------------- */
+      .section-order-list {
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        overflow: hidden;
+      }
+      .section-order-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        transition: opacity 0.2s;
+      }
+      .section-order-item:last-child {
+        border-bottom: none;
+      }
+      .section-order-item.dragging {
+        opacity: 0.4;
+      }
+      .section-order-item.drag-over {
+        border-top: 2px solid var(--primary-color);
+      }
+      .section-order-item.disabled {
+        opacity: 0.5;
+      }
+      .section-order-item .drag-handle {
+        margin-right: 12px;
+        color: var(--secondary-text-color);
+        cursor: grab;
+        user-select: none;
+        padding: 4px;
+      }
+      .section-order-item .drag-handle:active {
+        cursor: grabbing;
+      }
+      .section-order-item .section-icon {
+        margin-right: 10px;
+        color: var(--secondary-text-color);
+        --mdc-icon-size: 20px;
+      }
+      .section-order-item .section-label {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .section-order-item .section-hidden-tag {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        font-style: italic;
+        margin-left: 8px;
+      }
+      .section-order-item .section-toggle {
+        margin-left: auto;
+        cursor: pointer;
+      }
+      .section-order-item .section-toggle input {
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+      }
+      .section-order-sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px 8px 56px;
+        border-bottom: 1px solid var(--divider-color);
+        font-size: 13px;
+        color: var(--secondary-text-color);
+      }
+      .section-order-sub input {
+        cursor: pointer;
+      }
+      .section-order-sub label {
+        cursor: pointer;
+      }
+      .section-order-compact {
+        margin-top: 8px;
+        padding: 10px 12px;
+        border: 1px dashed var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+      }
+      .compact-title {
+        margin-bottom: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+      .compact-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .compact-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: var(--card-background-color);
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        border: 1px solid var(--divider-color);
+      }
+      .compact-chip ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      /* -- Entity groups ------------------------------------------------- */
+      .entity-groups {
+        padding-top: 8px;
+      }
+      .entity-group {
+        margin-bottom: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--card-background-color);
+        overflow: hidden;
+      }
+      .entity-group-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s ease;
+      }
+      .entity-group-header:hover {
+        background: var(--secondary-background-color);
+      }
+      .group-checkbox {
+        margin-right: 8px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--primary-color);
+      }
+      .group-checkbox[data-indeterminate='true'] {
+        opacity: 0.6;
+      }
+      .entity-group-header ha-icon {
+        margin-right: 8px;
+        --mdc-icon-size: 18px;
+        color: var(--secondary-text-color);
+      }
+      .group-name {
+        flex: 1;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      .entity-count {
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        margin-right: 8px;
+      }
+      .expand-button-small {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+      }
+      .expand-button-small.expanded .expand-icon-small {
+        transform: rotate(90deg);
+      }
+      .expand-icon-small {
+        display: inline-block;
+        font-size: 12px;
+        transition: transform 0.2s;
+      }
+
+      /* -- Entity list --------------------------------------------------- */
+      .entity-list {
+        padding: 8px 12px 8px 36px;
+        border-top: 1px solid var(--divider-color);
+      }
+      .entity-item {
+        display: flex;
+        align-items: center;
+        padding: 6px 0;
+      }
+      .entity-checkbox {
+        margin-right: 8px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--primary-color);
+      }
+      .entity-name {
+        flex: 1;
+        font-size: 14px;
+      }
+      .entity-id {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        font-family: 'Roboto Mono', monospace;
+        margin-left: 8px;
+      }
+      .empty-state {
+        padding: 24px;
+        text-align: center;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+
+      /* -- Badge entity management --------------------------------------- */
+      .badge-separator {
+        padding: 8px 0 4px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        border-top: 1px dashed var(--divider-color);
+        margin-top: 4px;
+      }
+      .badge-additional-item {
+        padding-left: 0;
+      }
+      .badge-remove-btn {
+        background: none;
+        border: none;
+        padding: 2px 6px;
+        cursor: pointer;
+        color: var(--error-color, #db4437);
+        font-size: 14px;
+        margin-left: 8px;
+        border-radius: 4px;
+        transition: background-color 0.15s ease;
+      }
+      .badge-remove-btn:hover {
+        background: var(--secondary-background-color);
+      }
+      .badge-add-section {
+        display: flex;
+        gap: 8px;
+        padding: 8px 0 4px;
+        align-items: center;
+      }
+      .badge-entity-picker {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+      }
+      .badge-add-button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: opacity 0.2s ease;
+      }
+      .badge-add-button:hover {
+        opacity: 0.85;
+      }
+      .badge-name-checkbox {
+        margin-left: auto;
+        margin-right: 2px;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        accent-color: var(--primary-color);
+      }
+      .badge-name-label {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin-right: 8px;
+        white-space: nowrap;
+      }
+
+      /* -- Entity search picker ------------------------------------------ */
+      .entity-search-picker {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+      }
+      .entity-search-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+      }
+      .entity-search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+      .entity-search-input::placeholder {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+      }
+      .entity-search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        margin-top: 4px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        background: var(--card-background-color);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        max-height: 320px;
+        overflow-y: auto;
+      }
+      .entity-search-result {
+        display: flex;
+        flex-direction: column;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: background-color 0.1s ease;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .entity-search-result:last-child {
+        border-bottom: none;
+      }
+      .entity-search-result:hover {
+        background: var(--secondary-background-color);
+      }
+      .entity-search-result .entity-search-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+      .entity-search-result .entity-search-id {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        font-family: 'Roboto Mono', monospace;
+        margin-top: 2px;
+      }
+      .entity-search-no-results {
+        padding: 12px 14px;
+        color: var(--secondary-text-color);
+        font-style: italic;
+        font-size: 13px;
+      }
+
+      /* -- Favorites / Room Pins list items ------------------------------ */
+      .entity-list-container {
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        overflow: hidden;
+      }
       .entity-list-item {
-        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        transition: background-color 0.1s ease;
+      }
+      .entity-list-item:last-child {
+        border-bottom: none;
+      }
+      .entity-list-item:hover {
+        background: var(--secondary-background-color);
+      }
+      .entity-list-item .drag-icon {
+        margin-right: 12px;
+        color: var(--secondary-text-color);
+        font-size: 16px;
+        cursor: grab;
+        user-select: none;
+        padding: 4px;
+      }
+      .entity-list-item .drag-icon:active {
+        cursor: grabbing;
+      }
+      .entity-list-item.dragging {
+        opacity: 0.5;
+      }
+      .entity-list-item.drag-over {
+        border-top: 2px solid var(--primary-color);
+      }
+      .entity-list-item .item-info {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+      }
+      .entity-list-item .item-name {
+        font-weight: 500;
+        color: var(--primary-text-color);
       }
       .entity-list-item .item-entity-id {
+        margin-left: 8px;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        font-family: 'Roboto Mono', monospace;
+      }
+      .entity-list-item .item-area {
         display: block;
-        margin-left: 0;
+        font-size: 11px;
+        color: var(--secondary-text-color);
         margin-top: 2px;
       }
 
-      .badge-add-section {
-        flex-wrap: wrap;
+      /* -- Custom view/card/badge items ---------------------------------- */
+      .custom-item {
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        padding: 16px;
+        margin-bottom: 12px;
+        background: var(--card-background-color);
       }
-
-      .btn-primary {
-        padding: 8px 16px;
+      .custom-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .custom-item-header strong {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .custom-item-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .area-custom-card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .custom-card-target {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-size: 13px;
       }
-    }
+      .custom-card-target label {
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+      .custom-card-target select {
+        flex: 1;
+        padding: 4px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+      }
+      .custom-item-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        min-width: 0;
+      }
+      .custom-item-row > * {
+        min-width: 0;
+      }
+      .weather-start-add-row {
+        align-items: stretch;
+        margin-top: 10px;
+      }
+      .weather-start-add-row .btn-primary {
+        flex: 0 1 auto;
+        padding: 10px 14px;
+      }
+      .weather-start-add-row select {
+        flex: 1 1 180px;
+        min-width: 160px;
+      }
+      .custom-item-validation {
+        font-size: 12px;
+        min-height: 16px;
+      }
+      .custom-content-grid {
+        display: grid;
+        gap: 12px;
+      }
+      .editor-subsection {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+        padding: 12px;
+      }
+      .subsection-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .subsection-title a {
+        margin-left: auto;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-size: 16px;
+      }
 
-    /* -- Card Picker Overlay -------------------------------------------- */
-    .card-picker-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: rgba(0, 0, 0, 0.55);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .card-picker-dialog {
-      background: var(--card-background-color, #fff);
-      border-radius: var(--ha-card-border-radius, 12px);
-      width: 100%;
-      max-width: 560px;
-      max-height: 82vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-    }
-    .card-picker-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--divider-color);
-      flex-shrink: 0;
-    }
-    .card-picker-header-title {
-      flex: 1;
-      font-weight: 500;
-      font-size: 15px;
-      color: var(--primary-text-color);
-    }
-    .card-picker-icon-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--secondary-text-color);
-      padding: 4px;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-      transition: color 0.15s ease;
-    }
-    .card-picker-icon-btn:hover {
-      color: var(--primary-text-color);
-    }
-    .card-picker-search-row {
-      padding: 10px 16px 6px;
-      flex-shrink: 0;
-    }
-    .card-picker-search-row input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 8px 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      background: var(--secondary-background-color);
-      color: var(--primary-text-color);
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-    }
-    .card-picker-search-row input:focus {
-      border-color: var(--primary-color);
-    }
-    .card-type-grid {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 16px 16px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .card-type-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 6px;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      background: var(--secondary-background-color);
-      cursor: pointer;
-      gap: 6px;
-      transition: border-color 0.15s ease, background 0.15s ease;
-      font-family: inherit;
-      min-height: 72px;
-    }
-    .card-type-btn:hover {
-      border-color: var(--primary-color);
-      background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color));
-    }
-    .card-type-btn ha-icon {
-      color: var(--primary-color);
-    }
-    .card-type-btn span {
-      font-size: 11px;
-      color: var(--primary-text-color);
-      text-align: center;
-      line-height: 1.3;
-    }
-    .card-editor-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .card-editor-visual-host {
-      display: block;
-    }
-    .card-editor-yaml-label {
-      font-size: 12px;
-      color: var(--secondary-text-color);
-    }
-    .card-editor-yaml-area {
-      width: 100%;
-      box-sizing: border-box;
-      min-height: 160px;
-      padding: 10px 12px;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      background: var(--secondary-background-color);
-      color: var(--primary-text-color);
-      font-size: 12px;
-      font-family: monospace;
-      resize: vertical;
-      outline: none;
-    }
-    .card-editor-yaml-area:focus {
-      border-color: var(--primary-color);
-    }
-    .card-picker-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 12px 16px;
-      border-top: 1px solid var(--divider-color);
-      flex-shrink: 0;
-    }
-    .btn-secondary {
-      padding: 10px 20px;
-      border-radius: var(--ha-card-border-radius, 12px);
-      border: 1px solid var(--divider-color);
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
-      cursor: pointer;
-      font-weight: 500;
-      font-family: inherit;
-      font-size: 14px;
-      transition: border-color 0.2s ease;
-    }
-    .btn-secondary:hover {
-      border-color: var(--primary-color);
-    }
-    .advanced-toggle {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
-      border: 1px solid var(--divider-color);
-      border-radius: var(--ha-card-border-radius, 12px);
-      background: var(--secondary-background-color);
-      color: var(--primary-text-color);
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 600;
-      text-align: left;
-    }
-    .advanced-toggle ha-icon:last-child {
-      margin-left: auto;
-      transition: transform 0.2s ease;
-    }
-    .advanced-toggle[aria-expanded="true"] ha-icon:last-child {
-      transform: rotate(180deg);
-    }
-    .advanced-content {
-      margin-top: 16px;
-      padding-left: 12px;
-      border-left: 3px solid var(--divider-color);
-    }
-  `];
+      /* -- Section dividers ---------------------------------------------- */
+      .section-divider {
+        margin: 28px 0 12px;
+        padding: 0;
+      }
+      .section-divider-title {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--secondary-text-color);
+      }
+
+      /* -- Mobile responsive --------------------------------------------- */
+      @media (max-width: 600px) {
+        .card-config {
+          padding: 12px 8px;
+        }
+        .section {
+          margin-bottom: 16px;
+        }
+        .section-title {
+          font-size: 15px;
+          margin-bottom: 8px;
+        }
+        .form-row {
+          flex-wrap: wrap;
+          gap: 4px;
+        }
+        .form-row label {
+          font-size: 13px;
+        }
+        .description {
+          margin-left: 26px;
+          margin-bottom: 12px;
+          font-size: 11px;
+        }
+
+        select,
+        .form-row select {
+          width: 100%;
+          min-width: 0;
+          font-size: 13px;
+          padding: 8px 28px 8px 10px;
+        }
+        input[type='text'],
+        input[type='number'] {
+          width: 100%;
+          font-size: 13px;
+          padding: 8px 10px;
+        }
+        textarea {
+          font-size: 11px;
+          padding: 10px;
+          min-height: 60px;
+        }
+
+        .entity-search-picker {
+          width: 100%;
+        }
+        .entity-search-results {
+          max-height: 240px;
+        }
+        .entity-search-result {
+          padding: 8px 10px;
+        }
+
+        .area-header {
+          padding: 10px 12px;
+        }
+        .area-content {
+          padding: 0 8px 8px 24px;
+        }
+        .entity-list {
+          padding: 6px 8px 6px 16px;
+        }
+
+        .custom-item {
+          padding: 12px;
+        }
+        .custom-item-row {
+          flex-direction: column;
+        }
+        .weather-start-add-row .btn-primary,
+        .weather-start-add-row select {
+          width: 100%;
+        }
+
+        .entity-list-item {
+          padding: 8px 10px;
+        }
+        .entity-list-item .item-entity-id {
+          display: block;
+          margin-left: 0;
+          margin-top: 2px;
+        }
+
+        .badge-add-section {
+          flex-wrap: wrap;
+        }
+
+        .btn-primary {
+          padding: 8px 16px;
+          font-size: 13px;
+        }
+      }
+
+      /* -- Card Picker Overlay -------------------------------------------- */
+      .card-picker-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .card-picker-dialog {
+        background: var(--card-background-color, #fff);
+        border-radius: var(--ha-card-border-radius, 12px);
+        width: 100%;
+        max-width: 560px;
+        max-height: 82vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+      .card-picker-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--divider-color);
+        flex-shrink: 0;
+      }
+      .card-picker-header-title {
+        flex: 1;
+        font-weight: 500;
+        font-size: 15px;
+        color: var(--primary-text-color);
+      }
+      .card-picker-icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 4px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        transition: color 0.15s ease;
+      }
+      .card-picker-icon-btn:hover {
+        color: var(--primary-text-color);
+      }
+      .card-picker-search-row {
+        padding: 10px 16px 6px;
+        flex-shrink: 0;
+      }
+      .card-picker-search-row input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+      }
+      .card-picker-search-row input:focus {
+        border-color: var(--primary-color);
+      }
+      .card-type-grid {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 16px 16px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .card-type-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 6px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+        cursor: pointer;
+        gap: 6px;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease;
+        font-family: inherit;
+        min-height: 72px;
+      }
+      .card-type-btn:hover {
+        border-color: var(--primary-color);
+        background: color-mix(in srgb, var(--primary-color) 8%, var(--card-background-color));
+      }
+      .card-type-btn ha-icon {
+        color: var(--primary-color);
+      }
+      .card-type-btn span {
+        font-size: 11px;
+        color: var(--primary-text-color);
+        text-align: center;
+        line-height: 1.3;
+      }
+      .card-editor-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .card-editor-visual-host {
+        display: block;
+      }
+      .card-editor-yaml-label {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+      .card-editor-yaml-area {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 160px;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 12px;
+        font-family: monospace;
+        resize: vertical;
+        outline: none;
+      }
+      .card-editor-yaml-area:focus {
+        border-color: var(--primary-color);
+      }
+      .card-picker-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--divider-color);
+        flex-shrink: 0;
+      }
+      .btn-secondary {
+        padding: 10px 20px;
+        border-radius: var(--ha-card-border-radius, 12px);
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-weight: 500;
+        font-family: inherit;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+      }
+      .btn-secondary:hover {
+        border-color: var(--primary-color);
+      }
+      .advanced-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-card-border-radius, 12px);
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        text-align: left;
+      }
+      .advanced-toggle ha-icon:last-child {
+        margin-left: auto;
+        transition: transform 0.2s ease;
+      }
+      .advanced-toggle[aria-expanded='true'] ha-icon:last-child {
+        transform: rotate(180deg);
+      }
+      .advanced-content {
+        margin-top: 16px;
+        padding-left: 12px;
+        border-left: 3px solid var(--divider-color);
+      }
+    `,
+  ];
 
   // -- Main render ------------------------------------------------------
 
@@ -1665,33 +1737,36 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ${renderCollapsiblePanel(this, PANELS.summaries, () => this._renderBasicSummariesSection())}
 
         <div class="section-divider">
-          <div class="section-divider-title">
-            ${localize('editor.section_areas_rooms')}
-          </div>
+          <div class="section-divider-title">${localize('editor.section_areas_rooms')}</div>
         </div>
 
         ${renderCollapsiblePanel(this, PANELS.areas, () => this._renderAreasListSection())}
 
-        <button class="advanced-toggle"
+        <button
+          class="advanced-toggle"
           aria-expanded=${String(this._advancedExpanded)}
-          @click=${() => { this._advancedExpanded = !this._advancedExpanded; }}>
+          @click=${() => {
+            this._advancedExpanded = !this._advancedExpanded;
+          }}
+        >
           <ha-icon icon="mdi:tune-variant"></ha-icon>
           ${localize('editor.section_advanced')}
           <ha-icon icon="mdi:chevron-down"></ha-icon>
         </button>
-        ${this._advancedExpanded ? html`
-          <div class="advanced-content">
-            ${renderCollapsiblePanel(this, PANELS.appearance, () => this._renderOverviewSection())}
-            ${renderCollapsiblePanel(this, PANELS.details, () => this._renderSummariesSection())}
-            ${renderCollapsiblePanel(this, PANELS.favorites, () => this._renderFavoritesSection())}
-            ${renderCollapsiblePanel(this, PANELS.areaOptions, () => this._renderAreasSection())}
-            ${renderCollapsiblePanel(this, PANELS.roomPins, () => this._renderRoomPinsSection())}
-            ${renderCollapsiblePanel(this, PANELS.views, () => this._renderViewsSection())}
-            ${renderCollapsiblePanel(this, PANELS.advanced, () => this._renderAdvancedOptionsSection())}
-            ${renderCollapsiblePanel(this, PANELS.sectionOrder, () => this._renderSectionOrderPanel())}
-            ${renderCollapsiblePanel(this, PANELS.customContent, () => this._renderCustomContentSection())}
-          </div>
-        ` : nothing}
+        ${this._advancedExpanded
+          ? html`
+              <div class="advanced-content">
+                ${renderCollapsiblePanel(this, PANELS.appearance, () => this._renderOverviewSection())}
+                ${renderCollapsiblePanel(this, PANELS.details, () => this._renderSummariesSection())}
+                ${renderCollapsiblePanel(this, PANELS.favorites, () => this._renderFavoritesSection())}
+                ${renderCollapsiblePanel(this, PANELS.areaOptions, () => this._renderAreasSection())}
+                ${renderCollapsiblePanel(this, PANELS.roomPins, () => this._renderRoomPinsSection())}
+                ${renderCollapsiblePanel(this, PANELS.views, () => this._renderViewsSection())}
+                ${renderCollapsiblePanel(this, PANELS.advanced, () => this._renderAdvancedOptionsSection())}
+                ${renderCollapsiblePanel(this, PANELS.customContent, () => this._renderCustomContentSection())}
+              </div>
+            `
+          : nothing}
       </div>
       ${this._cardPickerOpen ? this._renderCardPickerOverlay() : nothing}
     `;
@@ -1711,12 +1786,20 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="section">
         <div class="section-title">${localize('editor.section_advanced_options')}</div>
 
-        ${this._renderCheckbox('hide-unavailable-entities', localize('editor.hide_unavailable_entities'), hideUnavailableEntities,
-          (checked) => this._toggleChanged('hide_unavailable_entities', checked, false))}
+        ${this._renderCheckbox(
+          'hide-unavailable-entities',
+          localize('editor.hide_unavailable_entities'),
+          hideUnavailableEntities,
+          (checked) => this._toggleChanged('hide_unavailable_entities', checked, false)
+        )}
         <div class="description">${localize('editor.hide_unavailable_entities_desc')}</div>
 
-        ${this._renderCheckbox('dense-section-placement', localize('editor.dense_section_placement'), denseSectionPlacement,
-          (checked) => this._toggleChanged('dense_section_placement', checked, false))}
+        ${this._renderCheckbox(
+          'dense-section-placement',
+          localize('editor.dense_section_placement'),
+          denseSectionPlacement,
+          (checked) => this._toggleChanged('dense_section_placement', checked, false)
+        )}
         <div class="description">${localize('editor.dense_section_placement_desc')}</div>
       </div>
     `;
@@ -1778,16 +1861,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   ]);
 
   private _isSectionToggleable(key: SectionKey): boolean {
-    return [
-      'weather',
-      'energy',
-      'plants',
-      'agenda',
-      'todos',
-      'persons',
-      'vacuums',
-      'maintenance',
-    ].includes(key);
+    return ['weather', 'energy', 'plants', 'agenda', 'todos', 'persons', 'vacuums', 'maintenance'].includes(key);
   }
 
   private _toggleSectionVisibility(key: SectionKey, visible: boolean): void {
@@ -1840,17 +1914,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderSectionOrderPanel(): TemplateResult {
-      const order = this._getSectionsOrder();
-      const energyLinkDashboard = this._config.energy_link_dashboard !== false;
-      const showEnergy = this._config.show_energy !== false;
-      const weatherPresentation = this._config.weather_presentation || 'forecast_daily';
-      const showDistributionCard = this._config.show_energy_distribution_card !== false;
-      const powerBadgeEntity = this._config.power_badge_entity || '';
-      const powerBadgeEntities = this._getEntitiesByDomains(['sensor', 'binary_sensor', 'number', 'input_number']);
-      const hiddenHeadings = new Set(this._config.hidden_section_headings || []);
+    const order = this._getSectionsOrder();
+    const energyLinkDashboard = this._config.energy_link_dashboard !== false;
+    const showEnergy = this._config.show_energy !== false;
+    const weatherPresentation = this._config.weather_presentation || 'forecast_daily';
+    const showDistributionCard = this._config.show_energy_distribution_card !== false;
+    const powerBadgeEntity = this._config.power_badge_entity || '';
+    const powerBadgeEntities = this._getEntitiesByDomains(['sensor', 'binary_sensor', 'number', 'input_number']);
+    const hiddenHeadings = new Set(this._config.hidden_section_headings || []);
 
-      return html`
-        <div class="section">
+    return html`
+      <div class="section">
         <div class="section-title">${localize('editor.section_order')}</div>
         <div class="description" style="margin-left: 0; margin-bottom: 12px;">
           ${localize('editor.section_order_desc')}
@@ -1862,145 +1936,256 @@ class Simon42DashboardStrategyEditor extends LitElement {
             const disabled = this._isSectionDisabled(key);
             const toggleable = this._isSectionToggleable(key);
             return html`
-              <div class="section-order-item ${disabled ? 'disabled' : ''}"
+              <div
+                class="section-order-item ${disabled ? 'disabled' : ''}"
                 data-section-key=${key}
                 draggable="true"
                 @dragstart=${this._handleSectionDragStart}
                 @dragend=${this._handleSectionDragEnd}
                 @dragover=${this._handleSectionDragOver}
                 @dragleave=${this._handleSectionDragLeave}
-                @drop=${this._handleSectionDrop}>
+                @drop=${this._handleSectionDrop}
+              >
                 <span class="drag-handle" draggable="true">&#x2630;</span>
                 <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
                 <span class="section-label">${localize(meta.labelKey)}</span>
-                ${disabled && !toggleable ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
-                ${toggleable ? html`
-                  <label class="section-toggle" @mousedown=${(e: Event) => { e.stopPropagation(); }}>
-                    <input type="checkbox"
-                      ?checked=${!disabled}
-                      @change=${(e: Event) => { this._toggleSectionVisibility(key, (e.target as HTMLInputElement).checked); }}
-                      @dragstart=${(e: Event) => { e.stopPropagation(); }} />
-                  </label>
-                ` : nothing}
+                ${disabled && !toggleable
+                  ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>`
+                  : nothing}
+                ${toggleable
+                  ? html`
+                      <label
+                        class="section-toggle"
+                        @mousedown=${(e: Event) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          ?checked=${!disabled}
+                          @change=${(e: Event) => {
+                            this._toggleSectionVisibility(key, (e.target as HTMLInputElement).checked);
+                          }}
+                          @dragstart=${(e: Event) => {
+                            e.stopPropagation();
+                          }}
+                        />
+                      </label>
+                    `
+                  : nothing}
               </div>
-              ${key === 'energy' && showEnergy ? html`
-                <div class="section-order-sub">
-                  <input type="checkbox" id="energy-link-dashboard"
-                    ?checked=${energyLinkDashboard}
-                    @change=${(e: Event) => { this._toggleChanged('energy_link_dashboard', (e.target as HTMLInputElement).checked, true); }} />
-                  <label for="energy-link-dashboard">${localize('editor.energy_link_dashboard')}</label>
-                </div>
-                <div class="section-order-sub">
-                  <input type="checkbox" id="show-energy-distribution-card"
-                    ?checked=${showDistributionCard}
-                    @change=${(e: Event) => { this._toggleChanged('show_energy_distribution_card', (e.target as HTMLInputElement).checked, true); }} />
-                  <label for="show-energy-distribution-card">${localize('editor.show_energy_distribution_card')}</label>
-                </div>
-                <div class="section-order-sub">
-                  <label for="power-badge-entity" style="min-width: 140px;">${localize('editor.power_badge_entity')}</label>
-                  <select id="power-badge-entity" style="flex: 1;" @change=${this._powerBadgeEntityChanged}>
-                    <option value="" ?selected=${!powerBadgeEntity}>${localize('editor.power_badge_none')}</option>
-                    ${powerBadgeEntities.map((entity) => html`
-                      <option value=${entity.entity_id} ?selected=${entity.entity_id === powerBadgeEntity}>${entity.name}</option>
-                    `)}
-                  </select>
-                </div>
-                <div class="description">${localize('editor.power_badge_entity_desc')}</div>
-              ` : nothing}
-              ${key === 'weather' && !disabled ? html`
-                <div class="section-order-sub">
-                  <label for="weather-presentation" style="min-width: 140px;">${localize('editor.weather_presentation')}</label>
-                  <select id="weather-presentation" style="flex: 1;" @change=${this._weatherPresentationChanged}>
-                    <option value="forecast_daily" ?selected=${weatherPresentation === 'forecast_daily'}>${localize('editor.weather_presentation_forecast_daily')}</option>
-                    <option value="forecast_hourly" ?selected=${weatherPresentation === 'forecast_hourly'}>${localize('editor.weather_presentation_forecast_hourly')}</option>
-                    <option value="forecast_twice_daily" ?selected=${weatherPresentation === 'forecast_twice_daily'}>${localize('editor.weather_presentation_forecast_twice_daily')}</option>
-                    <option value="tile" ?selected=${weatherPresentation === 'tile'}>${localize('editor.weather_presentation_tile')}</option>
-                    <option value="none" ?selected=${weatherPresentation === 'none'}>${localize('editor.weather_presentation_none')}</option>
-                  </select>
-                </div>
-                ${this._renderCheckbox('show-weather-forecast-card', localize('editor.show_weather_forecast_card'), this._config.show_weather_forecast_card !== false,
-                  (checked) => this._toggleChanged('show_weather_forecast_card', checked, true))}
-                <div class="description">${localize('editor.show_weather_forecast_card_desc')}</div>
-                <div class="form-row" style="align-items: flex-start;">
-                  <label for="weather-sensors" style="min-width: 140px; margin-top: 6px;">${localize('editor.section_weather_sensors')}</label>
-                  <textarea id="weather-sensors" rows="4" style="flex: 1;"
-                    placeholder="sensor.outside_temperature|mdi:thermometer|°C|1"
-                    @change=${this._weatherSensorsChanged}>${this._formatWeatherSensors(this._config.weather_sensors)}</textarea>
-                </div>
-                <div class="description">${localize('editor.weather_sensors_desc')}</div>
-              ` : nothing}
-              ${key === 'agenda' && !disabled ? html`
-                <div class="form-row" style="align-items: flex-start;">
-                  <label for="agenda-calendar-entities" style="min-width: 140px; margin-top: 6px;">${localize('editor.agenda_calendar_entities')}</label>
-                  <textarea id="agenda-calendar-entities" rows="3" style="flex: 1;"
-                    placeholder="calendar.family, calendar.work"
-                    @change=${this._agendaCalendarEntitiesChanged}>${this._formatEntityList(this._config.agenda_calendar_entities)}</textarea>
-                </div>
-                <div class="description">${localize('editor.agenda_calendar_entities_desc')}</div>
-              ` : nothing}
-              ${key === 'todos' && !disabled ? html`
-                <div class="form-row" style="align-items: flex-start;">
-                  <label for="todos-entities" style="min-width: 140px; margin-top: 6px;">${localize('editor.todos_entities')}</label>
-                  <textarea id="todos-entities" rows="3" style="flex: 1;"
-                    placeholder="todo.home, todo.shopping"
-                    @change=${this._todosEntitiesChanged}>${this._formatEntityList(this._config.todos_entities)}</textarea>
-                </div>
-                <div class="description">${localize('editor.todos_entities_desc')}</div>
-              ` : nothing}
+              ${key === 'energy' && showEnergy
+                ? html`
+                    <div class="section-order-sub">
+                      <input
+                        type="checkbox"
+                        id="energy-link-dashboard"
+                        ?checked=${energyLinkDashboard}
+                        @change=${(e: Event) => {
+                          this._toggleChanged('energy_link_dashboard', (e.target as HTMLInputElement).checked, true);
+                        }}
+                      />
+                      <label for="energy-link-dashboard">${localize('editor.energy_link_dashboard')}</label>
+                    </div>
+                    <div class="section-order-sub">
+                      <input
+                        type="checkbox"
+                        id="show-energy-distribution-card"
+                        ?checked=${showDistributionCard}
+                        @change=${(e: Event) => {
+                          this._toggleChanged(
+                            'show_energy_distribution_card',
+                            (e.target as HTMLInputElement).checked,
+                            true
+                          );
+                        }}
+                      />
+                      <label for="show-energy-distribution-card"
+                        >${localize('editor.show_energy_distribution_card')}</label
+                      >
+                    </div>
+                    <div class="section-order-sub">
+                      <label for="power-badge-entity" style="min-width: 140px;"
+                        >${localize('editor.power_badge_entity')}</label
+                      >
+                      <select id="power-badge-entity" style="flex: 1;" @change=${this._powerBadgeEntityChanged}>
+                        <option value="" ?selected=${!powerBadgeEntity}>${localize('editor.power_badge_none')}</option>
+                        ${powerBadgeEntities.map(
+                          (entity) => html`
+                            <option value=${entity.entity_id} ?selected=${entity.entity_id === powerBadgeEntity}>
+                              ${entity.name}
+                            </option>
+                          `
+                        )}
+                      </select>
+                    </div>
+                    <div class="description">${localize('editor.power_badge_entity_desc')}</div>
+                  `
+                : nothing}
+              ${key === 'weather' && !disabled
+                ? html`
+                    <div class="section-order-sub">
+                      <label for="weather-presentation" style="min-width: 140px;"
+                        >${localize('editor.weather_presentation')}</label
+                      >
+                      <select id="weather-presentation" style="flex: 1;" @change=${this._weatherPresentationChanged}>
+                        <option value="forecast_daily" ?selected=${weatherPresentation === 'forecast_daily'}>
+                          ${localize('editor.weather_presentation_forecast_daily')}
+                        </option>
+                        <option value="forecast_hourly" ?selected=${weatherPresentation === 'forecast_hourly'}>
+                          ${localize('editor.weather_presentation_forecast_hourly')}
+                        </option>
+                        <option
+                          value="forecast_twice_daily"
+                          ?selected=${weatherPresentation === 'forecast_twice_daily'}
+                        >
+                          ${localize('editor.weather_presentation_forecast_twice_daily')}
+                        </option>
+                        <option value="tile" ?selected=${weatherPresentation === 'tile'}>
+                          ${localize('editor.weather_presentation_tile')}
+                        </option>
+                        <option value="none" ?selected=${weatherPresentation === 'none'}>
+                          ${localize('editor.weather_presentation_none')}
+                        </option>
+                      </select>
+                    </div>
+                    ${this._renderCheckbox(
+                      'show-weather-forecast-card',
+                      localize('editor.show_weather_forecast_card'),
+                      this._config.show_weather_forecast_card !== false,
+                      (checked) => this._toggleChanged('show_weather_forecast_card', checked, true)
+                    )}
+                    <div class="description">${localize('editor.show_weather_forecast_card_desc')}</div>
+                    <div class="form-row" style="align-items: flex-start;">
+                      <label for="weather-sensors" style="min-width: 140px; margin-top: 6px;"
+                        >${localize('editor.section_weather_sensors')}</label
+                      >
+                      <textarea
+                        id="weather-sensors"
+                        rows="4"
+                        style="flex: 1;"
+                        placeholder="sensor.outside_temperature|mdi:thermometer|°C|1"
+                        @change=${this._weatherSensorsChanged}
+                      >
+${this._formatWeatherSensors(this._config.weather_sensors)}</textarea
+                      >
+                    </div>
+                    <div class="description">${localize('editor.weather_sensors_desc')}</div>
+                  `
+                : nothing}
+              ${key === 'agenda' && !disabled
+                ? html`
+                    <div class="form-row" style="align-items: flex-start;">
+                      <label for="agenda-calendar-entities" style="min-width: 140px; margin-top: 6px;"
+                        >${localize('editor.agenda_calendar_entities')}</label
+                      >
+                      <textarea
+                        id="agenda-calendar-entities"
+                        rows="3"
+                        style="flex: 1;"
+                        placeholder="calendar.family, calendar.work"
+                        @change=${this._agendaCalendarEntitiesChanged}
+                      >
+${this._formatEntityList(this._config.agenda_calendar_entities)}</textarea
+                      >
+                    </div>
+                    <div class="description">${localize('editor.agenda_calendar_entities_desc')}</div>
+                  `
+                : nothing}
+              ${key === 'todos' && !disabled
+                ? html`
+                    <div class="form-row" style="align-items: flex-start;">
+                      <label for="todos-entities" style="min-width: 140px; margin-top: 6px;"
+                        >${localize('editor.todos_entities')}</label
+                      >
+                      <textarea
+                        id="todos-entities"
+                        rows="3"
+                        style="flex: 1;"
+                        placeholder="todo.home, todo.shopping"
+                        @change=${this._todosEntitiesChanged}
+                      >
+${this._formatEntityList(this._config.todos_entities)}</textarea
+                      >
+                    </div>
+                    <div class="description">${localize('editor.todos_entities_desc')}</div>
+                  `
+                : nothing}
             `;
-            })}
-          </div>
-          <details style="margin-top: 12px;">
-            <summary style="cursor: pointer; font-weight: 500;">${localize('editor.hidden_section_headings')}</summary>
-            <div style="margin-left: 14px; margin-top: 6px;">
-              <div class="description" style="margin-left: 0; margin-bottom: 8px;">
-                ${localize('editor.hidden_section_headings_desc')}
-              </div>
-              ${ALL_HEADING_KEYS.map((key) => html`
+          })}
+        </div>
+        <details style="margin-top: 12px;">
+          <summary style="cursor: pointer; font-weight: 500;">${localize('editor.hidden_section_headings')}</summary>
+          <div style="margin-left: 14px; margin-top: 6px;">
+            <div class="description" style="margin-left: 0; margin-bottom: 8px;">
+              ${localize('editor.hidden_section_headings_desc')}
+            </div>
+            ${ALL_HEADING_KEYS.map(
+              (key) => html`
                 <div class="form-row">
-                  <input type="checkbox" id=${`hide-heading-${key}`}
+                  <input
+                    type="checkbox"
+                    id=${`hide-heading-${key}`}
                     ?checked=${hiddenHeadings.has(key)}
-                    @change=${(e: Event) => this._toggleHiddenHeading(key, (e.target as HTMLInputElement).checked)} />
+                    @change=${(e: Event) => this._toggleHiddenHeading(key, (e.target as HTMLInputElement).checked)}
+                  />
                   <label for=${`hide-heading-${key}`}>${localize(`sections.${key}`)}</label>
                 </div>
-              `)}
+              `
+            )}
+          </div>
+        </details>
+        <details style="margin-top: 12px;">
+          <summary style="cursor: pointer; font-weight: 500;">${localize('editor.section_visibility')}</summary>
+          <div style="margin-left: 14px; margin-top: 6px;">
+            <div class="description" style="margin-left: 0; margin-bottom: 8px;">
+              ${localize('editor.section_visibility_desc')}
             </div>
-          </details>
-          <details style="margin-top: 12px;">
-            <summary style="cursor: pointer; font-weight: 500;">${localize('editor.section_visibility')}</summary>
-            <div style="margin-left: 14px; margin-top: 6px;">
-              <div class="description" style="margin-left: 0; margin-bottom: 8px;">
-                ${localize('editor.section_visibility_desc')}
-              </div>
-              ${order.map((key) => {
-                const meta = Simon42DashboardStrategyEditor._sectionMeta.get(key);
-                if (!meta) return nothing;
-                const rule = this._config.section_visibility?.[key];
-                return html`
-                  <div style="border: 1px solid var(--divider-color); border-radius: 6px; padding: 8px; margin-bottom: 8px;">
-                    <div style="font-weight: 500; margin-bottom: 6px;">${localize(meta.labelKey)}</div>
-                    <div class="form-row">
-                      <label for=${`visibility-entity-${key}`} style="min-width: 80px; font-size: 12px;">${localize('editor.section_visibility_entity')}</label>
-                      <input type="text" id=${`visibility-entity-${key}`} style="flex: 1;"
-                        placeholder="input_boolean.guest_mode"
-                        .value=${rule?.entity || ''}
-                        @change=${(e: Event) => this._sectionVisibilityChanged(key, 'entity', (e.target as HTMLInputElement).value)} />
-                    </div>
-                    <div class="form-row">
-                      <label for=${`visibility-state-${key}`} style="min-width: 80px; font-size: 12px;">${localize('editor.section_visibility_state')}</label>
-                      <input type="text" id=${`visibility-state-${key}`} style="flex: 1;"
-                        placeholder="on"
-                        .value=${rule?.state || ''}
-                        @change=${(e: Event) => this._sectionVisibilityChanged(key, 'state', (e.target as HTMLInputElement).value)} />
-                    </div>
+            ${order.map((key) => {
+              const meta = Simon42DashboardStrategyEditor._sectionMeta.get(key);
+              if (!meta) return nothing;
+              const rule = this._config.section_visibility?.[key];
+              return html`
+                <div
+                  style="border: 1px solid var(--divider-color); border-radius: 6px; padding: 8px; margin-bottom: 8px;"
+                >
+                  <div style="font-weight: 500; margin-bottom: 6px;">${localize(meta.labelKey)}</div>
+                  <div class="form-row">
+                    <label for=${`visibility-entity-${key}`} style="min-width: 80px; font-size: 12px;"
+                      >${localize('editor.section_visibility_entity')}</label
+                    >
+                    <input
+                      type="text"
+                      id=${`visibility-entity-${key}`}
+                      style="flex: 1;"
+                      placeholder="input_boolean.guest_mode"
+                      .value=${rule?.entity || ''}
+                      @change=${(e: Event) =>
+                        this._sectionVisibilityChanged(key, 'entity', (e.target as HTMLInputElement).value)}
+                    />
                   </div>
-                `;
-              })}
-            </div>
-          </details>
-        </div>
-      `;
-    }
+                  <div class="form-row">
+                    <label for=${`visibility-state-${key}`} style="min-width: 80px; font-size: 12px;"
+                      >${localize('editor.section_visibility_state')}</label
+                    >
+                    <input
+                      type="text"
+                      id=${`visibility-state-${key}`}
+                      style="flex: 1;"
+                      placeholder="on"
+                      .value=${rule?.state || ''}
+                      @change=${(e: Event) =>
+                        this._sectionVisibilityChanged(key, 'state', (e.target as HTMLInputElement).value)}
+                    />
+                  </div>
+                </div>
+              `;
+            })}
+          </div>
+        </details>
+      </div>
+    `;
+  }
 
   // -- Weather-start block order panel -----------------------------------
 
@@ -2010,20 +2195,51 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _isWeatherStartBlockDisabled(key: WeatherStartKey): boolean {
     switch (key) {
+      case 'clock':
+        return this._config.show_clock_card === false;
       case 'weather_current':
-      case 'weather_hourly':
       case 'weather_daily':
-        return false;
+        return this._config.show_weather === false;
+      case 'weather_hourly':
+        return this._config.show_weather === false || this._config.weather_start_weather_mode === 'compact_hourly';
+      case 'weather_details':
+        return (this._config.weather_sensors || []).length === 0 && (this._config.pollen_entities || []).length === 0;
+      case 'favorites':
+        return (this._config.favorite_entities || []).length === 0;
+      case 'alarm':
+        return !this._config.alarm_entity;
+      case 'search':
+        return this._config.show_search_card !== true;
+      case 'overview':
+        return !(this._config.custom_cards || []).some(
+          (card) => (card.target_section || 'custom_cards') === 'overview'
+        );
+      case 'energy':
+        return this._config.show_energy === false;
+      case 'plants':
+        return this._config.show_plants_section !== true;
+      case 'agenda':
+        return this._config.show_agenda_section !== true;
+      case 'todos':
+        return this._config.show_todos_section !== true;
+      case 'persons':
+        return this._config.show_persons_section !== true;
+      case 'vacuums':
+        return this._config.show_vacuums_section !== true;
+      case 'maintenance':
+        return this._config.show_maintenance_section !== true;
       case 'custom_cards':
         return (this._config.custom_cards || []).length === 0;
       case 'custom_sections':
         return (this._config.custom_sections || []).length === 0;
       case 'summaries':
-        return this._config.show_light_summary === false
-          && this._config.show_covers_summary === false
-          && this._config.show_security_summary === false
-          && this._config.show_battery_summary === false
-          && this._config.show_climate_summary !== true;
+        return (
+          this._config.show_light_summary === false &&
+          this._config.show_covers_summary === false &&
+          this._config.show_security_summary === false &&
+          this._config.show_battery_summary === false &&
+          this._config.show_climate_summary !== true
+        );
       default:
         return false;
     }
@@ -2033,9 +2249,21 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ['clock', { icon: 'mdi:clock-outline', labelKey: 'weather_start_blocks.clock' }],
     ['date', { icon: 'mdi:calendar-today', labelKey: 'weather_start_blocks.date' }],
     ['summaries', { icon: 'mdi:view-dashboard-outline', labelKey: 'weather_start_blocks.summaries' }],
+    ['favorites', { icon: 'mdi:star', labelKey: 'weather_start_blocks.favorites' }],
+    ['alarm', { icon: 'mdi:shield-home', labelKey: 'weather_start_blocks.alarm' }],
+    ['search', { icon: 'mdi:magnify', labelKey: 'weather_start_blocks.search' }],
+    ['overview', { icon: 'mdi:overscan', labelKey: 'weather_start_blocks.overview' }],
     ['weather_current', { icon: 'mdi:weather-partly-cloudy', labelKey: 'weather_start_blocks.weather_current' }],
     ['weather_hourly', { icon: 'mdi:clock-time-four-outline', labelKey: 'weather_start_blocks.weather_hourly' }],
     ['weather_daily', { icon: 'mdi:calendar-week', labelKey: 'weather_start_blocks.weather_daily' }],
+    ['weather_details', { icon: 'mdi:gauge', labelKey: 'weather_start_blocks.weather_details' }],
+    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'weather_start_blocks.energy' }],
+    ['plants', { icon: 'mdi:flower', labelKey: 'weather_start_blocks.plants' }],
+    ['agenda', { icon: 'mdi:calendar', labelKey: 'weather_start_blocks.agenda' }],
+    ['todos', { icon: 'mdi:check-circle-outline', labelKey: 'weather_start_blocks.todos' }],
+    ['persons', { icon: 'mdi:account-group', labelKey: 'weather_start_blocks.persons' }],
+    ['vacuums', { icon: 'mdi:robot-vacuum', labelKey: 'weather_start_blocks.vacuums' }],
+    ['maintenance', { icon: 'mdi:wrench-clock', labelKey: 'weather_start_blocks.maintenance' }],
     ['areas', { icon: 'mdi:floor-plan', labelKey: 'weather_start_blocks.areas' }],
     ['custom_cards', { icon: 'mdi:cards', labelKey: 'weather_start_blocks.custom_cards' }],
     ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'weather_start_blocks.custom_sections' }],
@@ -2053,10 +2281,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const hiddenKey = hiddenList.join('\u0000');
     const orderKey = order.join('\u0000');
     if (
-      this._weatherStartAreaOptionsCache
-      && this._weatherStartAreaOptionsCache.areas === this._hass.areas
-      && this._weatherStartAreaOptionsCache.hiddenKey === hiddenKey
-      && this._weatherStartAreaOptionsCache.orderKey === orderKey
+      this._weatherStartAreaOptionsCache &&
+      this._weatherStartAreaOptionsCache.areas === this._hass.areas &&
+      this._weatherStartAreaOptionsCache.hiddenKey === hiddenKey &&
+      this._weatherStartAreaOptionsCache.orderKey === orderKey
     ) {
       return this._weatherStartAreaOptionsCache.options;
     }
@@ -2085,9 +2313,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!this._hass) return [];
     const areas = this._getWeatherStartAreaOptions();
     if (
-      this._weatherStartFloorOptionsCache
-      && this._weatherStartFloorOptionsCache.floors === this._hass.floors
-      && this._weatherStartFloorOptionsCache.areas === areas
+      this._weatherStartFloorOptionsCache &&
+      this._weatherStartFloorOptionsCache.floors === this._hass.floors &&
+      this._weatherStartFloorOptionsCache.areas === areas
     ) {
       return this._weatherStartFloorOptionsCache.options;
     }
@@ -2140,7 +2368,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
       if (key === 'areas') {
         if (this._config.group_by_floors === true) {
           for (const floor of this._getWeatherStartFloorOptions()) {
-            items.push({ id: `floor-${floor.floor_id || 'none'}`, type: 'floor', floor_id: floor.floor_id, title: floor.name });
+            items.push({
+              id: `floor-${floor.floor_id || 'none'}`,
+              type: 'floor',
+              floor_id: floor.floor_id,
+              title: floor.name,
+            });
           }
         } else {
           for (const area of this._getWeatherStartAreaOptions()) {
@@ -2167,7 +2400,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
         items.push({
           id: key,
           type: key,
-          ...(blockCfg?.yaml ? { yaml: blockCfg.yaml, parsed_config: blockCfg.parsed_config, _yaml_error: blockCfg._yaml_error } : {}),
+          ...(blockCfg?.yaml
+            ? { yaml: blockCfg.yaml, parsed_config: blockCfg.parsed_config, _yaml_error: blockCfg._yaml_error }
+            : {}),
         });
       }
     }
@@ -2192,7 +2427,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     };
 
     const addFloorItem = (item: WeatherStartLayoutItem): void => {
-      const floorAreas = areas.filter((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+      const floorAreas = areas.filter((area) => (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id));
       if (floorAreas.length === 0) return;
       for (const area of floorAreas) representedAreaIds.add(area.area_id);
       result.push({ ...item });
@@ -2212,7 +2447,12 @@ class Simon42DashboardStrategyEditor extends LitElement {
       if (item.type === 'areas') {
         if (this._config.group_by_floors === true) {
           for (const floor of this._getWeatherStartFloorOptions()) {
-            addFloorItem({ id: `floor-${floor.floor_id || 'none'}`, type: 'floor', floor_id: floor.floor_id, title: floor.name });
+            addFloorItem({
+              id: `floor-${floor.floor_id || 'none'}`,
+              type: 'floor',
+              floor_id: floor.floor_id,
+              title: floor.name,
+            });
           }
         } else {
           for (const area of areas) addAreaItem(area.area_id);
@@ -2250,11 +2490,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _toggleWeatherBlockExpanded(key: string): void {
     const expanded = new Set(this._expandedWeatherBlocks);
-    if (expanded.has(key)) { expanded.delete(key); } else { expanded.add(key); }
+    if (expanded.has(key)) {
+      expanded.delete(key);
+    } else {
+      expanded.add(key);
+    }
     this._expandedWeatherBlocks = expanded;
   }
 
-  private _parseWeatherStartItemYaml(yamlString: string): Pick<WeatherStartLayoutItem, 'parsed_config' | '_yaml_error'> {
+  private _parseWeatherStartItemYaml(
+    yamlString: string
+  ): Pick<WeatherStartLayoutItem, 'parsed_config' | '_yaml_error'> {
     const trimmed = yamlString.trim();
     if (!trimmed) return { parsed_config: undefined, _yaml_error: undefined };
 
@@ -2262,7 +2508,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const raw = yaml.load(trimmed);
       if (Array.isArray(raw)) return { parsed_config: raw as Record<string, any>[] };
       if (raw && typeof raw === 'object') return { parsed_config: raw as Record<string, any> };
-      return { parsed_config: undefined, _yaml_error: 'YAML must be a card, section, view with sections, or list of cards' };
+      return {
+        parsed_config: undefined,
+        _yaml_error: 'YAML must be a card, section, view with sections, or list of cards',
+      };
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message.split('\n')[0] : 'Invalid YAML';
       return { parsed_config: undefined, _yaml_error: message || 'Invalid YAML' };
@@ -2317,33 +2566,44 @@ class Simon42DashboardStrategyEditor extends LitElement {
     customSections: CustomSection[] = this._config.custom_sections || []
   ): number {
     if (item.type !== 'custom_section') return -1;
-    return customSections.findIndex((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id);
+    return customSections.findIndex(
+      (entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id
+    );
   }
 
   private _renderWeatherStartCustomCardEditor(card: CustomCard, index: number): TemplateResult {
     const validationMsg = card._yaml_error
-      ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">&#x274C; ${card._yaml_error}</div>`
+      ? html`<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">
+          &#x274C; ${card._yaml_error}
+        </div>`
       : card.yaml
-        ? html`<div style="color: var(--success-color, green); font-size: 12px; margin-top: 4px;">&#x2705; ${localize('editor.yaml_valid')}</div>`
+        ? html`<div style="color: var(--success-color, green); font-size: 12px; margin-top: 4px;">
+            &#x2705; ${localize('editor.yaml_valid')}
+          </div>`
         : nothing;
 
     return html`
       <label class="form-row" style="margin: 0 0 8px 0;">
         <span style="min-width: 150px;">${localize('editor.card_editor_title_label')}</span>
-        <input type="text"
+        <input
+          type="text"
           style="flex: 1;"
           .value=${card.editor_title || ''}
           placeholder=${localize('editor.card_editor_title_placeholder')}
-          @change=${(e: Event) => this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)} />
+          @change=${(e: Event) =>
+            this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)}
+        />
       </label>
       <div class="description" style="margin: 0 0 8px 0;">${localize('editor.card_editor_title_help')}</div>
       <label class="form-row" style="margin: 0 0 8px 0;">
         <span style="min-width: 150px;">${localize('editor.card_dashboard_title_label')}</span>
-        <input type="text"
+        <input
+          type="text"
           style="flex: 1;"
           .value=${card.title || ''}
           placeholder=${localize('editor.card_title_placeholder')}
-          @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)} />
+          @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)}
+        />
       </label>
       <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_card_yaml_desc')}</div>
       <textarea
@@ -2365,53 +2625,92 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="custom-item-row" style="margin-bottom: 8px;">
-        <input type="text"
+        <input
+          type="text"
           .value=${section.title || ''}
           placeholder=${localize('editor.custom_section_title_placeholder')}
           style="flex: 2;"
-          @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)} />
-        <input type="text"
+          @change=${(e: Event) =>
+            this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)}
+        />
+        <input
+          type="text"
           .value=${section.icon || ''}
           placeholder=${localize('editor.custom_section_icon_placeholder')}
           style="flex: 1;"
-          @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)} />
+          @change=${(e: Event) =>
+            this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)}
+        />
       </div>
       <div class="description" style="margin: 0 0 8px 0;">${localize('editor.weather_start_section_cards_desc')}</div>
       ${cards.length === 0
         ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
         : cards.map((card, cardIndex) => {
-          const validationMsg = card._yaml_error
-            ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
-            : card.yaml
-              ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
-              : nothing;
-          return html`
-            <div class="custom-item" style="margin-bottom: 8px;">
-              <div class="custom-item-header">
-                <strong>${this._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong>
-                <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>&#x2715;</button>
+            const validationMsg = card._yaml_error
+              ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
+              : card.yaml
+                ? html`<span style="color: var(--success-color, green);"
+                    >&#x2705; ${localize('editor.yaml_valid')}</span
+                  >`
+                : nothing;
+            return html`
+              <div class="custom-item" style="margin-bottom: 8px;">
+                <div class="custom-item-header">
+                  <strong
+                    >${this._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong
+                  >
+                  <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>
+                    &#x2715;
+                  </button>
+                </div>
+                <div class="custom-item-fields">
+                  <label>${localize('editor.card_editor_title_label')}</label>
+                  <input
+                    type="text"
+                    .value=${card.editor_title || ''}
+                    placeholder=${localize('editor.card_editor_title_placeholder')}
+                    @change=${(e: Event) =>
+                      this._updateSectionCardField(
+                        sectionIndex,
+                        cardIndex,
+                        'editor_title',
+                        (e.target as HTMLInputElement).value
+                      )}
+                  />
+                  <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+                  <label>${localize('editor.card_dashboard_title_label')}</label>
+                  <input
+                    type="text"
+                    .value=${card.title || ''}
+                    placeholder=${localize('editor.card_title_placeholder')}
+                    @change=${(e: Event) =>
+                      this._updateSectionCardField(
+                        sectionIndex,
+                        cardIndex,
+                        'title',
+                        (e.target as HTMLInputElement).value
+                      )}
+                  />
+                  <textarea
+                    rows="5"
+                    placeholder=${localize('editor.yaml_placeholder')}
+                    .value=${card.yaml || ''}
+                    style="width: 100%;"
+                    @change=${(e: Event) =>
+                      this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}
+                  ></textarea>
+                  <button
+                    class="btn-primary"
+                    style="margin-top: 6px;"
+                    @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}
+                  >
+                    ${localize('editor.edit_card_with_ha_editor')}
+                  </button>
+                  <div class="custom-item-validation">${validationMsg}</div>
+                </div>
               </div>
-              <div class="custom-item-fields">
-                <label>${localize('editor.card_editor_title_label')}</label>
-                <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
-                  @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'editor_title', (e.target as HTMLInputElement).value)} />
-                <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
-                <label>${localize('editor.card_dashboard_title_label')}</label>
-                <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
-                  @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'title', (e.target as HTMLInputElement).value)} />
-                <textarea rows="5" placeholder=${localize('editor.yaml_placeholder')}
-                  .value=${card.yaml || ''}
-                  style="width: 100%;"
-                  @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
-                <button class="btn-primary" style="margin-top: 6px;"
-                  @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}>
-                  ${localize('editor.edit_card_with_ha_editor')}
-                </button>
-                <div class="custom-item-validation">${validationMsg}</div>
-              </div>
-            </div>
-          `;
-        })}
+            `;
+          })}
       <button class="btn-primary" style="margin-top: 4px;" @click=${() => this._openCardPickerForSection(sectionIndex)}>
         ${localize('editor.add_card_to_section')}
       </button>
@@ -2517,7 +2816,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
       ...this._getWeatherStartLayoutItems(),
       { id: `custom-section-${id}`, type: 'custom_section', custom_section_id: id } as WeatherStartLayoutItem,
     ];
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections, weather_start_layout_items: items };
+    const newConfig: Simon42StrategyConfig = {
+      ...this._config,
+      custom_sections: customSections,
+      weather_start_layout_items: items,
+    };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
     this._expandedWeatherBlocks = new Set([...this._expandedWeatherBlocks, `custom-section-${id}`]);
@@ -2535,7 +2838,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
         ...this._getWeatherStartLayoutItems(),
         { id: `custom-card-${id}`, type: 'custom_card', custom_card_id: id } as WeatherStartLayoutItem,
       ];
-      const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards, weather_start_layout_items: items };
+      const newConfig: Simon42StrategyConfig = {
+        ...this._config,
+        custom_cards: customCards,
+        weather_start_layout_items: items,
+      };
       this._config = newConfig;
       this._fireConfigChanged(newConfig);
       this._expandedWeatherBlocks = new Set([...this._expandedWeatherBlocks, `custom-card-${id}`]);
@@ -2550,7 +2857,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
   ): { icon: string; label: string } {
     if (item.type === 'area') {
       const area = areas.find((entry) => entry.area_id === item.area_id);
-      return { icon: area?.icon || 'mdi:home-outline', label: area?.name || item.area_id || localize('sections.areas') };
+      return {
+        icon: area?.icon || 'mdi:home-outline',
+        label: area?.name || item.area_id || localize('sections.areas'),
+      };
     }
     if (item.type === 'floor') {
       const floor = this._getWeatherStartFloorOptions().find((entry) => entry.floor_id === (item.floor_id ?? null));
@@ -2561,8 +2871,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
       return { icon: 'mdi:cards', label: this._getCustomCardEditorLabel(card, localize('editor.new_card')) };
     }
     if (item.type === 'custom_section') {
-      const section = customSections.find((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id);
-      return { icon: section?.icon || 'mdi:view-grid-plus-outline', label: section?.title || localize('editor.section_custom_sections') };
+      const section = customSections.find(
+        (entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id
+      );
+      return {
+        icon: section?.icon || 'mdi:view-grid-plus-outline',
+        label: section?.title || localize('editor.section_custom_sections'),
+      };
     }
 
     const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(item.type);
@@ -2577,18 +2892,40 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (item.parsed_config) return false;
     if (item._yaml_error) return true;
     if (item.type === 'custom_card') {
-      return !customCards.some((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id && entry.parsed_config);
+      return !customCards.some(
+        (entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id && entry.parsed_config
+      );
     }
     if (item.type === 'custom_section') {
-      return !customSections.some((entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id && (entry.cards || []).some((card) => card.parsed_config));
+      return !customSections.some(
+        (entry, index) =>
+          this._getCustomSectionRef(entry, index) === item.custom_section_id &&
+          (entry.cards || []).some((card) => card.parsed_config)
+      );
     }
     if (item.type === 'floor') {
-      return !this._getWeatherStartAreaOptions().some((area) => item.floor_id ? area.floor_id === item.floor_id : !area.floor_id);
+      return !this._getWeatherStartAreaOptions().some((area) =>
+        item.floor_id ? area.floor_id === item.floor_id : !area.floor_id
+      );
     }
     if (item.type === 'summaries') {
       return this._isWeatherStartBlockDisabled('summaries');
     }
+    if (Simon42DashboardStrategyEditor._weatherStartBlockMeta.has(item.type as WeatherStartKey)) {
+      return this._isWeatherStartBlockDisabled(item.type as WeatherStartKey);
+    }
     return false;
+  }
+
+  private _countNestedFixedGrids(value: unknown, depth = 0): number {
+    if (!value || typeof value !== 'object') return 0;
+    if (Array.isArray(value))
+      return value.reduce<number>((sum, entry) => sum + this._countNestedFixedGrids(entry, depth), 0);
+    const record = value as Record<string, unknown>;
+    const own = depth > 0 && record.type === 'grid' && typeof record.columns === 'number' ? 1 : 0;
+    return (
+      own + Object.values(record).reduce<number>((sum, entry) => sum + this._countNestedFixedGrids(entry, depth + 1), 0)
+    );
   }
 
   private _renderWeatherStartOrderPanel(): TemplateResult {
@@ -2598,9 +2935,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const customCards = this._config.custom_cards || [];
     const customSections = this._config.custom_sections || [];
     const hasSummariesBlock = items.some((item) => item.type === 'summaries');
-    const placedAreaIds = new Set(items
-      .filter((item) => item.type === 'area' && item.area_id)
-      .map((item) => item.area_id as string));
+    const placedAreaIds = new Set(
+      items.filter((item) => item.type === 'area' && item.area_id).map((item) => item.area_id as string)
+    );
     for (const item of items) {
       if (item.type !== 'floor') continue;
       for (const area of areas) {
@@ -2610,6 +2947,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
       }
     }
     const unplacedAreas = areas.filter((area) => !placedAreaIds.has(area.area_id));
+    let stackRun = 0;
+    const hasLongStackChain = items.some((item) => {
+      stackRun = item.stack_with_previous ? stackRun + 1 : 0;
+      return stackRun >= 2;
+    });
 
     return html`
       <div class="section">
@@ -2617,6 +2959,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
         <div class="description" style="margin-left: 0; margin-bottom: 12px;">
           ${localize('editor.weather_start_order_desc')}
         </div>
+        ${hasLongStackChain
+          ? html`
+              <div style="color:var(--warning-color,#f0a000);font-size:12px;margin:0 0 10px 0;">
+                ${localize('editor.weather_start_stack_warning')}
+              </div>
+            `
+          : nothing}
         <div class="section-order-list" id="weather-start-order-list">
           ${items.map((item) => {
             const meta = this._getWeatherStartItemMeta(item, areas, customCards, customSections);
@@ -2628,90 +2977,162 @@ class Simon42DashboardStrategyEditor extends LitElement {
             const customCard = customCardIndex >= 0 ? customCards[customCardIndex] : undefined;
             const customSectionIndex = this._getWeatherStartCustomSectionIndex(item, customSections);
             const customSection = customSectionIndex >= 0 ? customSections[customSectionIndex] : undefined;
+            const fixedGridCount = this._countNestedFixedGrids(item.parsed_config);
             return html`
               <div>
-                <div class="section-order-item ${disabled ? 'disabled' : ''}"
+                <div
+                  class="section-order-item ${disabled ? 'disabled' : ''}"
                   data-ws-id=${item.id}
                   draggable="true"
                   @dragstart=${this._handleWeatherStartDragStart}
                   @dragend=${this._handleWeatherStartDragEnd}
                   @dragover=${this._handleWeatherStartDragOver}
                   @dragleave=${this._handleWeatherStartDragLeave}
-                  @drop=${this._handleWeatherStartDrop}>
+                  @drop=${this._handleWeatherStartDrop}
+                >
                   <span class="drag-handle" draggable="true">&#x2630;</span>
                   <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
                   <span class="section-label">${meta.label}</span>
-                  ${disabled ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>` : nothing}
-                  ${hasOverride ? html`<span class="section-hidden-tag" style="background:var(--primary-color);color:#fff;margin-left:4px;">✎</span>` : nothing}
-                  <button class="icon-btn" style="margin-left:auto;"
+                  ${disabled
+                    ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>`
+                    : nothing}
+                  ${hasOverride
+                    ? html`<span
+                        class="section-hidden-tag"
+                        style="background:var(--primary-color);color:#fff;margin-left:4px;"
+                        >✎</span
+                      >`
+                    : nothing}
+                  <button
+                    class="icon-btn"
+                    style="margin-left:auto;"
                     title=${localize('editor.weather_start_block_expand')}
-                    @click=${(e: Event) => { e.stopPropagation(); this._toggleWeatherBlockExpanded(item.id); }}>
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._toggleWeatherBlockExpanded(item.id);
+                    }}
+                  >
                     <ha-icon icon=${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
                   </button>
-                  ${canRemove ? html`
-                    <button class="icon-btn"
-                      title=${localize('editor.remove')}
-                      @click=${(e: Event) => { e.stopPropagation(); this._removeWeatherStartItem(item.id); }}>
-                      <ha-icon icon="mdi:delete-outline"></ha-icon>
-                    </button>
-                  ` : nothing}
-                </div>
-                ${isExpanded ? html`
-                  <div style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;">
-                    ${customCard ? this._renderWeatherStartCustomCardEditor(customCard, customCardIndex) : nothing}
-                    ${customSection ? this._renderWeatherStartCustomSectionEditor(customSection, customSectionIndex) : nothing}
-                    ${!customCard && !customSection && item.type === 'summaries' ? html`
-                      <label class="form-row" style="margin: 0 0 8px 0;">
-                        <span style="min-width: 120px;">${localize('editor.weather_start_summary_size')}</span>
-                        <select
-                          style="flex:1;"
-                          .value=${item.summary_size || 'mini'}
-                          @change=${(e: Event) => this._weatherStartSummarySizeChanged(item.id, (e.target as HTMLSelectElement).value as 'mini' | 'normal')}>
-                          <option value="mini">${localize('editor.weather_start_summary_size_mini')}</option>
-                          <option value="normal">${localize('editor.weather_start_summary_size_normal')}</option>
-                        </select>
-                      </label>
-                    ` : nothing}
-                    ${!customCard && !customSection ? html`
-                      <label class="form-row" style="margin: 0 0 8px 0;">
-                      <input type="checkbox"
-                        ?checked=${item.stack_with_previous === true}
-                        @change=${(e: Event) => this._toggleWeatherStartItemStack(item.id, (e.target as HTMLInputElement).checked)} />
-                      <span>${localize('editor.weather_start_stack_with_previous')}</span>
-                      </label>
-                      <div class="description" style="margin: 0 0 6px 0;">${localize('editor.weather_start_block_yaml_desc')}</div>
-                      <textarea
-                        rows="6"
-                        style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
-                        placeholder=${localize('editor.yaml_placeholder')}
-                        .value=${item.yaml || ''}
-                        @change=${(e: Event) => this._updateWeatherStartItemYaml(item.id, (e.target as HTMLTextAreaElement).value)}
-                      ></textarea>
-                      ${item._yaml_error ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">${item._yaml_error}</div>` : nothing}
-                      ${item.parsed_config ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">${localize('editor.yaml_valid')}</div>` : nothing}
-                      ${hasOverride ? html`
-                        <button class="text-btn" style="margin-top:8px;"
-                          @click=${() => this._resetWeatherStartItemYaml(item.id)}>
-                          ${localize('editor.weather_start_block_reset')}
+                  ${canRemove
+                    ? html`
+                        <button
+                          class="icon-btn"
+                          title=${localize('editor.remove')}
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._removeWeatherStartItem(item.id);
+                          }}
+                        >
+                          <ha-icon icon="mdi:delete-outline"></ha-icon>
                         </button>
-                      ` : nothing}
-                    ` : nothing}
-                  </div>
-                ` : nothing}
+                      `
+                    : nothing}
+                </div>
+                ${isExpanded
+                  ? html`
+                      <div
+                        style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;"
+                      >
+                        ${customCard ? this._renderWeatherStartCustomCardEditor(customCard, customCardIndex) : nothing}
+                        ${customSection
+                          ? this._renderWeatherStartCustomSectionEditor(customSection, customSectionIndex)
+                          : nothing}
+                        ${!customCard && !customSection && item.type === 'summaries'
+                          ? html`
+                              <label class="form-row" style="margin: 0 0 8px 0;">
+                                <span style="min-width: 120px;">${localize('editor.weather_start_summary_size')}</span>
+                                <select
+                                  style="flex:1;"
+                                  .value=${item.summary_size || 'mini'}
+                                  @change=${(e: Event) =>
+                                    this._weatherStartSummarySizeChanged(
+                                      item.id,
+                                      (e.target as HTMLSelectElement).value as 'mini' | 'normal'
+                                    )}
+                                >
+                                  <option value="mini">${localize('editor.weather_start_summary_size_mini')}</option>
+                                  <option value="normal">
+                                    ${localize('editor.weather_start_summary_size_normal')}
+                                  </option>
+                                </select>
+                              </label>
+                            `
+                          : nothing}
+                        ${!customCard && !customSection
+                          ? html`
+                              <label class="form-row" style="margin: 0 0 8px 0;">
+                                <input
+                                  type="checkbox"
+                                  ?checked=${item.stack_with_previous === true}
+                                  @change=${(e: Event) =>
+                                    this._toggleWeatherStartItemStack(item.id, (e.target as HTMLInputElement).checked)}
+                                />
+                                <span>${localize('editor.weather_start_stack_with_previous')}</span>
+                              </label>
+                              <div class="description" style="margin: 0 0 6px 0;">
+                                ${localize('editor.weather_start_block_yaml_desc')}
+                              </div>
+                              <textarea
+                                rows="6"
+                                style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
+                                placeholder=${localize('editor.yaml_placeholder')}
+                                .value=${item.yaml || ''}
+                                @change=${(e: Event) =>
+                                  this._updateWeatherStartItemYaml(item.id, (e.target as HTMLTextAreaElement).value)}
+                              ></textarea>
+                              ${item._yaml_error
+                                ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">
+                                    ${item._yaml_error}
+                                  </div>`
+                                : nothing}
+                              ${fixedGridCount > 0
+                                ? html`<div style="color:var(--warning-color,#f0a000);font-size:12px;margin-top:4px;">
+                                    ${localize('editor.weather_start_responsive_warning').replace(
+                                      '{count}',
+                                      String(fixedGridCount)
+                                    )}
+                                  </div>`
+                                : nothing}
+                              ${item.parsed_config
+                                ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">
+                                    ${localize('editor.yaml_valid')}
+                                  </div>`
+                                : nothing}
+                              ${hasOverride
+                                ? html`
+                                    <button
+                                      class="text-btn"
+                                      style="margin-top:8px;"
+                                      @click=${() => this._resetWeatherStartItemYaml(item.id)}
+                                    >
+                                      ${localize('editor.weather_start_block_reset')}
+                                    </button>
+                                  `
+                                : nothing}
+                            `
+                          : nothing}
+                      </div>
+                    `
+                  : nothing}
               </div>
             `;
           })}
         </div>
-        <div class="description" style="margin: 12px 0 6px 0;">${localize('editor.weather_start_add_content_desc')}</div>
+        <div class="description" style="margin: 12px 0 6px 0;">
+          ${localize('editor.weather_start_add_content_desc')}
+        </div>
         <div class="custom-item-row weather-start-add-row">
           <button class="btn-primary" @click=${this._openCardPickerForWeatherStartCard}>
             ${localize('editor.weather_start_add_card')}
           </button>
-          ${!hasSummariesBlock ? html`
-            <button class="btn-primary" @click=${this._addWeatherStartSummaries}>
-              ${localize('editor.weather_start_add_summaries')}
-            </button>
-          ` : nothing}
+          ${!hasSummariesBlock
+            ? html`
+                <button class="btn-primary" @click=${this._addWeatherStartSummaries}>
+                  ${localize('editor.weather_start_add_summaries')}
+                </button>
+              `
+            : nothing}
           <button class="btn-primary" @click=${this._addWeatherStartSection}>
             ${localize('editor.weather_start_add_section')}
           </button>
@@ -2732,10 +3153,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _handleWeatherStartDragStart = (ev: DragEvent): void => {
     const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) { ev.preventDefault(); return; }
+    if (!dragHandle) {
+      ev.preventDefault();
+      return;
+    }
 
     const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (!item) { ev.preventDefault(); return; }
+    if (!item) {
+      ev.preventDefault();
+      return;
+    }
 
     item.classList.add('dragging');
     if (ev.dataTransfer) {
@@ -2801,10 +3228,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _handleSectionDragStart = (ev: DragEvent): void => {
     const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) { ev.preventDefault(); return; }
+    if (!dragHandle) {
+      ev.preventDefault();
+      return;
+    }
 
     const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (!item) { ev.preventDefault(); return; }
+    if (!item) {
+      ev.preventDefault();
+      return;
+    }
 
     item.classList.add('dragging');
     if (ev.dataTransfer) {
@@ -2916,9 +3349,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ['room_pins', { icon: 'mdi:pin', labelKey: 'stacks.room_pins' }],
   ]);
 
-  private _presentStackKeys(
-    data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>
-  ): Set<StackKey> {
+  private _presentStackKeys(data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>): Set<StackKey> {
     const g = data.groupedEntities;
     const present = new Set<StackKey>();
     const has = (key: string): boolean => (g[key]?.length ?? 0) > 0;
@@ -2964,7 +3395,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
               const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
               if (!meta) return nothing;
               return html`
-                <div class="section-order-item"
+                <div
+                  class="section-order-item"
                   data-area-id=${areaId}
                   data-stack-key=${key}
                   draggable="true"
@@ -2972,7 +3404,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
                   @dragend=${this._handleStackDragEnd}
                   @dragover=${this._handleStackDragOver}
                   @dragleave=${this._handleStackDragLeave}
-                  @drop=${this._handleStackDrop}>
+                  @drop=${this._handleStackDrop}
+                >
                   <span class="drag-handle" draggable="true">&#x2630;</span>
                   <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
                   <span class="section-label">${localize(meta.labelKey)}</span>
@@ -2982,22 +3415,22 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
           ${inactiveOrder.length > 0
             ? html`
-              <div class="section-order-compact">
-                <div class="compact-title">${localize('editor.stack_order_inactive')}</div>
-                <div class="compact-chip-list">
-                  ${inactiveOrder.map((key) => {
-                    const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
-                    if (!meta) return nothing;
-                    return html`
-                      <span class="compact-chip">
-                        <ha-icon icon=${meta.icon}></ha-icon>
-                        ${localize(meta.labelKey)}
-                      </span>
-                    `;
-                  })}
+                <div class="section-order-compact">
+                  <div class="compact-title">${localize('editor.stack_order_inactive')}</div>
+                  <div class="compact-chip-list">
+                    ${inactiveOrder.map((key) => {
+                      const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
+                      if (!meta) return nothing;
+                      return html`
+                        <span class="compact-chip">
+                          <ha-icon icon=${meta.icon}></ha-icon>
+                          ${localize(meta.labelKey)}
+                        </span>
+                      `;
+                    })}
+                  </div>
                 </div>
-              </div>
-            `
+              `
             : nothing}
         </div>
       </div>
@@ -3006,10 +3439,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _handleStackDragStart = (ev: DragEvent): void => {
     const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) { ev.preventDefault(); return; }
+    if (!dragHandle) {
+      ev.preventDefault();
+      return;
+    }
 
     const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (!item) { ev.preventDefault(); return; }
+    if (!item) {
+      ev.preventDefault();
+      return;
+    }
 
     item.classList.add('dragging');
     if (ev.dataTransfer) {
@@ -3074,36 +3513,100 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _renderBasicOverviewSection(): TemplateResult {
     const selectedTheme = this._config.theme || '';
     const themeNames = this._getThemeNames();
-    const overviewLayout = this._config.overview_layout || 'default';
     const weatherEntitySelected = this._config.weather_entity || '';
     const weatherEntities = this._getWeatherEntities();
+    const overviewMaxColumns = this._config.overview_max_columns ?? 3;
+    const areaCardColumns = this._config.overview_area_card_columns ?? 'full';
+    const weatherMode = this._config.weather_start_weather_mode ?? 'full';
+    const dateCard = this._config.weather_start_date_card ?? 'button-card';
 
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_overview')}</div>
         <div class="form-row">
-          <label for="basic-dashboard-theme" style="margin-right: 8px; min-width: 120px;">${localize('editor.theme')}</label>
+          <label for="basic-dashboard-theme" style="margin-right: 8px; min-width: 120px;"
+            >${localize('editor.theme')}</label
+          >
           <select id="basic-dashboard-theme" style="flex: 1;" @change=${this._themeChanged}>
             <option value="" ?selected=${!selectedTheme}>${localize('editor.theme_default')}</option>
-            ${themeNames.map((theme) => html`
-              <option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option>
-            `)}
+            ${themeNames.map(
+              (theme) => html` <option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option> `
+            )}
           </select>
         </div>
         <div class="form-row">
-          <label for="basic-overview-layout" style="margin-right: 8px; min-width: 120px;">${localize('editor.overview_layout')}</label>
-          <select id="basic-overview-layout" style="flex: 1;" @change=${this._overviewLayoutChanged}>
-            <option value="default" ?selected=${overviewLayout === 'default'}>${localize('editor.overview_layout_default')}</option>
-            <option value="weather_start" ?selected=${overviewLayout === 'weather_start'}>${localize('editor.overview_layout_weather_start')}</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label for="basic-weather-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_entity')}</label>
+          <label for="basic-weather-entity" style="margin-right: 8px; min-width: 120px;"
+            >${localize('editor.weather_entity')}</label
+          >
           <select id="basic-weather-entity" style="flex: 1;" @change=${this._weatherEntityChanged}>
             <option value="" ?selected=${!weatherEntitySelected}>${localize('editor.weather_entity_auto')}</option>
-            ${weatherEntities.map((entity) => html`
-              <option value=${entity.entity_id} ?selected=${entity.entity_id === weatherEntitySelected}>${entity.name}</option>
-            `)}
+            ${weatherEntities.map(
+              (entity) => html`
+                <option value=${entity.entity_id} ?selected=${entity.entity_id === weatherEntitySelected}>
+                  ${entity.name}
+                </option>
+              `
+            )}
+          </select>
+        </div>
+        <div class="form-row">
+          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.overview_max_columns')}</label>
+          <select
+            style="flex: 1;"
+            @change=${(e: Event) =>
+              this._simpleOptionChanged('overview_max_columns', Number((e.target as HTMLSelectElement).value), 3)}
+          >
+            ${[1, 2, 3, 4].map(
+              (value) => html`<option value=${value} ?selected=${overviewMaxColumns === value}>${value}</option>`
+            )}
+          </select>
+        </div>
+        <div class="form-row">
+          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.overview_area_card_columns')}</label>
+          <select
+            style="flex: 1;"
+            @change=${(e: Event) =>
+              this._simpleOptionChanged(
+                'overview_area_card_columns',
+                (e.target as HTMLSelectElement).value === 'full'
+                  ? 'full'
+                  : Number((e.target as HTMLSelectElement).value),
+                'full'
+              )}
+          >
+            <option value="full" ?selected=${areaCardColumns === 'full'}>${localize('editor.columns_full')}</option>
+            <option value="6" ?selected=${areaCardColumns === 6}>2</option>
+            <option value="4" ?selected=${areaCardColumns === 4}>3</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_start_weather_mode')}</label>
+          <select
+            style="flex: 1;"
+            @change=${(e: Event) =>
+              this._simpleOptionChanged('weather_start_weather_mode', (e.target as HTMLSelectElement).value, 'full')}
+          >
+            <option value="full" ?selected=${weatherMode === 'full'}>${localize('editor.weather_mode_full')}</option>
+            <option value="compact_hourly" ?selected=${weatherMode === 'compact_hourly'}>
+              ${localize('editor.weather_mode_compact_hourly')}
+            </option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_start_date_card')}</label>
+          <select
+            style="flex: 1;"
+            @change=${(e: Event) =>
+              this._simpleOptionChanged(
+                'weather_start_date_card',
+                (e.target as HTMLSelectElement).value,
+                'button-card'
+              )}
+          >
+            <option value="button-card" ?selected=${dateCard === 'button-card'}>button-card</option>
+            <option value="markdown" ?selected=${dateCard === 'markdown'}>
+              ${localize('editor.date_card_markdown')}
+            </option>
           </select>
         </div>
       </div>
@@ -3114,21 +3617,36 @@ class Simon42DashboardStrategyEditor extends LitElement {
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_summaries')}</div>
-        ${this._renderCheckbox('basic-show-light-summary', localize('editor.show_light_summary'),
+        ${this._renderCheckbox(
+          'basic-show-light-summary',
+          localize('editor.show_light_summary'),
           this._config.show_light_summary !== false,
-          (checked) => this._toggleChanged('show_light_summary', checked, true))}
-        ${this._renderCheckbox('basic-show-covers-summary', localize('editor.show_covers_summary'),
+          (checked) => this._toggleChanged('show_light_summary', checked, true)
+        )}
+        ${this._renderCheckbox(
+          'basic-show-covers-summary',
+          localize('editor.show_covers_summary'),
           this._config.show_covers_summary !== false,
-          (checked) => this._toggleChanged('show_covers_summary', checked, true))}
-        ${this._renderCheckbox('basic-show-security-summary', localize('editor.show_security_summary'),
+          (checked) => this._toggleChanged('show_covers_summary', checked, true)
+        )}
+        ${this._renderCheckbox(
+          'basic-show-security-summary',
+          localize('editor.show_security_summary'),
           this._config.show_security_summary !== false,
-          (checked) => this._toggleChanged('show_security_summary', checked, true))}
-        ${this._renderCheckbox('basic-show-climate-summary', localize('editor.show_climate_summary'),
+          (checked) => this._toggleChanged('show_security_summary', checked, true)
+        )}
+        ${this._renderCheckbox(
+          'basic-show-climate-summary',
+          localize('editor.show_climate_summary'),
           this._config.show_climate_summary === true,
-          (checked) => this._toggleChanged('show_climate_summary', checked, false))}
-        ${this._renderCheckbox('basic-show-battery-summary', localize('editor.show_battery_summary'),
+          (checked) => this._toggleChanged('show_climate_summary', checked, false)
+        )}
+        ${this._renderCheckbox(
+          'basic-show-battery-summary',
+          localize('editor.show_battery_summary'),
           this._config.show_battery_summary !== false,
-          (checked) => this._toggleChanged('show_battery_summary', checked, true))}
+          (checked) => this._toggleChanged('show_battery_summary', checked, true)
+        )}
       </div>
     `;
   }
@@ -3145,88 +3663,119 @@ class Simon42DashboardStrategyEditor extends LitElement {
         <div class="section-title">${localize('editor.section_area_views')}</div>
         <div class="description" style="margin-left: 0;">${localize('editor.area_view_override_intro')}</div>
         <div class="description" style="margin-left: 0;">${localize('editor.area_entity_settings_desc')}</div>
-        <div class="area-list" id="area-list">
-          ${this._renderAreaItems(allAreas, hiddenAreas, areaOrder, navItems)}
-        </div>
+        <div class="area-list" id="area-list">${this._renderAreaItems(allAreas, hiddenAreas, areaOrder, navItems)}</div>
       </div>
     `;
   }
 
   private _renderOverviewSection(): TemplateResult {
-      const showClockCard = this._config.show_clock_card !== false;
-      const showSearchCard = this._config.show_search_card === true;
-      const showPersonBadges = this._config.show_person_badges !== false;
-      const personBadgeLayout = this._config.person_badge_layout || 'with_state';
-      const hasSearchCardDeps = this._checkSearchCardDependencies();
+    const showClockCard = this._config.show_clock_card !== false;
+    const showSearchCard = this._config.show_search_card === true;
+    const showPersonBadges = this._config.show_person_badges !== false;
+    const personBadgeLayout = this._config.person_badge_layout || 'with_state';
+    const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
-    const overviewLayout = this._config.overview_layout || 'default';
 
     return html`
       <div class="section">
-          <div class="section-title">${localize('editor.section_overview_details')}</div>
+        <div class="section-title">${localize('editor.section_overview_details')}</div>
 
-          ${overviewLayout === 'weather_start' ? this._renderWeatherStartOrderPanel() : nothing}
+        ${this._renderWeatherStartOrderPanel()}
+        ${this._renderCheckbox(
+          'show-person-badges',
+          localize('editor.show_person_badges'),
+          showPersonBadges,
+          (checked) => this._toggleChanged('show_person_badges', checked, true)
+        )}
+        <div class="description">${localize('editor.show_person_badges_desc')}</div>
 
-          ${this._renderCheckbox('show-person-badges', localize('editor.show_person_badges'), showPersonBadges,
-            (checked) => this._toggleChanged('show_person_badges', checked, true))}
-          <div class="description">${localize('editor.show_person_badges_desc')}</div>
+        <div class="form-row">
+          <label for="person-badge-layout" style="margin-right: 8px; min-width: 120px;"
+            >${localize('editor.person_badge_layout')}</label
+          >
+          <select id="person-badge-layout" style="flex: 1;" @change=${this._personBadgeLayoutChanged}>
+            <option value="minimal" ?selected=${personBadgeLayout === 'minimal'}>
+              ${localize('editor.person_badge_layout_minimal')}
+            </option>
+            <option value="with_state" ?selected=${personBadgeLayout === 'with_state'}>
+              ${localize('editor.person_badge_layout_with_state')}
+            </option>
+            <option value="with_state_and_time" ?selected=${personBadgeLayout === 'with_state_and_time'}>
+              ${localize('editor.person_badge_layout_with_state_and_time')}
+            </option>
+          </select>
+        </div>
+        <div class="description">${localize('editor.person_badge_layout_desc')}</div>
+
+        ${this._renderCheckbox(
+          'show-unavailable-alert-badge',
+          localize('editor.show_unavailable_alert_badge'),
+          this._config.show_unavailable_alert_badge === true,
+          (checked) => this._toggleChanged('show_unavailable_alert_badge', checked, false)
+        )}
+        <div class="description">${localize('editor.show_unavailable_alert_badge_desc')}</div>
+
+        ${this._renderCheckbox(
+          'show-now-playing-badge',
+          localize('editor.show_now_playing_badge'),
+          this._config.show_now_playing_badge === true,
+          (checked) => this._toggleChanged('show_now_playing_badge', checked, false)
+        )}
+        <div class="description">${localize('editor.show_now_playing_badge_desc')}</div>
+
+        ${this._renderCheckbox(
+          'show-sun-badge',
+          localize('editor.show_sun_badge'),
+          this._config.show_sun_badge === true,
+          (checked) => this._toggleChanged('show_sun_badge', checked, false)
+        )}
+        <div class="description">${localize('editor.show_sun_badge_desc')}</div>
+
+        ${this._renderCheckbox(
+          'show-updates-badge',
+          localize('editor.show_updates_badge'),
+          this._config.show_updates_badge === true,
+          (checked) => this._toggleChanged('show_updates_badge', checked, false)
+        )}
+        <div class="description">${localize('editor.show_updates_badge_desc')}</div>
+
+        ${html`
+          ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard, (checked) =>
+            this._toggleChanged('show_clock_card', checked, true)
+          )}
+          <div class="description">${localize('editor.show_clock_card_desc')}</div>
 
           <div class="form-row">
-            <label for="person-badge-layout" style="margin-right: 8px; min-width: 120px;">${localize('editor.person_badge_layout')}</label>
-            <select id="person-badge-layout" style="flex: 1;" @change=${this._personBadgeLayoutChanged}>
-              <option value="minimal" ?selected=${personBadgeLayout === 'minimal'}>${localize('editor.person_badge_layout_minimal')}</option>
-              <option value="with_state" ?selected=${personBadgeLayout === 'with_state'}>${localize('editor.person_badge_layout_with_state')}</option>
-              <option value="with_state_and_time" ?selected=${personBadgeLayout === 'with_state_and_time'}>${localize('editor.person_badge_layout_with_state_and_time')}</option>
-            </select>
-          </div>
-          <div class="description">${localize('editor.person_badge_layout_desc')}</div>
-
-          ${this._renderCheckbox('show-unavailable-alert-badge', localize('editor.show_unavailable_alert_badge'), this._config.show_unavailable_alert_badge === true,
-            (checked) => this._toggleChanged('show_unavailable_alert_badge', checked, false))}
-          <div class="description">${localize('editor.show_unavailable_alert_badge_desc')}</div>
-
-          ${this._renderCheckbox('show-now-playing-badge', localize('editor.show_now_playing_badge'), this._config.show_now_playing_badge === true,
-            (checked) => this._toggleChanged('show_now_playing_badge', checked, false))}
-          <div class="description">${localize('editor.show_now_playing_badge_desc')}</div>
-
-          ${this._renderCheckbox('show-sun-badge', localize('editor.show_sun_badge'), this._config.show_sun_badge === true,
-            (checked) => this._toggleChanged('show_sun_badge', checked, false))}
-          <div class="description">${localize('editor.show_sun_badge_desc')}</div>
-
-          ${this._renderCheckbox('show-updates-badge', localize('editor.show_updates_badge'), this._config.show_updates_badge === true,
-            (checked) => this._toggleChanged('show_updates_badge', checked, false))}
-          <div class="description">${localize('editor.show_updates_badge_desc')}</div>
-
-          ${overviewLayout !== 'weather_start' ? html`
-            ${this._renderCheckbox('show-clock-card', localize('editor.show_clock_card'), showClockCard,
-              (checked) => this._toggleChanged('show_clock_card', checked, true))}
-            <div class="description">${localize('editor.show_clock_card_desc')}</div>
-
-            <div class="form-row">
-            <label for="alarm-entity" style="margin-right: 8px; min-width: 120px;">${localize('editor.alarm_entity')}</label>
-            <select id="alarm-entity"
-              style="flex: 1;"
-              @change=${this._alarmEntityChanged}>
+            <label for="alarm-entity" style="margin-right: 8px; min-width: 120px;"
+              >${localize('editor.alarm_entity')}</label
+            >
+            <select id="alarm-entity" style="flex: 1;" @change=${this._alarmEntityChanged}>
               <option value="" ?selected=${!alarmEntity}>${localize('editor.alarm_none')}</option>
-              ${alarmEntities.map((entity) => html`
-                <option value=${entity.entity_id} ?selected=${entity.entity_id === alarmEntity}>
-                  ${entity.name}
-                </option>
-              `)}
+              ${alarmEntities.map(
+                (entity) => html`
+                  <option value=${entity.entity_id} ?selected=${entity.entity_id === alarmEntity}>
+                    ${entity.name}
+                  </option>
+                `
+              )}
             </select>
           </div>
           <div class="description">${localize('editor.alarm_desc')}</div>
 
-          ${this._renderCheckbox('show-search-card', localize('editor.show_search_card'), showSearchCard,
+          ${this._renderCheckbox(
+            'show-search-card',
+            localize('editor.show_search_card'),
+            showSearchCard,
             (checked) => this._toggleChanged('show_search_card', checked, false),
-            !hasSearchCardDeps)}
+            !hasSearchCardDeps
+          )}
           <div class="description">
             ${hasSearchCardDeps
               ? localize('editor.show_search_card_desc')
               : html`<span>&#x26A0;&#xFE0F; ${unsafeHTML(localize('editor.show_search_card_missing'))}</span>`}
           </div>
-        ` : nothing}
+        `}
       </div>
     `;
   }
@@ -3237,111 +3786,185 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const groupCoversByFloors = this._config.group_covers_by_floors === true;
     const nestedLightGroups = this._config.nested_light_groups === true;
     const lightsSortByName = this._config.lights_sort_by === 'name';
-      const showPartiallyOpenCovers = this._config.show_partially_open_covers === true;
-      const hideMobileAppBatteries = this._config.hide_mobile_app_batteries === true;
-      const hideBatteryNotesEntities = this._config.hide_battery_notes_entities === true;
-      const showBatteryView = this._config.show_battery_view === true;
-      const showAreaInBatteryView = this._config.show_area_in_battery_view === true;
-      const batteryCriticalThreshold = this._config.battery_critical_threshold ?? 20;
-      const batteryLowThreshold = this._config.battery_low_threshold ?? 50;
-      const unavailableBatteriesBucket = this._config.unavailable_batteries_bucket === 'critical' ? 'critical' : 'good';
+    const showPartiallyOpenCovers = this._config.show_partially_open_covers === true;
+    const hideMobileAppBatteries = this._config.hide_mobile_app_batteries === true;
+    const hideBatteryNotesEntities = this._config.hide_battery_notes_entities === true;
+    const showBatteryView = this._config.show_battery_view === true;
+    const showAreaInBatteryView = this._config.show_area_in_battery_view === true;
+    const batteryCriticalThreshold = this._config.battery_critical_threshold ?? 20;
+    const batteryLowThreshold = this._config.battery_low_threshold ?? 50;
+    const unavailableBatteriesBucket = this._config.unavailable_batteries_bucket === 'critical' ? 'critical' : 'good';
 
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_summary_details')}</div>
 
         <div class="form-row">
-          <input type="radio" id="summaries-2-columns" name="summaries-columns" value="2"
+          <input
+            type="radio"
+            id="summaries-2-columns"
+            name="summaries-columns"
+            value="2"
             ?checked=${summariesColumns === 2}
-            @change=${() => this._summariesColumnsChanged(2)} />
+            @change=${() => this._summariesColumnsChanged(2)}
+          />
           <label for="summaries-2-columns">${localize('editor.columns_2')}</label>
         </div>
         <div class="form-row">
-          <input type="radio" id="summaries-4-columns" name="summaries-columns" value="4"
+          <input
+            type="radio"
+            id="summaries-4-columns"
+            name="summaries-columns"
+            value="4"
             ?checked=${summariesColumns === 4}
-            @change=${() => this._summariesColumnsChanged(4)} />
+            @change=${() => this._summariesColumnsChanged(4)}
+          />
           <label for="summaries-4-columns">${localize('editor.columns_4')}</label>
         </div>
         <div class="description">${localize('editor.columns_desc')}</div>
 
-        ${this._renderCheckbox('group-lights-by-floors', localize('editor.group_lights_by_floors'), groupLightsByFloors,
-          (checked) => this._toggleChanged('group_lights_by_floors', checked, false))}
+        ${this._renderCheckbox(
+          'group-lights-by-floors',
+          localize('editor.group_lights_by_floors'),
+          groupLightsByFloors,
+          (checked) => this._toggleChanged('group_lights_by_floors', checked, false)
+        )}
         <div class="description">${localize('editor.group_lights_by_floors_desc')}</div>
 
-        ${this._renderCheckbox('group-covers-by-floors', localize('editor.group_covers_by_floors'), groupCoversByFloors,
-          (checked) => this._toggleChanged('group_covers_by_floors', checked, false))}
+        ${this._renderCheckbox(
+          'group-covers-by-floors',
+          localize('editor.group_covers_by_floors'),
+          groupCoversByFloors,
+          (checked) => this._toggleChanged('group_covers_by_floors', checked, false)
+        )}
         <div class="description">${localize('editor.group_covers_by_floors_desc')}</div>
 
-        ${this._renderCheckbox('nested-light-groups', localize('editor.nested_light_groups'), nestedLightGroups,
-          (checked) => this._toggleChanged('nested_light_groups', checked, false))}
+        ${this._renderCheckbox(
+          'nested-light-groups',
+          localize('editor.nested_light_groups'),
+          nestedLightGroups,
+          (checked) => this._toggleChanged('nested_light_groups', checked, false)
+        )}
         <div class="description">${localize('editor.nested_light_groups_desc')}</div>
 
-        ${this._renderCheckbox('lights-sort-by-name', localize('editor.lights_sort_by_name'), lightsSortByName,
-          (checked) => this._lightsSortByNameChanged(checked))}
+        ${this._renderCheckbox(
+          'lights-sort-by-name',
+          localize('editor.lights_sort_by_name'),
+          lightsSortByName,
+          (checked) => this._lightsSortByNameChanged(checked)
+        )}
         <div class="description">${localize('editor.lights_sort_by_name_desc')}</div>
 
         <div style="margin-left: 26px; margin-bottom: 8px;">
-          ${this._renderCheckbox('show-partially-open-covers', localize('editor.show_partially_open_covers'), showPartiallyOpenCovers,
-            (checked) => this._toggleChanged('show_partially_open_covers', checked, false))}
+          ${this._renderCheckbox(
+            'show-partially-open-covers',
+            localize('editor.show_partially_open_covers'),
+            showPartiallyOpenCovers,
+            (checked) => this._toggleChanged('show_partially_open_covers', checked, false)
+          )}
           <div class="description">${localize('editor.show_partially_open_covers_desc')}</div>
         </div>
 
         <div style="margin-left: 26px; margin-bottom: 8px;">
-            ${this._renderCheckbox('hide-mobile-app-batteries', localize('editor.hide_mobile_app_batteries'), hideMobileAppBatteries,
-              (checked) => this._toggleChanged('hide_mobile_app_batteries', checked, false))}
-            <div class="description">${localize('editor.hide_mobile_app_batteries_desc')}</div>
+          ${this._renderCheckbox(
+            'hide-mobile-app-batteries',
+            localize('editor.hide_mobile_app_batteries'),
+            hideMobileAppBatteries,
+            (checked) => this._toggleChanged('hide_mobile_app_batteries', checked, false)
+          )}
+          <div class="description">${localize('editor.hide_mobile_app_batteries_desc')}</div>
 
-            ${this._renderCheckbox('hide-battery-notes-entities', localize('editor.hide_battery_notes_entities'), hideBatteryNotesEntities,
-              (checked) => this._toggleChanged('hide_battery_notes_entities', checked, false))}
-            <div class="description">${localize('editor.hide_battery_notes_entities_desc')}</div>
+          ${this._renderCheckbox(
+            'hide-battery-notes-entities',
+            localize('editor.hide_battery_notes_entities'),
+            hideBatteryNotesEntities,
+            (checked) => this._toggleChanged('hide_battery_notes_entities', checked, false)
+          )}
+          <div class="description">${localize('editor.hide_battery_notes_entities_desc')}</div>
 
-            ${this._renderCheckbox('show-battery-view', localize('editor.show_battery_view'), showBatteryView,
-              (checked) => this._toggleChanged('show_battery_view', checked, false))}
-            <div class="description">${localize('editor.show_battery_view_desc')}</div>
+          ${this._renderCheckbox(
+            'show-battery-view',
+            localize('editor.show_battery_view'),
+            showBatteryView,
+            (checked) => this._toggleChanged('show_battery_view', checked, false)
+          )}
+          <div class="description">${localize('editor.show_battery_view_desc')}</div>
 
-            ${this._renderCheckbox('show-area-in-battery-view', localize('editor.show_area_in_battery_view'), showAreaInBatteryView,
-              (checked) => this._toggleChanged('show_area_in_battery_view', checked, false))}
-            <div class="description">${localize('editor.show_area_in_battery_view_desc')}</div>
+          ${this._renderCheckbox(
+            'show-area-in-battery-view',
+            localize('editor.show_area_in_battery_view'),
+            showAreaInBatteryView,
+            (checked) => this._toggleChanged('show_area_in_battery_view', checked, false)
+          )}
+          <div class="description">${localize('editor.show_area_in_battery_view_desc')}</div>
 
-            <div style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;">
-              ${localize('editor.battery_thresholds')}
-            </div>
+          <div
+            style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;"
+          >
+            ${localize('editor.battery_thresholds')}
+          </div>
           <div class="form-row">
-            <label for="battery-critical-threshold" style="min-width: 140px;">${localize('editor.battery_critical_below')}</label>
-            <input type="number" id="battery-critical-threshold" min="1" max="99"
+            <label for="battery-critical-threshold" style="min-width: 140px;"
+              >${localize('editor.battery_critical_below')}</label
+            >
+            <input
+              type="number"
+              id="battery-critical-threshold"
+              min="1"
+              max="99"
               .value=${String(batteryCriticalThreshold)}
               style="width: 70px;"
-              @change=${this._batteryCriticalChanged} /> %
+              @change=${this._batteryCriticalChanged}
+            />
+            %
           </div>
           <div class="form-row">
             <label for="battery-low-threshold" style="min-width: 140px;">${localize('editor.battery_low_below')}</label>
-            <input type="number" id="battery-low-threshold" min="1" max="99"
+            <input
+              type="number"
+              id="battery-low-threshold"
+              min="1"
+              max="99"
               .value=${String(batteryLowThreshold)}
               style="width: 70px;"
-              @change=${this._batteryLowChanged} /> %
-            </div>
-            <div class="description">${localize('editor.battery_thresholds_desc')}</div>
-
-            <div style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;">
-              ${localize('editor.unavailable_batteries_bucket')}
-            </div>
-            <div class="form-row">
-              <input type="radio" id="battery-unavailable-good" name="battery-unavailable-bucket" value="good"
-                ?checked=${unavailableBatteriesBucket === 'good'}
-                @change=${() => this._unavailableBatteriesBucketChanged('good')} />
-              <label for="battery-unavailable-good">${localize('batteries.good')}</label>
-            </div>
-            <div class="form-row">
-              <input type="radio" id="battery-unavailable-critical" name="battery-unavailable-bucket" value="critical"
-                ?checked=${unavailableBatteriesBucket === 'critical'}
-                @change=${() => this._unavailableBatteriesBucketChanged('critical')} />
-              <label for="battery-unavailable-critical">${localize('batteries.critical')}</label>
-            </div>
-            <div class="description">${localize('editor.unavailable_batteries_bucket_desc')}</div>
+              @change=${this._batteryLowChanged}
+            />
+            %
           </div>
+          <div class="description">${localize('editor.battery_thresholds_desc')}</div>
+
+          <div
+            style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;"
+          >
+            ${localize('editor.unavailable_batteries_bucket')}
+          </div>
+          <div class="form-row">
+            <input
+              type="radio"
+              id="battery-unavailable-good"
+              name="battery-unavailable-bucket"
+              value="good"
+              ?checked=${unavailableBatteriesBucket === 'good'}
+              @change=${() => this._unavailableBatteriesBucketChanged('good')}
+            />
+            <label for="battery-unavailable-good">${localize('batteries.good')}</label>
+          </div>
+          <div class="form-row">
+            <input
+              type="radio"
+              id="battery-unavailable-critical"
+              name="battery-unavailable-bucket"
+              value="critical"
+              ?checked=${unavailableBatteriesBucket === 'critical'}
+              @change=${() => this._unavailableBatteriesBucketChanged('critical')}
+            />
+            <label for="battery-unavailable-critical">${localize('batteries.critical')}</label>
+          </div>
+          <div class="description">${localize('editor.unavailable_batteries_bucket_desc')}</div>
         </div>
-      `;
-    }
+      </div>
+    `;
+  }
 
   private _renderFavoritesSection(): TemplateResult {
     const favoriteEntities = this._config.favorite_entities || [];
@@ -3360,58 +3983,88 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${favoriteEntities.length === 0
             ? html`<div class="empty-state">${localize('editor.no_favorites')}</div>`
             : html`
-              <div class="entity-list-container">
-                ${favoriteEntities.map((entityId) => {
-                  const name = entityMap.get(entityId) || entityId;
-                  return html`
-                    <div class="entity-list-item" data-entity-id=${entityId}
-                      draggable="true"
-                      @dragstart=${(ev: DragEvent) => this._handleEntityDragStart(ev, 'favorites')}
-                      @dragend=${this._handleEntityDragEnd}
-                      @dragover=${this._handleEntityDragOver}
-                      @dragleave=${this._handleEntityDragLeave}
-                      @drop=${(ev: DragEvent) => this._handleEntityDrop(ev, 'favorites')}>
-                      <span class="drag-icon">&#x2630;</span>
-                      <span class="item-info">
-                        <span class="item-name">${name}</span>
-                        <span class="item-entity-id">${entityId}</span>
-                      </span>
-                      <button class="btn-remove" @click=${() => this._removeFavoriteEntity(entityId)}>&#x2715;</button>
-                    </div>
-                  `;
-                })}
-              </div>
-            `}
+                <div class="entity-list-container">
+                  ${favoriteEntities.map((entityId) => {
+                    const name = entityMap.get(entityId) || entityId;
+                    return html`
+                      <div
+                        class="entity-list-item"
+                        data-entity-id=${entityId}
+                        draggable="true"
+                        @dragstart=${(ev: DragEvent) => this._handleEntityDragStart(ev, 'favorites')}
+                        @dragend=${this._handleEntityDragEnd}
+                        @dragover=${this._handleEntityDragOver}
+                        @dragleave=${this._handleEntityDragLeave}
+                        @drop=${(ev: DragEvent) => this._handleEntityDrop(ev, 'favorites')}
+                      >
+                        <span class="drag-icon">&#x2630;</span>
+                        <span class="item-info">
+                          <span class="item-name">${name}</span>
+                          <span class="item-entity-id">${entityId}</span>
+                        </span>
+                        <button class="btn-remove" @click=${() => this._removeFavoriteEntity(entityId)}>
+                          &#x2715;
+                        </button>
+                      </div>
+                    `;
+                  })}
+                </div>
+              `}
         </div>
 
         <div class="entity-search-picker">
-          <input type="text" class="entity-search-input"
+          <input
+            type="text"
+            class="entity-search-input"
             placeholder=${localize('editor.select_entity') + '...'}
             .value=${this._favoriteSearch}
-            @input=${(e: Event) => { this._favoriteSearch = (e.target as HTMLInputElement).value; this.requestUpdate(); }}
-            @blur=${() => { setTimeout(() => { this._favoriteSearch = ''; this.requestUpdate(); }, 200); }}
+            @input=${(e: Event) => {
+              this._favoriteSearch = (e.target as HTMLInputElement).value;
+              this.requestUpdate();
+            }}
+            @blur=${() => {
+              setTimeout(() => {
+                this._favoriteSearch = '';
+                this.requestUpdate();
+              }, 200);
+            }}
           />
-          ${this._favoriteSearch.length >= 2 ? html`
-            <div class="entity-search-results">
-              ${filteredEntities.length > 0
-                ? filteredEntities.map((entity) => html`
-                  <div class="entity-search-result" @mousedown=${(e: Event) => { e.preventDefault(); this._addFavoriteEntity(entity.entity_id); this._favoriteSearch = ''; this.requestUpdate(); }}>
-                    <span class="entity-search-name">${entity.name}</span>
-                    <span class="entity-search-id">${entity.entity_id}</span>
-                  </div>
-                `)
-                : html`<div class="entity-search-no-results">${localize('editor.no_results')}</div>`
-              }
-            </div>
-          ` : nothing}
+          ${this._favoriteSearch.length >= 2
+            ? html`
+                <div class="entity-search-results">
+                  ${filteredEntities.length > 0
+                    ? filteredEntities.map(
+                        (entity) => html`
+                          <div
+                            class="entity-search-result"
+                            @mousedown=${(e: Event) => {
+                              e.preventDefault();
+                              this._addFavoriteEntity(entity.entity_id);
+                              this._favoriteSearch = '';
+                              this.requestUpdate();
+                            }}
+                          >
+                            <span class="entity-search-name">${entity.name}</span>
+                            <span class="entity-search-id">${entity.entity_id}</span>
+                          </div>
+                        `
+                      )
+                    : html`<div class="entity-search-no-results">${localize('editor.no_results')}</div>`}
+                </div>
+              `
+            : nothing}
         </div>
         <div class="description">${localize('editor.favorites_desc')}</div>
 
-        ${this._renderCheckbox('favorites-show-state', localize('editor.show_state'), favoritesShowState,
-          (checked) => this._toggleChanged('favorites_show_state', checked, false))}
-
-        ${this._renderCheckbox('favorites-hide-last-changed', localize('editor.hide_last_changed'), favoritesHideLastChanged,
-          (checked) => this._toggleChanged('favorites_hide_last_changed', checked, false))}
+        ${this._renderCheckbox('favorites-show-state', localize('editor.show_state'), favoritesShowState, (checked) =>
+          this._toggleChanged('favorites_show_state', checked, false)
+        )}
+        ${this._renderCheckbox(
+          'favorites-hide-last-changed',
+          localize('editor.hide_last_changed'),
+          favoritesHideLastChanged,
+          (checked) => this._toggleChanged('favorites_hide_last_changed', checked, false)
+        )}
       </div>
     `;
   }
@@ -3441,16 +4094,25 @@ class Simon42DashboardStrategyEditor extends LitElement {
               <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
               <span>${localize('editor.area_overview_options')}</span>
             </div>
-            ${this._renderCheckbox('group-by-floors', localize('editor.group_by_floors'), groupByFloors,
-              (checked) => this._toggleChanged('group_by_floors', checked, false))}
+            ${this._renderCheckbox('group-by-floors', localize('editor.group_by_floors'), groupByFloors, (checked) =>
+              this._toggleChanged('group_by_floors', checked, false)
+            )}
             <div class="description">${localize('editor.group_by_floors_desc')}</div>
 
-            ${this._renderCheckbox('show-switches-on-areas', localize('editor.show_switches_on_areas'), showSwitchesOnAreas,
-              (checked) => this._toggleChanged('show_switches_on_areas', checked, false))}
+            ${this._renderCheckbox(
+              'show-switches-on-areas',
+              localize('editor.show_switches_on_areas'),
+              showSwitchesOnAreas,
+              (checked) => this._toggleChanged('show_switches_on_areas', checked, false)
+            )}
             <div class="description">${localize('editor.show_switches_on_areas_desc')}</div>
 
-            ${this._renderCheckbox('show-alerts-on-areas', localize('editor.show_alerts_on_areas'), showAlertsOnAreas,
-              (checked) => this._toggleChanged('show_alerts_on_areas', checked, false))}
+            ${this._renderCheckbox(
+              'show-alerts-on-areas',
+              localize('editor.show_alerts_on_areas'),
+              showAlertsOnAreas,
+              (checked) => this._toggleChanged('show_alerts_on_areas', checked, false)
+            )}
             <div class="description">${localize('editor.show_alerts_on_areas_desc')}</div>
           </div>
 
@@ -3459,40 +4121,76 @@ class Simon42DashboardStrategyEditor extends LitElement {
               <ha-icon icon="mdi:door-open"></ha-icon>
               <span>${localize('editor.room_view_options')}</span>
             </div>
-            ${this._renderCheckbox('show-locks-in-rooms', localize('editor.show_locks_in_rooms'), showLocksInRooms,
-              (checked) => this._toggleChanged('show_locks_in_rooms', checked, false))}
+            ${this._renderCheckbox(
+              'show-locks-in-rooms',
+              localize('editor.show_locks_in_rooms'),
+              showLocksInRooms,
+              (checked) => this._toggleChanged('show_locks_in_rooms', checked, false)
+            )}
             <div class="description">${localize('editor.show_locks_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('show-automations-in-rooms', localize('editor.show_automations_in_rooms'), showAutomationsInRooms,
-              (checked) => this._toggleChanged('show_automations_in_rooms', checked, false))}
+            ${this._renderCheckbox(
+              'show-automations-in-rooms',
+              localize('editor.show_automations_in_rooms'),
+              showAutomationsInRooms,
+              (checked) => this._toggleChanged('show_automations_in_rooms', checked, false)
+            )}
             <div class="description">${localize('editor.show_automations_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('show-scripts-in-rooms', localize('editor.show_scripts_in_rooms'), showScriptsInRooms,
-              (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false))}
+            ${this._renderCheckbox(
+              'show-scripts-in-rooms',
+              localize('editor.show_scripts_in_rooms'),
+              showScriptsInRooms,
+              (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false)
+            )}
             <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('show-vacuums-section-in-rooms', localize('editor.show_vacuums_section_in_rooms'), showVacuumsSectionInRooms,
-              (checked) => this._toggleChanged('show_vacuums_section_in_rooms', checked, false))}
+            ${this._renderCheckbox(
+              'show-vacuums-section-in-rooms',
+              localize('editor.show_vacuums_section_in_rooms'),
+              showVacuumsSectionInRooms,
+              (checked) => this._toggleChanged('show_vacuums_section_in_rooms', checked, false)
+            )}
             <div class="description">${localize('editor.show_vacuums_section_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('camera-live-toggle', localize('editor.camera_live_toggle'), cameraLiveToggle,
-              (checked) => this._toggleChanged('camera_live_toggle', checked, false))}
+            ${this._renderCheckbox(
+              'camera-live-toggle',
+              localize('editor.camera_live_toggle'),
+              cameraLiveToggle,
+              (checked) => this._toggleChanged('camera_live_toggle', checked, false)
+            )}
             <div class="description">${localize('editor.camera_live_toggle_desc')}</div>
 
-            ${this._renderCheckbox('show-energy-in-rooms', localize('editor.show_energy_in_rooms'), showEnergyInRooms,
-              (checked) => this._toggleChanged('show_energy_in_rooms', checked, true))}
+            ${this._renderCheckbox(
+              'show-energy-in-rooms',
+              localize('editor.show_energy_in_rooms'),
+              showEnergyInRooms,
+              (checked) => this._toggleChanged('show_energy_in_rooms', checked, true)
+            )}
             <div class="description">${localize('editor.show_energy_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('show-ups-in-rooms', localize('editor.show_ups_in_rooms'), showUpsInRooms,
-              (checked) => this._toggleChanged('show_ups_in_rooms', checked, true))}
+            ${this._renderCheckbox(
+              'show-ups-in-rooms',
+              localize('editor.show_ups_in_rooms'),
+              showUpsInRooms,
+              (checked) => this._toggleChanged('show_ups_in_rooms', checked, true)
+            )}
             <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('show-window-contacts-in-rooms', localize('editor.show_window_contacts_in_rooms'), showWindowContactsInRooms,
-              (checked) => this._toggleChanged('show_window_contacts_in_rooms', checked, false))}
+            ${this._renderCheckbox(
+              'show-window-contacts-in-rooms',
+              localize('editor.show_window_contacts_in_rooms'),
+              showWindowContactsInRooms,
+              (checked) => this._toggleChanged('show_window_contacts_in_rooms', checked, false)
+            )}
             <div class="description">${localize('editor.show_window_contacts_in_rooms_desc')}</div>
 
-            ${this._renderCheckbox('show-door-contacts-in-rooms', localize('editor.show_door_contacts_in_rooms'), showDoorContactsInRooms,
-              (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false))}
+            ${this._renderCheckbox(
+              'show-door-contacts-in-rooms',
+              localize('editor.show_door_contacts_in_rooms'),
+              showDoorContactsInRooms,
+              (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false)
+            )}
             <div class="description">${localize('editor.show_door_contacts_in_rooms_desc')}</div>
           </div>
 
@@ -3501,12 +4199,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
               <ha-icon icon="mdi:sort-alphabetical-ascending"></ha-icon>
               <span>${localize('editor.area_management_options')}</span>
             </div>
-            ${this._renderCheckbox('use-default-area-sort', localize('editor.use_default_area_sort'), useDefaultAreaSort,
-              (checked) => this._toggleChanged('use_default_area_sort', checked, false))}
+            ${this._renderCheckbox(
+              'use-default-area-sort',
+              localize('editor.use_default_area_sort'),
+              useDefaultAreaSort,
+              (checked) => this._toggleChanged('use_default_area_sort', checked, false)
+            )}
             <div class="description">${localize('editor.use_default_area_sort_desc')}</div>
           </div>
         </div>
-
       </div>
     `;
   }
@@ -3530,63 +4231,91 @@ class Simon42DashboardStrategyEditor extends LitElement {
           ${roomPinEntities.length === 0
             ? html`<div class="empty-state">${localize('editor.no_room_pins')}</div>`
             : html`
-              <div class="entity-list-container">
-                ${roomPinEntities.map((entityId) => {
-                  const entity = entityMap.get(entityId);
-                  const name = entity?.name || entityId;
-                  const areaId = entity?.area_id || entity?.device_area_id;
-                  const areaName = areaId ? areaMap.get(areaId) || areaId : localize('editor.no_room');
+                <div class="entity-list-container">
+                  ${roomPinEntities.map((entityId) => {
+                    const entity = entityMap.get(entityId);
+                    const name = entity?.name || entityId;
+                    const areaId = entity?.area_id || entity?.device_area_id;
+                    const areaName = areaId ? areaMap.get(areaId) || areaId : localize('editor.no_room');
 
-                  return html`
-                    <div class="entity-list-item" data-entity-id=${entityId}
-                      draggable="true"
-                      @dragstart=${(ev: DragEvent) => this._handleEntityDragStart(ev, 'room_pins')}
-                      @dragend=${this._handleEntityDragEnd}
-                      @dragover=${this._handleEntityDragOver}
-                      @dragleave=${this._handleEntityDragLeave}
-                      @drop=${(ev: DragEvent) => this._handleEntityDrop(ev, 'room_pins')}>
-                      <span class="drag-icon">&#x2630;</span>
-                      <span class="item-info">
-                        <span class="item-name">${name}</span>
-                        <span class="item-entity-id">${entityId}</span>
-                        <span class="item-area">&#x1F4CD; ${areaName}</span>
-                      </span>
-                      <button class="btn-remove" @click=${() => this._removeRoomPinEntity(entityId)}>&#x2715;</button>
-                    </div>
-                  `;
-                })}
-              </div>
-            `}
+                    return html`
+                      <div
+                        class="entity-list-item"
+                        data-entity-id=${entityId}
+                        draggable="true"
+                        @dragstart=${(ev: DragEvent) => this._handleEntityDragStart(ev, 'room_pins')}
+                        @dragend=${this._handleEntityDragEnd}
+                        @dragover=${this._handleEntityDragOver}
+                        @dragleave=${this._handleEntityDragLeave}
+                        @drop=${(ev: DragEvent) => this._handleEntityDrop(ev, 'room_pins')}
+                      >
+                        <span class="drag-icon">&#x2630;</span>
+                        <span class="item-info">
+                          <span class="item-name">${name}</span>
+                          <span class="item-entity-id">${entityId}</span>
+                          <span class="item-area">&#x1F4CD; ${areaName}</span>
+                        </span>
+                        <button class="btn-remove" @click=${() => this._removeRoomPinEntity(entityId)}>&#x2715;</button>
+                      </div>
+                    `;
+                  })}
+                </div>
+              `}
         </div>
 
         <div class="entity-search-picker">
-          <input type="text" class="entity-search-input"
+          <input
+            type="text"
+            class="entity-search-input"
             placeholder=${localize('editor.select_entity') + '...'}
             .value=${this._roomPinSearch}
-            @input=${(e: Event) => { this._roomPinSearch = (e.target as HTMLInputElement).value; this.requestUpdate(); }}
-            @blur=${() => { setTimeout(() => { this._roomPinSearch = ''; this.requestUpdate(); }, 200); }}
+            @input=${(e: Event) => {
+              this._roomPinSearch = (e.target as HTMLInputElement).value;
+              this.requestUpdate();
+            }}
+            @blur=${() => {
+              setTimeout(() => {
+                this._roomPinSearch = '';
+                this.requestUpdate();
+              }, 200);
+            }}
           />
-          ${this._roomPinSearch.length >= 2 ? html`
-            <div class="entity-search-results">
-              ${filteredEntities.length > 0
-                ? filteredEntities.map((entity) => html`
-                  <div class="entity-search-result" @mousedown=${(e: Event) => { e.preventDefault(); this._addRoomPinEntity(entity.entity_id); this._roomPinSearch = ''; this.requestUpdate(); }}>
-                    <span class="entity-search-name">${entity.name}</span>
-                    <span class="entity-search-id">${entity.entity_id}</span>
-                  </div>
-                `)
-                : html`<div class="entity-search-no-results">${localize('editor.no_results')}</div>`
-              }
-            </div>
-          ` : nothing}
+          ${this._roomPinSearch.length >= 2
+            ? html`
+                <div class="entity-search-results">
+                  ${filteredEntities.length > 0
+                    ? filteredEntities.map(
+                        (entity) => html`
+                          <div
+                            class="entity-search-result"
+                            @mousedown=${(e: Event) => {
+                              e.preventDefault();
+                              this._addRoomPinEntity(entity.entity_id);
+                              this._roomPinSearch = '';
+                              this.requestUpdate();
+                            }}
+                          >
+                            <span class="entity-search-name">${entity.name}</span>
+                            <span class="entity-search-id">${entity.entity_id}</span>
+                          </div>
+                        `
+                      )
+                    : html`<div class="entity-search-no-results">${localize('editor.no_results')}</div>`}
+                </div>
+              `
+            : nothing}
         </div>
         <div class="description">${unsafeHTML(localize('editor.room_pins_desc'))}</div>
 
-        ${this._renderCheckbox('room-pins-show-state', localize('editor.show_state'), roomPinsShowState,
-          (checked) => this._toggleChanged('room_pins_show_state', checked, false))}
-
-        ${this._renderCheckbox('room-pins-hide-last-changed', localize('editor.hide_last_changed'), roomPinsHideLastChanged,
-          (checked) => this._toggleChanged('room_pins_hide_last_changed', checked, false))}
+        ${this._renderCheckbox('room-pins-show-state', localize('editor.show_state'), roomPinsShowState, (checked) =>
+          this._toggleChanged('room_pins_show_state', checked, false)
+        )}
+        ${this._renderCheckbox(
+          'room-pins-hide-last-changed',
+          localize('editor.hide_last_changed'),
+          roomPinsHideLastChanged,
+          (checked) => this._toggleChanged('room_pins_hide_last_changed', checked, false)
+        )}
       </div>
     `;
   }
@@ -3599,14 +4328,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const showMaintenanceView = this._config.show_maintenance_view === true;
 
     return renderViewsPanel({
-      showSummaryViews, showRoomViews, showCctvView, cctvShowActivity, showMaintenanceView,
+      showSummaryViews,
+      showRoomViews,
+      showCctvView,
+      cctvShowActivity,
+      showMaintenanceView,
       checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
       change: (key, checked) => this._toggleChanged(key, checked, false),
     });
   }
 
   private _renderCustomContentSection(): TemplateResult {
-    const isWeatherStart = (this._config.overview_layout || 'default') === 'weather_start';
+    const isWeatherStart = true;
 
     return html`
       <div class="section">
@@ -3614,15 +4347,16 @@ class Simon42DashboardStrategyEditor extends LitElement {
         <div class="description" style="margin-left: 0; margin-bottom: 12px;">
           ${localize('editor.section_custom_content_desc')}
         </div>
-        ${isWeatherStart ? html`
-          <div class="empty-state" style="margin-bottom: 12px;">
-            ${localize('editor.custom_content_weather_start_hint')}
-          </div>
-        ` : nothing}
+        ${isWeatherStart
+          ? html`
+              <div class="empty-state" style="margin-bottom: 12px;">
+                ${localize('editor.custom_content_weather_start_hint')}
+              </div>
+            `
+          : nothing}
         <div class="custom-content-grid">
           ${isWeatherStart ? nothing : this._renderCustomCardsSection(true)}
-          ${isWeatherStart ? nothing : this._renderCustomSectionsSection(true)}
-          ${this._renderCustomBadgesSection(true)}
+          ${isWeatherStart ? nothing : this._renderCustomSectionsSection(true)} ${this._renderCustomBadgesSection(true)}
           ${this._renderCustomViewsSection(true)}
         </div>
       </div>
@@ -3636,24 +4370,37 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
+        <div
+          class=${nested ? 'subsection-title' : 'section-title'}
+          style="display: flex; align-items: center; gap: 8px;"
+        >
           ${localize('editor.section_custom_cards')}
-          <a href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
-            target="_blank" rel="noopener"
+          <a
+            href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
+            target="_blank"
+            rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
-            title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
+            title=${localize('editor.video_tutorial')}
+            >&#x1F3AC;</a
+          >
         </div>
         <div class="custom-item-row" style="margin-bottom: 12px;">
-          <input type="text" id="custom-cards-heading"
+          <input
+            type="text"
+            id="custom-cards-heading"
             .value=${customCardsHeading}
             placeholder=${localize('editor.custom_cards_heading_placeholder')}
             style="flex: 2;"
-            @change=${this._customCardsHeadingChanged} />
-          <input type="text" id="custom-cards-icon"
+            @change=${this._customCardsHeadingChanged}
+          />
+          <input
+            type="text"
+            id="custom-cards-icon"
             .value=${customCardsIcon}
             placeholder="mdi:cards"
             style="flex: 1;"
-            @change=${this._customCardsIconChanged} />
+            @change=${this._customCardsIconChanged}
+          />
         </div>
         <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_cards_desc')}</div>
 
@@ -3697,12 +4444,19 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
+        <div
+          class=${nested ? 'subsection-title' : 'section-title'}
+          style="display: flex; align-items: center; gap: 8px;"
+        >
           ${localize('editor.section_custom_badges')}
-          <a href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
-            target="_blank" rel="noopener"
+          <a
+            href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
+            target="_blank"
+            rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
-            title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
+            title=${localize('editor.video_tutorial')}
+            >&#x1F3AC;</a
+          >
         </div>
 
         <div id="custom-badges-list">
@@ -3724,12 +4478,19 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div class=${nested ? 'subsection-title' : 'section-title'} style="display: flex; align-items: center; gap: 8px;">
+        <div
+          class=${nested ? 'subsection-title' : 'section-title'}
+          style="display: flex; align-items: center; gap: 8px;"
+        >
           ${localize('editor.section_custom_views')}
-          <a href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
-            target="_blank" rel="noopener"
+          <a
+            href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
+            target="_blank"
+            rel="noopener"
             style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
-            title=${localize('editor.video_tutorial')}>&#x1F3AC;</a>
+            title=${localize('editor.video_tutorial')}
+            >&#x1F3AC;</a
+          >
         </div>
 
         <div id="custom-views-list">
@@ -3759,10 +4520,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
   ): TemplateResult {
     return html`
       <div class="form-row">
-        <input type="checkbox" id=${id}
+        <input
+          type="checkbox"
+          id=${id}
           ?checked=${checked}
           ?disabled=${disabled}
-          @change=${(e: Event) => onChange((e.target as HTMLInputElement).checked)} />
+          @change=${(e: Event) => onChange((e.target as HTMLInputElement).checked)}
+        />
         <label for=${id} class=${disabled ? 'disabled-label' : ''}>${label}</label>
       </div>
     `;
@@ -3783,23 +4547,36 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
         <div class="custom-item-fields">
           <div class="custom-item-row">
-            <input type="text" .value=${view.title || ''} placeholder=${localize('editor.title_placeholder')}
+            <input
+              type="text"
+              .value=${view.title || ''}
+              placeholder=${localize('editor.title_placeholder')}
               style="flex: 2;"
-              @change=${(e: Event) => this._updateCustomViewField(index, 'title', (e.target as HTMLInputElement).value)} />
-            <input type="text" .value=${view.path || ''} placeholder=${localize('editor.path_placeholder')}
+              @change=${(e: Event) => this._updateCustomViewField(index, 'title', (e.target as HTMLInputElement).value)}
+            />
+            <input
+              type="text"
+              .value=${view.path || ''}
+              placeholder=${localize('editor.path_placeholder')}
               style="flex: 2;"
-              @change=${(e: Event) => this._updateCustomViewField(index, 'path', (e.target as HTMLInputElement).value)} />
-            <input type="text" .value=${view.icon || ''} placeholder="mdi:star"
+              @change=${(e: Event) => this._updateCustomViewField(index, 'path', (e.target as HTMLInputElement).value)}
+            />
+            <input
+              type="text"
+              .value=${view.icon || ''}
+              placeholder="mdi:star"
               style="flex: 1;"
-              @change=${(e: Event) => this._updateCustomViewField(index, 'icon', (e.target as HTMLInputElement).value)} />
+              @change=${(e: Event) => this._updateCustomViewField(index, 'icon', (e.target as HTMLInputElement).value)}
+            />
           </div>
-          <textarea rows="8" placeholder=${localize('editor.yaml_placeholder')}
+          <textarea
+            rows="8"
+            placeholder=${localize('editor.yaml_placeholder')}
             .value=${view.yaml || ''}
             style="width: 100%;"
-            @change=${(e: Event) => this._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}></textarea>
-          <div class="custom-item-validation">
-            ${validationMsg}
-          </div>
+            @change=${(e: Event) => this._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
+          <div class="custom-item-validation">${validationMsg}</div>
         </div>
       </div>
     `;
@@ -3820,33 +4597,47 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
         <div class="custom-item-fields">
           <label>${localize('editor.card_editor_title_label')}</label>
-          <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
-            @change=${(e: Event) => this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)} />
+          <input
+            type="text"
+            .value=${card.editor_title || ''}
+            placeholder=${localize('editor.card_editor_title_placeholder')}
+            @change=${(e: Event) =>
+              this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)}
+          />
           <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
           <label>${localize('editor.card_dashboard_title_label')}</label>
-          <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
-            @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)} />
+          <input
+            type="text"
+            .value=${card.title || ''}
+            placeholder=${localize('editor.card_title_placeholder')}
+            @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)}
+          />
           <div class="custom-card-target">
             <label>${localize('editor.target_section')}:</label>
             <select
-              @change=${(e: Event) => this._updateCustomCardField(index, 'target_section', (e.target as HTMLSelectElement).value)}>
-              ${(['custom_cards', 'overview', 'areas', 'weather', 'energy'] as const).map((key) => html`
-                <option value=${key} ?selected=${(card.target_section || 'custom_cards') === key}>
-                  ${localize(Simon42DashboardStrategyEditor._sectionMeta.get(key)!.labelKey)}
-                </option>
-              `)}
+              @change=${(e: Event) =>
+                this._updateCustomCardField(index, 'target_section', (e.target as HTMLSelectElement).value)}
+            >
+              ${(['custom_cards', 'overview', 'areas', 'weather', 'energy'] as const).map(
+                (key) => html`
+                  <option value=${key} ?selected=${(card.target_section || 'custom_cards') === key}>
+                    ${localize(Simon42DashboardStrategyEditor._sectionMeta.get(key)!.labelKey)}
+                  </option>
+                `
+              )}
             </select>
           </div>
-          <textarea rows="6" placeholder=${localize('editor.yaml_placeholder')}
+          <textarea
+            rows="6"
+            placeholder=${localize('editor.yaml_placeholder')}
             .value=${card.yaml || ''}
             style="width: 100%;"
-            @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}></textarea>
+            @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
           <button class="btn-primary" style="margin-top: 6px;" @click=${() => this._openCardEditorForCustomCard(index)}>
             ${localize('editor.edit_card_with_ha_editor')}
           </button>
-          <div class="custom-item-validation">
-            ${validationMsg}
-          </div>
+          <div class="custom-item-validation">${validationMsg}</div>
         </div>
       </div>
     `;
@@ -3861,52 +4652,106 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <button class="btn-remove" @click=${() => this._removeCustomSection(sectionIndex)}>&#x2715;</button>
         </div>
         <div class="custom-item-fields">
-          <textarea rows="8" placeholder="type: grid&#10;cards:&#10;  - type: tile&#10;    entity: light.example"
+          <textarea
+            rows="8"
+            placeholder="type: grid&#10;cards:&#10;  - type: tile&#10;    entity: light.example"
             .value=${section.yaml || ''}
             style="width: 100%;"
-            @change=${(e: Event) => this._updateCustomSectionYaml(sectionIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
+            @change=${(e: Event) =>
+              this._updateCustomSectionYaml(sectionIndex, (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
           <div class="custom-item-validation">
             ${section._yaml_error
               ? html`<span style="color: var(--error-color);">&#x274C; ${section._yaml_error}</span>`
               : section.yaml
-                ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+                ? html`<span style="color: var(--success-color, green);"
+                    >&#x2705; ${localize('editor.yaml_valid')}</span
+                  >`
                 : nothing}
           </div>
           <div class="custom-item-row">
-            <input type="text" .value=${section.title || ''} placeholder=${localize('editor.custom_section_title_placeholder')}
+            <input
+              type="text"
+              .value=${section.title || ''}
+              placeholder=${localize('editor.custom_section_title_placeholder')}
               style="flex: 2;"
-              @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)} />
-            <input type="text" .value=${section.icon || ''} placeholder=${localize('editor.custom_section_icon_placeholder')}
+              @change=${(e: Event) =>
+                this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)}
+            />
+            <input
+              type="text"
+              .value=${section.icon || ''}
+              placeholder=${localize('editor.custom_section_icon_placeholder')}
               style="flex: 1;"
-              @change=${(e: Event) => this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)} />
+              @change=${(e: Event) =>
+                this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)}
+            />
           </div>
           <div style="margin-top: 8px; padding-left: 8px; border-left: 2px solid var(--divider-color, #e0e0e0);">
             ${cards.map((card, cardIndex) => {
               const validationMsg = card._yaml_error
                 ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
                 : card.yaml
-                  ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
+                  ? html`<span style="color: var(--success-color, green);"
+                      >&#x2705; ${localize('editor.yaml_valid')}</span
+                    >`
                   : nothing;
               return html`
                 <div class="custom-item" data-index=${cardIndex} style="margin-bottom: 8px;">
                   <div class="custom-item-header">
-                    <strong>${this._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong>
-                    <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>&#x2715;</button>
+                    <strong
+                      >${this._getCustomCardEditorLabel(
+                        card,
+                        `${localize('editor.new_card')} ${cardIndex + 1}`
+                      )}</strong
+                    >
+                    <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>
+                      &#x2715;
+                    </button>
                   </div>
                   <div class="custom-item-fields">
                     <label>${localize('editor.card_editor_title_label')}</label>
-                    <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
-                      @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'editor_title', (e.target as HTMLInputElement).value)} />
-                    <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+                    <input
+                      type="text"
+                      .value=${card.editor_title || ''}
+                      placeholder=${localize('editor.card_editor_title_placeholder')}
+                      @change=${(e: Event) =>
+                        this._updateSectionCardField(
+                          sectionIndex,
+                          cardIndex,
+                          'editor_title',
+                          (e.target as HTMLInputElement).value
+                        )}
+                    />
+                    <div class="description" style="margin: 0 0 4px 0;">
+                      ${localize('editor.card_editor_title_help')}
+                    </div>
                     <label>${localize('editor.card_dashboard_title_label')}</label>
-                    <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
-                      @change=${(e: Event) => this._updateSectionCardField(sectionIndex, cardIndex, 'title', (e.target as HTMLInputElement).value)} />
-                    <textarea rows="5" placeholder=${localize('editor.yaml_placeholder')}
+                    <input
+                      type="text"
+                      .value=${card.title || ''}
+                      placeholder=${localize('editor.card_title_placeholder')}
+                      @change=${(e: Event) =>
+                        this._updateSectionCardField(
+                          sectionIndex,
+                          cardIndex,
+                          'title',
+                          (e.target as HTMLInputElement).value
+                        )}
+                    />
+                    <textarea
+                      rows="5"
+                      placeholder=${localize('editor.yaml_placeholder')}
                       .value=${card.yaml || ''}
                       style="width: 100%;"
-                      @change=${(e: Event) => this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}></textarea>
-                    <button class="btn-primary" style="margin-top: 6px;"
-                      @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}>
+                      @change=${(e: Event) =>
+                        this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}
+                    ></textarea>
+                    <button
+                      class="btn-primary"
+                      style="margin-top: 6px;"
+                      @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}
+                    >
                       ${localize('editor.edit_card_with_ha_editor')}
                     </button>
                     <div class="custom-item-validation">${validationMsg}</div>
@@ -3914,7 +4759,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
                 </div>
               `;
             })}
-            <button class="btn-primary" style="margin-top: 4px;" @click=${() => this._openCardPickerForSection(sectionIndex)}>
+            <button
+              class="btn-primary"
+              style="margin-top: 4px;"
+              @click=${() => this._openCardPickerForSection(sectionIndex)}
+            >
               ${localize('editor.add_card_to_section')}
             </button>
           </div>
@@ -3936,13 +4785,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
           <strong>Badge ${index + 1}</strong>
           <button class="btn-remove" @click=${() => this._removeCustomBadge(index)}>&#x2715;</button>
         </div>
-        <textarea rows="4" placeholder="type: entity&#10;entity: sun.sun"
+        <textarea
+          rows="4"
+          placeholder="type: entity&#10;entity: sun.sun"
           .value=${badge.yaml || ''}
           style="width: 100%;"
-          @change=${(e: Event) => this._updateCustomBadgeYaml(index, (e.target as HTMLTextAreaElement).value)}></textarea>
-        <div class="custom-item-validation">
-          ${validationMsg}
-        </div>
+          @change=${(e: Event) => this._updateCustomBadgeYaml(index, (e.target as HTMLTextAreaElement).value)}
+        ></textarea>
+        <div class="custom-item-validation">${validationMsg}</div>
       </div>
     `;
   }
@@ -3979,43 +4829,55 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const isPinned = navItems.includes(area.area_id);
 
       return html`
-        <div class="area-item"
+        <div
+          class="area-item"
           data-area-id=${area.area_id}
           draggable="true"
           @dragstart=${this._handleDragStart}
           @dragend=${this._handleDragEnd}
           @dragover=${this._handleDragOver}
           @dragleave=${this._handleDragLeave}
-          @drop=${this._handleDrop}>
+          @drop=${this._handleDrop}
+        >
           <div class="area-header">
             <span class="drag-handle" draggable="true">&#x2630;</span>
-            <input type="checkbox" class="area-checkbox"
+            <input
+              type="checkbox"
+              class="area-checkbox"
               data-area-id=${area.area_id}
               ?checked=${!isHidden}
-              @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)} />
+              @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)}
+            />
             <span class="area-name">${area.name}</span>
             ${area.icon ? html`<ha-icon class="area-icon" icon=${area.icon}></ha-icon>` : nothing}
-            <button class="nav-pin-button ${isPinned ? 'pinned' : ''}"
+            <button
+              class="nav-pin-button ${isPinned ? 'pinned' : ''}"
               title="${localize('editor.area_pin_nav')}"
               ?disabled=${isHidden}
-              @click=${(e: Event) => { e.stopPropagation(); this._areaNavPinChanged(area.area_id, !isPinned); }}>
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._areaNavPinChanged(area.area_id, !isPinned);
+              }}
+            >
               <ha-icon icon="${isPinned ? 'mdi:pin' : 'mdi:pin-outline'}"></ha-icon>
             </button>
-            <button class="expand-button ${isExpanded ? 'expanded' : ''}"
+            <button
+              class="expand-button ${isExpanded ? 'expanded' : ''}"
               data-area-id=${area.area_id}
-              @click=${(e: Event) => this._toggleAreaExpand(e, area.area_id)}>
+              @click=${(e: Event) => this._toggleAreaExpand(e, area.area_id)}
+            >
               <span class="expand-icon">&#x25B6;</span>
             </button>
           </div>
           ${isExpanded
             ? html`
-              <div class="area-content" data-area-id=${area.area_id}>
-                ${this._renderAreaViewOverride(area.area_id)}
-                ${cachedData
-                  ? this._renderAreaEntities(area.area_id, cachedData)
-                  : html`<div class="loading-placeholder">${localize('editor.loading_entities')}</div>`}
-              </div>
-            `
+                <div class="area-content" data-area-id=${area.area_id}>
+                  ${this._renderAreaViewOverride(area.area_id)}
+                  ${cachedData
+                    ? this._renderAreaEntities(area.area_id, cachedData)
+                    : html`<div class="loading-placeholder">${localize('editor.loading_entities')}</div>`}
+                </div>
+              `
             : nothing}
         </div>
       `;
@@ -4034,19 +4896,26 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div class="custom-item" style="margin-bottom: 0;">
         <div class="custom-item-header">
           <strong>${localize('editor.area_view_override_title')}</strong>
-          ${override?.yaml ? html`
-            <button class="btn-remove" title=${localize('editor.area_view_override_remove')}
-              @click=${() => this._updateAreaViewOverride(areaId, '')}>&#x2715;</button>
-          ` : nothing}
+          ${override?.yaml
+            ? html`
+                <button
+                  class="btn-remove"
+                  title=${localize('editor.area_view_override_remove')}
+                  @click=${() => this._updateAreaViewOverride(areaId, '')}
+                >
+                  &#x2715;
+                </button>
+              `
+            : nothing}
         </div>
-        <div class="description" style="margin: 0 0 10px 0;">
-          ${localize('editor.area_view_override_help')}
-        </div>
-        <textarea rows="12"
+        <div class="description" style="margin: 0 0 10px 0;">${localize('editor.area_view_override_help')}</div>
+        <textarea
+          rows="12"
           placeholder="type: sections&#10;sections:&#10;  - type: grid&#10;    cards: []"
           .value=${override?.yaml || ''}
           style="width: 100%;"
-          @change=${(e: Event) => this._updateAreaViewOverride(areaId, (e.target as HTMLTextAreaElement).value)}>
+          @change=${(e: Event) => this._updateAreaViewOverride(areaId, (e.target as HTMLTextAreaElement).value)}
+        >
         </textarea>
         <div class="custom-item-validation">${validation}</div>
       </div>
@@ -4065,8 +4934,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
       const isObject = parsedConfig && !Array.isArray(parsedConfig);
       newAreaOptions.view_override = {
         yaml: yamlString,
-        parsed_config: isObject ? parsedConfig as Record<string, any> : undefined,
-        _yaml_error: isObject ? parsed._yaml_error : (parsed._yaml_error || localize('editor.area_view_override_object_error')),
+        parsed_config: isObject ? (parsedConfig as Record<string, any>) : undefined,
+        _yaml_error: isObject
+          ? parsed._yaml_error
+          : parsed._yaml_error || localize('editor.area_view_override_object_error'),
       };
     }
 
@@ -4124,9 +4995,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       if (!entityId || seenPickerEntities.has(entityId)) return;
       seenPickerEntities.add(entityId);
       const stateObj = hass.states[entityId];
-      const name = stateObj?.attributes.friendly_name
-        || entityId.split('.')[1]?.replace(/_/g, ' ')
-        || entityId;
+      const name = stateObj?.attributes.friendly_name || entityId.split('.')[1]?.replace(/_/g, ' ') || entityId;
       areaPickerEntities.push({ entity_id: entityId, name });
     };
     for (const group of domainGroups) {
@@ -4143,8 +5012,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!hasEntities && !hasBadges) {
       return html`
         <div class="empty-state">${localize('editor.no_entities_in_area')}</div>
-        ${this._renderStackOrderPanel(areaId, data)}
-        ${customCardsSection}
+        ${this._renderStackOrderPanel(areaId, data)} ${customCardsSection}
       `;
     }
 
@@ -4163,9 +5031,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
           return html`
             <div class="entity-group" data-group=${group.key}>
-              <div class="entity-group-header"
-                @click=${() => this._toggleGroupExpand(areaId, group.key)}>
-                <input type="checkbox" class="group-checkbox"
+              <div class="entity-group-header" @click=${() => this._toggleGroupExpand(areaId, group.key)}>
+                <input
+                  type="checkbox"
+                  class="group-checkbox"
                   data-area-id=${areaId}
                   data-group=${group.key}
                   ?checked=${!allHidden}
@@ -4175,40 +5044,65 @@ class Simon42DashboardStrategyEditor extends LitElement {
                     e.stopPropagation();
                     const checked = (e.target as HTMLInputElement).checked;
                     this._groupVisibilityChanged(areaId, group.key, checked, entities);
-                  }} />
+                  }}
+                />
                 <ha-icon icon=${group.icon}></ha-icon>
                 <span class="group-name">${group.label}</span>
                 <span class="entity-count">(${entities.length})</span>
-                <button class="expand-button-small ${isGroupExpanded ? 'expanded' : ''}"
-                  @click=${(e: Event) => { e.stopPropagation(); this._toggleGroupExpand(areaId, group.key); }}>
+                <button
+                  class="expand-button-small ${isGroupExpanded ? 'expanded' : ''}"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._toggleGroupExpand(areaId, group.key);
+                  }}
+                >
                   <span class="expand-icon-small">&#x25B6;</span>
                 </button>
               </div>
               ${isGroupExpanded
                 ? html`
-                  <div class="entity-list" data-area-id=${areaId} data-group=${group.key}>
-                    ${entities.map((entityId) => {
-                      const stateObj = hass.states[entityId];
-                      const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
-                      const isEntityHidden = hiddenInGroup.includes(entityId);
-                      return html`
-                        <div class="entity-item">
-                          <input type="checkbox" class="entity-checkbox"
-                            ?checked=${!isEntityHidden}
-                            @change=${(e: Event) => this._entityVisibilityChanged(areaId, group.key, entityId, (e.target as HTMLInputElement).checked)} />
-                          <span class="entity-name">${name}</span>
-                          <span class="entity-id">${entityId}</span>
-                        </div>
-                      `;
-                    })}
-                  </div>
-                `
+                    <div class="entity-list" data-area-id=${areaId} data-group=${group.key}>
+                      ${entities.map((entityId) => {
+                        const stateObj = hass.states[entityId];
+                        const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                        const isEntityHidden = hiddenInGroup.includes(entityId);
+                        return html`
+                          <div class="entity-item">
+                            <input
+                              type="checkbox"
+                              class="entity-checkbox"
+                              ?checked=${!isEntityHidden}
+                              @change=${(e: Event) =>
+                                this._entityVisibilityChanged(
+                                  areaId,
+                                  group.key,
+                                  entityId,
+                                  (e.target as HTMLInputElement).checked
+                                )}
+                            />
+                            <span class="entity-name">${name}</span>
+                            <span class="entity-id">${entityId}</span>
+                          </div>
+                        `;
+                      })}
+                    </div>
+                  `
                 : nothing}
             </div>
           `;
         })}
         ${hasBadges
-          ? this._renderBadgeGroup(areaId, badgeCandidates, additionalBadges, availableEntities, hiddenEntities, defaultShowNames, namesVisible, namesHidden, expandedGroups)
+          ? this._renderBadgeGroup(
+              areaId,
+              badgeCandidates,
+              additionalBadges,
+              availableEntities,
+              hiddenEntities,
+              defaultShowNames,
+              namesVisible,
+              namesHidden,
+              expandedGroups
+            )
           : nothing}
         ${this._renderStackOrderPanel(areaId, data)}
       </div>
@@ -4241,55 +5135,90 @@ class Simon42DashboardStrategyEditor extends LitElement {
         </div>
         <div class="custom-item-fields">
           <label>${localize('editor.card_editor_title_label')}</label>
-          <input type="text" .value=${card.editor_title || ''} placeholder=${localize('editor.card_editor_title_placeholder')}
-            @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'editor_title', (e.target as HTMLInputElement).value)} />
+          <input
+            type="text"
+            .value=${card.editor_title || ''}
+            placeholder=${localize('editor.card_editor_title_placeholder')}
+            @change=${(e: Event) =>
+              this._updateAreaCustomCardField(areaId, index, 'editor_title', (e.target as HTMLInputElement).value)}
+          />
           <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
           <label>${localize('editor.card_dashboard_title_label')}</label>
-          <input type="text" .value=${card.title || ''} placeholder=${localize('editor.card_title_placeholder')}
-            @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'title', (e.target as HTMLInputElement).value)} />
+          <input
+            type="text"
+            .value=${card.title || ''}
+            placeholder=${localize('editor.card_title_placeholder')}
+            @change=${(e: Event) =>
+              this._updateAreaCustomCardField(areaId, index, 'title', (e.target as HTMLInputElement).value)}
+          />
           <div class="custom-card-target">
             <label>${localize('editor.area_custom_card_position')}:</label>
             <select
-              @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'position', (e.target as HTMLSelectElement).value)}>
-              <option value="top" ?selected=${position === 'top'}>${localize('editor.area_custom_card_position_top')}</option>
-              <option value="bottom" ?selected=${position === 'bottom'}>${localize('editor.area_custom_card_position_bottom')}</option>
+              @change=${(e: Event) =>
+                this._updateAreaCustomCardField(areaId, index, 'position', (e.target as HTMLSelectElement).value)}
+            >
+              <option value="top" ?selected=${position === 'top'}>
+                ${localize('editor.area_custom_card_position_top')}
+              </option>
+              <option value="bottom" ?selected=${position === 'bottom'}>
+                ${localize('editor.area_custom_card_position_bottom')}
+              </option>
             </select>
           </div>
           <div class="custom-card-target">
             <label>${localize('editor.area_custom_card_mode')}:</label>
             <select
-              @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'mode', (e.target as HTMLSelectElement).value)}>
-              <option value="yaml" ?selected=${mode === 'yaml'}>${localize('editor.area_custom_card_mode_yaml')}</option>
-              <option value="tile" ?selected=${mode === 'tile'}>${localize('editor.area_custom_card_mode_tile')}</option>
-              <option value="section" ?selected=${mode === 'section'}>${localize('editor.area_custom_card_mode_section')}</option>
+              @change=${(e: Event) =>
+                this._updateAreaCustomCardField(areaId, index, 'mode', (e.target as HTMLSelectElement).value)}
+            >
+              <option value="yaml" ?selected=${mode === 'yaml'}>
+                ${localize('editor.area_custom_card_mode_yaml')}
+              </option>
+              <option value="tile" ?selected=${mode === 'tile'}>
+                ${localize('editor.area_custom_card_mode_tile')}
+              </option>
+              <option value="section" ?selected=${mode === 'section'}>
+                ${localize('editor.area_custom_card_mode_section')}
+              </option>
             </select>
           </div>
           ${mode === 'tile'
             ? html`
-              <div class="custom-card-target">
-                <label>${localize('editor.area_custom_card_entity')}:</label>
-                <select
-                  @change=${(e: Event) => this._updateAreaCustomCardField(areaId, index, 'entity', (e.target as HTMLSelectElement).value)}>
-                  <option value="">${localize('editor.area_custom_card_entity_select')}</option>
-                  ${availableEntities.map((e) => html`
-                    <option value=${e.entity_id} ?selected=${card.entity === e.entity_id}>${e.name} (${e.entity_id})</option>
-                  `)}
-                </select>
-              </div>
-            `
+                <div class="custom-card-target">
+                  <label>${localize('editor.area_custom_card_entity')}:</label>
+                  <select
+                    @change=${(e: Event) =>
+                      this._updateAreaCustomCardField(areaId, index, 'entity', (e.target as HTMLSelectElement).value)}
+                  >
+                    <option value="">${localize('editor.area_custom_card_entity_select')}</option>
+                    ${availableEntities.map(
+                      (e) => html`
+                        <option value=${e.entity_id} ?selected=${card.entity === e.entity_id}>
+                          ${e.name} (${e.entity_id})
+                        </option>
+                      `
+                    )}
+                  </select>
+                </div>
+              `
             : html`
-              <textarea rows="6" placeholder=${localize('editor.yaml_placeholder')}
-                .value=${card.yaml || ''}
-                style="width: 100%;"
-                @change=${(e: Event) => this._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}></textarea>
-              <button class="btn-primary" style="margin-top: 6px;"
-                @click=${() => this._openCardEditorForAreaCustomCard(areaId, index)}>
-                ${localize('editor.edit_card_with_ha_editor')}
-              </button>
-              <div class="custom-item-validation">
-                ${validationMsg}
-              </div>
-            `}
+                <textarea
+                  rows="6"
+                  placeholder=${localize('editor.yaml_placeholder')}
+                  .value=${card.yaml || ''}
+                  style="width: 100%;"
+                  @change=${(e: Event) =>
+                    this._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}
+                ></textarea>
+                <button
+                  class="btn-primary"
+                  style="margin-top: 6px;"
+                  @click=${() => this._openCardEditorForAreaCustomCard(areaId, index)}
+                >
+                  ${localize('editor.edit_card_with_ha_editor')}
+                </button>
+                <div class="custom-item-validation">${validationMsg}</div>
+              `}
         </div>
       </div>
     `;
@@ -4352,9 +5281,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="entity-group" data-group="badges">
-        <div class="entity-group-header"
-          @click=${() => this._toggleGroupExpand(areaId, 'badges')}>
-          <input type="checkbox" class="group-checkbox"
+        <div class="entity-group-header" @click=${() => this._toggleGroupExpand(areaId, 'badges')}>
+          <input
+            type="checkbox"
+            class="group-checkbox"
             data-area-id=${areaId}
             data-group="badges"
             ?checked=${!allHidden}
@@ -4364,84 +5294,108 @@ class Simon42DashboardStrategyEditor extends LitElement {
               e.stopPropagation();
               const checked = (e.target as HTMLInputElement).checked;
               this._groupVisibilityChanged(areaId, 'badges', checked, badgeCandidates);
-            }} />
+            }}
+          />
           <ha-icon icon="mdi:checkbox-multiple-blank-circle"></ha-icon>
           <span class="group-name">${localize('editor.domain_badges')}</span>
           <span class="entity-count">(${totalCount})</span>
-          <button class="expand-button-small ${isGroupExpanded ? 'expanded' : ''}"
-            @click=${(e: Event) => { e.stopPropagation(); this._toggleGroupExpand(areaId, 'badges'); }}>
+          <button
+            class="expand-button-small ${isGroupExpanded ? 'expanded' : ''}"
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              this._toggleGroupExpand(areaId, 'badges');
+            }}
+          >
             <span class="expand-icon-small">&#x25B6;</span>
           </button>
         </div>
         ${isGroupExpanded
           ? html`
-            <div class="entity-list" data-area-id=${areaId} data-group="badges">
-              ${badgeCandidates.map((entityId) => {
-                const stateObj = hass.states[entityId];
-                const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
-                const isHidden = hiddenInBadges.includes(entityId);
-                const showName = isNameShown(entityId);
+              <div class="entity-list" data-area-id=${areaId} data-group="badges">
+                ${badgeCandidates.map((entityId) => {
+                  const stateObj = hass.states[entityId];
+                  const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                  const isHidden = hiddenInBadges.includes(entityId);
+                  const showName = isNameShown(entityId);
 
-                return html`
-                  <div class="entity-item">
-                    <input type="checkbox" class="entity-checkbox"
-                      ?checked=${!isHidden}
-                      @change=${(e: Event) => this._entityVisibilityChanged(areaId, 'badges', entityId, (e.target as HTMLInputElement).checked)} />
-                    <span class="entity-name">${name}</span>
-                    <input type="checkbox" class="badge-name-checkbox"
-                      ?checked=${showName}
-                      title=${localize('editor.badges_show_name')}
-                      @change=${(e: Event) => this._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)} />
-                    <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
-                    <span class="entity-id">${entityId}</span>
-                  </div>
-                `;
-              })}
+                  return html`
+                    <div class="entity-item">
+                      <input
+                        type="checkbox"
+                        class="entity-checkbox"
+                        ?checked=${!isHidden}
+                        @change=${(e: Event) =>
+                          this._entityVisibilityChanged(
+                            areaId,
+                            'badges',
+                            entityId,
+                            (e.target as HTMLInputElement).checked
+                          )}
+                      />
+                      <span class="entity-name">${name}</span>
+                      <input
+                        type="checkbox"
+                        class="badge-name-checkbox"
+                        ?checked=${showName}
+                        title=${localize('editor.badges_show_name')}
+                        @change=${(e: Event) =>
+                          this._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)}
+                      />
+                      <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
+                      <span class="entity-id">${entityId}</span>
+                    </div>
+                  `;
+                })}
+                ${additionalBadges.length > 0
+                  ? html`
+                      <div class="badge-separator">${localize('editor.badges_additional')}</div>
+                      ${additionalBadges.map((entityId) => {
+                        const stateObj = hass.states[entityId];
+                        const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                        const showName = isNameShown(entityId);
 
-              ${additionalBadges.length > 0
-                ? html`
-                  <div class="badge-separator">${localize('editor.badges_additional')}</div>
-                  ${additionalBadges.map((entityId) => {
-                    const stateObj = hass.states[entityId];
-                    const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
-                    const showName = isNameShown(entityId);
-
-                    return html`
-                      <div class="entity-item badge-additional-item">
-                        <span class="entity-name">${name}</span>
-                        <input type="checkbox" class="badge-name-checkbox"
-                          ?checked=${showName}
-                          title=${localize('editor.badges_show_name')}
-                          @change=${(e: Event) => this._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)} />
-                        <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
-                        <span class="entity-id">${entityId}</span>
-                        <button class="badge-remove-btn"
-                          title=${localize('editor.badges_remove')}
-                          @click=${() => this._badgeAdditionalChanged(areaId, entityId, false)}>&#x2715;</button>
+                        return html`
+                          <div class="entity-item badge-additional-item">
+                            <span class="entity-name">${name}</span>
+                            <input
+                              type="checkbox"
+                              class="badge-name-checkbox"
+                              ?checked=${showName}
+                              title=${localize('editor.badges_show_name')}
+                              @change=${(e: Event) =>
+                                this._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)}
+                            />
+                            <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
+                            <span class="entity-id">${entityId}</span>
+                            <button
+                              class="badge-remove-btn"
+                              title=${localize('editor.badges_remove')}
+                              @click=${() => this._badgeAdditionalChanged(areaId, entityId, false)}
+                            >
+                              &#x2715;
+                            </button>
+                          </div>
+                        `;
+                      })}
+                    `
+                  : nothing}
+                ${availableEntities.length > 0
+                  ? html`
+                      <div class="badge-add-section">
+                        <select class="badge-entity-picker" data-area-id=${areaId}>
+                          <option value="">${localize('editor.badges_select_entity')}</option>
+                          ${availableEntities.map(
+                            (e) => html` <option value=${e.entity_id}>${e.name} (${e.entity_id})</option> `
+                          )}
+                        </select>
+                        <button class="badge-add-button" @click=${(e: Event) => this._addBadgeFromPicker(e, areaId)}>
+                          ${localize('editor.badges_add')}
+                        </button>
                       </div>
-                    `;
-                  })}
-                `
-                : nothing}
-
-              ${availableEntities.length > 0
-                ? html`
-                  <div class="badge-add-section">
-                    <select class="badge-entity-picker" data-area-id=${areaId}>
-                      <option value="">${localize('editor.badges_select_entity')}</option>
-                      ${availableEntities.map((e) => html`
-                        <option value=${e.entity_id}>${e.name} (${e.entity_id})</option>
-                      `)}
-                    </select>
-                    <button class="badge-add-button"
-                      @click=${(e: Event) => this._addBadgeFromPicker(e, areaId)}>
-                      ${localize('editor.badges_add')}
-                    </button>
-                  </div>
-                `
-                : nothing}
-            </div>
-          `
+                    `
+                  : nothing}
+              </div>
+            `
           : nothing}
       </div>
     `;
@@ -4465,11 +5419,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const entityOrders = getEntityOrdersForArea(areaId, this._config);
     const badgeCandidates = getAreaBadgeCandidates(visibleEntities, this._hass);
     const additionalBadges = getAdditionalBadgesForArea(areaId, this._config);
-    const availableEntities = getAvailableBadgeEntities(
-      visibleEntities,
-      this._hass,
-      [...badgeCandidates, ...additionalBadges]
-    );
+    const availableEntities = getAvailableBadgeEntities(visibleEntities, this._hass, [
+      ...badgeCandidates,
+      ...additionalBadges,
+    ]);
     const defaultShowNames = getDefaultShowNameEntities(badgeCandidates, this._hass);
     const { namesVisible, namesHidden } = getBadgeNamesConfig(areaId, this._config);
 
@@ -4497,11 +5450,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const visibleEntities = getEditableAreaEntities(areaId, this._hass, this._config);
     const badgeCandidates = getAreaBadgeCandidates(visibleEntities, this._hass);
     const additionalBadges = getAdditionalBadgesForArea(areaId, this._config);
-    const availableEntities = getAvailableBadgeEntities(
-      visibleEntities,
-      this._hass,
-      [...badgeCandidates, ...additionalBadges]
-    );
+    const availableEntities = getAvailableBadgeEntities(visibleEntities, this._hass, [
+      ...badgeCandidates,
+      ...additionalBadges,
+    ]);
     const defaultShowNames = getDefaultShowNameEntities(badgeCandidates, this._hass);
     const { namesVisible, namesHidden } = getBadgeNamesConfig(areaId, this._config);
 
@@ -4537,6 +5489,14 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  private _simpleOptionChanged(key: keyof Simon42StrategyConfig, value: unknown, defaultValue: unknown): void {
+    const updated = { ...this._config } as Record<string, unknown>;
+    if (value === defaultValue) delete updated[key];
+    else updated[key] = value;
+    this._config = updated as Simon42StrategyConfig;
+    this._fireConfigChanged(this._config);
   }
 
   private _summariesColumnsChanged(columns: 2 | 4): void {
@@ -4614,21 +5574,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
       newConfig.theme = theme;
     } else {
       delete newConfig.theme;
-    }
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _overviewLayoutChanged = (e: Event): void => {
-    if (!this._hass) return;
-
-    const layout = (e.target as HTMLSelectElement).value as OverviewLayout;
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (layout === 'weather_start') {
-      newConfig.overview_layout = layout;
-    } else {
-      delete newConfig.overview_layout;
     }
 
     this._config = newConfig;
@@ -4833,7 +5778,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomView = { ...customViews[index], yaml: yamlString };
     delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt ergeben");
+    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
     updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
     updated._yaml_error = parsed._yaml_error;
 
@@ -4903,7 +5848,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomCard = { ...customCards[index], yaml: yamlString };
     delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt oder Array ergeben");
+    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
     updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
     updated._yaml_error = parsed._yaml_error;
 
@@ -5002,7 +5947,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomCard = { ...cards[cardIndex], yaml: yamlString };
     delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt oder Array ergeben");
+    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
     updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
     updated._yaml_error = parsed._yaml_error;
 
@@ -5082,12 +6027,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._writeAreaCustomCards(areaId, cards);
   }
 
-  private _updateAreaCustomCardField(
-    areaId: string,
-    index: number,
-    field: string,
-    value: string
-  ): void {
+  private _updateAreaCustomCardField(areaId: string, index: number, field: string, value: string): void {
     const cards = this._getAreaCustomCards(areaId);
     if (!cards[index]) return;
     const updated: AreaCustomCard = { ...cards[index], [field]: value };
@@ -5111,8 +6051,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
         if (parsed && typeof parsed === 'object') {
           if (updated.mode === 'section') {
             const sections = Array.isArray(parsed) ? parsed : [parsed];
-            const hasOnlySections = sections.every((section) =>
-              section && typeof section === 'object' && Array.isArray((section as Record<string, any>).cards)
+            const hasOnlySections = sections.every(
+              (section) =>
+                section && typeof section === 'object' && Array.isArray((section as Record<string, any>).cards)
             );
             if (!hasOnlySections) {
               updated._yaml_error = 'Section-YAML muss ein Objekt oder Array mit cards enthalten';
@@ -5179,7 +6120,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const updated: CustomBadge = { ...customBadges[index], yaml: yamlString };
     delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, "YAML muss ein Objekt ergeben");
+    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
     updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
     updated._yaml_error = parsed._yaml_error;
 
@@ -5570,7 +6511,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     ev.preventDefault();
     if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
 
-    const item = (ev.currentTarget as HTMLElement);
+    const item = ev.currentTarget as HTMLElement;
     if (item !== this._draggedElement) {
       item.classList.add('drag-over');
     }
@@ -5614,7 +6555,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateAreaOrder(newOrder: string[]): void {
-
     const newConfig: Simon42StrategyConfig = {
       ...this._config,
       areas_display: {
@@ -5636,7 +6576,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   private _handleEntityDragStart = (ev: DragEvent, _listType: 'favorites' | 'room_pins'): void => {
     const item = (ev.target as HTMLElement).closest('.entity-list-item') as HTMLElement | null;
-    if (!item) { ev.preventDefault(); return; }
+    if (!item) {
+      ev.preventDefault();
+      return;
+    }
 
     item.classList.add('dragging');
     this._entityDraggedId = item.dataset.entityId || null;
@@ -5655,7 +6598,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _handleEntityDragOver = (ev: DragEvent): void => {
     ev.preventDefault();
     if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
-    const item = (ev.currentTarget as HTMLElement);
+    const item = ev.currentTarget as HTMLElement;
     if (item.dataset.entityId !== this._entityDraggedId) {
       item.classList.add('drag-over');
     }
@@ -5676,9 +6619,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const dropId = dropTarget.dataset.entityId;
     if (!draggedId || !dropId || draggedId === dropId) return;
 
-    const currentList = listType === 'favorites'
-      ? [...(this._config.favorite_entities || [])]
-      : [...(this._config.room_pin_entities || [])];
+    const currentList =
+      listType === 'favorites'
+        ? [...(this._config.favorite_entities || [])]
+        : [...(this._config.room_pin_entities || [])];
 
     const draggedIndex = currentList.indexOf(draggedId);
     const dropIndex = currentList.indexOf(dropId);
@@ -5701,7 +6645,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._isUpdatingConfig = true;
 
     // Strip internal fields before saving
-    const cleanConfig: Simon42StrategyConfig = { ...config };
+    const cleanConfig: Simon42StrategyConfig = stripLegacyOverviewLayoutConfig(config);
     delete (cleanConfig as Record<string, unknown>).inline_editor;
     if (cleanConfig.custom_views) {
       cleanConfig.custom_views = cleanConfig.custom_views.map((cv) => {
@@ -5817,7 +6761,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
     this._openCardPicker((config) => {
       const yamlStr = yaml.dump(config).trim();
       const cards = this._getAreaCustomCards(areaId);
-      cards.push({ mode: 'yaml', position: 'bottom', editor_title: '', yaml: yamlStr, parsed_config: config } as AreaCustomCard);
+      cards.push({
+        mode: 'yaml',
+        position: 'bottom',
+        editor_title: '',
+        yaml: yamlStr,
+        parsed_config: config,
+      } as AreaCustomCard);
       this._writeAreaCustomCards(areaId, cards);
     });
   }
@@ -5877,7 +6827,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!card?.yaml?.trim()) return null;
     try {
       const parsed = yaml.load(card.yaml);
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, any> : null;
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, any>) : null;
     } catch {
       return null;
     }
@@ -5905,7 +6855,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _selectCardType(type: string): void {
     this._cardPickerSelectedType = type;
     this._cardPickerStep = 'editor';
-    const cardType = CARD_TYPES.find(t => t.type === type);
+    const cardType = CARD_TYPES.find((t) => t.type === type);
     if (cardType) {
       this._cardPickerYaml = cardType.template;
       try {
@@ -5913,7 +6863,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           this._cardPickerConfig = parsed as Record<string, any>;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } else {
       this._cardPickerYaml = `type: ${type}\n`;
       this._cardPickerConfig = { type };
@@ -5929,7 +6881,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         this._cardPickerConfig = parsed as Record<string, any>;
       }
-    } catch { /* ignore — user still typing */ }
+    } catch {
+      /* ignore — user still typing */
+    }
   }
 
   private _confirmCardPicker(): void {
@@ -5967,7 +6921,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
       });
       host.appendChild(el);
       this._cardPickerHasVisualEditor = true;
-    } catch { /* visual editor unavailable — YAML fallback shown */ }
+    } catch {
+      /* visual editor unavailable — YAML fallback shown */
+    }
   }
 
   private _renderCardPickerOverlay(): TemplateResult {
@@ -5978,7 +6934,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _renderCardTypePicker(): TemplateResult {
     const search = this._cardPickerSearch.toLowerCase();
     const filteredBuiltIn = CARD_TYPES.filter(
-      t => !search || t.type.includes(search) || t.name.toLowerCase().includes(search)
+      (t) => !search || t.type.includes(search) || t.name.toLowerCase().includes(search)
     );
     const customCardTypes = (window.customCards || []).filter((c) => {
       const type = (c.type || '').toLowerCase();
@@ -5996,23 +6952,33 @@ class Simon42DashboardStrategyEditor extends LitElement {
             </button>
           </div>
           <div class="card-picker-search-row">
-            <input type="text" placeholder="Kartentyp suchen…"
+            <input
+              type="text"
+              placeholder="Kartentyp suchen…"
               .value=${this._cardPickerSearch}
-              @input=${(e: Event) => { this._cardPickerSearch = (e.target as HTMLInputElement).value; this.requestUpdate(); }} />
+              @input=${(e: Event) => {
+                this._cardPickerSearch = (e.target as HTMLInputElement).value;
+                this.requestUpdate();
+              }}
+            />
           </div>
           <div class="card-type-grid">
-            ${filteredBuiltIn.map(t => html`
-              <button class="card-type-btn" @click=${() => this._selectCardType(t.type)}>
-                <ha-icon icon=${t.icon}></ha-icon>
-                <span>${t.name}</span>
-              </button>
-            `)}
-            ${customCardTypes.map(c => html`
-              <button class="card-type-btn" @click=${() => this._selectCardType(c.type)}>
-                <ha-icon icon="mdi:puzzle"></ha-icon>
-                <span>${c.name || c.type}</span>
-              </button>
-            `)}
+            ${filteredBuiltIn.map(
+              (t) => html`
+                <button class="card-type-btn" @click=${() => this._selectCardType(t.type)}>
+                  <ha-icon icon=${t.icon}></ha-icon>
+                  <span>${t.name}</span>
+                </button>
+              `
+            )}
+            ${customCardTypes.map(
+              (c) => html`
+                <button class="card-type-btn" @click=${() => this._selectCardType(c.type)}>
+                  <ha-icon icon="mdi:puzzle"></ha-icon>
+                  <span>${c.name || c.type}</span>
+                </button>
+              `
+            )}
           </div>
         </div>
       </div>
@@ -6020,20 +6986,22 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderCardEditor(): TemplateResult {
-    const typeName = CARD_TYPES.find(t => t.type === this._cardPickerSelectedType)?.name
-      || this._cardPickerSelectedType;
+    const typeName =
+      CARD_TYPES.find((t) => t.type === this._cardPickerSelectedType)?.name || this._cardPickerSelectedType;
     return html`
       <div class="card-picker-overlay" @click=${this._handlePickerOverlayClick}>
         <div class="card-picker-dialog" @click=${(e: Event) => e.stopPropagation()}>
           <div class="card-picker-header">
-            <button class="card-picker-icon-btn"
+            <button
+              class="card-picker-icon-btn"
               @click=${() => {
                 this._cardPickerStep = 'type';
                 const host = this.shadowRoot?.querySelector('.card-editor-visual-host') as HTMLElement | null;
                 if (host) host.innerHTML = '';
                 this._cardPickerHasVisualEditor = false;
               }}
-              title="Zurück">
+              title="Zurück"
+            >
               <ha-icon icon="mdi:arrow-left"></ha-icon>
             </button>
             <span class="card-picker-header-title">${typeName}</span>
@@ -6043,13 +7011,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
           </div>
           <div class="card-editor-content">
             <div class="card-editor-visual-host"></div>
-            ${!this._cardPickerHasVisualEditor ? html`
-              <div class="card-editor-yaml-label">YAML-Konfiguration:</div>
-              <textarea class="card-editor-yaml-area"
-                .value=${this._cardPickerYaml}
-                @input=${this._cardPickerYamlChanged}
-                spellcheck="false"></textarea>
-            ` : nothing}
+            ${!this._cardPickerHasVisualEditor
+              ? html`
+                  <div class="card-editor-yaml-label">YAML-Konfiguration:</div>
+                  <textarea
+                    class="card-editor-yaml-area"
+                    .value=${this._cardPickerYaml}
+                    @input=${this._cardPickerYamlChanged}
+                    spellcheck="false"
+                  ></textarea>
+                `
+              : nothing}
           </div>
           <div class="card-picker-footer">
             <button class="btn-secondary" @click=${this._closeCardPicker}>Abbrechen</button>
@@ -6125,4 +7097,3 @@ function getEntityOrdersForArea(areaId: string, config: Simon42StrategyConfig): 
 
 // Register custom element
 customElements.define('dashboard-strategy-editor', Simon42DashboardStrategyEditor);
-

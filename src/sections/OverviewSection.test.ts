@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { HomeAssistant } from '../types/homeassistant';
-import { createOverviewSection } from './OverviewSection';
+import {
+  createAlarmSection,
+  createFavoritesSection,
+  createOverviewSection,
+  createSearchSection,
+} from './OverviewSection';
 
 const hass = {
   states: {
@@ -33,5 +38,18 @@ describe('createOverviewSection', () => {
     expect(section?.cards?.some((card: any) => card.type === 'heading' && card.heading === 'Übersicht')).toBe(false);
     expect(section?.cards?.some((card: any) => card.type === 'heading' && card.heading === 'Favorites')).toBe(false);
     expect(section?.cards?.some((card: any) => card.entity === 'light.favorite')).toBe(true);
+  });
+});
+
+describe('weather-start overview blocks', () => {
+  it('creates favorites as an independent section', () => {
+    const section = createFavoritesSection(hass, { favorite_entities: ['light.favorite'] });
+    expect(section?.cards?.some((card: any) => card.entity === 'light.favorite')).toBe(true);
+  });
+
+  it('omits unavailable alarm entities and disabled search', () => {
+    expect(createAlarmSection(hass, { alarm_entity: 'alarm_control_panel.missing' })).toBeNull();
+    expect(createSearchSection(false)).toBeNull();
+    expect(createSearchSection(true)?.cards?.some((card: any) => card.type === 'custom:search-card')).toBe(true);
   });
 });

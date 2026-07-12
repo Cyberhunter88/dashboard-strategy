@@ -92,9 +92,17 @@ function getAreaControls(areaEntities: EntityRegistryEntry[], hass: HomeAssistan
 // Alert-relevant binary sensor device classes.
 // Excludes noisy classes like light, connectivity, battery, plug, power, running, problem.
 const ALERT_DEVICE_CLASSES = new Set([
-  'motion', 'occupancy', 'sound',
+  'motion',
+  'occupancy',
+  'sound',
   'moisture',
-  'smoke', 'gas', 'heat', 'cold', 'safety', 'tamper', 'vibration',
+  'smoke',
+  'gas',
+  'heat',
+  'cold',
+  'safety',
+  'tamper',
+  'vibration',
 ]);
 
 /**
@@ -187,7 +195,7 @@ export function buildAreaCard(
     features_position: 'inline',
     navigation_path: roomPath,
     vertical: false,
-    grid_options: { columns: 'full' },
+    grid_options: { columns: Registry.config.overview_area_card_columns ?? 'full' },
   };
 }
 
@@ -223,11 +231,15 @@ export function createAreasSection(
     return {
       type: 'grid',
       cards: [
-        ...(!hideHeading ? [{
-          type: 'heading',
-          heading_style: 'title',
-          heading: localize('sections.areas'),
-        }] : []),
+        ...(!hideHeading
+          ? [
+              {
+                type: 'heading',
+                heading_style: 'title',
+                heading: localize('sections.areas'),
+              },
+            ]
+          : []),
         ...visibleAreas.map((area) => buildAreaCard(area, hass as HomeAssistant, buildContext)),
       ],
     };
@@ -259,24 +271,32 @@ export function createAreasSection(
     const floorIcon = floor?.icon || getFloorIcon(floor?.level);
 
     return [
-      ...(!hideHeading ? [{
-        type: 'heading',
-        heading_style: 'title',
-        heading: floorName,
-        icon: floorIcon,
-      }] : []),
+      ...(!hideHeading
+        ? [
+            {
+              type: 'heading',
+              heading_style: 'title',
+              heading: floorName,
+              icon: floorIcon,
+            },
+          ]
+        : []),
       ...areas.map((area) => buildAreaCard(area, hass, buildContext)),
     ];
   };
 
   const buildOtherAreasCards = (): LovelaceCardConfig[] => {
     return [
-      ...(!hideOtherHeading ? [{
-        type: 'heading',
-        heading_style: 'title',
-        heading: localize('sections.areas_other'),
-        icon: 'mdi:home-outline',
-      }] : []),
+      ...(!hideOtherHeading
+        ? [
+            {
+              type: 'heading',
+              heading_style: 'title',
+              heading: localize('sections.areas_other'),
+              icon: 'mdi:home-outline',
+            },
+          ]
+        : []),
       ...areasWithoutFloor.map((area) => buildAreaCard(area, hass, buildContext)),
     ];
   };
@@ -291,14 +311,23 @@ export function createAreasSection(
     const name = (floor?.name || floorId).toLowerCase();
     const id = floorId.toLowerCase();
 
-    const isKeller = id.includes('keller') || name.includes('keller') ||
-                     id.includes('ug') || name.includes('ug') ||
-                     id.includes('basement') || name.includes('basement') ||
-                     id.includes('untergeschoss') || name.includes('untergeschoss');
+    const isKeller =
+      id.includes('keller') ||
+      name.includes('keller') ||
+      id.includes('ug') ||
+      name.includes('ug') ||
+      id.includes('basement') ||
+      name.includes('basement') ||
+      id.includes('untergeschoss') ||
+      name.includes('untergeschoss');
 
-    const isEg = id.includes('eg') || name.includes('eg') ||
-                 id.includes('erdgeschoss') || name.includes('erdgeschoss') ||
-                 id.includes('ground') || name.includes('ground');
+    const isEg =
+      id.includes('eg') ||
+      name.includes('eg') ||
+      id.includes('erdgeschoss') ||
+      name.includes('erdgeschoss') ||
+      id.includes('ground') ||
+      name.includes('ground');
 
     if (isKeller) {
       kellerFloors.push(floorId);
@@ -329,7 +358,7 @@ export function createAreasSection(
   for (const floorId of leftFloors) {
     leftColCards.push(...buildFloorCards(floorId));
   }
-  
+
   // Add spacer before Keller if there are already cards in the left column
   let firstKeller = true;
   for (const floorId of kellerFloors) {
@@ -344,7 +373,7 @@ export function createAreasSection(
   for (const floorId of rightFloors) {
     rightColCards.push(...buildFloorCards(floorId));
   }
-  
+
   // Add spacer before Weitere Bereiche if there are already cards in the right column
   if (areasWithoutFloor.length > 0) {
     if (rightColCards.length > 0) {
