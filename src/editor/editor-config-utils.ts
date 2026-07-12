@@ -1,4 +1,4 @@
-import type { AreaOptions } from '../types/strategy';
+import type { AreaOptions, Simon42StrategyConfig } from '../types/strategy';
 
 type LegacyAreaOptions = AreaOptions & { webrtc_cameras?: unknown };
 
@@ -15,4 +15,11 @@ export function stripLegacyAreaWebrtcCameras(
   }
 
   return Object.keys(cleanedAreasOptions).length > 0 ? cleanedAreasOptions : undefined;
+}
+
+export function stripLegacyOverviewLayoutConfig(config: Simon42StrategyConfig): Simon42StrategyConfig {
+  const cleaned = { ...config };
+  delete cleaned.overview_layout;
+  delete cleaned.sections_order;
+  return cleaned;
 }

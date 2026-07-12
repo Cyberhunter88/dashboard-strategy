@@ -89,11 +89,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
   return summaryCards;
 }
 
-export function appendSummaryCards(
-  cards: LovelaceCardConfig[],
-  config: Simon42StrategyConfig,
-  compact = false
-): void {
+export function appendSummaryCards(cards: LovelaceCardConfig[], config: Simon42StrategyConfig, compact = false): void {
   const summaryCards = createSummaryCards(config, compact);
   if (summaryCards.length === 0) return;
   const hidden = new Set(config.hidden_section_headings || []);
@@ -125,10 +121,7 @@ export function appendSummaryCards(
   }
 }
 
-export function createSummariesSection(
-  config: Simon42StrategyConfig,
-  compact = false
-): LovelaceSectionConfig | null {
+export function createSummariesSection(config: Simon42StrategyConfig, compact = false): LovelaceSectionConfig | null {
   const cards: LovelaceCardConfig[] = [];
   appendSummaryCards(cards, config, compact);
   return cards.length > 0 ? { type: 'grid', cards } : null;
@@ -139,6 +132,55 @@ export function createWeatherStartSummariesSection(
   size: 'mini' | 'normal' = 'mini'
 ): LovelaceSectionConfig | null {
   return createSummariesSection(config, size === 'mini');
+}
+
+export function createFavoritesSection(
+  hass: HomeAssistant,
+  config: Simon42StrategyConfig
+): LovelaceSectionConfig | null {
+  const favoriteEntities = (config.favorite_entities || []).filter((entityId) => hass.states[entityId] !== undefined);
+  if (favoriteEntities.length === 0) return null;
+
+  const cards: LovelaceCardConfig[] = [];
+  if (!(config.hidden_section_headings || []).includes('favorites')) {
+    cards.push({ type: 'heading', heading: localize('sections.favorites'), heading_style: 'title', icon: 'mdi:star' });
+  }
+
+  const stateContent: string[] = [];
+  if (config.favorites_show_state === true) stateContent.push('state');
+  if (config.favorites_hide_last_changed !== true) stateContent.push('last_changed');
+  for (const entityId of favoriteEntities) {
+    cards.push(
+      buildAdaptiveTileCardConfig(hass, entityId, {
+        show_entity_picture: true,
+        vertical: false,
+        ...(stateContent.length > 0 ? { state_content: stateContent } : {}),
+      })
+    );
+  }
+  return { type: 'grid', cards };
+}
+
+export function createAlarmSection(hass: HomeAssistant, config: Simon42StrategyConfig): LovelaceSectionConfig | null {
+  if (!config.alarm_entity || !hass.states[config.alarm_entity]) return null;
+  return {
+    type: 'grid',
+    cards: [
+      { type: 'heading', heading: localize('sections.security'), heading_style: 'title', icon: 'mdi:shield-home' },
+      buildAdaptiveTileCardConfig(hass, config.alarm_entity, { vertical: false, grid_options: { columns: 'full' } }),
+    ],
+  };
+}
+
+export function createSearchSection(enabled: boolean): LovelaceSectionConfig | null {
+  if (!enabled) return null;
+  return {
+    type: 'grid',
+    cards: [
+      { type: 'heading', heading: localize('sections.search'), heading_style: 'title', icon: 'mdi:magnify' },
+      { type: 'custom:search-card', grid_options: { columns: 'full' } },
+    ],
+  };
 }
 
 /**
@@ -276,7 +318,10 @@ export function createCustomCardsSection(
  * Each CustomSection becomes its own grid section with a heading card + its cards.
  * Returns an empty array if no valid custom sections are configured.
  */
-export function createCustomSectionsArray(customSections: CustomSection[], hideHeadings = false): LovelaceSectionConfig[] {
+export function createCustomSectionsArray(
+  customSections: CustomSection[],
+  hideHeadings = false
+): LovelaceSectionConfig[] {
   const result: LovelaceSectionConfig[] = [];
 
   for (const section of customSections) {
