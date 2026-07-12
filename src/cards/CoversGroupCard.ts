@@ -9,6 +9,7 @@ import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
+import { createEntityRenderKey } from '../utils/entity-render-key';
 import { stripCoverType } from '../utils/name-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
@@ -104,6 +105,8 @@ class Simon42CoversGroupCard extends LitElement {
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     if (!oldHass) return true;
     if (oldHass.entities !== this.hass.entities) return true;
+    if (oldHass.devices !== this.hass.devices) return true;
+    if (this._config.group_by_floors && oldHass.floors !== this.hass.floors) return true;
     if (!this._cachedFilteredIds) return true;
 
     return haveEntityStatesChanged(oldHass, this.hass, this._cachedFilteredIds);
@@ -115,9 +118,18 @@ class Simon42CoversGroupCard extends LitElement {
     trackHassUpdate('covers-group');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
 
-    if (!oldHass || oldHass.entities !== this.hass.entities) {
+    if (
+      !oldHass
+      || oldHass.entities !== this.hass.entities
+      || oldHass.devices !== this.hass.devices
+      || (this._config.group_by_floors && oldHass.floors !== this.hass.floors)
+    ) {
+      if (!Registry.isCurrent(this.hass, this._config.config || {})) {
+        Registry.initialize(this.hass, this._config.config || {});
+      }
       this._cachedFilteredIds = null;
       this._cachedAreaForEntity = null;
+      this._lastCoversList = '';
     }
 
     // Build cache if needed
@@ -331,17 +343,15 @@ class Simon42CoversGroupCard extends LitElement {
   }
 
   private _calculateRenderKey(covers: string[]): string {
-    return covers
-      .map((id) => {
+    return createEntityRenderKey(covers, (id) => {
         const state = this.hass?.states[id];
-        if (!state) return id;
+        if (!state) return null;
         const position = (state.attributes as any)?.current_position;
         if (typeof position === 'number') {
-          return `${id}:${state.state}:${position}`;
+          return [state.state, position];
         }
-        return `${id}:${state.state}`;
-      })
-      .join(',');
+        return state.state;
+      });
   }
 
   protected render() {
