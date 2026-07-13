@@ -47,7 +47,9 @@ export function renderUserVisibilityPanel(host: StrategyEditorHost): TemplateRes
     ['security', localize('views.security')], ['batteries', localize('views.batteries')], ['climate', localize('views.climate')],
     ['cctv', localize('views.cctv')], ['maintenance', localize('views.maintenance')],
     ...Object.values(host._hass.areas).map((area) => [area.area_id, area.name] as [string, string]),
-    ...(host._config.custom_views || []).filter((view) => view.path && view.title).map((view) => [view.path, view.title] as [string, string]),
+    ...(host._config.custom_views || [])
+      .filter((view) => (view.parsed_config || (view.ref_dashboard && view.ref_view)) && view.path && view.title)
+      .map((view) => [view.path as string, view.title as string] as [string, string]),
   ];
   const sections = DEFAULT_WEATHER_START_ORDER.map((key) => [key, localize(`weather_start_blocks.${key}`)] as [string, string]);
   const rules = (kind: 'view' | 'section', options: [string, string][]) => options.map(([key, title]) => {
@@ -60,6 +62,9 @@ export function renderUserVisibilityPanel(host: StrategyEditorHost): TemplateRes
   });
   return html`<div class="section"><div class="section-title">${localize('editor.user_visibility')}</div>
     <div class="description" style="margin-left: 0;">${localize('editor.user_visibility_warning')}</div>
+    <div class="description" style="margin-left: 0; color: var(--warning-color, #ffa600);">
+      ${localize('editor.user_visibility_no_person_warning')}
+    </div>
     <div class="option-group-title">${localize('editor.user_visibility_views')}</div>${rules('view', views)}
     <div class="option-group-title">${localize('editor.user_visibility_sections')}</div>${rules('section', sections)}
   </div>`;

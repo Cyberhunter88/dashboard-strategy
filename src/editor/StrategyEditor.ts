@@ -10,6 +10,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import yaml from 'js-yaml';
 
 import type { HomeAssistant } from '../types/homeassistant';
+import type { LovelaceViewBackgroundConfig, MediaSelectorValue } from '../types/lovelace';
 import type {
   Simon42StrategyConfig,
   CustomView,
@@ -80,6 +81,12 @@ interface WeatherStartFloorOption {
 interface ParsedEditorYaml {
   parsed_config?: Record<string, any> | Record<string, any>[];
   _yaml_error?: string;
+}
+
+interface RefDashboardOption {
+  url_path: string;
+  title: string;
+  views: Array<{ path?: string; title?: string; icon?: string; index: number }>;
 }
 
 function getYamlErrorMessage(error: unknown): string {
@@ -191,6 +198,11 @@ const CARD_TYPES: Array<{ type: string; name: string; icon: string; template: st
   { type: 'grid', name: 'Raster', icon: 'mdi:grid', template: 'type: grid\ncards: []\n' },
 ];
 
+const BG_IMAGE_FORM_SCHEMA = [{
+  name: 'image',
+  selector: { media: { accept: ['image/*'], clearable: true, image_upload: true, hide_content_type: true } },
+}];
+
 // ====================================================================
 // Editor Class
 // ====================================================================
@@ -258,6 +270,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
     areas: HomeAssistant['areas'];
     options: AreaRegistryEntry[];
   } | null = null;
+  private _refDashboards: RefDashboardOption[] | null = null;
+  private _refDashboardsLoading = false;
 
   // Drag state (not reactive — no render needed)
   private _draggedElement: HTMLElement | null = null;
@@ -3468,6 +3482,9 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
   private _renderBasicOverviewSection(): TemplateResult {
     const selectedTheme = this._config.theme || '';
     const themeNames = this._getThemeNames();
+    const background = this._config.background || {};
+    const backgroundImage = background.image;
+    const backgroundOpacity = typeof background.opacity === 'number' ? background.opacity : 100;
     const weatherEntitySelected = this._config.weather_entity || '';
     const weatherEntities = this._getWeatherEntities();
     const overviewMaxColumns = this._config.overview_max_columns ?? 3;
@@ -3489,6 +3506,40 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
             )}
           </select>
         </div>
+        <div class="form-row" style="display: block;">
+          ${customElements.get('ha-form')
+            ? html`<ha-form
+                .hass=${this._hass}
+                .data=${{ image: backgroundImage }}
+                .schema=${BG_IMAGE_FORM_SCHEMA}
+                .computeLabel=${() => localize('editor.background_image')}
+                @value-changed=${(e: CustomEvent<{ value: { image?: string | MediaSelectorValue } }>) =>
+                  this._backgroundImageChanged(e.detail.value.image)}
+              ></ha-form>`
+            : html`<label for="basic-dashboard-background">${localize('editor.background_image')}</label>
+                <input id="basic-dashboard-background" type="text"
+                  .value=${typeof backgroundImage === 'string' ? backgroundImage : ''}
+                  placeholder="/local/background.jpg"
+                  @change=${(e: Event) =>
+                    this._backgroundImageChanged((e.target as HTMLInputElement).value.trim())} />`}
+          <div class="description">${localize('editor.background_image_desc')}</div>
+        </div>
+        ${backgroundImage
+          ? html`<div class="form-row">
+              <label style="margin-right: 8px; min-width: 120px;">${localize('editor.background_opacity')}</label>
+              <input type="range" min="10" max="100" step="5" style="flex: 1;"
+                .value=${String(backgroundOpacity)}
+                @change=${(e: Event) =>
+                  this._backgroundOptionChanged('opacity', Number((e.target as HTMLInputElement).value))} />
+              <span>${backgroundOpacity}%</span>
+            </div>
+            ${this._renderCheckbox(
+              'basic-dashboard-background-fixed',
+              localize('editor.background_fixed'),
+              background.attachment === 'fixed',
+              (checked) => this._backgroundOptionChanged('attachment', checked ? 'fixed' : undefined)
+            )}`
+          : nothing}
         <div class="form-row">
           <label for="basic-weather-entity" style="margin-right: 8px; min-width: 120px;"
             >${localize('editor.weather_entity')}</label
@@ -4574,10 +4625,16 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
             : customViews.map((view, index) => this._renderCustomViewItem(view, index))}
         </div>
 
-        <button class="btn-primary" style="margin-top: 8px;" @click=${this._addCustomView}>
-          ${localize('editor.add_custom_view')}
-        </button>
+        <div class="custom-item-row" style="margin-top: 8px;">
+          <button class="btn-primary" @click=${this._addCustomView}>
+            ${localize('editor.add_custom_view')} <ha-icon icon="mdi:code-braces"></ha-icon>
+          </button>
+          <button class="btn-primary" @click=${this._addCustomRefView}>
+            ${localize('editor.add_custom_view_ref')} <ha-icon icon="mdi:link-variant"></ha-icon>
+          </button>
+        </div>
         <div class="description">${localize('editor.custom_views_help')}</div>
+        <div class="description">${localize('editor.custom_views_ref_help')}</div>
       </div>
     `;
   }
@@ -4608,6 +4665,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
   }
 
   private _renderCustomViewItem(view: CustomView, index: number): TemplateResult {
+    const isReference = view.ref_dashboard !== undefined;
     const validationMsg = view._yaml_error
       ? html`<span style="color: var(--error-color);">&#x274C; ${view._yaml_error}</span>`
       : view.yaml
@@ -4644,17 +4702,62 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               @change=${(e: Event) => this._updateCustomViewField(index, 'icon', (e.target as HTMLInputElement).value)}
             />
           </div>
-          <textarea
-            rows="8"
-            placeholder=${localize('editor.yaml_placeholder')}
-            .value=${view.yaml || ''}
-            style="width: 100%;"
-            @change=${(e: Event) => this._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}
-          ></textarea>
-          <div class="custom-item-validation">${validationMsg}</div>
+          ${isReference
+            ? this._renderCustomViewRefFields(view, index)
+            : html`<textarea
+                rows="8"
+                placeholder=${localize('editor.yaml_placeholder')}
+                .value=${view.yaml || ''}
+                style="width: 100%;"
+                @change=${(e: Event) => this._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}
+              ></textarea>
+              <div class="custom-item-validation">${validationMsg}</div>`}
         </div>
       </div>
     `;
+  }
+
+  private _renderCustomViewRefFields(view: CustomView, index: number): TemplateResult {
+    if (this._refDashboards === null) {
+      void this._loadRefDashboards();
+      return html`<div class="description">${localize('editor.ref_loading')}</div>`;
+    }
+    if (this._refDashboards.length === 0) {
+      return html`<div class="custom-item-validation" style="color: var(--error-color);">
+        ${localize('editor.ref_no_dashboards')}
+      </div>`;
+    }
+    const selected = this._refDashboards.find((dashboard) => dashboard.url_path === view.ref_dashboard);
+    const orphaned = !!view.ref_dashboard && !selected;
+    return html`
+      <div class="custom-item-row">
+        <select style="flex: 1;" @change=${(e: Event) =>
+          this._refDashboardChanged(index, (e.target as HTMLSelectElement).value)}>
+          <option value="" ?selected=${!view.ref_dashboard} disabled>${localize('editor.ref_select_dashboard')}</option>
+          ${orphaned ? html`<option value=${view.ref_dashboard || ''} selected>${view.ref_dashboard}</option>` : nothing}
+          ${this._refDashboards.map((dashboard) => html`
+            <option value=${dashboard.url_path} ?selected=${dashboard.url_path === view.ref_dashboard}>
+              ${dashboard.title}
+            </option>`)}
+        </select>
+        <select style="flex: 1;" ?disabled=${!selected} @change=${(e: Event) =>
+          this._refViewChanged(index, (e.target as HTMLSelectElement).value)}>
+          <option value="" ?selected=${!view.ref_view} disabled>${localize('editor.ref_select_view')}</option>
+          ${(selected?.views || []).map((sourceView) => {
+            const value = sourceView.path ?? String(sourceView.index);
+            const label = `${sourceView.title || `${localize('editor.ref_view_untitled')} ${sourceView.index + 1}`}${
+              sourceView.path ? ` (${sourceView.path})` : ''}`;
+            return html`<option value=${value} ?selected=${value === view.ref_view}>${label}</option>`;
+          })}
+        </select>
+      </div>
+      <div class="custom-item-validation">
+        ${orphaned
+          ? html`<span style="color: var(--error-color);">${localize('editor.ref_dashboard_missing')}</span>`
+          : view.ref_dashboard && view.ref_view
+            ? html`<span style="color: var(--success-color, green);">${localize('editor.ref_valid')}</span>`
+            : localize('editor.ref_incomplete')}
+      </div>`;
   }
 
   private _renderCustomCardItem(card: CustomCard, index: number): TemplateResult {
@@ -5685,6 +5788,31 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     this._fireConfigChanged(newConfig);
   };
 
+  private _backgroundImageChanged(image: string | MediaSelectorValue | undefined): void {
+    const hasImage = typeof image === 'string' ? image !== '' : !!image;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (hasImage) newConfig.background = { ...(newConfig.background || {}), image };
+    else delete newConfig.background;
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _backgroundOptionChanged(
+    option: 'opacity' | 'attachment',
+    value: number | 'fixed' | undefined
+  ): void {
+    if (!this._config.background?.image) return;
+    const background: LovelaceViewBackgroundConfig = { ...this._config.background };
+    if (option === 'opacity') {
+      if (typeof value === 'number' && value < 100) background.opacity = value;
+      else delete background.opacity;
+    } else if (value === 'fixed') background.attachment = 'fixed';
+    else delete background.attachment;
+    const newConfig = { ...this._config, background };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
   private _personBadgeLayoutChanged = (e: Event): void => {
     const value = (e.target as HTMLSelectElement).value as PersonBadgeLayout;
     const newConfig: Simon42StrategyConfig = { ...this._config };
@@ -5848,6 +5976,95 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_views: customViews };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  private _addCustomRefView = (): void => {
+    const customViews: CustomView[] = [...(this._config.custom_views || [])];
+    customViews.push({ title: '', path: '', icon: '', ref_dashboard: '', ref_view: '' });
+    const newConfig = { ...this._config, custom_views: customViews };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+    void this._loadRefDashboards();
+  };
+
+  private async _loadRefDashboards(): Promise<void> {
+    if (this._refDashboardsLoading || !this._hass) return;
+    this._refDashboardsLoading = true;
+    const options: RefDashboardOption[] = [];
+    try {
+      const list = await this._hass.callWS<Array<{ url_path: string; title: string }>>({
+        type: 'lovelace/dashboards/list',
+      });
+      const candidates = [
+        { url_path: 'lovelace', title: localize('editor.ref_default_dashboard') },
+        ...list.filter((dashboard) => dashboard.url_path && dashboard.url_path !== 'lovelace'),
+      ];
+      await Promise.all(candidates.map(async (candidate) => {
+        try {
+          const config = await this._hass!.callWS<{
+            views?: Array<Record<string, unknown>>; strategy?: unknown;
+          }>({
+            type: 'lovelace/config',
+            url_path: candidate.url_path === 'lovelace' ? null : candidate.url_path,
+          });
+          if (config.strategy) return;
+          const views = (config.views || []).map((view, index) => ({
+            path: typeof view.path === 'string' ? view.path : undefined,
+            title: typeof view.title === 'string' ? view.title : undefined,
+            icon: typeof view.icon === 'string' ? view.icon : undefined,
+            index,
+          }));
+          if (views.length) options.push({ ...candidate, views });
+        } catch {
+          // Missing or inaccessible dashboards are not offered.
+        }
+      }));
+    } catch {
+      // Keep an empty list; the editor shows a non-blocking message.
+    }
+    options.sort((a, b) => a.title.localeCompare(b.title));
+    this._refDashboards = options;
+    this._refDashboardsLoading = false;
+    this.requestUpdate();
+  }
+
+  private _refDashboardChanged(index: number, urlPath: string): void {
+    const customViews = [...(this._config.custom_views || [])];
+    if (!customViews[index]) return;
+    customViews[index] = { ...customViews[index], ref_dashboard: urlPath, ref_view: '' };
+    const newConfig = { ...this._config, custom_views: customViews };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _refViewChanged(index: number, refView: string): void {
+    const customViews = [...(this._config.custom_views || [])];
+    const existing = customViews[index];
+    if (!existing) return;
+    const dashboard = this._refDashboards?.find((item) => item.url_path === existing.ref_dashboard);
+    const source = dashboard?.views.find((item) => (item.path ?? String(item.index)) === refView);
+    const updated: CustomView = { ...existing, ref_view: refView };
+    if (!updated.title) updated.title = source?.title || localize('editor.new_view');
+    if (!updated.icon) updated.icon = source?.icon || 'mdi:link-variant';
+    if (!updated.path) updated.path = this._uniqueCustomViewPath(source?.path || `custom-view-${index + 1}`, index);
+    customViews[index] = updated;
+    const newConfig = { ...this._config, custom_views: customViews };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _uniqueCustomViewPath(base: string, excludeIndex: number): string {
+    const taken = new Set([
+      'home', 'lights', 'covers', 'security', 'batteries', 'climate', 'maintenance', 'cctv',
+      ...Object.keys(this._hass?.areas || {}),
+      ...(this._config.custom_views || []).filter((_, index) => index !== excludeIndex)
+        .map((view) => view.path).filter((path): path is string => !!path),
+    ]);
+    if (!taken.has(base)) return base;
+    let suffix = 1;
+    let candidate = `${base}-ref`;
+    while (taken.has(candidate)) candidate = `${base}-ref${++suffix}`;
+    return candidate;
   }
 
   private _removeCustomView(index: number): void {

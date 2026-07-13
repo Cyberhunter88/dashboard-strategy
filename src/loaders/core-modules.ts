@@ -12,3 +12,5 @@ export { getVisibleAreasFromHass, normalizeAreasDisplay } from '../utils/name-ut
 export { localize } from '../utils/localize';
 export { withUnavailableEntitiesHidden } from '../utils/availability-utils';
 export { applyViewVisibility } from '../utils/view-visibility';
+export { resolveCustomViews } from '../utils/custom-view-ref';
+export { applyDesign } from '../utils/design';

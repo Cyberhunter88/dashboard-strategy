@@ -11,7 +11,7 @@ import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 
-const STRATEGY_VERSION = '1.22.5'; // x-release-please-version
+const STRATEGY_VERSION = '1.22.6'; // x-release-please-version
 
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
 
@@ -65,7 +65,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     t('modules ready');
 
     const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden,
-      applyViewVisibility } = runtime;
+      applyViewVisibility, resolveCustomViews, applyDesign } = runtime;
     t('imports done');
 
     const getStrategy = (tag: string): StrategyGenerator => {
@@ -94,12 +94,6 @@ class Simon42DashboardStrategy extends HTMLElement {
     const showBatteries = config.show_battery_summary !== false;
     const showBatteryView = config.show_battery_view === true || showBatteries;
     const showClimate = config.show_climate_summary === true;
-    const selectedTheme = config.theme?.trim();
-    const withConfiguredTheme = (view: LovelaceViewConfig): LovelaceViewConfig => {
-      if (!selectedTheme || view.theme) return view;
-      return { ...view, theme: selectedTheme };
-    };
-
     // Pre-resolve ALL views upfront (like HA's Home Panel does)
     const overviewConfig = await getStrategy('ll-strategy-dashboard-strategy-view-overview').generate(
       { dashboardConfig: config },
@@ -174,24 +168,15 @@ class Simon42DashboardStrategy extends HTMLElement {
       })),
     ];
 
-    const customViews = config.custom_views || [];
-    for (const cv of customViews) {
-      if (cv.parsed_config && cv.title && cv.path) {
-        views.push({
-          ...cv.parsed_config,
-          title: cv.title,
-          path: cv.path,
-          icon: cv.icon || 'mdi:card-text-outline',
-        });
-      }
-    }
+    views.push(...(await resolveCustomViews(config.custom_views || [], hass)));
+    t('custom views resolved');
 
     t(`generate() done — ${views.length} views`);
 
     return {
       title: localize('dashboard.title'),
       views: views.map((view) => applyViewVisibility(
-        withConfiguredTheme(withUnavailableEntitiesHidden(view, config)), config
+        applyDesign(withUnavailableEntitiesHidden(view, config), config), config
       )),
     };
   }
@@ -233,4 +218,4 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
 
 // Keep the version literal in the production bundle: the CI artifact check
 // validates this exact marker before HACS can publish the release.
-console.log('Dashboard Strategy v1.22.5 loaded');
+console.log('Dashboard Strategy v1.22.6 loaded');
