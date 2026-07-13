@@ -33,7 +33,8 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 - **Eigene Abschnitte** — Mehrere eigene Sections mit Überschrift, Icon und beliebigen Karten
 - **Eigene Karten pro Raum** — YAML, geführte Kacheln oder komplette Sections ober- oder unterhalb der automatischen Raum-Abschnitte
 - **Eigene Badges** — Beliebige Badges via YAML im Header (neben Personen-Chips)
-- **Custom Views** — Eigene Dashboard-Views mit beliebigen Cards via YAML
+- **Custom Views** — Eigene Dashboard-Views via YAML oder Live-Referenz auf Views anderer Dashboards
+- **Globales Design** — Theme und natives Hintergrundbild für alle Views
 - **Reaktive Updates** — Echtzeit-Aktualisierung via LitElement Custom Cards
 - **Mehrsprachig** — Deutsch und Englisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
 - **Performance-optimiert** — Code-Split Bundles, Registry-Caching, Tile-Card-Pooling
@@ -312,6 +313,8 @@ Leeres oder ungültiges YAML verwendet weiterhin die automatisch erzeugte Bereic
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-View-hinzufugen.gif" alt="Custom View hinzufügen" width="800" />
 </p>
 
+Alternativ kann der Editor eine View eines anderen, speicherbasierten Dashboards referenzieren. Die Quell-View wird bei jedem Generieren live über Home Assistants `lovelace/config`-API geladen; Änderungen an der Quelle werden dadurch ohne Kopieren übernommen. Strategy-Dashboards sind ausgeschlossen. Fehlt später das Dashboard oder die View, bleibt das Dashboard nutzbar und zeigt in der betroffenen View eine Fehlerkarte. Die Sichtbarkeit der Referenz richtet sich nach diesem Dashboard, nicht nach dem Quell-Dashboard.
+
 ### Entity-Filterung
 
 Entitäten können auf mehreren Ebenen gefiltert werden:
@@ -332,6 +335,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | Option | Typ | Standard | Beschreibung |
 |--------|-----|----------|-------------|
 | `theme` | string | HA-Standard | Theme für alle automatisch generierten Views |
+| `background` | object | — | Hintergrund für alle Views im nativen HA-View-Schema (`image`, `opacity`, `attachment`, `size`, `alignment`, `repeat`); Custom Views können ihn überschreiben |
 | `show_clock_card` | boolean | `true` | Uhr auf der Übersicht |
 | `show_person_badges` | boolean | `true` | Automatische Personen-Badges im Header der Übersicht anzeigen |
 | `person_badge_layout` | `"minimal"` \| `"with_state"` \| `"with_state_and_time"` | `"with_state"` | Layout der automatischen Personen-Badges |
@@ -434,7 +438,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `custom_cards[].target_section` | string | `"custom_cards"` | Ziel-Section für eine eigene Karte |
 | `custom_sections` | object[] | `[]` | Eigene vollständige Sections mit Karten |
 | `custom_badges` | object[] | `[]` | Eigene Badges im Header via YAML |
-| `custom_views` | object[] | `[]` | Eigene Views via YAML |
+| `custom_views` | object[] | `[]` | Eigene Views via YAML oder als Live-Referenz auf eine View eines anderen Dashboards (`ref_dashboard` + `ref_view`) |
 
 </details>
 

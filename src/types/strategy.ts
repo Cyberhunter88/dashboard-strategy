@@ -6,7 +6,7 @@
 // used throughout the strategy codebase.
 // ====================================================================
 
-import type { LovelaceCardConfig } from './lovelace';
+import type { LovelaceCardConfig, LovelaceViewBackgroundConfig } from './lovelace';
 
 // -- Section Ordering -------------------------------------------------
 
@@ -233,6 +233,8 @@ export const DEFAULT_STACKS_ORDER: StackKey[] = [
 export interface Simon42StrategyConfig {
   // Appearance
   theme?: string; // default: Home Assistant/user default
+  /** Native per-view background applied globally unless a custom view defines its own. */
+  background?: LovelaceViewBackgroundConfig;
 
   // Global toggles
   show_weather?: boolean; // default: true
@@ -433,6 +435,10 @@ export interface CustomView {
   parsed_config?: Record<string, any> | null;
   /** YAML parse error message, if any */
   _yaml_error?: string;
+  /** Source dashboard url_path; `lovelace` is the default-dashboard sentinel. */
+  ref_dashboard?: string;
+  /** Source view path, or stringified index when the source view has no path. */
+  ref_view?: string;
 }
 
 // -- Custom Badges ----------------------------------------------------

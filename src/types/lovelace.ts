@@ -185,12 +185,19 @@ export interface LovelaceViewHeaderConfig {
 }
 
 export interface LovelaceViewBackgroundConfig {
-  image?: string;
+  image?: string | MediaSelectorValue;
   opacity?: number;
   size?: 'auto' | 'cover' | 'contain';
   alignment?: string;
   repeat?: 'repeat' | 'no-repeat';
   attachment?: 'scroll' | 'fixed';
+}
+
+/** Value emitted by Home Assistant's media selector. */
+export interface MediaSelectorValue {
+  media_content_id?: string;
+  media_content_type?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ShowViewConfig {
