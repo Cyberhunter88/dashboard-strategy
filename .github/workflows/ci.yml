@@ -63,5 +63,5 @@ jobs:
           find dist -maxdepth 1 -name 'dashboard-strategy-views.*.js' -size +0c | grep -q .
           find dist -maxdepth 1 -name 'dashboard-strategy-lit.*.js' -size +0c | grep -q .
 
-      - name: Verify HACS multi-file distribution
+      - name: Verify HACS distribution
         run: node scripts/verify-hacs-distribution.mjs

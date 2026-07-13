@@ -9,11 +9,8 @@ if (!javascriptFiles.includes('dashboard-strategy.js')) {
   throw new Error('dist/dashboard-strategy.js is missing');
 }
 
-if (javascriptFiles.length > 1 && manifest.filename) {
-  throw new Error(
-    `hacs.json filename=${manifest.filename} restricts this multi-file plugin to one download; ` +
-    'remove filename so HACS installs every JavaScript file from dist',
-  );
+if (manifest.filename !== 'dashboard-strategy.js') {
+  throw new Error('hacs.json filename must preserve the public HACS entry file dashboard-strategy.js');
 }
 
 if (manifest.content_in_root !== false) {
@@ -28,4 +25,4 @@ for (const file of javascriptFiles.filter((name) => name !== 'dashboard-strategy
   }
 }
 
-console.log(JSON.stringify({ javascriptFiles: javascriptFiles.length, filenameRestricted: false }));
+console.log(JSON.stringify({ javascriptFiles: javascriptFiles.length, filename: manifest.filename }));
