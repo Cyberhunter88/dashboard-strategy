@@ -1,4 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "packages": { ".": { "release-type": "node", "include-component-in-tag": false, "extra-files": ["src/dashboard-strategy.ts"] } }
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "include-component-in-tag": false,
+      "draft": true,
+      "extra-files": ["src/dashboard-strategy.ts"]
+    }
+  }
 }

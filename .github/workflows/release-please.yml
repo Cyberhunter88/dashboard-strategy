@@ -31,8 +31,78 @@ jobs:
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - name: Maintain stable release PR
         if: steps.credentials.outputs.available == 'true'
+        id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      - name: Check out release tag
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+          fetch-depth: 0
+      - name: Require release commit on main
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Set up Node.js
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        if: steps.release.outputs.release_created == 'true'
+        run: npm ci
+      - name: Validate source
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test
+      - name: Build release assets
+        if: steps.release.outputs.release_created == 'true'
+        run: npm run build
+      - name: Verify release version and bundle
+        if: steps.release.outputs.release_created == 'true'
+        shell: bash
+        run: |
+          node scripts/verify-version-sync.mjs --require-tag
+          test -s dist/dashboard-strategy.js
+          test -s dist/dashboard-strategy.js.gz
+          test -s dist/dashboard-strategy.js.br
+          package_version="$(node -p "require('./package.json').version")"
+          grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
+      - name: Upload and verify draft release assets
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        shell: bash
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = "true"
+          mapfile -t expected_assets < <(
+            find dist -maxdepth 1 -type f \
+              \( -name '*.js' -o -name '*.js.gz' -o -name '*.js.br' -o -name '*.LICENSE.txt' \) \
+              -printf '%f\n' | sort
+          )
+          test "${#expected_assets[@]}" -gt 0
+          gh release upload "$RELEASE_TAG" \
+            dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt \
+            --clobber -R "${{ github.repository }}"
+          mapfile -t uploaded_assets < <(
+            gh release view "$RELEASE_TAG" -R "${{ github.repository }}" \
+              --json assets --jq '.assets[].name' | sort
+          )
+          diff \
+            <(printf '%s\n' "${expected_assets[@]}") \
+            <(printf '%s\n' "${uploaded_assets[@]}")
+      - name: Publish complete release
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh release edit "$RELEASE_TAG" --draft=false -R "${{ github.repository }}"
