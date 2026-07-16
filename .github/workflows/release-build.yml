@@ -1,7 +1,5 @@
 name: Release build
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -49,6 +47,7 @@ jobs:
           test -s dist/dashboard-strategy.js.br
           package_version="$(node -p "require('./package.json').version")"
           grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
+          node scripts/verify-hacs-distribution.mjs
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
