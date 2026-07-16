@@ -36,7 +36,7 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 - **Custom Views** — Eigene Dashboard-Views via YAML oder Live-Referenz auf Views anderer Dashboards
 - **Globales Design** — Theme und natives Hintergrundbild für alle Views
 - **Reaktive Updates** — Echtzeit-Aktualisierung via LitElement Custom Cards
-- **Mehrsprachig** — Deutsch und Englisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
+- **Mehrsprachig** — Deutsch, Englisch und Russisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
 - **Performance-optimiert** — Code-Split Bundles, Registry-Caching, Tile-Card-Pooling
 
 ## Installation
@@ -97,7 +97,7 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Entitaet-auf-nicht-sichtbar-stellen-via-entity-config.gif" alt="Entität auf nicht sichtbar stellen" width="800" />
 </p>
 
-- **Label `no_dboard`** — Erstelle in Home Assistant unter **Einstellungen → Labels** ein Label `no_dboard` und weise es Entitäten zu. Die Entität wird aus dieser Dashboard Strategy global ausgeblendet, bleibt aber in anderen (manuellen) Dashboards sichtbar. Wichtig: Der Unterstrich ist relevant; `no-dboard` wird vom aktuellen Code nicht als Ausschluss-Label erkannt.
+- **Label `no_dboard`** — Erstelle in Home Assistant unter **Einstellungen → Labels** ein Label `no_dboard` und weise es Entitäten zu. Die Entität wird aus dieser Dashboard Strategy global ausgeblendet, bleibt aber in anderen (manuellen) Dashboards sichtbar. Die Upstream-Schreibweise `no-dboard` wird ebenfalls akzeptiert.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/no-dboard-label.png" alt="Label no_dboard in Home Assistant erstellen" width="800" />
@@ -388,6 +388,8 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
 | `show_maintenance_view` | boolean | `false` | Eigene Wartungsansicht mit Updates und nicht verfügbaren Entitäten |
+| `show_maintenance_activity` | boolean | `true` | 24-Stunden-Aktivitätsverlauf in der Wartungsansicht |
+| `show_video_tips` | boolean | `true` | Passende statische Video-Tipps in der Wartungsansicht |
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
 | `view_visible_users` | object | `{}` | Sichtbare Benutzer pro View-Pfad; leeres Array blendet die View für alle aus |
 | `section_visible_users` | object | `{}` | Sichtbare Benutzer pro Übersichtsabschnitt; leeres Array blendet den Abschnitt für alle aus |
@@ -409,7 +411,9 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
-| `cctv_show_activity` | boolean | `false` | Aktivitätsverlauf in der CCTV-Ansicht |
+| `cctv_show_activity` | boolean | `false` | LLM-Vision-Ereignisverläufe in der CCTV-Ansicht |
+| `show_cameras_in_security` | boolean | `false` | Kameras zusätzlich in der Sicherheitsansicht anzeigen |
+| `hidden_cameras` | string[] | `[]` | Kameras aus CCTV- und Sicherheitsansicht ausblenden; Raumansichten bleiben unberührt |
 | `pollen_entities` | string[] | `[]` | Pollen-Sensoren im Wetterabschnitt |
 | `show_energy_in_rooms` | boolean | `true` | Energie-Block mit Leistungs-, Energie-, Wasser- und Gas-Sensoren in Raum-Views |
 | `show_ups_in_rooms` | boolean | `true` | UPS/USV-Gruppen in Raum-Views anzeigen |
@@ -477,6 +481,7 @@ Die Strategy erkennt automatisch die Sprache aus deinen Home Assistant Einstellu
 |---------|--------|
 | 🇩🇪 Deutsch | Vollständig |
 | 🇬🇧 English | Vollständig |
+| 🇷🇺 Русский | Upstream-Basis mit englischem Fallback für Fork-spezifische Optionen |
 
 **Weitere Sprachen hinzufügen:** Erstelle eine neue Datei `src/translations/<code>.json` (z.B. `fr.json`) nach dem Muster der bestehenden Dateien und öffne einen Pull Request. Der Aufwand ist gering — es müssen nur die Strings übersetzt werden, kein Code.
 

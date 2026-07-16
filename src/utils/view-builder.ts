@@ -10,12 +10,14 @@ type OverviewViewConfig = Pick<Simon42StrategyConfig, 'dense_section_placement' 
 
 type SectionViewExtras = Omit<LovelaceViewConfig, 'type' | 'sections' | 'dense_section_placement'>;
 
+export function densePlacement(
+  config?: Pick<Simon42StrategyConfig, 'dense_section_placement'>
+): Partial<LovelaceViewConfig> {
+  return config?.dense_section_placement === true ? { dense_section_placement: true } : {};
+}
+
 function withDenseSectionPlacement(view: LovelaceViewConfig, config?: OverviewViewConfig): LovelaceViewConfig {
-  if (config?.dense_section_placement !== true) return view;
-  return {
-    ...view,
-    dense_section_placement: true,
-  };
+  return { ...view, ...densePlacement(config) };
 }
 
 export function createSectionsView(

@@ -22,6 +22,10 @@ export interface RoomEntityOptions {
   includeScripts?: boolean;
 }
 
+function hasDashboardExclusionLabel(entity: EntityRegistryEntry): boolean {
+  return entity.labels?.includes('no_dboard') || entity.labels?.includes('no-dboard') || false;
+}
+
 export function getVisibleAreaEntities(
   areaId: string,
   hass: HomeAssistant,
@@ -39,7 +43,7 @@ export function getEditableAreaEntities(
   if (!Registry.isCurrent(hass, config)) Registry.initialize(hass, config);
   return Registry.getEntitiesForArea(areaId).filter(
     (entity) =>
-      !!hass.states[entity.entity_id] && !entity.labels?.includes('no_dboard') && !isEntityRegistryHidden(entity)
+      !!hass.states[entity.entity_id] && !hasDashboardExclusionLabel(entity) && !isEntityRegistryHidden(entity)
   );
 }
 

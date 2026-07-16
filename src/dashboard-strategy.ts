@@ -10,6 +10,7 @@ import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
 import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
+import { normalizeStrategyConfig } from './utils/strategy-config';
 
 const STRATEGY_VERSION = '1.22.6'; // x-release-please-version
 
@@ -58,6 +59,7 @@ class Simon42DashboardStrategy extends HTMLElement {
   }
 
   static async generate(config: Simon42StrategyConfig, hass: HomeAssistant): Promise<LovelaceConfig> {
+    config = normalizeStrategyConfig(config);
     generateCallCount++;
     t(`generate() called (#${generateCallCount})`);
 

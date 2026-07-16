@@ -78,7 +78,7 @@ class Registry {
 
   // === Pre-computed exclusion Sets ===
 
-  /** Entities with the "no_dboard" label — excluded from all dashboard views */
+  /** Entities with the "no_dboard" or upstream "no-dboard" label. */
   private static _excludeSet: Set<string>;
 
   /** Entities hidden via areas_options.*.groups_options.*.hidden in config */
@@ -285,7 +285,7 @@ class Registry {
     // no_dboard label exclusion
     Registry._excludeSet = new Set();
     for (const e of Registry._fetchedEntities) {
-      if (e.labels.includes('no_dboard')) {
+      if (e.labels.includes('no_dboard') || e.labels.includes('no-dboard')) {
         Registry._excludeSet.add(e.entity_id);
       }
     }
