@@ -10,7 +10,6 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import yaml from 'js-yaml';
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { LovelaceViewBackgroundConfig, MediaSelectorValue } from '../types/lovelace';
 import type {
   Simon42StrategyConfig,
   CustomView,
@@ -42,6 +41,7 @@ import { dispatchStrategyConfigChanged } from './editor-host';
 import { extractedPanelStyles } from './editor-styles';
 import { renderViewsPanel } from './panels/ViewsPanel';
 import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
+import { renderDesignSection } from './panels/DesignPanel';
 import { loadExpandedPanels, renderCollapsiblePanel } from './panels/panel-shell';
 import { editorPanelMeta, WEATHER_START_BLOCK_META } from './editor-panel-registry';
 import {
@@ -51,6 +51,7 @@ import {
   getAvailableBadgeEntities,
   getEditableAreaEntities,
 } from '../utils/area-entity-utils';
+import { normalizeStrategyConfig } from '../utils/strategy-config';
 
 // -- Supporting types for the editor ------------------------------------
 
@@ -198,11 +199,6 @@ const CARD_TYPES: Array<{ type: string; name: string; icon: string; template: st
   { type: 'grid', name: 'Raster', icon: 'mdi:grid', template: 'type: grid\ncards: []\n' },
 ];
 
-const BG_IMAGE_FORM_SCHEMA = [{
-  name: 'image',
-  selector: { media: { accept: ['image/*'], clearable: true, image_upload: true, hide_content_type: true } },
-}];
-
 // ====================================================================
 // Editor Class
 // ====================================================================
@@ -310,6 +306,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   setConfig(config: Simon42StrategyConfig): void {
     if (this._isUpdatingConfig) return;
+    config = normalizeStrategyConfig(config);
     if (
       this._config.areas_display?.hidden !== config.areas_display?.hidden ||
       this._config.areas_display?.order !== config.areas_display?.order ||
@@ -3480,11 +3477,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
   // -- Overview section --------------------------------------------------
 
   private _renderBasicOverviewSection(): TemplateResult {
-    const selectedTheme = this._config.theme || '';
-    const themeNames = this._getThemeNames();
-    const background = this._config.background || {};
-    const backgroundImage = background.image;
-    const backgroundOpacity = typeof background.opacity === 'number' ? background.opacity : 100;
     const weatherEntitySelected = this._config.weather_entity || '';
     const weatherEntities = this._getWeatherEntities();
     const overviewMaxColumns = this._config.overview_max_columns ?? 3;
@@ -3495,51 +3487,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     return html`
       <div class="section">
         <div class="section-title">${localize('editor.section_overview')}</div>
-        <div class="form-row">
-          <label for="basic-dashboard-theme" style="margin-right: 8px; min-width: 120px;"
-            >${localize('editor.theme')}</label
-          >
-          <select id="basic-dashboard-theme" style="flex: 1;" @change=${this._themeChanged}>
-            <option value="" ?selected=${!selectedTheme}>${localize('editor.theme_default')}</option>
-            ${themeNames.map(
-              (theme) => html` <option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option> `
-            )}
-          </select>
-        </div>
-        <div class="form-row" style="display: block;">
-          ${customElements.get('ha-form')
-            ? html`<ha-form
-                .hass=${this._hass}
-                .data=${{ image: backgroundImage }}
-                .schema=${BG_IMAGE_FORM_SCHEMA}
-                .computeLabel=${() => localize('editor.background_image')}
-                @value-changed=${(e: CustomEvent<{ value: { image?: string | MediaSelectorValue } }>) =>
-                  this._backgroundImageChanged(e.detail.value.image)}
-              ></ha-form>`
-            : html`<label for="basic-dashboard-background">${localize('editor.background_image')}</label>
-                <input id="basic-dashboard-background" type="text"
-                  .value=${typeof backgroundImage === 'string' ? backgroundImage : ''}
-                  placeholder="/local/background.jpg"
-                  @change=${(e: Event) =>
-                    this._backgroundImageChanged((e.target as HTMLInputElement).value.trim())} />`}
-          <div class="description">${localize('editor.background_image_desc')}</div>
-        </div>
-        ${backgroundImage
-          ? html`<div class="form-row">
-              <label style="margin-right: 8px; min-width: 120px;">${localize('editor.background_opacity')}</label>
-              <input type="range" min="10" max="100" step="5" style="flex: 1;"
-                .value=${String(backgroundOpacity)}
-                @change=${(e: Event) =>
-                  this._backgroundOptionChanged('opacity', Number((e.target as HTMLInputElement).value))} />
-              <span>${backgroundOpacity}%</span>
-            </div>
-            ${this._renderCheckbox(
-              'basic-dashboard-background-fixed',
-              localize('editor.background_fixed'),
-              background.attachment === 'fixed',
-              (checked) => this._backgroundOptionChanged('attachment', checked ? 'fixed' : undefined)
-            )}`
-          : nothing}
+        ${renderDesignSection(this)}
         <div class="form-row">
           <label for="basic-weather-entity" style="margin-right: 8px; min-width: 120px;"
             >${localize('editor.weather_entity')}</label
@@ -4376,16 +4324,22 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const showRoomViews = this._config.show_room_views === true;
     const showCctvView = this._config.show_cctv_view === true;
     const cctvShowActivity = this._config.cctv_show_activity === true;
+    const showCamerasInSecurity = this._config.show_cameras_in_security === true;
     const showMaintenanceView = this._config.show_maintenance_view === true;
+    const showMaintenanceActivity = this._config.show_maintenance_activity !== false;
+    const showVideoTips = this._config.show_video_tips !== false;
 
     return html`${renderViewsPanel({
       showSummaryViews,
       showRoomViews,
       showCctvView,
       cctvShowActivity,
+      showCamerasInSecurity,
       showMaintenanceView,
+      showMaintenanceActivity,
+      showVideoTips,
       checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
-      change: (key, checked) => this._toggleChanged(key, checked, false),
+      change: (key, checked, defaultValue = false) => this._toggleChanged(key, checked, defaultValue),
     })}${renderRoomVisibilityPanel(this)}${renderUserVisibilityPanel(this)}`;
   }
 
@@ -5769,46 +5723,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       delete newConfig.weather_entity;
     }
 
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _themeChanged = (e: Event): void => {
-    if (!this._hass) return;
-
-    const theme = (e.target as HTMLSelectElement).value.trim();
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (theme) {
-      newConfig.theme = theme;
-    } else {
-      delete newConfig.theme;
-    }
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _backgroundImageChanged(image: string | MediaSelectorValue | undefined): void {
-    const hasImage = typeof image === 'string' ? image !== '' : !!image;
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (hasImage) newConfig.background = { ...(newConfig.background || {}), image };
-    else delete newConfig.background;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _backgroundOptionChanged(
-    option: 'opacity' | 'attachment',
-    value: number | 'fixed' | undefined
-  ): void {
-    if (!this._config.background?.image) return;
-    const background: LovelaceViewBackgroundConfig = { ...this._config.background };
-    if (option === 'opacity') {
-      if (typeof value === 'number' && value < 100) background.opacity = value;
-      else delete background.opacity;
-    } else if (value === 'fixed') background.attachment = 'fixed';
-    else delete background.attachment;
-    const newConfig = { ...this._config, background };
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }

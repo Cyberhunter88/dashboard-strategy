@@ -1,6 +1,6 @@
 import { html, type TemplateResult } from 'lit';
 
-import { DEFAULT_WEATHER_START_ORDER } from '../../types/strategy';
+import { SECTION_REGISTRY, isSectionHiddenByConfig } from '../../sections/section-registry';
 import { localize } from '../../utils/localize';
 import type { StrategyEditorHost } from '../editor-host';
 
@@ -51,7 +51,12 @@ export function renderUserVisibilityPanel(host: StrategyEditorHost): TemplateRes
       .filter((view) => (view.parsed_config || (view.ref_dashboard && view.ref_view)) && view.path && view.title)
       .map((view) => [view.path as string, view.title as string] as [string, string]),
   ];
-  const sections = DEFAULT_WEATHER_START_ORDER.map((key) => [key, localize(`weather_start_blocks.${key}`)] as [string, string]);
+  const sections: [string, string][] = SECTION_REGISTRY
+    .filter((meta) => !isSectionHiddenByConfig(meta.key, host._config))
+    .map((meta) => [meta.key, localize(meta.labelKey)]);
+  for (const section of host._config.custom_sections || []) {
+    if (section.id) sections.push([section.id, section.title || section.id]);
+  }
   const rules = (kind: 'view' | 'section', options: [string, string][]) => options.map(([key, title]) => {
     const map = kind === 'view' ? host._config.view_visible_users : host._config.section_visible_users;
     const selected = Object.prototype.hasOwnProperty.call(map || {}, key) ? map?.[key] || [] : users.map((user) => user.id);
