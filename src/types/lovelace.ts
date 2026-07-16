@@ -136,6 +136,13 @@ export interface LovelaceSectionConfig {
 
 // -- Views ------------------------------------------------------------
 
+export interface LovelaceViewSidebarConfig {
+  sections?: LovelaceSectionConfig[];
+  content_label?: string;
+  sidebar_label?: string;
+  visibility?: LovelaceCondition[];
+}
+
 export interface LovelaceViewConfig {
   title?: string;
   path?: string;
@@ -150,6 +157,7 @@ export interface LovelaceViewConfig {
   sections?: LovelaceSectionConfig[];
   cards?: LovelaceCardConfig[];
   strategy?: LovelaceStrategyConfig;
+  sidebar?: LovelaceViewSidebarConfig;
   background?: string | LovelaceViewBackgroundConfig;
   visible?: boolean | ShowViewConfig[];
   back_path?: string;

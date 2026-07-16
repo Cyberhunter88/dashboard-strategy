@@ -249,6 +249,9 @@ export interface Simon42StrategyConfig {
   show_room_views?: boolean; // default: false
   show_cctv_view?: boolean; // default: false
   cctv_show_activity?: boolean; // default: false
+  show_camera_events?: boolean; // default: false
+  show_cameras_in_security?: boolean; // default: false
+  hidden_cameras?: string[]; // hidden from CCTV/security, not room views
   group_security_by_areas?: boolean; // default: false
   show_security_activity?: boolean; // default: false
   security_activity_position?: 'start' | 'end'; // default: 'start'
@@ -301,6 +304,8 @@ export interface Simon42StrategyConfig {
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
   show_maintenance_view?: boolean; // default: false
+  show_maintenance_activity?: boolean; // default: true
+  show_video_tips?: boolean; // default: true
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_live_toggle?: boolean; // default: false
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
