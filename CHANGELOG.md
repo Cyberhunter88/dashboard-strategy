@@ -2,7 +2,20 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.23.1...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.24.0...HEAD).
+
+<a name="1.24.0"></a>
+## [1.24.0] - 2026-07-18
+### Features
+- add opt-in room sections for switches and smart outlets
+- position custom views after generated or previously inserted views
+- configure compact or picture-based area cards globally and per area
+
+### Bugfixes
+- prefer Ring live-view cameras over last-recording snapshot entities during per-device deduplication
+
+### Compatibility
+- preserve all public fork identifiers, custom element names, and the `/hacsfiles/dashboard-strategy/` resource path
 
 <a name="1.23.1"></a>
 ## [1.23.1] - 2026-07-17
