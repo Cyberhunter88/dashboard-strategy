@@ -16,6 +16,9 @@ Do not rename or remove these identifiers:
 - HACS file: `dashboard-strategy.js`
 - HACS resource path: `/hacsfiles/dashboard-strategy/`
 - HACS name: `Dashboard Strategy`
+- dashboard picker metadata: `custom:dashboard-strategy`, title `Dashboard Strategy`, icon `mdi:view-dashboard`
+
+Backwards-compatible YAML aliases are normalized at the entry point. Keep `show_camera_view` as an alias for `show_cctv_view` and `show_maintenance_summary` as an alias for `show_maintenance_view`; explicit fork-native options win.
 
 Existing dashboards use:
 
@@ -29,6 +32,7 @@ strategy:
 - TypeScript, strict mode, ES2020; Webpack production build with code-split chunks.
 - Runtime source of truth is the Home Assistant `hass` object: `entities`, `devices`, `areas`, `floors`, and `states`.
 - `src/dashboard-strategy.ts` registers the main strategy immediately, starts chunk loading early, and `generate()` waits for modules, initializes `Registry`, and pre-resolves views.
+- The main strategy declares the Home Assistant registry dependencies `entities`, `devices`, `areas`, and `floors`; keep these aligned with the registries consumed by `Registry`.
 - `src/Registry.ts` is a static singleton. It builds raw and pre-filtered entity/device/domain/area lookup maps. Prefer its APIs over rescanning Home Assistant registries.
 - Registry-only properties (`hidden_by`, `disabled_by`, `entity_category`, `platform`, `device_id`) must come from `hass.entities[id]` or `Registry.getEntity(id)`, never from state attributes.
 - Visibility is centralized in `Registry._isEntityVisible()`: `no_dboard`, area/group overrides, HA hidden state, config/diagnostic entities, and required state availability are handled there.
@@ -38,15 +42,17 @@ Source layout:
 
 ```text
 src/
-├── dashboard-strategy.ts       # entry, version, registration, generate()
-├── Registry.ts                 # registry indexes and visibility
-├── cards/                      # area, camera, groups, summary, editable, video tip
-├── editor/                     # StrategyEditor, panels, YAML/config helpers
-├── sections/                   # overview, areas, weather/energy, custom, plants, agenda, todos, persons, vacuums, maintenance
-├── translations/               # de/en strings
-├── types/                      # Home Assistant, Lovelace, registry, strategy types
-├── utils/                      # filtering, ordering, localization, tiles, badges, maintenance
-└── views/                      # overview, utility, room, CCTV, and maintenance strategies
+|-- dashboard-strategy.ts       # entry, version, registration, generate()
+|-- Registry.ts                 # registry indexes and visibility
+|-- cards/                      # area, camera, groups, summary, editable, video tip
+|-- data/                       # static user-facing data such as video-tip metadata
+|-- editor/                     # StrategyEditor, panels, YAML/config helpers
+|-- loaders/                    # bounded eager runtime chunk entry points
+|-- sections/                   # overview, areas, weather/energy, custom, plants, agenda, todos, persons, vacuums, maintenance
+|-- translations/              # de/en/ru strings; English is the fallback
+|-- types/                      # Home Assistant, Lovelace, registry, strategy types
+|-- utils/                      # filtering, ordering, localization, tiles, badges, maintenance
+`-- views/                      # overview, utility, room, CCTV, and maintenance strategies
 ```
 
 ## Configuration and feature notes
@@ -56,8 +62,9 @@ Keep `src/types/strategy.ts`, editor panels/rendering, translations, README, and
 - overview: clock/date sizing, person/search/status badges, summaries, favorites, section order/visibility, dense placement, plants, agenda, todos, persons, vacuums, and maintenance
 - weather/energy: weather presentation and sensors, pollen entities, weather-start free layout and YAML block overrides, energy distribution, power badge, and linked dashboard
 - views: summary, room, CCTV, battery, and maintenance views; camera renderer/live toggle/WebRTC settings
-- rooms/areas: floor grouping, area ordering/navigation, switches and alerts, room pins, locks, scripts, automations, vacuums/mowers, energy, UPS, and opt-in window/door contact badges
-- custom content: YAML cards, guided tiles, full sections, custom badges, custom views, per-room custom cards, and inline editor overrides
+- rooms/areas: floor grouping, area ordering/navigation, compact or picture cards, switches and alerts, room pins, locks, scripts, automations, vacuums/mowers, energy, UPS, opt-in window/door badges, and dedicated switch/outlet sections
+- custom content: YAML cards, guided tiles, full sections, custom badges, custom views with `after_view` placement or live references, per-room custom cards, and inline editor overrides
+- visibility: per-user view and overview-section display rules plus entity-state-based room and section visibility; these are presentation rules, not access control
 - availability and battery behavior: hidden/unavailable filtering, mobile-app and note entities, critical/low thresholds, unavailable battery bucket
 
 Important behavior:
@@ -65,6 +72,7 @@ Important behavior:
 - Area temperature/humidity and room primary temperature/humidity use explicit Home Assistant area assignments; other sensor badges may be auto-detected.
 - UPS detection uses only visible pre-filtered entities and is enabled by default.
 - Camera behavior is controlled by `camera_renderer`, `camera_live_toggle`, and `camera_webrtc_streams`; do not assume native `camera.*` entities are always used.
+- `camera_renderer: webrtc` requires the external `custom:webrtc-camera` card. `camera_webrtc_streams` is keyed by camera entity id and can contain a URL or card options. Keep the native renderer as the dependency-free default.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
 - The editor is the main complexity hotspot: preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting.
 
@@ -88,7 +96,9 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+node scripts/lint-translations.mjs
 node scripts/verify-version-sync.mjs
+node scripts/verify-hacs-distribution.mjs
 git diff --check
 ```
 

@@ -60,14 +60,16 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 <details>
 <summary>Manuelle Installationsschritte</summary>
 
-1. Kopiere alle Dateien aus `dist/` nach `/config/www/dashboard-strategy/`
+> Die Produktionsdateien verwenden den von HACS bereitgestellten `/hacsfiles/`-Pfad auch für nachgeladene Chunks. Diese manuelle Variante setzt deshalb voraus, dass die HACS-Integration in Home Assistant installiert ist.
+
+1. Kopiere **alle** Dateien aus `dist/` nach `/config/www/community/dashboard-strategy/`. Die Unterordner und Dateinamen müssen unverändert bleiben, weil die Strategy ihre Code-Split-Chunks unter `/hacsfiles/dashboard-strategy/` nachlädt.
 2. Füge in `configuration.yaml` hinzu:
 
 ```yaml
 lovelace:
   mode: storage
   resources:
-    - url: /local/dashboard-strategy/dashboard-strategy.js
+    - url: /hacsfiles/dashboard-strategy/dashboard-strategy.js
       type: module
 ```
 
@@ -212,6 +214,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **UPS/USV** — Unterstützte USV-Geräte werden automatisch in Raum-Views gruppiert. Die Gruppe zeigt eine Batterie-Gauge und zugehörige Kacheln, z.B. NUT-/UPS-Signale. Die Erkennung ist standardmäßig aktiv und kann über `show_ups_in_rooms: false` deaktiviert werden.
 
+**Kameras in Räumen** — Standardmäßig verwendet die Strategy native Home-Assistant-Kamerakarten. Optional aktiviert `camera_live_toggle` einen ressourcenschonenden Start/Stopp-Schalter. Fortgeschrittene YAML-Konfigurationen können mit `camera_renderer: webrtc` stattdessen `custom:webrtc-camera` verwenden; dafür muss die externe WebRTC-Karte separat installiert sein. Streams oder zusätzliche Kartenoptionen lassen sich pro Kamera über `camera_webrtc_streams` hinterlegen.
+
 **Automationen & Skripte** — Optional können dem Bereich zugeordnete Automationen und Skripte in den Raum-Views angezeigt werden. Beide Optionen sind separat aktivierbar und standardmäßig aus.
 
 **Fenster- & Türkontakte** — Optional können Fensterkontakte und Türkontakte als Badges in den Raum-Views angezeigt werden. Zwei getrennte Toggles im Editor, standardmäßig aus. Absolute Luftfeuchtigkeit (z.B. von der Thermal Comfort Integration, `g/m³`) wird automatisch als Badge erkannt.
@@ -329,6 +333,8 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 
 ### Alle Optionen (Referenz)
 
+Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht mehr ausgewertete Layoutfelder sowie der intern vom Karteneditor verwaltete `inline_editor`-Block sind bewusst nicht als einstellbare Optionen aufgeführt.
+
 <details>
 <summary>Vollständige Konfigurationsreferenz aufklappen</summary>
 
@@ -412,8 +418,11 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
 | `show_switches_section_in_rooms` | boolean | `false` | Schalter und smarte Steckdosen in einem eigenen Raum-Abschnitt anzeigen |
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
+| `camera_renderer` | `"native"` \| `"webrtc"` | `"native"` | Renderer für Kameras in Raum-Views; `webrtc` benötigt `custom:webrtc-camera` |
+| `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc` |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
 | `cctv_show_activity` | boolean | `false` | LLM-Vision-Ereignisverläufe in der CCTV-Ansicht |
+| `show_camera_events` | boolean | `false` | Kompatibilitätsoption für `cctv_show_activity` |
 | `show_cameras_in_security` | boolean | `false` | Kameras zusätzlich in der Sicherheitsansicht anzeigen |
 | `hidden_cameras` | string[] | `[]` | Kameras aus CCTV- und Sicherheitsansicht ausblenden; Raumansichten bleiben unberührt |
 | `pollen_entities` | string[] | `[]` | Pollen-Sensoren im Wetterabschnitt |
@@ -446,6 +455,8 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `custom_sections` | object[] | `[]` | Eigene vollständige Sections mit Karten |
 | `custom_badges` | object[] | `[]` | Eigene Badges im Header via YAML |
 | `custom_views` | object[] | `[]` | Eigene Views via YAML oder als Live-Referenz auf eine View eines anderen Dashboards (`ref_dashboard` + `ref_view`); mit `after_view` hinter einem generierten View-Pfad einsortierbar |
+| `show_camera_view` | boolean | — | Kompatibilitätsalias für `show_cctv_view`; der fork-native Wert hat Vorrang |
+| `show_maintenance_summary` | boolean | — | Kompatibilitätsalias für `show_maintenance_view`; der fork-native Wert hat Vorrang |
 
 </details>
 
@@ -501,11 +512,14 @@ Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lo
 
 | Chunk | Größe | Inhalt |
 |-------|-------|--------|
-| main | ~6 KB | Entry Point, Custom Element Registrierung |
-| lit | ~15 KB | Lit Framework (shared) |
-| core | ~51 KB | Registry, Utils, Translations, Overview, Custom Cards |
-| views | ~19 KB | Lichter, Rollos, Sicherheit, Batterien, Klima, Raum-Detail |
-| editor | ~110 KB | Konfigurations-UI (nur bei Bedarf geladen) |
+| main | ~8 KB | Entry Point, Versions-/Chunk-Logik, Custom-Element-Registrierung |
+| lit | ~16 KB | Lit Framework (shared) |
+| core | ~222 KB | Registry, Utils, Übersetzungen, Sections, Overview und Custom Cards |
+| views | ~39 KB | Lichter, Rollos, Sicherheit, Batterien, Klima, CCTV, Wartung und Raum-Details |
+| editor | ~247 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
+| nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
+
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.24.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
 
 ### Performance-Design
 
