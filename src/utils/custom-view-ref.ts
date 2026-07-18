@@ -96,3 +96,34 @@ export async function resolveCustomViews(
   }
   return resolved;
 }
+
+/**
+ * Insert resolved custom views after their configured anchors. Unknown or
+ * missing anchors preserve the previous append-at-end behavior.
+ */
+export function insertCustomViews(
+  views: LovelaceViewConfig[],
+  customViews: CustomView[],
+  resolvedViews: LovelaceViewConfig[]
+): LovelaceViewConfig[] {
+  const anchorByPath = new Map<string, string>();
+  for (const customView of customViews) {
+    if (customView.path && customView.after_view) {
+      anchorByPath.set(customView.path, customView.after_view);
+    }
+  }
+
+  const insertedPerAnchor = new Map<string, number>();
+  for (const view of resolvedViews) {
+    const anchor = view.path ? anchorByPath.get(view.path) : undefined;
+    const anchorIndex = anchor ? views.findIndex((candidate) => candidate.path === anchor) : -1;
+    if (anchor !== undefined && anchorIndex >= 0) {
+      const offset = insertedPerAnchor.get(anchor) ?? 0;
+      views.splice(anchorIndex + 1 + offset, 0, view);
+      insertedPerAnchor.set(anchor, offset + 1);
+    } else {
+      views.push(view);
+    }
+  }
+  return views;
+}

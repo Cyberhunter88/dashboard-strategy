@@ -208,6 +208,7 @@ export type StackKey =
   | 'covers_window'
   | 'media'
   | 'scenes'
+  | 'switches'
   | 'misc'
   | 'automations'
   | 'scripts'
@@ -224,6 +225,7 @@ export const DEFAULT_STACKS_ORDER: StackKey[] = [
   'covers_window',
   'media',
   'scenes',
+  'switches',
   'misc',
   'room_pins',
 ];
@@ -282,11 +284,13 @@ export interface Simon42StrategyConfig {
   show_automations_in_rooms?: boolean; // default: false
   show_scripts_in_rooms?: boolean; // default: false
   show_vacuums_section_in_rooms?: boolean; // default: false
+  show_switches_section_in_rooms?: boolean; // default: false
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
   show_window_contacts_in_rooms?: boolean; // default: false
   show_door_contacts_in_rooms?: boolean; // default: false
   show_switches_on_areas?: boolean; // default: false
+  area_display_type?: AreaDisplayType; // default: compact
   show_alerts_on_areas?: boolean; // default: false
   energy_link_dashboard?: boolean; // default: true
   power_badge_entity?: string;
@@ -394,6 +398,8 @@ export interface InlineEditorConfig {
 
 // -- Area Management --------------------------------------------------
 
+export type AreaDisplayType = 'compact' | 'picture';
+
 export interface AreasDisplay {
   hidden?: string[];
   order?: string[];
@@ -401,6 +407,8 @@ export interface AreasDisplay {
 }
 
 export interface AreaOptions {
+  /** Overrides the global area display type for this overview card. */
+  display_type?: AreaDisplayType;
   groups_options?: Record<string, GroupOptions>;
   custom_cards?: AreaCustomCard[];
   stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
@@ -444,6 +452,8 @@ export interface CustomView {
   ref_dashboard?: string;
   /** Source view path, or stringified index when the source view has no path. */
   ref_view?: string;
+  /** Insert this custom view after the generated view with this path. */
+  after_view?: string;
 }
 
 // -- Custom Badges ----------------------------------------------------

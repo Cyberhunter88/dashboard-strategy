@@ -398,6 +398,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
 | `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |
 | `group_by_floors` | boolean | `false` | Bereiche nach Etagen gliedern |
+| `area_display_type` | `"compact"` \| `"picture"` | `"compact"` | Standarddarstellung der Bereichskarten; Bildmodus fällt ohne Bereichsfoto auf kompakt zurück |
 | `show_partially_open_covers` | boolean | `false` | Teiloffene Rollos separat anzeigen |
 | `show_alerts_on_areas` | boolean | `false` | Alert-Icons auf Bereichskarten |
 | `group_security_by_areas` | boolean | `false` | Sicherheitsansicht nach Bereichen und Etagen gliedern |
@@ -409,6 +410,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `show_automations_in_rooms` | boolean | `false` | Automationen in Raum-Views |
 | `show_scripts_in_rooms` | boolean | `false` | Skripte in Raum-Views |
 | `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
+| `show_switches_section_in_rooms` | boolean | `false` | Schalter und smarte Steckdosen in einem eigenen Raum-Abschnitt anzeigen |
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
 | `cctv_show_activity` | boolean | `false` | LLM-Vision-Ereignisverläufe in der CCTV-Ansicht |
@@ -424,6 +426,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `areas_display.order` | string[] | `[]` | Reihenfolge der Bereiche |
 | `areas_display.nav_items` | string[] | `[]` | Einzelne Bereiche unabhängig von `show_room_views` in der Navigation anzeigen |
 | `areas_options` | object | `{}` | Entity-Filterung pro Bereich |
+| `areas_options.*.display_type` | `"compact"` \| `"picture"` | globaler Wert | Darstellung einer einzelnen Bereichskarte überschreiben |
 | `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View |
 | `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln oder Sections pro Raum |
 | `areas_options.*.view_override` | object | - | Vollständige YAML-View, die die automatisch erzeugte Bereichsansicht ersetzt |
@@ -442,7 +445,7 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | `custom_cards[].target_section` | string | `"custom_cards"` | Ziel-Section für eine eigene Karte |
 | `custom_sections` | object[] | `[]` | Eigene vollständige Sections mit Karten |
 | `custom_badges` | object[] | `[]` | Eigene Badges im Header via YAML |
-| `custom_views` | object[] | `[]` | Eigene Views via YAML oder als Live-Referenz auf eine View eines anderen Dashboards (`ref_dashboard` + `ref_view`) |
+| `custom_views` | object[] | `[]` | Eigene Views via YAML oder als Live-Referenz auf eine View eines anderen Dashboards (`ref_dashboard` + `ref_view`); mit `after_view` hinter einem generierten View-Pfad einsortierbar |
 
 </details>
 

@@ -768,16 +768,31 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    // Switches block (keeps vacuum tiles here unless the opt-in section is enabled).
-    const miscCards: LovelaceCardConfig[] = ownVacuumSection ? [] : [...vacuumCards];
+    // Switches and outlets stay under Misc by default. The opt-in keeps
+    // existing dashboards unchanged while allowing a dedicated room block.
+    const switchCards: LovelaceCardConfig[] = [];
     for (const e of roomEntities.switches)
-      miscCards.push(
+      switchCards.push(
         buildAdaptiveTileCardConfig(hass, e, {
           name: stripAreaName(e, area, hass),
           vertical: false,
           state_content: 'last_changed',
         })
       );
+
+    const ownSwitchSection = dashboardConfig.show_switches_section_in_rooms === true;
+    if (ownSwitchSection && switchCards.length > 0) {
+      pushStack('switches', {
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('room.switches'), heading_style: 'title', icon: 'mdi:toggle-switch' },
+          ...switchCards,
+        ],
+      });
+    }
+
+    const miscCards: LovelaceCardConfig[] = ownVacuumSection ? [] : [...vacuumCards];
+    if (!ownSwitchSection) miscCards.push(...switchCards);
     for (const e of roomEntities.humidifier)
       miscCards.push(
         buildAdaptiveTileCardConfig(hass, e, {

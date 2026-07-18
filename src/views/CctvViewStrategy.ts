@@ -46,6 +46,11 @@ const REOLINK_STREAM_PREFERENCE = [
   'snapshots_main',
 ];
 
+// Ring exposes a live-view and last-recording camera for the same device.
+// Prefer the live stream when registry order would otherwise select the
+// snapshot camera during per-device deduplication.
+const LIVE_STREAM_PREFERENCE = ['live_view'];
+
 // -- PTZ pad ------------------------------------------------------------
 // Reolink button translation_keys (homeassistant/components/reolink/button.py).
 // Only buttons that actually exist on the device are rendered.
@@ -251,7 +256,7 @@ function isVisibleWithState(entityId: string, hass: HomeAssistant): boolean {
 }
 
 function pickPrimaryCamera(cameraIds: string[]): string {
-  for (const preferredKey of REOLINK_STREAM_PREFERENCE) {
+  for (const preferredKey of [...REOLINK_STREAM_PREFERENCE, ...LIVE_STREAM_PREFERENCE]) {
     for (const id of cameraIds) {
       if (Registry.getEntity(id)?.translation_key === preferredKey) return id;
     }
