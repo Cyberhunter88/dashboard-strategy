@@ -21,6 +21,7 @@ import type {
   PersonBadgeLayout,
   SectionKey,
   StackKey,
+  AreaDisplayType,
   WeatherPresentation,
   WeatherSensorConfig,
   WeatherStartKey,
@@ -52,6 +53,7 @@ import {
   getEditableAreaEntities,
 } from '../utils/area-entity-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
+import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
 
 // -- Supporting types for the editor ------------------------------------
 
@@ -3311,6 +3313,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     ['covers_window', { icon: 'mdi:window-open-variant', labelKey: 'stacks.covers_window' }],
     ['media', { icon: 'mdi:speaker', labelKey: 'stacks.media' }],
     ['scenes', { icon: 'mdi:palette', labelKey: 'stacks.scenes' }],
+    ['switches', { icon: 'mdi:toggle-switch', labelKey: 'stacks.switches' }],
     ['misc', { icon: 'mdi:light-switch', labelKey: 'stacks.misc' }],
     ['room_pins', { icon: 'mdi:pin', labelKey: 'stacks.room_pins' }],
   ]);
@@ -3327,7 +3330,10 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     if (has('covers_window')) present.add('covers_window');
     if (has('media_player')) present.add('media');
     if (has('scenes') || has('automations') || has('scripts')) present.add('scenes');
-    if (has('vacuum') || has('switches')) present.add('misc');
+    if (has('switches') && this._config.show_switches_section_in_rooms === true) present.add('switches');
+    if (has('vacuum') || (has('switches') && this._config.show_switches_section_in_rooms !== true)) {
+      present.add('misc');
+    }
     if (has('energy')) present.add('energy');
 
     // These stacks are not reliably represented in the editor's area cache.
@@ -4070,12 +4076,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
 
   private _renderAreasSection(): TemplateResult {
     const groupByFloors = this._config.group_by_floors === true;
+    const areaDisplayType = this._config.area_display_type ?? 'compact';
     const showSwitchesOnAreas = this._config.show_switches_on_areas === true;
     const showAlertsOnAreas = this._config.show_alerts_on_areas === true;
     const showLocksInRooms = this._config.show_locks_in_rooms === true;
     const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
     const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
     const showVacuumsSectionInRooms = this._config.show_vacuums_section_in_rooms === true;
+    const showSwitchesSectionInRooms = this._config.show_switches_section_in_rooms === true;
     const cameraLiveToggle = this._config.camera_live_toggle === true;
     const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
@@ -4097,6 +4105,20 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               this._toggleChanged('group_by_floors', checked, false)
             )}
             <div class="description">${localize('editor.group_by_floors_desc')}</div>
+
+            <div class="form-row">
+              <label for="area-display-type">${localize('editor.area_display_type')}</label>
+              <select
+                id="area-display-type"
+                .value=${areaDisplayType}
+                @change=${(event: Event) =>
+                  this._globalAreaDisplayTypeChanged((event.target as HTMLSelectElement).value as AreaDisplayType)}
+              >
+                <option value="compact">${localize('editor.area_display_type_compact')}</option>
+                <option value="picture">${localize('editor.area_display_type_picture')}</option>
+              </select>
+            </div>
+            <div class="description">${localize('editor.area_display_type_desc')}</div>
 
             ${this._renderCheckbox(
               'show-switches-on-areas',
@@ -4151,6 +4173,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               (checked) => this._toggleChanged('show_vacuums_section_in_rooms', checked, false)
             )}
             <div class="description">${localize('editor.show_vacuums_section_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox(
+              'show-switches-section-in-rooms',
+              localize('editor.show_switches_section_in_rooms'),
+              showSwitchesSectionInRooms,
+              (checked) => this._toggleChanged('show_switches_section_in_rooms', checked, false)
+            )}
+            <div class="description">${localize('editor.show_switches_section_in_rooms_desc')}</div>
 
             ${this._renderCheckbox(
               'camera-live-toggle',
@@ -4656,6 +4686,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               @change=${(e: Event) => this._updateCustomViewField(index, 'icon', (e.target as HTMLInputElement).value)}
             />
           </div>
+          ${this._renderCustomViewPosition(view, index)}
           ${isReference
             ? this._renderCustomViewRefFields(view, index)
             : html`<textarea
@@ -4669,6 +4700,67 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         </div>
       </div>
     `;
+  }
+
+  private _renderCustomViewPosition(view: CustomView, index: number): TemplateResult {
+    const options = this._getGeneratedViewOptions(index);
+    const orphaned = !!view.after_view && !options.some(([path]) => path === view.after_view);
+    return html`
+      <div class="custom-item-row">
+        <select
+          style="flex: 1;"
+          @change=${(event: Event) =>
+            this._updateCustomViewAfterView(index, (event.target as HTMLSelectElement).value)}
+        >
+          <option value="" ?selected=${!view.after_view}>${localize('editor.custom_view_position_end')}</option>
+          ${orphaned
+            ? html`<option value=${view.after_view || ''} selected>
+                &#x26A0; ${localize('editor.custom_view_position_after')} ${view.after_view}
+              </option>`
+            : nothing}
+          ${options.map(([path, title]) => html`
+            <option value=${path} ?selected=${view.after_view === path}>
+              ${localize('editor.custom_view_position_after')} ${title}
+            </option>
+          `)}
+        </select>
+      </div>
+    `;
+  }
+
+  private _getGeneratedViewOptions(excludeCustomViewIndex: number): Array<[string, string]> {
+    if (!this._hass) return [];
+    const options: Array<[string, string]> = [['home', localize('views.overview')]];
+    const add = (enabled: boolean, path: string, titleKey: string): void => {
+      if (enabled) options.push([path, localize(titleKey)]);
+    };
+
+    add(this._config.show_light_summary !== false, 'lights', 'views.lights');
+    add(this._config.show_covers_summary !== false, 'covers', 'views.covers');
+    add(this._config.show_security_summary !== false, 'security', 'views.security');
+    add(
+      this._config.show_battery_summary !== false || this._config.show_battery_view === true,
+      'batteries',
+      'views.batteries'
+    );
+    add(this._config.show_climate_summary === true, 'climate', 'views.climate');
+    add(this._config.show_cctv_view === true, 'cctv', 'views.cctv');
+    add(this._config.show_maintenance_view === true, 'maintenance', 'views.maintenance');
+
+    const hiddenAreas = new Set(this._config.areas_display?.hidden || []);
+    for (const area of this._getSortedAreas()) {
+      if (hiddenAreas.has(area.area_id)) continue;
+      const rule = this._config.room_visibility?.[area.area_id];
+      if (rule?.entity && this._hass.states[rule.entity]?.state !== rule.state) continue;
+      options.push([area.area_id, area.name]);
+    }
+
+    for (const [customIndex, customView] of (this._config.custom_views || []).entries()) {
+      if (customIndex === excludeCustomViewIndex) continue;
+      const complete = customView.parsed_config || (customView.ref_dashboard && customView.ref_view);
+      if (complete && customView.path && customView.title) options.push([customView.path, customView.title]);
+    }
+    return options;
   }
 
   private _renderCustomViewRefFields(view: CustomView, index: number): TemplateResult {
@@ -5004,6 +5096,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           ${isExpanded
             ? html`
                 <div class="area-content" data-area-id=${area.area_id}>
+                  ${this._renderAreaDisplayTypeOverride(area)}
                   ${this._renderAreaViewOverride(area.area_id)}
                   ${cachedData
                     ? this._renderAreaEntities(area.area_id, cachedData)
@@ -5014,6 +5107,41 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         </div>
       `;
     });
+  }
+
+  private _globalAreaDisplayTypeChanged(displayType: AreaDisplayType): void {
+    const newConfig = setGlobalAreaDisplayType(this._config, displayType);
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _renderAreaDisplayTypeOverride(area: AreaRegistryEntry): TemplateResult {
+    const override = this._config.areas_options?.[area.area_id]?.display_type ?? '';
+    return html`
+      <div class="form-row">
+        <label for="area-display-type-${area.area_id}">${localize('editor.area_display_type_override')}</label>
+        <select
+          id="area-display-type-${area.area_id}"
+          .value=${override}
+          @change=${(event: Event) =>
+            this._areaDisplayTypeOverrideChanged(
+              area.area_id,
+              (event.target as HTMLSelectElement).value as AreaDisplayType | ''
+            )}
+        >
+          <option value="">${localize('editor.area_display_type_inherit')}</option>
+          <option value="compact">${localize('editor.area_display_type_compact')}</option>
+          <option value="picture">${localize('editor.area_display_type_picture')}</option>
+        </select>
+      </div>
+      ${!area.picture ? html`<div class="description">${localize('editor.area_display_type_no_picture')}</div>` : nothing}
+    `;
+  }
+
+  private _areaDisplayTypeOverrideChanged(areaId: string, displayType: AreaDisplayType | ''): void {
+    const newConfig = setAreaDisplayTypeOverride(this._config, areaId, displayType || undefined);
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
   }
 
   private _renderAreaViewOverride(areaId: string): TemplateResult {
@@ -6001,6 +6129,21 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     if (!customViews[index]) return;
 
     customViews[index] = { ...customViews[index], [field]: value };
+
+    const newConfig: Simon42StrategyConfig = { ...this._config, custom_views: customViews };
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _updateCustomViewAfterView(index: number, value: string): void {
+    const customViews: CustomView[] = [...(this._config.custom_views || [])];
+    const existing = customViews[index];
+    if (!existing) return;
+
+    const updated = { ...existing };
+    if (value) updated.after_view = value;
+    else delete updated.after_view;
+    customViews[index] = updated;
 
     const newConfig: Simon42StrategyConfig = { ...this._config, custom_views: customViews };
     this._config = newConfig;

@@ -9,6 +9,7 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig, LovelaceCondition, LovelaceSectionConfig } from '../types/lovelace';
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
+import type { AreaDisplayType, AreaOptions, Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { getViewVisibleUsers, unionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
@@ -164,6 +165,16 @@ function getDashboardBasePath(): string {
   return `/${segments.slice(0, -1).join('/')}`;
 }
 
+/** Resolve picture mode conservatively: native area cards require a picture. */
+export function resolveAreaDisplayType(
+  area: AreaRegistryEntry,
+  config: Simon42StrategyConfig
+): AreaDisplayType {
+  const areaOptions = Reflect.get(config.areas_options ?? {}, area.area_id) as AreaOptions | undefined;
+  const requested = areaOptions?.display_type ?? config.area_display_type ?? 'compact';
+  return requested === 'picture' && area.picture ? 'picture' : 'compact';
+}
+
 /**
  * Builds a single area card config for use in area sections.
  * Pre-filters controls and sensor_classes like HA does — the card
@@ -180,6 +191,7 @@ export function buildAreaCard(
   const excludeEntities = areaData.excludedEntities;
   const roomPath = `${getDashboardBasePath()}/${area.area_id}`;
   const userVisibility = userVisibilityConditions(getViewVisibleUsers(Registry.config, area.area_id));
+  const displayType = resolveAreaDisplayType(area, Registry.config);
 
   // Pre-filter alert classes if enabled
   const alertClasses = Registry.config.show_alerts_on_areas
@@ -189,7 +201,7 @@ export function buildAreaCard(
   return {
     type: 'custom:dashboard-strategy-area-card',
     area: area.area_id,
-    display_type: 'compact',
+    display_type: displayType,
     sensor_classes: sensorClasses.length > 0 ? sensorClasses : undefined,
     alert_classes: alertClasses && alertClasses.length > 0 ? alertClasses : undefined,
     exclude_entities: excludeEntities.length > 0 ? excludeEntities : undefined,

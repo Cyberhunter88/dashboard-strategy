@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AreaRegistryEntry } from '../types/registries';
 
-import { normalizeAreasDisplay, sortLights } from './name-utils';
+import { mergeStacksOrder, normalizeAreasDisplay, sortLights } from './name-utils';
 
 const areas: AreaRegistryEntry[] = [
   { area_id: 'wohnzimmer', name: 'Wohnzimmer' } as AreaRegistryEntry,
@@ -45,6 +45,26 @@ describe('normalizeAreasDisplay', () => {
       order: ['deleted_area'],
       nav_items: ['missing'],
     })).toBeUndefined();
+  });
+});
+
+describe('mergeStacksOrder', () => {
+  it('adds the switches stack to existing saved orders without reordering them', () => {
+    expect(mergeStacksOrder(['lights', 'misc'])).toEqual([
+      'lights',
+      'misc',
+      'ups',
+      'energy',
+      'cameras',
+      'locks',
+      'climate',
+      'covers',
+      'covers_window',
+      'media',
+      'scenes',
+      'switches',
+      'room_pins',
+    ]);
   });
 });
 

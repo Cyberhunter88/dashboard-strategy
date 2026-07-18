@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { isRefView, resolveCustomViews } from '../../src/utils/custom-view-ref';
+import { insertCustomViews, isRefView, resolveCustomViews } from '../../src/utils/custom-view-ref';
 import type { HomeAssistant } from '../../src/types/homeassistant';
+import type { LovelaceViewConfig } from '../../src/types/lovelace';
 import type { CustomView } from '../../src/types/strategy';
 
 function makeHass(dashboards: Record<string, unknown>): HomeAssistant {
@@ -79,5 +80,30 @@ describe('resolveCustomViews', () => {
     const views: CustomView[] = [{ title: 'x', path: 'x', ref_dashboard: 'dash-a', ref_view: '' }];
     expect(await resolveCustomViews(views, hass)).toEqual([]);
     expect(hass.callWS).not.toHaveBeenCalled();
+  });
+});
+
+describe('insertCustomViews', () => {
+  const view = (path: string): LovelaceViewConfig => ({ title: path, path });
+
+  it('preserves append-at-end behavior without an anchor', () => {
+    const generated = [view('home'), view('kitchen')];
+    insertCustomViews(generated, [{ title: 'Extra', path: 'extra' }], [view('extra')]);
+    expect(generated.map((item) => item.path)).toEqual(['home', 'kitchen', 'extra']);
+  });
+
+  it('inserts after anchors and preserves same-anchor config order', () => {
+    const generated = [view('home'), view('kitchen')];
+    insertCustomViews(generated, [
+      { title: 'A', path: 'a', after_view: 'home' },
+      { title: 'B', path: 'b', after_view: 'home' },
+    ], [view('a'), view('b')]);
+    expect(generated.map((item) => item.path)).toEqual(['home', 'a', 'b', 'kitchen']);
+  });
+
+  it('appends when an anchor is stale', () => {
+    const generated = [view('home')];
+    insertCustomViews(generated, [{ title: 'A', path: 'a', after_view: 'missing' }], [view('a')]);
+    expect(generated.map((item) => item.path)).toEqual(['home', 'a']);
   });
 });
