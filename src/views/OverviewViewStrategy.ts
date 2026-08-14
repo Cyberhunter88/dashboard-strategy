@@ -32,6 +32,7 @@ import {
   createCustomCardsSection,
   createCustomSectionsArray,
   createFavoritesSection,
+  createHouseModeSection,
   createLightFavoritesSection,
   createSearchSection,
   createWeatherStartSummariesSection,
@@ -338,6 +339,9 @@ function createWeatherStartSectionsFromItems(
       case 'alarm':
         section = additionalBlocks.alarm ?? createAlarmSection(hass, dashboardConfig);
         break;
+      case 'house_mode':
+        section = additionalBlocks.house_mode ?? createHouseModeSection(dashboardConfig);
+        break;
       case 'search':
         section = additionalBlocks.search ?? createSearchSection(
           dashboardConfig.show_search_card === true,
@@ -596,6 +600,7 @@ function createWeatherStartSections(
   );
 
   blockMap.set('light_favorites', createLightFavoritesSection(hass, dashboardConfig));
+  blockMap.set('house_mode', createHouseModeSection(dashboardConfig));
 
   blockMap.set(
     'weather_current',
@@ -877,6 +882,7 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     const additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {
       favorites: applyVisibility('overview', createFavoritesSection(hass, dashboardConfig)),
       alarm: applyVisibility('overview', createAlarmSection(hass, dashboardConfig)),
+      house_mode: applyVisibility('overview', createHouseModeSection(dashboardConfig)),
       search: applyVisibility('overview', createSearchSection(showSearchCard, dashboardConfig.search_card_variant)),
       overview: decorateBlock(
         'overview',

@@ -2,11 +2,10 @@ import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
 import { isEntityRegistryHidden, type EntityRegistryEntry } from '../types/registries';
 import type { RoomEntities, Simon42StrategyConfig } from '../types/strategy';
-import { isBadgeCandidate } from './badge-utils';
+import { isBadgeCandidate, isEnergyBlockSensor } from './badge-utils';
 
 const UPS_DEVICE_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
 const UPS_ID_PATTERN = /load|runtime|time_left|input_voltage|status/;
-const ENERGY_DEVICE_CLASSES = new Set(['power', 'energy', 'water', 'gas']);
 
 export interface UpsEntityGroup {
   deviceId: string;
@@ -43,7 +42,11 @@ export function getEditableAreaEntities(
   if (!Registry.isCurrent(hass, config)) Registry.initialize(hass, config);
   return Registry.getEntitiesForArea(areaId).filter(
     (entity) =>
-      !!hass.states[entity.entity_id] && !hasDashboardExclusionLabel(entity) && !isEntityRegistryHidden(entity)
+      !!hass.states[entity.entity_id] &&
+      !hasDashboardExclusionLabel(entity) &&
+      !isEntityRegistryHidden(entity) &&
+      entity.entity_category !== 'config' &&
+      entity.entity_category !== 'diagnostic'
   );
 }
 
@@ -155,7 +158,7 @@ export function createRoomEntities(
       result.automations.push(entityId);
     } else if (domain === 'script' && options.includeScripts !== false) result.scripts.push(entityId);
     else if (domain === 'camera' && options.includeCameras !== false) result.cameras.push(entityId);
-    else if (domain === 'sensor' && deviceClass && ENERGY_DEVICE_CLASSES.has(deviceClass)) {
+    else if (isEnergyBlockSensor(domain, deviceClass)) {
       result.energy.push(entityId);
     }
   }

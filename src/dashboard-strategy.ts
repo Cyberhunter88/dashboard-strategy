@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.24.0'; // x-release-please-version
+const STRATEGY_VERSION = '1.26.0'; // x-release-please-version
 
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
 
@@ -67,7 +67,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     t('modules ready');
 
     const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden,
-      applyViewVisibility, insertCustomViews, resolveCustomViews, applyDesign } = runtime;
+      applyViewVisibility, insertCustomViews, resolveCustomViews, applyDesign, isUtilityViewEnabled } = runtime;
     t('imports done');
 
     const getStrategy = (tag: string): StrategyGenerator => {
@@ -90,12 +90,6 @@ class Simon42DashboardStrategy extends HTMLElement {
     const showCctvView = config.show_cctv_view === true;
     const showMaintenanceView = config.show_maintenance_view === true;
     const navItems = new Set(normalizedAreasDisplay?.nav_items || []);
-    const showLights = config.show_light_summary !== false;
-    const showCovers = config.show_covers_summary !== false;
-    const showSecurity = config.show_security_summary !== false;
-    const showBatteries = config.show_battery_summary !== false;
-    const showBatteryView = config.show_battery_view === true || showBatteries;
-    const showClimate = config.show_climate_summary === true;
     // Pre-resolve ALL views upfront (like HA's Home Panel does)
     const overviewConfig = await getStrategy('ll-strategy-dashboard-strategy-view-overview').generate(
       { dashboardConfig: config },
@@ -105,16 +99,16 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     // Only resolve utility views for enabled summaries
     const utilityViewDefs = [
-      { enabled: showLights, title: localize('views.lights'), path: 'lights', icon: 'mdi:lamps',
+      { enabled: isUtilityViewEnabled(config, 'lights'), title: localize('views.lights'), path: 'lights', icon: 'mdi:lamps',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-lights').generate({ config }, hass) },
-      { enabled: showCovers, title: localize('views.covers'), path: 'covers', icon: 'mdi:blinds-horizontal',
+      { enabled: isUtilityViewEnabled(config, 'covers'), title: localize('views.covers'), path: 'covers', icon: 'mdi:blinds-horizontal',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-covers').generate(
           { device_classes: ['awning', 'blind', 'curtain', 'shade', 'shutter', 'window'], config }, hass) },
-      { enabled: showSecurity, title: localize('views.security'), path: 'security', icon: 'mdi:security',
+      { enabled: isUtilityViewEnabled(config, 'security'), title: localize('views.security'), path: 'security', icon: 'mdi:security',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-security').generate({ config }, hass) },
-      { enabled: showBatteryView, title: localize('views.batteries'), path: 'batteries', icon: 'mdi:battery-alert',
+      { enabled: isUtilityViewEnabled(config, 'batteries'), title: localize('views.batteries'), path: 'batteries', icon: 'mdi:battery-alert',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-batteries').generate({ config }, hass) },
-      { enabled: showClimate, title: localize('views.climate'), path: 'climate', icon: 'mdi:thermostat',
+      { enabled: isUtilityViewEnabled(config, 'climate'), title: localize('views.climate'), path: 'climate', icon: 'mdi:thermostat',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-climate').generate({ config }, hass) },
       { enabled: showCctvView, title: localize('views.cctv'), path: 'cctv', icon: 'mdi:cctv',
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-cctv').generate({ config }, hass) },
@@ -221,4 +215,4 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
 
 // Keep the version literal in the production bundle: the CI artifact check
 // validates this exact marker before HACS can publish the release.
-console.log('Dashboard Strategy v1.24.0 loaded');
+console.log('Dashboard Strategy v1.26.0 loaded');

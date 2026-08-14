@@ -11,6 +11,7 @@ describe('weather-start defaults', () => {
       'favorites',
       'light_favorites',
       'alarm',
+      'house_mode',
       'search',
       'overview',
       'weather_current',

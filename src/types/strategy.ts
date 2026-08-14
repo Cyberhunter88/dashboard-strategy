@@ -96,6 +96,7 @@ export type WeatherStartKey =
   | 'favorites'
   | 'light_favorites'
   | 'alarm'
+  | 'house_mode'
   | 'search'
   | 'overview'
   | 'weather_current'
@@ -120,6 +121,7 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'favorites',
   'light_favorites',
   'alarm',
+  'house_mode',
   'search',
   'overview',
   'weather_current',
@@ -255,25 +257,33 @@ export interface Simon42StrategyConfig {
   show_cameras_in_security?: boolean; // default: false
   hidden_cameras?: string[]; // hidden from CCTV/security, not room views
   group_security_by_areas?: boolean; // default: false
+  hide_hidden_areas_in_security?: boolean; // default: false; security/CCTV keep hidden overview areas
   show_security_activity?: boolean; // default: false
   security_activity_position?: 'start' | 'end'; // default: 'start'
   security_extra_entities?: string[];
   pollen_entities?: string[];
   group_by_floors?: boolean; // default: false
   group_covers_by_floors?: boolean; // default: false
+  group_covers_by_areas?: boolean; // default: false
   show_covers_summary?: boolean; // default: true
+  show_covers_view?: boolean; // default: false; keeps the view when the summary is hidden
   show_partially_open_covers?: boolean; // default: false
   show_clock_card?: boolean; // default: true
   show_person_badges?: boolean; // default: true
   person_badge_layout?: PersonBadgeLayout; // default: 'with_state'
   show_light_summary?: boolean; // default: true
+  show_light_view?: boolean; // default: false; keeps the view when the summary is hidden
   group_lights_by_floors?: boolean; // default: false
+  group_lights_by_areas?: boolean; // default: false
   nested_light_groups?: boolean; // default: false
   lights_sort_by?: LightsSortBy; // default: 'last_changed'
   show_security_summary?: boolean; // default: true
+  show_security_view?: boolean; // default: false; keeps the view when the summary is hidden
   show_battery_summary?: boolean; // default: true
   show_battery_view?: boolean; // default: false (summary remains the main trigger)
+  group_batteries_by_areas?: boolean; // default: false
   show_climate_summary?: boolean; // default: false
+  show_climate_view?: boolean; // default: false; keeps the view when the summary is hidden
   hide_mobile_app_batteries?: boolean; // default: false
   hide_battery_notes_entities?: boolean; // default: false
   battery_critical_threshold?: number; // default: 20
@@ -287,6 +297,7 @@ export interface Simon42StrategyConfig {
   show_switches_section_in_rooms?: boolean; // default: false
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
+  show_cover_controls_in_rooms?: boolean; // default: false in this fork (conservative opt-in)
   show_window_contacts_in_rooms?: boolean; // default: false
   show_door_contacts_in_rooms?: boolean; // default: false
   show_switches_on_areas?: boolean; // default: false
@@ -346,6 +357,7 @@ export interface Simon42StrategyConfig {
 
   // Special entities
   alarm_entity?: string;
+  house_mode_entity?: string;
   weather_entity?: string;
   favorite_entities?: string[];
   light_favorite_entities?: string[];

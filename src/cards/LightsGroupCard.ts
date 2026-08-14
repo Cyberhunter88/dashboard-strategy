@@ -9,6 +9,7 @@ import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize } from '../utils/localize';
 import { stripAreaName, sortLights } from '../utils/name-utils';
+import { groupEntityIdsByAreas } from '../utils/area-group-utils';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { createEntityRenderKey } from '../utils/entity-render-key';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
@@ -25,6 +26,7 @@ interface LightsGroupConfig {
   entities?: string[];
   group_type: 'on' | 'off' | 'all';
   group_by_floors?: boolean;
+  group_by_areas?: boolean;
   nested_groups?: boolean;
   heading_label?: string;
   heading_icon?: string;
@@ -36,6 +38,12 @@ interface FloorGroup {
   floorId: string | null;
   floorName: string;
   floorIcon: string;
+  lights: string[];
+}
+
+interface AreaGroup {
+  areaId: string | null;
+  areaName: string;
   lights: string[];
 }
 
@@ -57,11 +65,13 @@ class Simon42LightsGroupCard extends LitElement {
   private _renderedLights: string[] = [];
   private _renderedLightsKey = '';
   private _renderedFloorGroups: FloorGroup[] = [];
+  private _renderedAreaGroups: AreaGroup[] = [];
 
   // Reusable tile card pool (keyed by entity_id)
   private _tileCards: Map<string, LovelaceCardElement> = new Map();
   private _headingCard: LovelaceCardElement | null = null;
   private _floorHeadingCards: Map<string, LovelaceCardElement> = new Map();
+  private _areaHeadingCards: Map<string, LovelaceCardElement> = new Map();
   private _groupContainers: Map<string, HTMLElement> = new Map();
   private _groupExpansion: Map<string, boolean> = new Map();
 
@@ -84,6 +94,11 @@ class Simon42LightsGroupCard extends LitElement {
       gap: 8px;
     }
     .floor-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .area-section {
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -151,6 +166,7 @@ class Simon42LightsGroupCard extends LitElement {
     this._renderedLights = [];
     this._renderedLightsKey = '';
     this._renderedFloorGroups = [];
+    this._renderedAreaGroups = [];
     this.requestUpdate();
   }
 
@@ -162,6 +178,7 @@ class Simon42LightsGroupCard extends LitElement {
     if (oldHass.entities !== this.hass.entities) return true;
     if (oldHass.devices !== this.hass.devices) return true;
     if (this._config.group_by_floors && oldHass.floors !== this.hass.floors) return true;
+    if (this._config.group_by_areas && oldHass.areas !== this.hass.areas) return true;
     if (!this._cachedSourceIds) return true;
 
     return haveEntityStatesChanged(oldHass, this.hass, this._cachedSourceIds);
@@ -178,6 +195,7 @@ class Simon42LightsGroupCard extends LitElement {
       || oldHass.entities !== this.hass.entities
       || oldHass.devices !== this.hass.devices
       || (this._config.group_by_floors && oldHass.floors !== this.hass.floors)
+      || (this._config.group_by_areas && oldHass.areas !== this.hass.areas)
     ) {
       if (!Registry.isCurrent(this.hass, this._config.config || {})) {
         Registry.initialize(this.hass, this._config.config || {});
@@ -198,7 +216,13 @@ class Simon42LightsGroupCard extends LitElement {
   }
 
   private _propagateHass(hass: HomeAssistant): void {
-    propagateHassToCards(hass, this._headingCard, this._floorHeadingCards.values(), this._tileCards.values());
+    propagateHassToCards(
+      hass,
+      this._headingCard,
+      this._floorHeadingCards.values(),
+      this._areaHeadingCards.values(),
+      this._tileCards.values()
+    );
   }
 
   private _getState(entityId: string): HassEntity | undefined {
@@ -384,6 +408,30 @@ class Simon42LightsGroupCard extends LitElement {
         lights: floorMap.get(floorId) ?? [],
       };
     });
+  }
+
+  private _groupByAreas(lights: string[]): AreaGroup[] {
+    if (!this.hass) return [];
+    return groupEntityIdsByAreas(
+      this.hass,
+      this._config.config || {},
+      lights,
+      (entityId) => this._getAreaForEntity(entityId),
+      localize('lights.no_area')
+    ).map((group) => ({ areaId: group.areaId, areaName: group.areaName, lights: group.entityIds }));
+  }
+
+  private _areaSlotKey(areaId: string | null, floorId?: string | null): string {
+    return `${floorId ?? '_all'}__${areaId ?? '_none'}`;
+  }
+
+  private _buildAreaHeadingConfig(group: AreaGroup): Record<string, unknown> {
+    return {
+      type: 'heading',
+      heading: group.areaName,
+      heading_style: 'subtitle',
+      ...(group.areaId ? { tap_action: { action: 'navigate', navigation_path: group.areaId } } : {}),
+    };
   }
 
   private _getFloorDomKey(floorId: string | null): string {
@@ -575,16 +623,26 @@ class Simon42LightsGroupCard extends LitElement {
     if (this._config.group_by_floors) {
       const floorGroups = this._groupByFloors(lights);
       this._renderedFloorGroups = floorGroups;
+      this._renderedAreaGroups = [];
       return html`
         <div class="lights-section">
           <div id="heading"></div>
           ${floorGroups.map(
             (group) => {
               const floorKey = this._getFloorDomKey(group.floorId);
+              const areaGroups = this._config.group_by_areas ? this._groupByAreas(group.lights) : [];
               return html`
               <div class="floor-section">
                 <div id=${`floor-heading-${floorKey}`}></div>
-                <div class="light-grid" id=${`floor-grid-${floorKey}`}></div>
+                ${this._config.group_by_areas
+                  ? areaGroups.map((areaGroup) => {
+                      const areaKey = this._areaSlotKey(areaGroup.areaId, group.floorId);
+                      return html`<div class="area-section">
+                        <div id=${`area-heading-${areaKey}`}></div>
+                        <div class="light-grid" id=${`area-grid-${areaKey}`}></div>
+                      </div>`;
+                    })
+                  : html`<div class="light-grid" id=${`floor-grid-${floorKey}`}></div>`}
               </div>
             `;
             }
@@ -593,6 +651,21 @@ class Simon42LightsGroupCard extends LitElement {
       `;
     }
     this._renderedFloorGroups = [];
+
+    if (this._config.group_by_areas) {
+      this._renderedAreaGroups = this._groupByAreas(lights);
+      return html`<div class="lights-section">
+        <div id="heading"></div>
+        ${this._renderedAreaGroups.map((group) => {
+          const key = this._areaSlotKey(group.areaId);
+          return html`<div class="area-section">
+            <div id=${`area-heading-${key}`}></div>
+            <div class="light-grid" id=${`area-grid-${key}`}></div>
+          </div>`;
+        })}
+      </div>`;
+    }
+    this._renderedAreaGroups = [];
 
     return html`
       <div class="lights-section">
@@ -607,6 +680,14 @@ class Simon42LightsGroupCard extends LitElement {
     if (card) return card;
     card = createHeadingCardElement();
     this._floorHeadingCards.set(key, card);
+    return card;
+  }
+
+  private _getOrCreateAreaHeadingCard(key: string): LovelaceCardElement {
+    let card = this._areaHeadingCards.get(key);
+    if (card) return card;
+    card = createHeadingCardElement();
+    this._areaHeadingCards.set(key, card);
     return card;
   }
 
@@ -638,6 +719,7 @@ class Simon42LightsGroupCard extends LitElement {
 
       // Reconcile per-floor sections
       const allActiveIds = new Set(lights);
+      const activeAreaKeys = new Set<string>();
       for (const group of floorGroups) {
         const key = group.floorId || '_none';
         const floorHeadingSlot = this.shadowRoot?.getElementById(`floor-heading-${key}`);
@@ -645,13 +727,36 @@ class Simon42LightsGroupCard extends LitElement {
           const headingCard = this._getOrCreateFloorHeadingCard(key);
           if (!headingCard.parentNode) floorHeadingSlot.appendChild(headingCard);
           headingCard.hass = this.hass;
-          headingCard.setConfig(this._buildHeadingConfig(group.lights, group.floorName, group.floorIcon));
+          headingCard.setConfig(
+            this._config.group_by_areas
+              ? { type: 'heading', heading: group.floorName, heading_style: 'title', icon: group.floorIcon }
+              : this._buildHeadingConfig(group.lights, group.floorName, group.floorIcon)
+          );
         }
 
-        const grid = this.shadowRoot?.getElementById(`floor-grid-${key}`);
-        if (grid) {
-          const hierarchy = this._buildHierarchy(group.lights);
-          this._reconcileHierarchy(grid, hierarchy.topLevelIds, hierarchy.nodes);
+        if (this._config.group_by_areas) {
+          for (const areaGroup of this._groupByAreas(group.lights)) {
+            const areaKey = this._areaSlotKey(areaGroup.areaId, group.floorId);
+            activeAreaKeys.add(areaKey);
+            const slot = this.shadowRoot?.getElementById(`area-heading-${areaKey}`);
+            if (slot) {
+              const card = this._getOrCreateAreaHeadingCard(areaKey);
+              slot.replaceChildren(card);
+              card.hass = this.hass;
+              card.setConfig(this._buildAreaHeadingConfig(areaGroup));
+            }
+            const grid = this.shadowRoot?.getElementById(`area-grid-${areaKey}`);
+            if (grid) {
+              const hierarchy = this._buildHierarchy(areaGroup.lights);
+              this._reconcileHierarchy(grid, hierarchy.topLevelIds, hierarchy.nodes);
+            }
+          }
+        } else {
+          const grid = this.shadowRoot?.getElementById(`floor-grid-${key}`);
+          if (grid) {
+            const hierarchy = this._buildHierarchy(group.lights);
+            this._reconcileHierarchy(grid, hierarchy.topLevelIds, hierarchy.nodes);
+          }
         }
       }
 
@@ -666,6 +771,12 @@ class Simon42LightsGroupCard extends LitElement {
         if (!allActiveIds.has(id)) {
           if (container.parentNode) container.parentNode.removeChild(container);
           this._groupContainers.delete(id);
+        }
+      }
+      for (const [key, card] of this._areaHeadingCards) {
+        if (!activeAreaKeys.has(key)) {
+          card.remove();
+          this._areaHeadingCards.delete(key);
         }
       }
       return;
@@ -683,11 +794,6 @@ class Simon42LightsGroupCard extends LitElement {
       mainHeadingCard.setConfig(this._buildHeadingConfig(lights));
     }
 
-    const grid = this.shadowRoot?.getElementById('grid');
-    if (!grid) return;
-
-    const hierarchy = this._buildHierarchy(lights);
-
     // Clean up stale pool entries
     const activeIds = new Set(lights);
     for (const [id, card] of this._tileCards) {
@@ -704,6 +810,36 @@ class Simon42LightsGroupCard extends LitElement {
       }
     }
 
+    if (this._config.group_by_areas) {
+      const activeAreaKeys = new Set<string>();
+      for (const group of this._renderedAreaGroups) {
+        const key = this._areaSlotKey(group.areaId);
+        activeAreaKeys.add(key);
+        const slot = this.shadowRoot?.getElementById(`area-heading-${key}`);
+        if (slot) {
+          const card = this._getOrCreateAreaHeadingCard(key);
+          slot.replaceChildren(card);
+          card.hass = this.hass;
+          card.setConfig(this._buildAreaHeadingConfig(group));
+        }
+        const grid = this.shadowRoot?.getElementById(`area-grid-${key}`);
+        if (grid) {
+          const hierarchy = this._buildHierarchy(group.lights);
+          this._reconcileHierarchy(grid, hierarchy.topLevelIds, hierarchy.nodes);
+        }
+      }
+      for (const [key, card] of this._areaHeadingCards) {
+        if (!activeAreaKeys.has(key)) {
+          card.remove();
+          this._areaHeadingCards.delete(key);
+        }
+      }
+      return;
+    }
+
+    const grid = this.shadowRoot?.getElementById('grid');
+    if (!grid) return;
+    const hierarchy = this._buildHierarchy(lights);
     this._reconcileHierarchy(grid, hierarchy.topLevelIds, hierarchy.nodes);
   }
 

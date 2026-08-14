@@ -129,4 +129,17 @@ describe('Registry', () => {
     expect(Registry.getVisibleEntitiesForArea('living_room')).not.toBe(visibleEntries);
     expect(Registry.floors).toEqual([floor]);
   });
+
+  it('keeps badge-hidden entities visible outside the badge pseudo-group', () => {
+    const hass = hassWith([entity('sensor.power')]);
+    const config = {
+      areas_options: {
+        living_room: { groups_options: { badges: { hidden: ['sensor.power'] } } },
+      },
+    } as Simon42StrategyConfig;
+    Registry.initialize(hass, config);
+    expect(Registry.isHiddenByConfig('sensor.power')).toBe(false);
+    expect(Registry.getVisibleEntitiesForArea('living_room').map((entry) => entry.entity_id))
+      .toContain('sensor.power');
+  });
 });

@@ -22,7 +22,15 @@ import { stripAreaName, sortLights, mergeStacksOrder } from '../utils/name-utils
 import { Registry } from '../Registry';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { localize } from '../utils/localize';
-import { BADGE_COLOR_MAP, getColorForEntity, isDefaultShowName, resolveShowName } from '../utils/badge-utils';
+import {
+  BADGE_COLOR_MAP,
+  ROOM_ENERGY_SENSOR_CLASSES,
+  applyBadgeGroupOptions,
+  type BadgeCandidate,
+  isDefaultShowName,
+  selectBadgeEntitiesOfType,
+  resolveShowName,
+} from '../utils/badge-utils';
 import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { createSectionsView } from '../utils/view-builder';
@@ -31,8 +39,8 @@ import {
   findUpsEntityGroups,
   getVisibleAreaEntities,
 } from '../utils/area-entity-utils';
+import { buildCoverControlBadges } from '../utils/cover-controls';
 
-const ROOM_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
 const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
 
 function upsSensorRole(entityId: string, hass: HomeAssistant): number {
@@ -357,12 +365,6 @@ class Simon42ViewRoomStrategy extends HTMLElement {
     const badgeOpts = groupsOptions.badges;
     const hasBadgeConfig = !!badgeOpts;
 
-    interface BadgeCandidate {
-      entity: string;
-      color: string;
-      showName?: boolean;
-    }
-
     const candidates: BadgeCandidate[] = [];
 
     // Auto-detected sensors (first match per type, except window/door which show all)
@@ -390,8 +392,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       [sensorEntities.smoke, 'smoke'],
       [sensorEntities.gas, 'gas'],
     ];
+    const hiddenBadgeSet = new Set<string>(badgeOpts?.hidden || []);
     for (const [entities, colorKey] of singleTypes) {
-      if (entities[0]) addCandidate(entities[0], colorKey);
+      for (const entityId of selectBadgeEntitiesOfType(entities, hiddenBadgeSet)) {
+        addCandidate(entityId, colorKey);
+      }
     }
 
     if (dashboardConfig.show_window_contacts_in_rooms === true) {
@@ -401,21 +406,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       for (const id of sensorEntities.door) addCandidate(id, 'door', 'door');
     }
 
-    // Apply per-area badge config: filter hidden, append additional
-    let filteredCandidates = candidates;
-    if (hasBadgeConfig) {
-      if (badgeOpts.hidden?.length) {
-        const hiddenSet = new Set<string>(badgeOpts.hidden);
-        filteredCandidates = filteredCandidates.filter((b) => !hiddenSet.has(b.entity));
-      }
-      if (badgeOpts.additional?.length) {
-        for (const entityId of badgeOpts.additional) {
-          if (hass.states[entityId] && !filteredCandidates.some((b) => b.entity === entityId)) {
-            filteredCandidates.push({ entity: entityId, color: getColorForEntity(entityId, hass) });
-          }
-        }
-      }
-    }
+    const filteredCandidates = applyBadgeGroupOptions(candidates, badgeOpts, hass);
 
     // Resolve show_name per badge: default + config overrides
     const namesVisible = hasBadgeConfig ? new Set<string>(badgeOpts.names_visible || []) : null;
@@ -528,6 +519,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
       const cameraLiveToggle = dashboardConfig.camera_live_toggle === true;
+      const devicesWithCompanions = new Set<string>();
       for (const cameraId of roomEntities.cameras) {
         if (!hass.states[cameraId]) continue;
         const cameraName = stripAreaName(cameraId, area, hass);
@@ -553,6 +545,8 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         }
 
         if ((isReolink || isAqara) && deviceId) {
+          const firstOfDevice = !devicesWithCompanions.has(deviceId);
+          devicesWithCompanions.add(deviceId);
           const devEntities = Registry.getEntityIdsForDevice(deviceId);
 
           // Reolink-specific entities
@@ -594,7 +588,15 @@ class Simon42ViewRoomStrategy extends HTMLElement {
             if (doorbell) glanceEntities.push({ entity: doorbell });
           }
 
-          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle, glanceEntities, isAqara));
+          cameraCards.push(
+            buildNativeCameraCard(
+              cameraId,
+              cameraName,
+              cameraLiveToggle,
+              firstOfDevice ? glanceEntities : [],
+              isAqara
+            )
+          );
         } else {
           cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle));
         }
@@ -684,13 +686,28 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    domainSection('covers', [...roomEntities.covers, ...roomEntities.covers_curtain], localize('room.covers'), 'mdi:window-shutter', (e) =>
-      buildAdaptiveTileCardConfig(hass, e, {
+    const roomShadingCovers = [...roomEntities.covers, ...roomEntities.covers_curtain];
+    if (roomShadingCovers.length > 0) {
+      const heading: LovelaceCardConfig = {
+        type: 'heading',
+        heading: localize('room.covers'),
+        heading_style: 'title',
+        icon: 'mdi:window-shutter',
+      };
+      // Conservative fork default: opt-in, unlike upstream's opt-out default.
+      if (dashboardConfig.show_cover_controls_in_rooms === true) {
+        const controls = buildCoverControlBadges(roomShadingCovers, hass);
+        if (controls.length > 0) heading.badges = controls;
+      }
+      pushStack('covers', {
+        type: 'grid',
+        cards: [heading, ...roomShadingCovers.map((e) => buildAdaptiveTileCardConfig(hass, e, {
         name: stripAreaName(e, area, hass),
         vertical: false,
         state_content: ['current_position', 'last_changed'],
-      })
-    );
+        }))],
+      });
+    }
 
     domainSection('covers_window', roomEntities.covers_window, localize('room.windows'), 'mdi:window-open-variant', (e) =>
       buildAdaptiveTileCardConfig(hass, e, {

@@ -5,6 +5,7 @@
 // RoomViewStrategy (runtime) and the Editor (configuration UI).
 
 import type { HomeAssistant } from '../types/homeassistant';
+import type { GroupOptions } from '../types/strategy';
 
 // -- Badge color map (device_class → HA color name) -------------------
 
@@ -43,6 +44,13 @@ export function getColorForEntity(entityId: string, hass: HomeAssistant): string
   if (unit === 'lx') return 'amber';
   if (unit === 'g/m³') return 'blue';
   return 'grey';
+}
+
+export const ROOM_ENERGY_SENSOR_CLASSES = ['power', 'energy', 'water', 'gas'] as const;
+const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
+
+export function isEnergyBlockSensor(domain: string, deviceClass: string | undefined): boolean {
+  return domain === 'sensor' && !!deviceClass && ROOM_ENERGY_SENSOR_CLASS_SET.has(deviceClass);
 }
 
 // -- Badge candidate detection ----------------------------------------
@@ -86,6 +94,35 @@ export function isBadgeCandidate(
     );
   }
   return false;
+}
+
+/** Keep one automatic badge per type until the user explicitly curates that type. */
+export function selectBadgeEntitiesOfType(entities: string[], hiddenBadges: ReadonlySet<string>): string[] {
+  const first = entities[0];
+  if (!first) return [];
+  const curated = entities.some((entityId) => hiddenBadges.has(entityId));
+  return curated ? entities.filter((entityId) => !hiddenBadges.has(entityId)) : [first];
+}
+
+export interface BadgeCandidate {
+  entity: string;
+  color: string;
+  showName?: boolean;
+}
+
+/** Apply badge-only deselection and explicitly added room badges. */
+export function applyBadgeGroupOptions(
+  candidates: BadgeCandidate[],
+  options: GroupOptions | undefined,
+  hass: HomeAssistant
+): BadgeCandidate[] {
+  const hidden = new Set(options?.hidden || []);
+  const result = candidates.filter((candidate) => !hidden.has(candidate.entity));
+  for (const entityId of options?.additional || []) {
+    if (!hass.states[entityId] || result.some((candidate) => candidate.entity === entityId)) continue;
+    result.push({ entity: entityId, color: getColorForEntity(entityId, hass) });
+  }
+  return result;
 }
 
 // -- Default show_name ------------------------------------------------

@@ -11,6 +11,7 @@ import { localize } from '../utils/localize';
 import { getBatteryEntities } from '../utils/entity-filter';
 import { getBatteryStatus, type BatteryStatus } from '../utils/battery-utils';
 import { getEntityDisplayName } from '../utils/name-utils';
+import { groupEntityIdsByAreas } from '../utils/area-group-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
@@ -25,6 +26,14 @@ interface BatteriesCardConfig {
 }
 
 type BatteryGroups = Record<BatteryStatus, string[]>;
+
+interface BatteryAreaGroup {
+  areaId: string | null;
+  areaName: string;
+  entities: string[];
+}
+
+type BatteryAreaGroups = Record<BatteryStatus, BatteryAreaGroup[]>;
 
 const BATTERY_STATUSES: BatteryStatus[] = ['critical', 'low', 'good'];
 const STATUS_EMOJI: Record<BatteryStatus, string> = {
@@ -47,10 +56,12 @@ class DashboardStrategyBatteriesCard extends LitElement {
   private _config: Simon42StrategyConfig = {};
   private _sourceIds: Set<string> | null = null;
   private _renderedGroups: BatteryGroups = this._emptyGroups();
+  private _renderedAreaGroups: BatteryAreaGroups = this._emptyAreaGroups();
   private _lastLayoutKey = '';
   private _tileCards = new Map<string, LovelaceCardElement>();
   private _tileStatuses = new Map<string, BatteryStatus>();
   private _headingCards = new Map<BatteryStatus, LovelaceCardElement>();
+  private _areaHeadingCards = new Map<string, LovelaceCardElement>();
 
   static styles = css`
     :host {
@@ -74,6 +85,11 @@ class DashboardStrategyBatteriesCard extends LitElement {
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
       gap: 8px;
     }
+    .area-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
   `;
 
   setConfig(config: BatteriesCardConfig): void {
@@ -92,7 +108,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
-    if (!oldHass || oldHass.entities !== this.hass.entities) return true;
+    if (!oldHass || oldHass.entities !== this.hass.entities || oldHass.devices !== this.hass.devices) return true;
+    if (this._config.group_batteries_by_areas === true && oldHass.areas !== this.hass.areas) return true;
     if (!this._sourceIds) return true;
     return haveEntityStatesChanged(oldHass, this.hass, this._sourceIds);
   }
@@ -102,7 +119,14 @@ class DashboardStrategyBatteriesCard extends LitElement {
 
     trackHassUpdate('batteries-card');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
-    if (!oldHass || oldHass.entities !== this.hass.entities) {
+    if (
+      oldHass
+      && this._config.group_batteries_by_areas === true
+      && oldHass.areas !== this.hass.areas
+    ) {
+      this._lastLayoutKey = '';
+    }
+    if (!oldHass || oldHass.entities !== this.hass.entities || oldHass.devices !== this.hass.devices) {
       if (!Registry.isCurrent(this.hass, this._config)) {
         Registry.initialize(this.hass, this._config);
       }
@@ -115,13 +139,19 @@ class DashboardStrategyBatteriesCard extends LitElement {
       this._sourceIds = new Set(getBatteryEntities(this.hass, this._config));
     }
 
-    propagateHassToCards(this.hass, this._headingCards.values(), this._tileCards.values());
+    propagateHassToCards(
+      this.hass,
+      this._headingCards.values(),
+      this._areaHeadingCards.values(),
+      this._tileCards.values()
+    );
   }
 
   protected render() {
     if (!this.hass || !this._sourceIds) return nothing;
 
     this._renderedGroups = this._groupBatteries();
+    this._renderedAreaGroups = this._groupBatteriesByAreas(this._renderedGroups);
     const visibleStatuses = BATTERY_STATUSES.filter((status) => this._renderedGroups[status].length > 0);
     if (visibleStatuses.length === 0) return nothing;
 
@@ -131,7 +161,15 @@ class DashboardStrategyBatteriesCard extends LitElement {
           (status) => html`
             <section class="group">
               <div id=${`heading-${status}`}></div>
-              <div class="tiles" id=${`tiles-${status}`}></div>
+              ${this._config.group_batteries_by_areas === true
+                ? this._renderedAreaGroups[status].map((group) => {
+                    const key = this._areaKey(status, group.areaId);
+                    return html`<div class="area-group">
+                      <div id=${`area-heading-${key}`}></div>
+                      <div class="tiles" id=${`tiles-${key}`}></div>
+                    </div>`;
+                  })
+                : html`<div class="tiles" id=${`tiles-${status}`}></div>`}
             </section>
           `
         )}
@@ -143,11 +181,14 @@ class DashboardStrategyBatteriesCard extends LitElement {
     super.updated(changedProps);
     if (!this.hass || !this._sourceIds) return;
 
-    const layoutKey = BATTERY_STATUSES.map((status) => `${status}:${this._renderedGroups[status].join(',')}`).join('|');
+    const layoutKey = `${this._config.group_batteries_by_areas === true}|${BATTERY_STATUSES.map(
+      (status) => `${status}:${this._renderedGroups[status].join(',')}`
+    ).join('|')}`;
     if (layoutKey === this._lastLayoutKey) return;
     this._lastLayoutKey = layoutKey;
 
     const activeIds = new Set<string>();
+    const activeAreaKeys = new Set<string>();
     for (const status of BATTERY_STATUSES) {
       const entities = this._renderedGroups[status];
       if (entities.length === 0) continue;
@@ -160,12 +201,44 @@ class DashboardStrategyBatteriesCard extends LitElement {
         headingSlot.replaceChildren(heading);
       }
 
-      const tilesSlot = this.shadowRoot?.getElementById(`tiles-${status}`);
-      if (!tilesSlot) continue;
-      for (const entityId of entities) {
-        activeIds.add(entityId);
-        tilesSlot.appendChild(this._getOrCreateTile(entityId, status));
+      if (this._config.group_batteries_by_areas === true) {
+        for (const areaGroup of this._renderedAreaGroups[status]) {
+          const key = this._areaKey(status, areaGroup.areaId);
+          activeAreaKeys.add(key);
+          const areaHeadingSlot = this.shadowRoot?.getElementById(`area-heading-${key}`);
+          if (areaHeadingSlot) {
+            const areaHeading = this._getOrCreateAreaHeading(key);
+            areaHeading.hass = this.hass;
+            areaHeading.setConfig({
+              type: 'heading',
+              heading: areaGroup.areaName,
+              heading_style: 'subtitle',
+              ...(areaGroup.areaId
+                ? { tap_action: { action: 'navigate', navigation_path: areaGroup.areaId } }
+                : {}),
+            });
+            areaHeadingSlot.replaceChildren(areaHeading);
+          }
+          const tilesSlot = this.shadowRoot?.getElementById(`tiles-${key}`);
+          if (!tilesSlot) continue;
+          for (const entityId of areaGroup.entities) {
+            activeIds.add(entityId);
+            tilesSlot.appendChild(this._getOrCreateTile(entityId, status));
+          }
+        }
+      } else {
+        const tilesSlot = this.shadowRoot?.getElementById(`tiles-${status}`);
+        if (!tilesSlot) continue;
+        for (const entityId of entities) {
+          activeIds.add(entityId);
+          tilesSlot.appendChild(this._getOrCreateTile(entityId, status));
+        }
       }
+    }
+    for (const [key, card] of this._areaHeadingCards) {
+      if (activeAreaKeys.has(key)) continue;
+      card.remove();
+      this._areaHeadingCards.delete(key);
     }
 
     for (const [entityId, card] of this._tileCards) {
@@ -178,6 +251,35 @@ class DashboardStrategyBatteriesCard extends LitElement {
 
   private _emptyGroups(): BatteryGroups {
     return { critical: [], low: [], good: [] };
+  }
+
+  private _emptyAreaGroups(): BatteryAreaGroups {
+    return { critical: [], low: [], good: [] };
+  }
+
+  private _areaKey(status: BatteryStatus, areaId: string | null): string {
+    return `${status}-${areaId ?? '_none'}`;
+  }
+
+  private _getAreaIdForEntity(entityId: string): string | null {
+    const entity = Registry.getEntity(entityId);
+    if (entity?.area_id) return entity.area_id;
+    return entity?.device_id ? (Registry.getDevice(entity.device_id)?.area_id ?? null) : null;
+  }
+
+  private _groupBatteriesByAreas(groups: BatteryGroups): BatteryAreaGroups {
+    const result = this._emptyAreaGroups();
+    if (!this.hass || this._config.group_batteries_by_areas !== true) return result;
+    for (const status of BATTERY_STATUSES) {
+      result[status] = groupEntityIdsByAreas(
+        this.hass,
+        this._config,
+        groups[status],
+        (entityId) => this._getAreaIdForEntity(entityId),
+        localize('batteries.no_area')
+      ).map((group) => ({ areaId: group.areaId, areaName: group.areaName, entities: group.entityIds }));
+    }
+    return result;
   }
 
   private _groupBatteries(): BatteryGroups {
@@ -219,17 +321,17 @@ class DashboardStrategyBatteriesCard extends LitElement {
   }
 
   private _getAreaNameForEntity(entityId: string): string | null {
-    const entity = Registry.getEntity(entityId);
-    let areaId = entity?.area_id ?? null;
-    if (!areaId && entity?.device_id) {
-      areaId = Registry.getDevice(entity.device_id)?.area_id ?? null;
-    }
+    const areaId = this._getAreaIdForEntity(entityId);
     if (!areaId) return null;
     return this.hass?.areas[areaId]?.name ?? null;
   }
 
   private _getTileName(entityId: string): string | undefined {
-    if (this._config.show_area_in_battery_view !== true || !this.hass) return undefined;
+    if (
+      this._config.group_batteries_by_areas === true
+      || this._config.show_area_in_battery_view !== true
+      || !this.hass
+    ) return undefined;
 
     const areaName = this._getAreaNameForEntity(entityId);
     if (!areaName) return undefined;
@@ -242,6 +344,15 @@ class DashboardStrategyBatteriesCard extends LitElement {
     if (!heading) {
       heading = createHeadingCardElement();
       this._headingCards.set(status, heading);
+    }
+    return heading;
+  }
+
+  private _getOrCreateAreaHeading(key: string): LovelaceCardElement {
+    let heading = this._areaHeadingCards.get(key);
+    if (!heading) {
+      heading = createHeadingCardElement();
+      this._areaHeadingCards.set(key, heading);
     }
     return heading;
   }
@@ -271,9 +382,11 @@ class DashboardStrategyBatteriesCard extends LitElement {
   private _clearCardPool(): void {
     for (const card of this._tileCards.values()) card.remove();
     for (const heading of this._headingCards.values()) heading.remove();
+    for (const heading of this._areaHeadingCards.values()) heading.remove();
     this._tileCards.clear();
     this._tileStatuses.clear();
     this._headingCards.clear();
+    this._areaHeadingCards.clear();
   }
 }
 

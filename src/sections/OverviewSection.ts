@@ -228,6 +228,25 @@ export function createLightFavoritesSection(
   return { type: 'grid', cards };
 }
 
+/** Optional native selector for a user-managed house-mode helper. */
+export function createHouseModeSection(config: Simon42StrategyConfig): LovelaceSectionConfig | null {
+  if (!config.house_mode_entity) return null;
+  return {
+    type: 'grid',
+    cards: [
+      {
+        type: 'tile',
+        entity: config.house_mode_entity,
+        hide_state: true,
+        vertical: false,
+        features: [{ type: 'select-options' }],
+        features_position: 'inline',
+        grid_options: { columns: 'full' },
+      },
+    ],
+  };
+}
+
 /**
  * Creates the overview section with summaries, clock, optional alarm,
  * optional search card, and favorites.
@@ -242,8 +261,8 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   const cards: LovelaceCardConfig[] = [];
 
-  // Only show "Übersicht" heading if clock or alarm is visible
-  if ((showClockCard || alarmEntity) && !hidden.has('overview')) {
+  // Only show "Übersicht" heading if clock, alarm or house mode is visible
+  if ((showClockCard || alarmEntity || config.house_mode_entity) && !hidden.has('overview')) {
     cards.push({
       type: 'heading',
       heading: localize('sections.overview'),
@@ -283,6 +302,9 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
       })
     );
   }
+
+  const houseModeSection = createHouseModeSection(config);
+  if (houseModeSection?.cards) cards.push(...houseModeSection.cards);
 
   // Add search card if enabled
   if (showSearchCard) {

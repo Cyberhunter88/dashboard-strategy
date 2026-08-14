@@ -54,6 +54,7 @@ import {
 } from '../utils/area-entity-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
 import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
+import { isUtilityViewEnabled } from '../utils/summary-view-utils';
 
 // -- Supporting types for the editor ------------------------------------
 
@@ -395,6 +396,21 @@ class Simon42DashboardStrategyEditor extends LitElement {
           name: stateObj.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '),
         };
       })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private _getHouseModeEntities(): AlarmEntityOption[] {
+    if (!this._hass) return [];
+    return Object.keys(this._hass.states)
+      .filter((entityId) => entityId.startsWith('input_select.') || entityId.startsWith('select.'))
+      .filter((entityId) => {
+        const category = this._hass?.entities[entityId]?.entity_category;
+        return category !== 'config' && category !== 'diagnostic';
+      })
+      .map((entityId) => ({
+        entity_id: entityId,
+        name: this._hass!.states[entityId].attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -3636,6 +3652,8 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
+    const houseModeEntity = this._config.house_mode_entity || '';
+    const houseModeEntities = this._getHouseModeEntities();
 
     return html`
       <div class="section">
@@ -3722,6 +3740,21 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           </div>
           <div class="description">${localize('editor.alarm_desc')}</div>
 
+          <div class="form-row">
+            <label for="house-mode-entity" style="margin-right: 8px; min-width: 120px;">
+              ${localize('editor.house_mode_entity')}
+            </label>
+            <select id="house-mode-entity" style="flex: 1;" @change=${this._houseModeEntityChanged}>
+              <option value="" ?selected=${!houseModeEntity}>${localize('editor.house_mode_none')}</option>
+              ${houseModeEntities.map(
+                (entity) => html`<option value=${entity.entity_id} ?selected=${entity.entity_id === houseModeEntity}>
+                  ${entity.name}
+                </option>`
+              )}
+            </select>
+          </div>
+          <div class="description">${localize('editor.house_mode_desc')}</div>
+
           ${this._renderCheckbox(
             'show-search-card',
             localize('editor.show_search_card'),
@@ -3763,6 +3796,11 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const batteryLowThreshold = this._config.battery_low_threshold ?? 50;
     const unavailableBatteriesBucket = this._config.unavailable_batteries_bucket === 'critical' ? 'critical' : 'good';
     const securityExtraEntities = this._config.security_extra_entities || [];
+    const showLightSummary = this._config.show_light_summary !== false;
+    const showCoversSummary = this._config.show_covers_summary !== false;
+    const showSecuritySummary = this._config.show_security_summary !== false;
+    const showBatterySummary = this._config.show_battery_summary !== false;
+    const showClimateSummary = this._config.show_climate_summary === true;
 
     return html`
       <div class="section">
@@ -3793,6 +3831,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         <div class="description">${localize('editor.columns_desc')}</div>
 
         <div class="subsection-title">${localize('editor.security_options')}</div>
+        ${!showSecuritySummary
+          ? html`${this._renderCheckbox(
+              'show-security-view',
+              localize('editor.show_security_view'),
+              this._config.show_security_view === true,
+              (checked) => this._toggleChanged('show_security_view', checked, false)
+            )}<div class="description">${localize('editor.show_security_view_desc')}</div>`
+          : nothing}
         ${this._renderCheckbox(
           'group-security-by-areas',
           localize('editor.group_security_by_areas'),
@@ -3800,6 +3846,13 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           (checked) => this._toggleChanged('group_security_by_areas', checked, false)
         )}
         <div class="description">${localize('editor.group_security_by_areas_desc')}</div>
+        ${this._renderCheckbox(
+          'hide-hidden-areas-in-security',
+          localize('editor.hide_hidden_areas_in_security'),
+          this._config.hide_hidden_areas_in_security === true,
+          (checked) => this._toggleChanged('hide_hidden_areas_in_security', checked, false)
+        )}
+        <div class="description">${localize('editor.hide_hidden_areas_in_security_desc')}</div>
         ${this._renderCheckbox(
           'show-security-activity',
           localize('editor.show_security_activity'),
@@ -3820,6 +3873,15 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           @change=${(event: Event) => this._securityExtraEntitiesChanged((event.target as HTMLInputElement).value)}
         ></ha-textfield>
 
+        ${!showLightSummary
+          ? html`${this._renderCheckbox(
+              'show-light-view',
+              localize('editor.show_light_view'),
+              this._config.show_light_view === true,
+              (checked) => this._toggleChanged('show_light_view', checked, false)
+            )}<div class="description">${localize('editor.show_light_view_desc')}</div>`
+          : nothing}
+
         ${this._renderCheckbox(
           'group-lights-by-floors',
           localize('editor.group_lights_by_floors'),
@@ -3827,6 +3889,22 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           (checked) => this._toggleChanged('group_lights_by_floors', checked, false)
         )}
         <div class="description">${localize('editor.group_lights_by_floors_desc')}</div>
+        ${this._renderCheckbox(
+          'group-lights-by-areas',
+          localize('editor.group_lights_by_areas'),
+          this._config.group_lights_by_areas === true,
+          (checked) => this._toggleChanged('group_lights_by_areas', checked, false)
+        )}
+        <div class="description">${localize('editor.group_lights_by_areas_desc')}</div>
+
+        ${!showCoversSummary
+          ? html`${this._renderCheckbox(
+              'show-covers-view',
+              localize('editor.show_covers_view'),
+              this._config.show_covers_view === true,
+              (checked) => this._toggleChanged('show_covers_view', checked, false)
+            )}<div class="description">${localize('editor.show_covers_view_desc')}</div>`
+          : nothing}
 
         ${this._renderCheckbox(
           'group-covers-by-floors',
@@ -3835,6 +3913,22 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           (checked) => this._toggleChanged('group_covers_by_floors', checked, false)
         )}
         <div class="description">${localize('editor.group_covers_by_floors_desc')}</div>
+        ${this._renderCheckbox(
+          'group-covers-by-areas',
+          localize('editor.group_covers_by_areas'),
+          this._config.group_covers_by_areas === true,
+          (checked) => this._toggleChanged('group_covers_by_areas', checked, false)
+        )}
+        <div class="description">${localize('editor.group_covers_by_areas_desc')}</div>
+
+        ${!showClimateSummary
+          ? html`${this._renderCheckbox(
+              'show-climate-view',
+              localize('editor.show_climate_view'),
+              this._config.show_climate_view === true,
+              (checked) => this._toggleChanged('show_climate_view', checked, false)
+            )}<div class="description">${localize('editor.show_climate_view_desc')}</div>`
+          : nothing}
 
         ${this._renderCheckbox(
           'nested-light-groups',
@@ -3879,13 +3973,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           )}
           <div class="description">${localize('editor.hide_battery_notes_entities_desc')}</div>
 
-          ${this._renderCheckbox(
-            'show-battery-view',
-            localize('editor.show_battery_view'),
-            showBatteryView,
-            (checked) => this._toggleChanged('show_battery_view', checked, false)
-          )}
-          <div class="description">${localize('editor.show_battery_view_desc')}</div>
+          ${!showBatterySummary
+            ? html`${this._renderCheckbox(
+                'show-battery-view',
+                localize('editor.show_battery_view'),
+                showBatteryView,
+                (checked) => this._toggleChanged('show_battery_view', checked, false)
+              )}<div class="description">${localize('editor.show_battery_view_desc')}</div>`
+            : nothing}
 
           ${this._renderCheckbox(
             'show-area-in-battery-view',
@@ -3894,6 +3989,13 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
             (checked) => this._toggleChanged('show_area_in_battery_view', checked, false)
           )}
           <div class="description">${localize('editor.show_area_in_battery_view_desc')}</div>
+          ${this._renderCheckbox(
+            'group-batteries-by-areas',
+            localize('editor.group_batteries_by_areas'),
+            this._config.group_batteries_by_areas === true,
+            (checked) => this._toggleChanged('group_batteries_by_areas', checked, false)
+          )}
+          <div class="description">${localize('editor.group_batteries_by_areas_desc')}</div>
 
           <div
             style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-top: 12px; margin-bottom: 4px;"
@@ -4085,6 +4187,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const showVacuumsSectionInRooms = this._config.show_vacuums_section_in_rooms === true;
     const showSwitchesSectionInRooms = this._config.show_switches_section_in_rooms === true;
     const cameraLiveToggle = this._config.camera_live_toggle === true;
+    const showCoverControlsInRooms = this._config.show_cover_controls_in_rooms === true;
     const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
@@ -4181,6 +4284,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               (checked) => this._toggleChanged('show_switches_section_in_rooms', checked, false)
             )}
             <div class="description">${localize('editor.show_switches_section_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox(
+              'show-cover-controls-in-rooms',
+              localize('editor.show_cover_controls_in_rooms'),
+              showCoverControlsInRooms,
+              (checked) => this._toggleChanged('show_cover_controls_in_rooms', checked, false)
+            )}
+            <div class="description">${localize('editor.show_cover_controls_in_rooms_desc')}</div>
 
             ${this._renderCheckbox(
               'camera-live-toggle',
@@ -4735,15 +4846,11 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       if (enabled) options.push([path, localize(titleKey)]);
     };
 
-    add(this._config.show_light_summary !== false, 'lights', 'views.lights');
-    add(this._config.show_covers_summary !== false, 'covers', 'views.covers');
-    add(this._config.show_security_summary !== false, 'security', 'views.security');
-    add(
-      this._config.show_battery_summary !== false || this._config.show_battery_view === true,
-      'batteries',
-      'views.batteries'
-    );
-    add(this._config.show_climate_summary === true, 'climate', 'views.climate');
+    add(isUtilityViewEnabled(this._config, 'lights'), 'lights', 'views.lights');
+    add(isUtilityViewEnabled(this._config, 'covers'), 'covers', 'views.covers');
+    add(isUtilityViewEnabled(this._config, 'security'), 'security', 'views.security');
+    add(isUtilityViewEnabled(this._config, 'batteries'), 'batteries', 'views.batteries');
+    add(isUtilityViewEnabled(this._config, 'climate'), 'climate', 'views.climate');
     add(this._config.show_cctv_view === true, 'cctv', 'views.cctv');
     add(this._config.show_maintenance_view === true, 'maintenance', 'views.maintenance');
 
@@ -5834,6 +5941,15 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       delete newConfig.alarm_entity;
     }
 
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _houseModeEntityChanged(e: Event): void {
+    const entityId = (e.target as HTMLSelectElement).value;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (entityId) newConfig.house_mode_entity = entityId;
+    else delete newConfig.house_mode_entity;
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }
