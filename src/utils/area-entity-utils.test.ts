@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { EntityRegistryEntry } from '../types/registries';
 import { createRoomEntities } from './area-entity-utils';
+import { getEditableAreaEntities } from './area-entity-utils';
+import { Registry } from '../Registry';
+import { makeHass } from '../../tests/fixtures/hass';
 
 describe('createRoomEntities', () => {
   it('deduplicates automatically generated room entities by entity_id', () => {
@@ -63,5 +66,21 @@ describe('createRoomEntities', () => {
     const result = createRoomEntities([vacuum, mower], hass, []);
 
     expect(result.vacuum).toEqual(['vacuum.downstairs', 'lawn_mower.garden']);
+  });
+});
+
+describe('getEditableAreaEntities', () => {
+  it('excludes config and diagnostic registry entities from editor pickers', () => {
+    const hass = makeHass({
+      areas: [{ area_id: 'office', name: 'Office' }],
+      entities: [
+        { entity_id: 'sensor.visible', area_id: 'office', state: '1' },
+        { entity_id: 'select.config', area_id: 'office', state: 'auto', entity_category: 'config' },
+        { entity_id: 'sensor.diagnostic', area_id: 'office', state: 'ok', entity_category: 'diagnostic' },
+      ],
+    });
+    Registry.resetForTesting();
+    expect(getEditableAreaEntities('office', hass, {}).map((entry) => entry.entity_id))
+      .toEqual(['sensor.visible']);
   });
 });

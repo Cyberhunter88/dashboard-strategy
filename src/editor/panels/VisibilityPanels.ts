@@ -2,6 +2,7 @@ import { html, type TemplateResult } from 'lit';
 
 import { SECTION_REGISTRY, isSectionHiddenByConfig } from '../../sections/section-registry';
 import { localize } from '../../utils/localize';
+import { isUtilityViewEnabled } from '../../utils/summary-view-utils';
 import type { StrategyEditorHost } from '../editor-host';
 
 export function renderRoomVisibilityPanel(host: StrategyEditorHost): TemplateResult {
@@ -43,9 +44,16 @@ export function renderUserVisibilityPanel(host: StrategyEditorHost): TemplateRes
     .sort((a, b) => a.name.localeCompare(b.name));
   if (users.length === 0) return html``;
   const views: [string, string][] = [
-    ['home', localize('views.overview')], ['lights', localize('views.lights')], ['covers', localize('views.covers')],
-    ['security', localize('views.security')], ['batteries', localize('views.batteries')], ['climate', localize('views.climate')],
-    ['cctv', localize('views.cctv')], ['maintenance', localize('views.maintenance')],
+    ['home', localize('views.overview')],
+    ...(isUtilityViewEnabled(host._config, 'lights') ? [['lights', localize('views.lights')] as [string, string]] : []),
+    ...(isUtilityViewEnabled(host._config, 'covers') ? [['covers', localize('views.covers')] as [string, string]] : []),
+    ...(isUtilityViewEnabled(host._config, 'security') ? [['security', localize('views.security')] as [string, string]] : []),
+    ...(isUtilityViewEnabled(host._config, 'batteries') ? [['batteries', localize('views.batteries')] as [string, string]] : []),
+    ...(isUtilityViewEnabled(host._config, 'climate') ? [['climate', localize('views.climate')] as [string, string]] : []),
+    ...(host._config.show_cctv_view === true ? [['cctv', localize('views.cctv')] as [string, string]] : []),
+    ...(host._config.show_maintenance_view === true
+      ? [['maintenance', localize('views.maintenance')] as [string, string]]
+      : []),
     ...Object.values(host._hass.areas).map((area) => [area.area_id, area.name] as [string, string]),
     ...(host._config.custom_views || [])
       .filter((view) => (view.parsed_config || (view.ref_dashboard && view.ref_view)) && view.path && view.title)

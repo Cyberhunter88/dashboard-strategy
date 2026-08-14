@@ -4,6 +4,7 @@ import {
   createAlarmSection,
   createFavoritesSection,
   createLightFavoritesSection,
+  createHouseModeSection,
   createOverviewSection,
   createSearchSection,
 } from './OverviewSection';
@@ -43,6 +44,36 @@ describe('createOverviewSection', () => {
 });
 
 describe('weather-start overview blocks', () => {
+  it('creates a full-width native house-mode selector', () => {
+    expect(createHouseModeSection({ house_mode_entity: 'input_select.house_mode' })?.cards).toEqual([{
+      type: 'tile',
+      entity: 'input_select.house_mode',
+      hide_state: true,
+      vertical: false,
+      features: [{ type: 'select-options' }],
+      features_position: 'inline',
+      grid_options: { columns: 'full' },
+    }]);
+    expect(createHouseModeSection({})).toBeNull();
+  });
+
+  it('keeps house mode visible without clock or alarm', () => {
+    const section = createOverviewSection({
+      someSensorId: null,
+      showSearchCard: false,
+      hass,
+      config: {
+        show_clock_card: false,
+        house_mode_entity: 'input_select.house_mode',
+        show_light_summary: false,
+        show_covers_summary: false,
+        show_security_summary: false,
+        show_battery_summary: false,
+      },
+    });
+    expect(section?.cards?.[1]).toMatchObject({ type: 'tile', entity: 'input_select.house_mode' });
+  });
+
   it('creates favorites as an independent section', () => {
     const section = createFavoritesSection(hass, { favorite_entities: ['light.favorite'] });
     expect(section?.cards?.some((card: any) => card.entity === 'light.favorite')).toBe(true);

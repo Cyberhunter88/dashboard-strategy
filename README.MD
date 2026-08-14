@@ -176,6 +176,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Zusätzliche Startseiten-Blöcke** — Pflanzen, Agenda, Todos, Personen, Staubsauger und Wartung können optional aktiviert und direkt in der Reihenfolge der Wetter-Startseite einsortiert werden.
 
+**Hausmodus** — Über `house_mode_entity` kann ein vorhandener `input_select.*`- oder `select.*`-Helfer als vollbreite native Auswahlkachel unter Uhr und Alarm eingeblendet werden. Die Strategy legt den Helfer und seine Modi nicht selbst an.
+
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
 
 <p align="center">
@@ -216,6 +218,8 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Kameras in Räumen** — Standardmäßig verwendet die Strategy native Home-Assistant-Kamerakarten. Optional aktiviert `camera_live_toggle` einen ressourcenschonenden Start/Stopp-Schalter. Fortgeschrittene YAML-Konfigurationen können mit `camera_renderer: webrtc` stattdessen `custom:webrtc-camera` verwenden; dafür muss die externe WebRTC-Karte separat installiert sein. Streams oder zusätzliche Kartenoptionen lassen sich pro Kamera über `camera_webrtc_streams` hinterlegen.
 
+**Rollo-Sammelsteuerung** — Optional zeigt `show_cover_controls_in_rooms` Öffnen-, Stopp- und Schließen-Buttons an Rollo-/Vorhang-Überschriften. Pro Aktion werden nur unterstützte Entitäten angesprochen; Fenster, Türen, Tore und Garagen bleiben ausgeschlossen.
+
 **Automationen & Skripte** — Optional können dem Bereich zugeordnete Automationen und Skripte in den Raum-Views angezeigt werden. Beide Optionen sind separat aktivierbar und standardmäßig aus.
 
 **Fenster- & Türkontakte** — Optional können Fensterkontakte und Türkontakte als Badges in den Raum-Views angezeigt werden. Zwei getrennte Toggles im Editor, standardmäßig aus. Absolute Luftfeuchtigkeit (z.B. von der Thermal Comfort Integration, `g/m³`) wird automatisch als Badge erkannt.
@@ -231,6 +235,10 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Lichter alphabetisch sortieren** — Optional lassen sich Lichter nach Anzeigenamen statt nach letzter Änderung sortieren (`lights_sort_by: name`). Das gilt für Lichter-Ansicht, Raum-Ansichten und verschachtelte Lichtgruppen.
 
 **Rollos nach Etagen** — Optional kann die Hauptgruppe der Rollos in der Rollos-Ansicht nach Etagen gegliedert werden (`group_covers_by_floors`). Markisen und Fenster bleiben dabei weiterhin eigene, ungeteilte Gruppen.
+
+**Gruppierung nach Bereichen** — Lichter, Rollos und Batterien lassen sich zusätzlich nach Bereichen gliedern. Bei Lichtern und Rollos ist die Verschachtelung `Etage → Bereich → Entitäten` möglich; Batterien behalten ihre Statusgruppen und erhalten darin Bereichsblöcke samt „Ohne Bereich“.
+
+**Versteckte Bereiche in Security/CCTV** — Auf der Übersicht ausgeblendete Bereiche bleiben aus Sicherheitsgründen standardmäßig in Security und CCTV sichtbar. Ihre Überschriften verlinken nicht auf eine nicht vorhandene Raumansicht. `hide_hidden_areas_in_security: true` aktiviert die Filterung ausdrücklich.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
@@ -346,6 +354,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_person_badges` | boolean | `true` | Automatische Personen-Badges im Header der Übersicht anzeigen |
 | `person_badge_layout` | `"minimal"` \| `"with_state"` \| `"with_state_and_time"` | `"with_state"` | Layout der automatischen Personen-Badges |
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
+| `house_mode_entity` | string | — | Vorhandenen `input_select`-/`select`-Helfer als Hausmodus anzeigen |
 | `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
 | `show_search_card` | boolean | `false` | Such-Karte oder nativen Suchhinweis anzeigen |
 | `search_card_variant` | `"custom"` \| `"tip"` | `"custom"` | Interaktive Custom-Suchkarte oder nativer Hinweis ohne Zusatzabhängigkeit |
@@ -354,9 +363,13 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_sun_badge` | boolean | `false` | Sonnenauf-/untergangs-Badge im Header |
 | `show_updates_badge` | boolean | `false` | Badge mit Anzahl sichtbarer Update-Entitäten mit ausstehenden Updates |
 | `show_light_summary` | boolean | `true` | Lichter-Zusammenfassung |
+| `show_light_view` | boolean | `false` | Lichter-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_covers_summary` | boolean | `true` | Rollo-Zusammenfassung |
+| `show_covers_view` | boolean | `false` | Rollo-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_security_summary` | boolean | `true` | Sicherheits-Zusammenfassung |
+| `show_security_view` | boolean | `false` | Sicherheits-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_climate_summary` | boolean | `false` | Klima-Zusammenfassung |
+| `show_climate_view` | boolean | `false` | Klima-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_battery_summary` | boolean | `true` | Batterie-Zusammenfassung |
 | `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
 | `summaries_columns` | 2 \| 4 | `2` | Spalten-Layout der Zusammenfassungen |
@@ -365,6 +378,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `battery_critical_threshold` | number | `20` | Schwellwert für kritische Batterien (%) |
 | `battery_low_threshold` | number | `50` | Schwellwert für niedrige Batterien (%) |
 | `show_area_in_battery_view` | boolean | `false` | Bereichsnamen in Batterie-Kacheln vor dem Entitätsnamen anzeigen |
+| `group_batteries_by_areas` | boolean | `false` | Batterien innerhalb jeder Statusgruppe nach Bereichen gliedern |
 | `unavailable_batteries_bucket` | `'critical' \| 'good'` | `'good'` | Nicht auswertbare Batterien als kritisch oder gut einsortieren |
 | `show_weather` | boolean | `true` | Wetter-Karte |
 | `show_weather_forecast_card` | boolean | `true` | Veralteter Kompatibilitätswert; wird auf der einheitlichen Wetter-Startseite nicht mehr ausgewertet |
@@ -408,11 +422,13 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_partially_open_covers` | boolean | `false` | Teiloffene Rollos separat anzeigen |
 | `show_alerts_on_areas` | boolean | `false` | Alert-Icons auf Bereichskarten |
 | `group_security_by_areas` | boolean | `false` | Sicherheitsansicht nach Bereichen und Etagen gliedern |
+| `hide_hidden_areas_in_security` | boolean | `false` | Auf der Übersicht ausgeblendete Bereiche auch aus Security/CCTV filtern |
 | `show_security_activity` | boolean | `false` | Native 24-Stunden-Logbuchkarte in der Sicherheitsansicht |
 | `security_activity_position` | `"start"` \| `"end"` | `"start"` | Position des Sicherheitsverlaufs im Kategorienmodus |
 | `security_extra_entities` | string[] | `[]` | Zusätzliche sichtbare Entitäten in der Sicherheitsansicht |
 | `show_switches_on_areas` | boolean | `false` | Switch-Steuerung auf Bereichskarten anzeigen |
 | `show_locks_in_rooms` | boolean | `false` | Schlösser in Raum-Views |
+| `show_cover_controls_in_rooms` | boolean | `false` | Sichere Sammelsteuerung für Rollos und Vorhänge in Raum-Views |
 | `show_automations_in_rooms` | boolean | `false` | Automationen in Raum-Views |
 | `show_scripts_in_rooms` | boolean | `false` | Skripte in Raum-Views |
 | `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
@@ -445,7 +461,9 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_summary_views` | boolean | `false` | Summary-Views in Navigation |
 | `show_room_views` | boolean | `false` | Raum-Views in Navigation |
 | `group_lights_by_floors` | boolean | `false` | Lichter nach Etagen gruppieren |
+| `group_lights_by_areas` | boolean | `false` | Lichter nach Bereichen gruppieren |
 | `group_covers_by_floors` | boolean | `false` | Hauptgruppe der Rollos in der Rollos-Ansicht nach Etagen gruppieren |
+| `group_covers_by_areas` | boolean | `false` | Rollos, Markisen und Fenster nach Bereichen gruppieren |
 | `nested_light_groups` | boolean | `false` | Lichtgruppen als aufklappbare Container mit Mitgliedern anzeigen |
 | `lights_sort_by` | `"last_changed"` \| `"name"` | `"last_changed"` | Lichter nach letzter Änderung oder alphabetisch nach Anzeigename sortieren |
 | `custom_cards` | object[] | `[]` | Eigene Karten via YAML |

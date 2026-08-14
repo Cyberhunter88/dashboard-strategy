@@ -23,6 +23,7 @@ import type {
   LovelaceViewSidebarConfig,
 } from '../types/lovelace';
 import { Registry } from '../Registry';
+import { isUtilityViewEnabled } from '../utils/summary-view-utils';
 import { localize } from '../utils/localize';
 import { defineViewStrategy } from './view-strategy-base';
 import {
@@ -232,8 +233,7 @@ export function buildCriticalBatteriesSection(
     return valA - valB;
   });
 
-  const batteriesViewExists =
-    config.show_battery_summary !== false || config.show_battery_view === true;
+  const batteriesViewExists = isUtilityViewEnabled(config, 'batteries');
 
   const cards: LovelaceCardConfig[] = [
     {

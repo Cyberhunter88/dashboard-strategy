@@ -42,7 +42,24 @@ interface SecurityEntities {
   safety: string[];
 }
 
-function collectSecurityEntities(hass: HomeAssistant): SecurityEntities {
+function resolveAreaId(entityId: string): string | null {
+  const entry = Registry.getEntity(entityId);
+  if (!entry) return null;
+  if (entry.area_id) return entry.area_id;
+  if (entry.device_id) return Registry.getDevice(entry.device_id)?.area_id || null;
+  return null;
+}
+
+function securityHiddenAreas(dashboardConfig: Simon42StrategyConfig): Set<string> {
+  if (dashboardConfig.hide_hidden_areas_in_security !== true) return new Set();
+  return new Set(dashboardConfig.areas_display?.hidden || []);
+}
+
+function collectSecurityEntities(
+  hass: HomeAssistant,
+  dashboardConfig: Simon42StrategyConfig
+): SecurityEntities {
+  const hiddenAreas = securityHiddenAreas(dashboardConfig);
   const result: SecurityEntities = {
     locks: [],
     doors: [],
@@ -60,6 +77,8 @@ function collectSecurityEntities(hass: HomeAssistant): SecurityEntities {
     ...Registry.getVisibleEntityIdsForDomain('binary_sensor'),
   ]) {
     if (!hass.states[id]) continue;
+    const areaId = resolveAreaId(id);
+    if (areaId && hiddenAreas.has(areaId)) continue;
 
     const state = hass.states[id];
     const deviceClass = state.attributes?.device_class;
@@ -176,14 +195,6 @@ const AREA_MODE_CATEGORY_ORDER: (keyof SecurityEntities)[] = [
   'safety',
 ];
 
-function resolveAreaId(entityId: string): string | null {
-  const entry = Registry.getEntity(entityId);
-  if (!entry) return null;
-  if (entry.area_id) return entry.area_id;
-  if (entry.device_id) return Registry.getDevice(entry.device_id)?.area_id || null;
-  return null;
-}
-
 /**
  * HA-security-panel layout: one stacked section per floor (column_span 2
  * on a max_columns-3 view keeps them under each other), inside per area a
@@ -229,7 +240,11 @@ function buildAreaGroupedSections(
   }
   const buckets: FloorBucket[] = [];
   const bucketByFloor = new Map<string | null, FloorBucket>();
-  const areas = getVisibleAreasFromHass(hass, dashboardConfig.areas_display, dashboardConfig.use_default_area_sort);
+  const areaDisplay = dashboardConfig.hide_hidden_areas_in_security === true
+    ? dashboardConfig.areas_display
+    : { ...dashboardConfig.areas_display, hidden: [] };
+  const hiddenOnOverview = new Set(dashboardConfig.areas_display?.hidden || []);
+  const areas = getVisibleAreasFromHass(hass, areaDisplay, dashboardConfig.use_default_area_sort);
   for (const area of areas) {
     const cards = cardsByArea.get(area.area_id);
     if (!cards || cards.length === 0) continue;
@@ -266,7 +281,9 @@ function buildAreaGroupedSections(
         type: 'heading',
         heading: area.name,
         heading_style: 'subtitle',
-        tap_action: { action: 'navigate', navigation_path: area.area_id },
+        ...(hiddenOnOverview.has(area.area_id)
+          ? {}
+          : { tap_action: { action: 'navigate', navigation_path: area.area_id } }),
       });
       cards.push(...(cardsByArea.get(area.area_id) || []));
     }
@@ -328,7 +345,7 @@ function buildActivitySection(
   if (dashboardConfig.show_security_activity !== true) return null;
   if (!hass.config?.components?.includes('logbook')) return null;
 
-  const entities = collectSecurityEntities(hass);
+  const entities = collectSecurityEntities(hass, dashboardConfig);
   const logbookEntityIds = [
     ...AREA_MODE_CATEGORY_ORDER.flatMap(function categoryIds(category) {
       return categoryEntities(entities, category);
@@ -413,7 +430,7 @@ export function buildSecuritySections(
   hass: HomeAssistant,
   dashboardConfig: Simon42StrategyConfig
 ): LovelaceSectionConfig[] {
-  const entities = collectSecurityEntities(hass);
+  const entities = collectSecurityEntities(hass, dashboardConfig);
   const cameraBlocks = securityCameraBlocks(hass, dashboardConfig);
   const cameraViewEnabled = dashboardConfig.show_cctv_view === true;
 

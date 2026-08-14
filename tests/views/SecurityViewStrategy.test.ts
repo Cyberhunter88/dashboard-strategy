@@ -299,6 +299,40 @@ describe('hidden_cameras', () => {
   });
 });
 
+describe('overview-hidden areas', () => {
+  const hidden = { areas_display: { hidden: ['garten'] } } as Simon42StrategyConfig;
+
+  it('remain visible in category mode by default', () => {
+    const cards = allCards(build(makeHass(securitySpec()), { ...hidden, show_cameras_in_security: true }));
+    expect(cards.some((card) => card.entity === 'binary_sensor.garten_fenster')).toBe(true);
+    expect(cards.some((card) => card.entity === 'camera.garten_sub')).toBe(true);
+  });
+
+  it('remain visible without invalid room links in grouped mode', () => {
+    const sections = build(makeHass(securitySpec()), {
+      ...hidden, group_security_by_areas: true, show_cameras_in_security: true,
+    });
+    const garden = headings(sections).find((card) => card.heading === 'Garten');
+    const hall = headings(sections).find((card) => card.heading === 'Flur');
+    expect(garden?.tap_action).toBeUndefined();
+    expect(hall?.tap_action).toEqual({ action: 'navigate', navigation_path: 'flur' });
+  });
+
+  it('are filtered from both layouts when explicitly requested', () => {
+    for (const grouped of [false, true]) {
+      const cards = allCards(build(makeHass(securitySpec()), {
+        ...hidden,
+        group_security_by_areas: grouped,
+        show_cameras_in_security: true,
+        hide_hidden_areas_in_security: true,
+      }));
+      expect(cards.some((card) => card.entity === 'binary_sensor.garten_fenster')).toBe(false);
+      expect(cards.some((card) => card.entity === 'camera.garten_sub')).toBe(false);
+      expect(cards.some((card) => card.entity === 'lock.haustuer')).toBe(true);
+    }
+  });
+});
+
 describe('safety status sensors', () => {
   it('categorizes safety/tamper/CO sensors like HA does', () => {
     const spec = securitySpec();

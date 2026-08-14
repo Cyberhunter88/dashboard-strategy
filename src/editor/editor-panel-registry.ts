@@ -33,6 +33,7 @@ export const WEATHER_START_BLOCK_META: Readonly<Record<WeatherStartKey, { icon: 
   favorites: { icon: 'mdi:star', labelKey: 'weather_start_blocks.favorites' },
   light_favorites: { icon: 'mdi:lightbulb-star-outline', labelKey: 'weather_start_blocks.light_favorites' },
   alarm: { icon: 'mdi:shield-home', labelKey: 'weather_start_blocks.alarm' },
+  house_mode: { icon: 'mdi:home-switch-outline', labelKey: 'weather_start_blocks.house_mode' },
   search: { icon: 'mdi:magnify', labelKey: 'weather_start_blocks.search' },
   overview: { icon: 'mdi:overscan', labelKey: 'weather_start_blocks.overview' },
   weather_current: { icon: 'mdi:weather-partly-cloudy', labelKey: 'weather_start_blocks.weather_current' },

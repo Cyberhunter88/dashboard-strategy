@@ -14,3 +14,4 @@ export { withUnavailableEntitiesHidden } from '../utils/availability-utils';
 export { applyViewVisibility } from '../utils/view-visibility';
 export { insertCustomViews, resolveCustomViews } from '../utils/custom-view-ref';
 export { applyDesign } from '../utils/design';
+export { isUtilityViewEnabled } from '../utils/summary-view-utils';

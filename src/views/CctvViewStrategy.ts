@@ -255,13 +255,12 @@ function isVisibleWithState(entityId: string, hass: HomeAssistant): boolean {
   return !!stateFor(hass, entityId) && !Registry.isEntityExcluded(entityId);
 }
 
-function pickPrimaryCamera(cameraIds: string[]): string {
+function pickPrimaryCameras(cameraIds: string[]): string[] {
   for (const preferredKey of [...REOLINK_STREAM_PREFERENCE, ...LIVE_STREAM_PREFERENCE]) {
-    for (const id of cameraIds) {
-      if (Registry.getEntity(id)?.translation_key === preferredKey) return id;
-    }
+    const matches = cameraIds.filter((id) => Registry.getEntity(id)?.translation_key === preferredKey);
+    if (matches.length > 0) return matches;
   }
-  return cameraIds[0];
+  return [cameraIds[0]];
 }
 
 function cameraDisplayName(cameraId: string, hass: HomeAssistant): string {
@@ -307,12 +306,14 @@ export function collectCameraBlocks(
 
   const blocks: CameraBlock[] = [];
   for (const [deviceId, ids] of byDevice) {
-    const cameraId = ids.length === 1 ? ids[0] : pickPrimaryCamera(ids);
-    blocks.push({
-      cameraId,
-      deviceId,
-      isReolink: Registry.getEntity(cameraId)?.platform === 'reolink',
-    });
+    const primaryIds = ids.length === 1 ? [ids[0]] : pickPrimaryCameras(ids);
+    for (const cameraId of primaryIds) {
+      blocks.push({
+        cameraId,
+        deviceId,
+        isReolink: Registry.getEntity(cameraId)?.platform === 'reolink',
+      });
+    }
   }
   for (const cameraId of standalone) {
     blocks.push({
@@ -323,7 +324,11 @@ export function collectCameraBlocks(
   }
 
   // Drop cameras from areas that are excluded from the dashboard
-  const hiddenAreas = new Set(dashboardConfig.areas_display?.hidden || []);
+  const hiddenAreas = new Set(
+    dashboardConfig.hide_hidden_areas_in_security === true
+      ? dashboardConfig.areas_display?.hidden || []
+      : []
+  );
   const includedBlocks = blocks.filter(function inDashboard(block) {
     const areaId = cameraBlockAreaId(block);
     return !areaId || !hiddenAreas.has(areaId);
@@ -481,7 +486,8 @@ export function leanCameraCard(block: CameraBlock): LovelaceCardConfig {
 export function buildCameraSection(
   block: CameraBlock,
   hass: HomeAssistant,
-  recordingsPath: string | null
+  recordingsPath: string | null,
+  renderPtz: boolean = true
 ): LovelaceSectionConfig {
   const name = cameraDisplayName(block.cameraId, hass);
   const companions = findCompanions(block.deviceId, hass);
@@ -521,7 +527,7 @@ export function buildCameraSection(
     cards.push(buildSpotlightTile(companions.spotlight, hass));
   }
 
-  cards.push(...buildPtzCards(companions.ptz));
+  if (renderPtz) cards.push(...buildPtzCards(companions.ptz));
 
   if (recordingsPath) {
     cards.push({
@@ -634,10 +640,13 @@ export async function buildCctvSections(
   }
 
   const sections: LovelaceSectionConfig[] = [];
+  const devicesWithControls = new Set<string>();
   for (const block of blocks) {
+    const firstOfDevice = !block.deviceId || !devicesWithControls.has(block.deviceId);
+    if (block.deviceId) devicesWithControls.add(block.deviceId);
     const device = block.deviceId ? Registry.getDevice(block.deviceId) : undefined;
-    const recordingsPath = block.isReolink ? resolveRecordingsPath(device, camItems) : null;
-    sections.push(buildCameraSection(block, hass, recordingsPath));
+    const recordingsPath = block.isReolink && firstOfDevice ? resolveRecordingsPath(device, camItems) : null;
+    sections.push(buildCameraSection(block, hass, recordingsPath, firstOfDevice));
   }
 
   // Opt-in even when LLM Vision is present: the llmvision-card re-fetches

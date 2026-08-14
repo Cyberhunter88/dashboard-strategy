@@ -296,7 +296,10 @@ class Registry {
     if (areasOptions) {
       for (const areaOpts of Object.values(areasOptions)) {
         if (areaOpts.groups_options) {
-          for (const groupOpts of Object.values(areaOpts.groups_options)) {
+          for (const [groupKey, groupOpts] of Object.entries(areaOpts.groups_options)) {
+            // Badge selection is local to the room header. It must never
+            // remove the entity from registry-backed views dashboard-wide.
+            if (groupKey === 'badges') continue;
             if (groupOpts.hidden && Array.isArray(groupOpts.hidden)) {
               for (const id of groupOpts.hidden) {
                 Registry._hiddenFromConfig.add(id);

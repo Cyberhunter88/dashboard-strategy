@@ -138,7 +138,7 @@ describe('collectCameraBlocks', () => {
     expect(blocks[0].isReolink).toBe(false);
   });
 
-  it('drops cameras from areas excluded from the dashboard, keeps area-less ones', () => {
+  it('keeps cameras from overview-hidden areas by default', () => {
     const spec = reolinkSpec();
     // Area-less standalone camera must survive the filter
     spec.entities?.push({ entity_id: 'camera.einfahrt', platform: 'generic', attributes: { friendly_name: 'Einfahrt' } });
@@ -146,7 +146,31 @@ describe('collectCameraBlocks', () => {
     initRegistry(hass);
 
     const blocks = collectCameraBlocks(hass, { areas_display: { hidden: ['garten'] } });
-    expect(blocks.map((b) => b.cameraId)).toEqual(['camera.einfahrt']);
+    expect(blocks.map((b) => b.cameraId)).toEqual(['camera.einfahrt', 'camera.garten_sub']);
+  });
+
+  it('filters hidden-area cameras only with the explicit security option', () => {
+    const spec = reolinkSpec();
+    spec.entities?.push({ entity_id: 'camera.einfahrt', platform: 'generic' });
+    const hass = makeHass(spec);
+    initRegistry(hass);
+    const blocks = collectCameraBlocks(hass, {
+      areas_display: { hidden: ['garten'] },
+      hide_hidden_areas_in_security: true,
+    });
+    expect(blocks.map((block) => block.cameraId)).toEqual(['camera.einfahrt']);
+  });
+
+  it('keeps one preferred stream block per lens on dual-lens devices', () => {
+    const spec = reolinkSpec();
+    spec.entities?.push({
+      entity_id: 'camera.garten_zoom', device_id: 'dev_garten', platform: 'reolink', translation_key: 'sub',
+    });
+    const hass = makeHass(spec);
+    initRegistry(hass);
+    expect(collectCameraBlocks(hass, {}).map((block) => block.cameraId).sort()).toEqual([
+      'camera.garten_sub', 'camera.garten_zoom',
+    ]);
   });
 });
 
@@ -343,6 +367,23 @@ describe('buildCctvSections', () => {
     expect(recordings?.tap_action?.navigation_path).toBe(
       `${ROOT_PATH}/${encodeURIComponent('playlist,media-source://reolink/CAM|entry_a|0')}`
     );
+  });
+
+  it('renders PTZ controls and recordings only once per dual-lens device', async () => {
+    const spec = reolinkSpec();
+    spec.entities?.push({
+      entity_id: 'camera.garten_zoom', device_id: 'dev_garten', platform: 'reolink', translation_key: 'sub',
+    });
+    const hass = makeHass(spec);
+    initRegistry(hass);
+    withCallWS(hass, () => Promise.resolve({ children: [camChild('entry_a', '0', 'Garten Kamera')] }));
+
+    const sections = await buildCctvSections(hass, {});
+    expect(sections).toHaveLength(2);
+    const shortcuts = sections.map((section) => findCards(section.cards, 'shortcut'));
+    expect(shortcuts.filter((cards) => cards.some((card) => card.tap_action?.action === 'perform-action')))
+      .toHaveLength(1);
+    expect(shortcuts.flat().filter((card) => card.tap_action?.action === 'navigate')).toHaveLength(1);
   });
 
   it('hides cameras listed in hidden_cameras (shared with the security view)', async () => {
