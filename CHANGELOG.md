@@ -2,7 +2,29 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.24.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.26.1...HEAD).
+
+<a name="1.26.1"></a>
+## [1.26.1] - 2026-08-14
+### Bugfixes
+- publish the complete code-split `dist` file set so HACS can load all runtime chunks
+- trigger the release asset build for manually published GitHub releases
+
+### Chores
+- synchronize release metadata and documentation with the patch version
+
+<a name="1.26.0"></a>
+## [1.26.0] - 2026-08-14
+### Features
+- group lights, covers, and batteries by area and optionally by floor
+- enable utility views independently from their overview summaries
+- add an optional house-mode selector and safe room cover controls
+
+### Bugfixes
+- correct badge selection, entity editor filters, dual-lens cameras, and hidden security areas
+
+### Chores
+- update `js-yaml` to 4.3.1 and refresh compatible dependencies
 
 <a name="1.24.0"></a>
 ## [1.24.0] - 2026-07-18

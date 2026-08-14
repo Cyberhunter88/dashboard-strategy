@@ -8,7 +8,7 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.26.0**
+Aktueller Entwicklungsstand: **1.26.1**
 
 
 ---
@@ -547,7 +547,7 @@ Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lo
 | editor | ~252 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
 | nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
 
-Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.26.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.26.1; Webpack-Hashes und Größen ändern sich bei neuen Builds.
 
 ### Performance-Design
 

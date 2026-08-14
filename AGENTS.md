@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.26.0`. The validated baseline is 32 test files with 155 tests.
+Current development version: `1.26.1`. The validated baseline is 32 test files with 155 tests.
 
 ## Public contract
 
