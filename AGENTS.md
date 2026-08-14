@@ -4,6 +4,8 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
+Current development version: `1.26.0`. The validated baseline is 32 test files with 155 tests.
+
 ## Public contract
 
 Do not rename or remove these identifiers:
@@ -30,10 +32,13 @@ strategy:
 ## Architecture and data flow
 
 - TypeScript, strict mode, ES2020; Webpack production build with code-split chunks.
+- Runtime dependency baseline is `js-yaml ^4.3.1` and `lit ^3.3.2`; keep lockfile-compatible security patches current.
 - Runtime source of truth is the Home Assistant `hass` object: `entities`, `devices`, `areas`, `floors`, and `states`.
 - `src/dashboard-strategy.ts` registers the main strategy immediately, starts chunk loading early, and `generate()` waits for modules, initializes `Registry`, and pre-resolves views.
 - The main strategy declares the Home Assistant registry dependencies `entities`, `devices`, `areas`, and `floors`; keep these aligned with the registries consumed by `Registry`.
 - `src/Registry.ts` is a static singleton. It builds raw and pre-filtered entity/device/domain/area lookup maps. Prefer its APIs over rescanning Home Assistant registries.
+- Summary-backed utility views use `src/utils/summary-view-utils.ts` as their single activation source. Keep dashboard generation, user visibility, custom-view positioning, and deep links aligned with it.
+- Area subgroup ordering is centralized in `src/utils/area-group-utils.ts`; the trailing unassigned bucket must remain last.
 - Registry-only properties (`hidden_by`, `disabled_by`, `entity_category`, `platform`, `device_id`) must come from `hass.entities[id]` or `Registry.getEntity(id)`, never from state attributes.
 - Visibility is centralized in `Registry._isEntityVisible()`: `no_dboard`, area/group overrides, HA hidden state, config/diagnostic entities, and required state availability are handled there.
 - Custom cards receive frequent `hass` updates; preserve reactive updates and avoid rebuilding the full DOM unnecessarily.
@@ -59,10 +64,10 @@ src/
 
 Keep `src/types/strategy.ts`, editor panels/rendering, translations, README, and generated behavior synchronized when adding or changing options. The current surface includes:
 
-- overview: clock/date sizing, person/search/status badges, summaries, favorites, section order/visibility, dense placement, plants, agenda, todos, persons, vacuums, and maintenance
+- overview: clock/date sizing, alarm and house-mode selector, person/search/status badges, summaries, favorites, section order/visibility, dense placement, plants, agenda, todos, persons, vacuums, and maintenance
 - weather/energy: weather presentation and sensors, pollen entities, weather-start free layout and YAML block overrides, energy distribution, power badge, and linked dashboard
-- views: summary, room, CCTV, battery, and maintenance views; camera renderer/live toggle/WebRTC settings
-- rooms/areas: floor grouping, area ordering/navigation, compact or picture cards, switches and alerts, room pins, locks, scripts, automations, vacuums/mowers, energy, UPS, opt-in window/door badges, and dedicated switch/outlet sections
+- views: summary, room, CCTV, battery, and maintenance views; standalone utility-view switches; camera renderer/live toggle/WebRTC settings
+- rooms/areas: floor and nested area grouping, area ordering/navigation, compact or picture cards, switches and alerts, room pins, locks, scripts, automations, vacuums/mowers, energy, UPS, opt-in window/door badges, safe opt-in cover batch controls, and dedicated switch/outlet sections
 - custom content: YAML cards, guided tiles, full sections, custom badges, custom views with `after_view` placement or live references, per-room custom cards, and inline editor overrides
 - visibility: per-user view and overview-section display rules plus entity-state-based room and section visibility; these are presentation rules, not access control
 - availability and battery behavior: hidden/unavailable filtering, mobile-app and note entities, critical/low thresholds, unavailable battery bucket
@@ -70,8 +75,14 @@ Keep `src/types/strategy.ts`, editor panels/rendering, translations, README, and
 Important behavior:
 
 - Area temperature/humidity and room primary temperature/humidity use explicit Home Assistant area assignments; other sensor badges may be auto-detected.
+- `groups_options.badges.hidden` is badge-local and must never enter the Registry's dashboard-wide exclusion set. Automatic badges show one entity per sensor type until that type is manually curated; then all still-selected entities of that type render. Explicit `badges.additional` entries remain supported.
+- Power, energy, water, and gas sensors belong to the room energy block and are not automatic badge candidates. Config and diagnostic registry entities must not appear in editor entity pickers.
 - UPS detection uses only visible pre-filtered entities and is enabled by default.
+- `house_mode_entity` accepts user-facing `input_select.*` and `select.*` entities. It renders as a full-width native tile with `select-options`; categorized config/diagnostic selects are excluded from the editor picker.
 - Camera behavior is controlled by `camera_renderer`, `camera_live_toggle`, and `camera_webrtc_streams`; do not assume native `camera.*` entities are always used.
+- Dual-lens camera devices render one block per preferred lens stream, but device-level companion entities, PTZ controls, and recordings links render only once per device.
+- Areas hidden from the overview remain visible in Security/CCTV by default and get no invalid room navigation link. Only `hide_hidden_areas_in_security: true` filters them from both layouts, cameras, and security activity.
+- Room cover batch controls are opt-in in this fork (`show_cover_controls_in_rooms: true`). They target only covers supporting each requested feature and exclude window/door/gate/garage cover classes by using only shading and curtain groups.
 - `camera_renderer: webrtc` requires the external `custom:webrtc-camera` card. `camera_webrtc_streams` is keyed by camera entity id and can contain a URL or card options. Keep the native renderer as the dependency-free default.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
 - The editor is the main complexity hotspot: preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting.
@@ -83,6 +94,7 @@ Important behavior:
 - Pre-resolve views in `generate()` rather than returning lazy strategy stubs.
 - Use Registry pre-filtered maps instead of repeated per-card scans.
 - Keep lights and covers group-card tile pooling; do not reintroduce repeated `innerHTML` rebuilds.
+- Preserve pooled floor/area heading cards and reactive `Etage → Bereich → Entitäten` reconciliation in lights and covers cards.
 - Pass only existing controls/sensor classes to area cards and only supported features to tile cards.
 
 ## Development workflow
@@ -99,6 +111,7 @@ npm run build
 node scripts/lint-translations.mjs
 node scripts/verify-version-sync.mjs
 node scripts/verify-hacs-distribution.mjs
+npm audit
 git diff --check
 ```
 

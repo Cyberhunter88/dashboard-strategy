@@ -8,6 +8,8 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
+Aktueller Entwicklungsstand: **1.26.0**
+
 
 ---
 
@@ -18,9 +20,11 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 - **Automatische Raum-Erkennung** — Nutzt Home Assistant Areas, Devices & Floors
 - **Spezialisierte Views** — Lichter, Rollos, Sicherheit, Batterien, Klima — jeweils mit Status-Gruppierung
 - **Zusammenfassungskarten** — Einzeln ein-/ausschaltbar für Lichter, Rollos, Sicherheit, Batterien und Klima
-- **Etagen-Gruppierung** — Bereiche und Lichter optional nach Etagen gliedern
+- **Etagen-Gruppierung** — Bereiche, Lichter und Rollos optional nach Etagen gliedern
+- **Bereichs-Gruppierung** — Lichter, Rollos und Batterien nach Bereichen; Lichter/Rollos optional als Etage → Bereich → Entitäten
 - **Favoriten** — Beliebige Entitäten als Kacheln auf der Übersicht anpinnen
 - **Alarm-Panel** — Optionale Alarmanlage neben der Uhr
+- **Hausmodus** — Vorhandenen `input_select`-/`select`-Helfer als native Auswahlkachel steuern
 - **Granulare Filterung** — Per Label (`no_dboard`), pro Bereich, pro Domain, pro Entity
 - **Wetter-Startseite** — Alternative Startseite mit großem Uhr-/Datumsblock, Wetterblöcken, freien Karten, Abschnitten, Bereichen und Etagen in eigener Reihenfolge
 - **Teiloffene Rollos** — Optionale dritte Gruppe (Offen / Teiloffen / Geschlossen) mit Live-Übergängen
@@ -28,6 +32,8 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 - **Rauch- & Gasmelder** — In der Sicherheits-Übersicht, im Security-Summary-Count und als Badges in Raum-Views
 - **UPS/USV-Erkennung** — Automatische USV-Gruppen in Raum-Views mit Gauge und zugehörigen Kacheln
 - **Batch-Aktionen** — Heading-Badges für Gruppensteuerung (alle ein/aus, alle öffnen/schließen)
+- **Eigenständige Utility-Views** — Licht, Rollos, Security, Batterien und Klima auch ohne Übersichtskachel bereitstellen
+- **Dual-Lens-Kameras** — Ein Kamerablock pro Linse, gemeinsame Geräte-/PTZ-Steuerungen nur einmal
 - **Automationen & Skripte in Räumen** — Bereichs-zugeordnete Automationen und Skripte in Raum-Views anzeigen
 - **Eigene Karten** — Beliebige Karten via YAML auf der Übersicht einbinden
 - **Eigene Abschnitte** — Mehrere eigene Sections mit Überschrift, Icon und beliebigen Karten
@@ -162,13 +168,13 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Klima-Zusammenfassung.gif" alt="Klima-Zusammenfassung aktivieren" width="800" />
 </p>
 
-**Batterie-Optionen** — Mobile-App-Batterien und Battery-Notes-Helfer können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Optional kann der Bereichsname in Batterie-Kacheln angezeigt werden. Nicht erreichbare Sensoren lassen sich wahlweise der guten oder kritischen Gruppe zuordnen.
+**Batterie-Optionen** — Mobile-App-Batterien und Battery-Notes-Helfer können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Optional kann der Bereichsname in Batterie-Kacheln angezeigt oder jede Statusgruppe nach Bereichen mit abschließendem „Ohne Bereich“-Block gegliedert werden. Bei aktiver Gruppierung entfällt das redundante Bereichspräfix auf den Kacheln. Nicht erreichbare Sensoren lassen sich wahlweise der guten oder kritischen Gruppe zuordnen.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
 </p>
 
-**Wetter-Startseite** — Die Übersicht verwendet immer das frei anordenbare Wetter-Startlayout. Uhr, Datum, Zusammenfassungen, Favoriten, Alarm, Suche, Wetter, Energie, Pflanzen, Agenda, Aufgaben, Personen, Staubsauger, Wartung, Bereiche, Etagen und eigene Inhalte lassen sich per Drag & Drop anordnen. Optionale Blöcke erscheinen nur, wenn sie aktiviert sind und passende Daten besitzen; einzelne Blöcke können weiterhin mit eigenem Lovelace-YAML überschrieben werden.
+**Wetter-Startseite** — Die Übersicht verwendet immer das frei anordenbare Wetter-Startlayout. Uhr, Datum, Zusammenfassungen, Favoriten, Alarm, Hausmodus, Suche, Wetter, Energie, Pflanzen, Agenda, Aufgaben, Personen, Staubsauger, Wartung, Bereiche, Etagen und eigene Inhalte lassen sich per Drag & Drop anordnen. Optionale Blöcke erscheinen nur, wenn sie aktiviert sind und passende Daten besitzen; einzelne Blöcke können weiterhin mit eigenem Lovelace-YAML überschrieben werden.
 
 **Info-Karten** — Optionale Wetter- und Energie-Karten auf der Übersicht. Die Wetter-Entität kann automatisch erkannt oder im Editor festgelegt werden. Die Energie-Karte kann optional direkt auf das Home-Assistant-Energie-Dashboard verlinken.
 
@@ -216,7 +222,9 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **UPS/USV** — Unterstützte USV-Geräte werden automatisch in Raum-Views gruppiert. Die Gruppe zeigt eine Batterie-Gauge und zugehörige Kacheln, z.B. NUT-/UPS-Signale. Die Erkennung ist standardmäßig aktiv und kann über `show_ups_in_rooms: false` deaktiviert werden.
 
-**Kameras in Räumen** — Standardmäßig verwendet die Strategy native Home-Assistant-Kamerakarten. Optional aktiviert `camera_live_toggle` einen ressourcenschonenden Start/Stopp-Schalter. Fortgeschrittene YAML-Konfigurationen können mit `camera_renderer: webrtc` stattdessen `custom:webrtc-camera` verwenden; dafür muss die externe WebRTC-Karte separat installiert sein. Streams oder zusätzliche Kartenoptionen lassen sich pro Kamera über `camera_webrtc_streams` hinterlegen.
+**Kameras in Räumen** — Standardmäßig verwendet die Strategy native Home-Assistant-Kamerakarten. Optional aktiviert `camera_live_toggle` einen ressourcenschonenden Start/Stopp-Schalter. Fortgeschrittene YAML-Konfigurationen können mit `camera_renderer: webrtc` stattdessen `custom:webrtc-camera` verwenden; dafür muss die externe WebRTC-Karte separat installiert sein. Streams oder zusätzliche Kartenoptionen lassen sich pro Kamera über `camera_webrtc_streams` hinterlegen. Dual-Lens-Geräte erzeugen einen Block pro Linse; gemeinsame Begleitsteuerungen erscheinen nur beim ersten Block des Geräts.
+
+**Rollo-Sammelsteuerung** — Optional zeigt `show_cover_controls_in_rooms` Öffnen-, Stopp- und Schließen-Buttons an Rollo-/Vorhang-Überschriften. Pro Aktion werden nur unterstützte Entitäten angesprochen; Fenster, Türen, Tore und Garagen bleiben ausgeschlossen.
 
 **Rollo-Sammelsteuerung** — Optional zeigt `show_cover_controls_in_rooms` Öffnen-, Stopp- und Schließen-Buttons an Rollo-/Vorhang-Überschriften. Pro Aktion werden nur unterstützte Entitäten angesprochen; Fenster, Türen, Tore und Garagen bleiben ausgeschlossen.
 
@@ -224,7 +232,9 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Fenster- & Türkontakte** — Optional können Fensterkontakte und Türkontakte als Badges in den Raum-Views angezeigt werden. Zwei getrennte Toggles im Editor, standardmäßig aus. Absolute Luftfeuchtigkeit (z.B. von der Thermal Comfort Integration, `g/m³`) wird automatisch als Badge erkannt.
 
-**Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden.
+**Badge-Auswahl** — Ohne manuelle Auswahl erscheint höchstens ein automatisch erkanntes Badge pro Sensortyp. Sobald ein Typ im Editor kuratiert wurde, werden alle weiterhin ausgewählten Sensoren dieses Typs angezeigt. Das Ausblenden in der Badge-Gruppe wirkt nur auf Raumbadges und versteckt die Entität nicht in anderen Dashboard-Bereichen. Leistungs-, Energie-, Wasser- und Gassensoren gehören konsistent in den Energieblock.
+
+**Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden. Die Unterseiten für Licht, Rollos, Security, Batterien und Klima lassen sich außerdem separat aktivieren, wenn ihre Übersichtskachel ausgeblendet ist; Deep-Links und Custom-View-Positionierung bleiben dabei gültig.
 
 **Benutzersichtbarkeit** — Im Bereich „Ansichten“ des Strategy-Editors lassen sich Views, ihre Einstiegspunkte auf der Übersicht und einzelne Übersichtsabschnitte pro Home-Assistant-Benutzer einblenden. Das ist reine Anzeigelogik und keine Zugriffskontrolle: ausgeblendete Views bleiben über ihre URL erreichbar. Nach Änderungen das Dashboard neu laden.
 
@@ -532,12 +542,12 @@ Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lo
 |-------|-------|--------|
 | main | ~8 KB | Entry Point, Versions-/Chunk-Logik, Custom-Element-Registrierung |
 | lit | ~16 KB | Lit Framework (shared) |
-| core | ~222 KB | Registry, Utils, Übersetzungen, Sections, Overview und Custom Cards |
+| core | ~239 KB | Registry, Utils, Übersetzungen, Sections, Overview und Custom Cards |
 | views | ~39 KB | Lichter, Rollos, Sicherheit, Batterien, Klima, CCTV, Wartung und Raum-Details |
-| editor | ~247 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
+| editor | ~252 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
 | nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
 
-Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.24.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.26.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
 
 ### Performance-Design
 
@@ -565,7 +575,7 @@ Siehe LICENSE-Datei für vollständige Details.
 ## Credits
 
 - Home Assistant Community
-- [js-yaml](https://github.com/nodeca/js-yaml) (MIT) — YAML-Parser
+- [js-yaml](https://github.com/nodeca/js-yaml) 4.3.1 (MIT) — YAML-Parser
 - **Claude** (Anthropic) — Co-Entwickler und Nachtschicht-Begleiter
 
 ## Support
