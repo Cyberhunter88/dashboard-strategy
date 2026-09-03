@@ -63,6 +63,7 @@ jobs:
       - name: Verify draft release assets
         if: steps.release.outputs.release_created == 'true'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
         run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-draft
 
@@ -76,5 +77,6 @@ jobs:
       - name: Verify published release assets
         if: steps.release.outputs.release_created == 'true'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
         run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-published
