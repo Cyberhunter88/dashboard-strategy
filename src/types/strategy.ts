@@ -90,6 +90,7 @@ export interface WeatherSensorConfig {
 // -- Weather-Start Block Ordering --------------------------------------
 
 export type WeatherStartKey =
+  | 'house_mode'
   | 'clock'
   | 'date'
   | 'summaries'
@@ -114,6 +115,7 @@ export type WeatherStartKey =
   | 'custom_sections';
 
 export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
+  'house_mode',
   'clock',
   'date',
   'summaries',
@@ -346,6 +348,8 @@ export interface Simon42StrategyConfig {
 
   // Special entities
   alarm_entity?: string;
+  /** input_select/select helper rendered as an inline selector in the overview. */
+  house_mode_entity?: string;
   weather_entity?: string;
   favorite_entities?: string[];
   light_favorite_entities?: string[];

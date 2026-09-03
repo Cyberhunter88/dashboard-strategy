@@ -27,6 +27,7 @@ export function editorPanelMeta(key: EditorPanelKey): PanelMeta {
 }
 
 export const WEATHER_START_BLOCK_META: Readonly<Record<WeatherStartKey, { icon: string; labelKey: string }>> = {
+  house_mode: { icon: 'mdi:home-account', labelKey: 'weather_start_blocks.house_mode' },
   clock: { icon: 'mdi:clock-outline', labelKey: 'weather_start_blocks.clock' },
   date: { icon: 'mdi:calendar-today', labelKey: 'weather_start_blocks.date' },
   summaries: { icon: 'mdi:view-dashboard-outline', labelKey: 'weather_start_blocks.summaries' },

@@ -5,6 +5,7 @@ import { DEFAULT_WEATHER_START_ORDER } from './strategy';
 describe('weather-start defaults', () => {
   it('contains every migrated overview feature in a stable order', () => {
     expect(DEFAULT_WEATHER_START_ORDER).toEqual([
+      'house_mode',
       'clock',
       'date',
       'summaries',

@@ -3,6 +3,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import {
   createAlarmSection,
   createFavoritesSection,
+  createHouseModeSection,
   createLightFavoritesSection,
   createOverviewSection,
   createSearchSection,
@@ -10,6 +11,11 @@ import {
 
 const hass = {
   states: {
+    'input_select.house_mode': {
+      entity_id: 'input_select.house_mode',
+      state: 'Smart Home',
+      attributes: { friendly_name: 'House Mode', options: ['Smart Home', 'Guest'] },
+    },
     'light.favorite': {
       entity_id: 'light.favorite',
       state: 'on',
@@ -53,6 +59,21 @@ describe('weather-start overview blocks', () => {
     expect(createSearchSection(false)).toBeNull();
     expect(createSearchSection(true)?.cards?.some((card: any) => card.type === 'custom:search-card')).toBe(true);
     expect(createSearchSection(true, 'tip')?.cards?.some((card: any) => card.type === 'markdown')).toBe(true);
+  });
+
+  it('renders a configured house-mode helper as a native inline selector', () => {
+    const section = createHouseModeSection(hass, { house_mode_entity: 'input_select.house_mode' });
+    expect(section?.cards).toEqual([
+      expect.objectContaining({
+        type: 'tile',
+        entity: 'input_select.house_mode',
+        hide_state: true,
+        features: [{ type: 'select-options' }],
+        features_position: 'inline',
+      }),
+    ]);
+    expect(createHouseModeSection(hass, { house_mode_entity: 'select.missing' })).toBeNull();
+    expect(createHouseModeSection(hass, { house_mode_entity: 'input_boolean.invalid' })).toBeNull();
   });
 
   it('creates light favorites only from existing light entities', () => {

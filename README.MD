@@ -346,6 +346,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_person_badges` | boolean | `true` | Automatische Personen-Badges im Header der Übersicht anzeigen |
 | `person_badge_layout` | `"minimal"` \| `"with_state"` \| `"with_state_and_time"` | `"with_state"` | Layout der automatischen Personen-Badges |
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
+| `house_mode_entity` | string | — | `input_select`- oder `select`-Helfer als Hausmodus-Auswahl im Startlayout; löst selbst keine Automationen aus |
 | `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
 | `show_search_card` | boolean | `false` | Such-Karte oder nativen Suchhinweis anzeigen |
 | `search_card_variant` | `"custom"` \| `"tip"` | `"custom"` | Interaktive Custom-Suchkarte oder nativer Hinweis ohne Zusatzabhängigkeit |
@@ -519,7 +520,7 @@ Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lo
 | editor | ~247 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
 | nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
 
-Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.24.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.25.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
 
 ### Performance-Design
 

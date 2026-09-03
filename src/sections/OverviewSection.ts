@@ -186,6 +186,29 @@ export function createAlarmSection(hass: HomeAssistant, config: Simon42StrategyC
   };
 }
 
+/**
+ * Renders a user-defined input_select/select helper as a native inline picker.
+ * The strategy deliberately does not create or attach automation behavior to
+ * the helper; it only provides a visible, reactive control on the overview.
+ */
+export function createHouseModeSection(hass: HomeAssistant, config: Simon42StrategyConfig): LovelaceSectionConfig | null {
+  const entityId = config.house_mode_entity;
+  if (!entityId || !hass.states[entityId]) return null;
+  if (!entityId.startsWith('input_select.') && !entityId.startsWith('select.')) return null;
+
+  return {
+    type: 'grid',
+    cards: [
+      buildAdaptiveTileCardConfig(hass, entityId, {
+        hide_state: true,
+        vertical: false,
+        preferFeaturePosition: 'inline',
+        grid_options: { columns: 'full' },
+      }),
+    ],
+  };
+}
+
 export function createSearchSection(
   enabled: boolean,
   variant: 'custom' | 'tip' = 'custom'
@@ -242,8 +265,8 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
 
   const cards: LovelaceCardConfig[] = [];
 
-  // Only show "Übersicht" heading if clock or alarm is visible
-  if ((showClockCard || alarmEntity) && !hidden.has('overview')) {
+  // Only show "Übersicht" heading if clock, alarm, or house mode is visible
+  if ((showClockCard || alarmEntity || config.house_mode_entity) && !hidden.has('overview')) {
     cards.push({
       type: 'heading',
       heading: localize('sections.overview'),
@@ -283,6 +306,9 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
       })
     );
   }
+
+  const houseModeSection = createHouseModeSection(hass, config);
+  if (houseModeSection) cards.push(...(houseModeSection.cards || []));
 
   // Add search card if enabled
   if (showSearchCard) {

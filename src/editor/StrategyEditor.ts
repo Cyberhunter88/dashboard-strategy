@@ -2181,6 +2181,8 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
 
   private _isWeatherStartBlockDisabled(key: WeatherStartKey): boolean {
     switch (key) {
+      case 'house_mode':
+        return !this._config.house_mode_entity;
       case 'clock':
         return this._config.show_clock_card === false;
       case 'weather_current':
@@ -3636,6 +3638,8 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
+    const houseModeEntity = this._config.house_mode_entity || '';
+    const houseModeEntities = this._getEntitiesByDomains(['input_select', 'select']);
 
     return html`
       <div class="section">
@@ -3721,6 +3725,23 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
             </select>
           </div>
           <div class="description">${localize('editor.alarm_desc')}</div>
+
+          <div class="form-row">
+            <label for="house-mode-entity" style="margin-right: 8px; min-width: 120px;"
+              >${localize('editor.house_mode_entity')}</label
+            >
+            <select id="house-mode-entity" style="flex: 1;" @change=${this._houseModeEntityChanged}>
+              <option value="" ?selected=${!houseModeEntity}>${localize('editor.house_mode_none')}</option>
+              ${houseModeEntities.map(
+                (entity) => html`
+                  <option value=${entity.entity_id} ?selected=${entity.entity_id === houseModeEntity}>
+                    ${entity.name}
+                  </option>
+                `
+              )}
+            </select>
+          </div>
+          <div class="description">${localize('editor.house_mode_desc')}</div>
 
           ${this._renderCheckbox(
             'show-search-card',
@@ -5834,6 +5855,17 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       delete newConfig.alarm_entity;
     }
 
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _houseModeEntityChanged(e: Event): void {
+    if (!this._hass) return;
+
+    const entityId = (e.target as HTMLSelectElement).value;
+    const newConfig: Simon42StrategyConfig = { ...this._config };
+    if (!entityId) delete newConfig.house_mode_entity;
+    else newConfig.house_mode_entity = entityId;
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   }

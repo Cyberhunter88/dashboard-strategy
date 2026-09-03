@@ -205,6 +205,9 @@
     "alarm_entity": "Alarm entity:",
     "alarm_none": "None (clock full width)",
     "alarm_desc": "Select an alarm control panel entity. When the clock card is active, the alarm panel is shown next to it. Without the clock card, the alarm panel takes the full width.",
+    "house_mode_entity": "House mode helper:",
+    "house_mode_none": "None",
+    "house_mode_desc": "Select an input_select or select helper for house mode. The strategy does not control automations.",
     "show_search_card": "Show search card",
     "show_search_card_desc": "Shows the custom:search-card directly below the clock on the overview.",
     "show_search_card_missing": "Requires <strong>custom:search-card</strong> and <strong>card-tools</strong>. Please install both components to use this feature.",
@@ -583,6 +586,7 @@
     "ref_error_view": "The referenced view no longer exists in the source dashboard. Check the reference in the editor."
   },
   "weather_start_blocks": {
+    "house_mode": "House mode",
     "clock": "Clock",
     "date": "Date",
     "summaries": "Summaries",

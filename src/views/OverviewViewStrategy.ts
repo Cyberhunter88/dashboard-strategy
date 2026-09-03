@@ -29,6 +29,7 @@ import { getVisibleAreas, normalizeAreasDisplay } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
 import {
   createAlarmSection,
+  createHouseModeSection,
   createCustomCardsSection,
   createCustomSectionsArray,
   createFavoritesSection,
@@ -160,6 +161,7 @@ function withBlockOverride(
 }
 
 const WEATHER_START_INFO_BLOCKS = new Set<WeatherStartKey>([
+  'house_mode',
   'clock',
   'date',
   'summaries',
@@ -323,6 +325,9 @@ function createWeatherStartSectionsFromItems(
 
     let section: LovelaceSectionConfig | null = null;
     switch (item.type) {
+      case 'house_mode':
+        section = additionalBlocks.house_mode ?? createHouseModeSection(hass, dashboardConfig);
+        break;
       case 'clock':
         section = dashboardConfig.show_clock_card !== false ? { type: 'grid', cards: [createLargeTimeCard()] } : null;
         break;
@@ -563,6 +568,8 @@ function createWeatherStartSections(
   const normalizedOrder = mergeConfiguredOrder(order, DEFAULT_WEATHER_START_ORDER);
 
   const blockMap = new Map<WeatherStartKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>();
+
+  blockMap.set('house_mode', withBlockOverride('house_mode', createHouseModeSection(hass, dashboardConfig), blocksConfig));
 
   blockMap.set(
     'clock',

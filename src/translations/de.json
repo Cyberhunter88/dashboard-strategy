@@ -198,6 +198,9 @@
     "alarm_entity": "Alarm-Entität:",
     "alarm_none": "Keine (Uhr in voller Breite)",
     "alarm_desc": "Wähle eine Alarm-Control-Panel-Entität aus. Wenn die Uhrzeit-Karte aktiv ist, wird das Alarm-Panel daneben angezeigt. Ohne Uhrzeit-Karte erscheint das Alarm-Panel in voller Breite.",
+    "house_mode_entity": "Hausmodus-Helfer:",
+    "house_mode_none": "Keiner",
+    "house_mode_desc": "Wähle einen input_select- oder select-Helfer für den Hausmodus. Die Strategy steuert keine Automationen.",
     "show_person_badges": "Personen-Badges anzeigen",
     "show_person_badges_desc": "Zeigt die automatisch erzeugten Personen-Badges im Kopfbereich der Uebersicht an. Deaktiviere das, wenn du sie durch eigene Badges ersetzen willst.",
     "person_badge_layout": "Personen-Badge-Layout:",
@@ -583,6 +586,7 @@
     "ref_error_view": "Die referenzierte View existiert im Quell-Dashboard nicht mehr. Bitte die Referenz im Editor prüfen."
   },
   "weather_start_blocks": {
+    "house_mode": "Hausmodus",
     "clock": "Uhrzeit",
     "date": "Datum",
     "summaries": "Zusammenfassungen",
