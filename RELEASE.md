@@ -1,55 +1,67 @@
 # Release workflow
 
+## Version source
+
+The release version is maintained in `VERSION.txt`. It contains exactly one
+SemVer value without a leading `v`, for example:
+
+```text
+1.29.3
+```
+
+After changing `VERSION.txt`, synchronize the derived project version files:
+
+```text
+npm run version:sync
+npm run verify:version
+```
+
+Commit `VERSION.txt` together with the synchronized package, lockfile, and
+runtime version files. The release tag is generated automatically as
+`v<version>`.
+
 ## Automated stable release
 
 Normal feature and fix pull requests use Conventional Commit prefixes such as
-`feat:` and `fix:`. They do not change `package.json`, `src/dashboard-strategy.ts`,
-the release manifest, or the release section in `CHANGELOG.md` manually.
+`feat:` and `fix:`. CI runs on pull requests, pushes to `main`, and manual
+dispatches. It checks the version source, typecheck, lint, translations, tests,
+the production build, all code-split assets, and the HACS distribution.
 
-After a pull request is merged into `main`, the workflow in
-`.github/workflows/release-please.yml` maintains the Release-Please PR. When that
-PR is merged, the workflow performs this sequence:
+When a change to `VERSION.txt` reaches `main`, the version-driven release
+workflow performs this sequence:
 
-1. Read the generated release tag.
-2. Check out that exact tag.
-3. Run typecheck, lint, translation checks, all tests, and the production build.
-4. Verify the version marker, all required code-split chunks, compressed files,
-   and the HACS distribution.
-5. Upload the complete `dist` asset set to a draft GitHub release.
-6. Verify that the draft contains exactly the local release asset set.
-7. Publish the release.
-8. Verify that the published release still contains the complete asset set.
+1. Read and validate `VERSION.txt`.
+2. Verify that all derived version files match it.
+3. Fail if the tag or GitHub release already exists.
+4. Run the complete quality gate and production build.
+5. Create a draft GitHub release for the exact `v<version>` tag.
+6. Upload the complete `dist` asset set.
+7. Verify that the draft contains exactly the local release asset set.
+8. Publish the release.
+9. Verify that the published release still contains the complete asset set.
 
 The release is never intentionally published before its HACS assets pass the
-remote verification. The old `release.published` trigger was removed because it
-published first and uploaded the code-split assets afterwards.
+remote verification. The release workflow creates and publishes the release in
+one run and does not depend on a second workflow triggered by `GITHUB_TOKEN`.
 
 ## One-time GitHub configuration
 
 No custom token or GitHub App is required. GitHub creates the short-lived
-`GITHUB_TOKEN` automatically for every Actions run. The workflow requests write
-access for repository contents, issues, and pull requests.
+`GITHUB_TOKEN` automatically for every Actions run. The release workflow needs
+`contents: write`; CI only needs read access.
 
 In the repository settings, enable **Settings → Actions → General → Workflow
-permissions → Read and write permissions**. If GitHub shows the option, also
-enable **Allow GitHub Actions to create and approve pull requests**. The
-repository-level permissions in the workflow still limit the token to the
-operations needed here.
-
-GitHub Actions created with `GITHUB_TOKEN` do not reliably trigger additional
-workflow runs. The release workflow therefore performs the release build,
-asset upload, remote verification, and publication in the same run.
+permissions → Read and write permissions**. The workflow still limits the
+token to the operations needed for the release.
 
 ## Manual repair or recovery
 
-Use **Actions → Release build**, enter an existing tag such as `v1.29.0`, and
+Use **Actions → Release build**, enter an existing tag such as `v1.29.2`, and
 leave **Publish** disabled when repairing an already published release. The
 workflow checks out the tag, verifies that it is reachable from `main`, rebuilds
 the exact release assets, uploads them, and verifies the remote asset set.
 
 Enable **Publish** only for a draft release that has passed the asset check.
-The manual workflow also accepts tags through an explicit argument in the
-version check, so it does not depend on the branch that started the dispatch.
 
 ## Local release gate
 
