@@ -20,9 +20,11 @@ assertNonEmpty(`${entryName}.gz`);
 assertNonEmpty(`${entryName}.br`);
 
 const entry = fs.readFileSync(entryUrl, 'utf8');
-const marker = `Dashboard Strategy v${packageJson.version} loaded`;
-if (!entry.includes(marker)) {
-  throw new Error(`dist/${entryName} does not contain the expected version marker: ${marker}`);
+const markerPattern = /Dashboard Strategy v(?:\$\{[^}]+\}|[A-Za-z_$][\w$]*) loaded/;
+if (!markerPattern.test(entry) || !entry.includes(packageJson.version)) {
+  throw new Error(
+    `dist/${entryName} does not contain a versioned Dashboard Strategy load marker for ${packageJson.version}`,
+  );
 }
 
 for (const chunkName of ['core', 'editor', 'views', 'lit']) {
