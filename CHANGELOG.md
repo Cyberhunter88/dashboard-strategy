@@ -1,10 +1,18 @@
-﻿# Changelog
+# Changelog
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...HEAD).
 
 <a name="1.29.0"></a>
+## [1.29.1](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...v1.29.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* pin release please action to valid commit ([1c0eb0d](https://github.com/Cyberhunter88/dashboard-strategy/commit/1c0eb0dfd4d46804e278820f4d273e2f527762d2))
+* remove unused test file ([9672860](https://github.com/Cyberhunter88/dashboard-strategy/commit/9672860ad2a1c0e209bceaa015f758dcf5cb2038))
+
 ## [1.29.0] - 2026-09-03
 ### Bugfixes
 - restore the historical opt-in behavior for search, agenda, climate, energy, plants, todos, vacuums, and overview maintenance sections
