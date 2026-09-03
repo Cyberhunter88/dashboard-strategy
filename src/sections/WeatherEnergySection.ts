@@ -113,9 +113,10 @@ export function createEnergySection(
   showEnergy: boolean,
   linkDashboard = true,
   showDistributionCard = true,
-  hideHeading = false
+  hideHeading = false,
+  energyAvailable = true
 ): LovelaceSectionConfig | null {
-  if (!showEnergy) return null;
+  if (!showEnergy || !energyAvailable) return null;
 
   const cards: LovelaceCardConfig[] = [];
   if (!hideHeading) {

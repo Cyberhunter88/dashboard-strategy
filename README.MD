@@ -8,7 +8,7 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.26.1**
+Aktueller Entwicklungsstand: **1.28.0**
 
 
 ---
@@ -366,7 +366,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `alarm_entity` | string | — | Alarm-Panel Entity neben der Uhr |
 | `house_mode_entity` | string | — | Vorhandenen `input_select`-/`select`-Helfer als Hausmodus anzeigen |
 | `weather_entity` | string | Auto | Wetter-Entity für Wetterkarten |
-| `show_search_card` | boolean | `false` | Such-Karte oder nativen Suchhinweis anzeigen |
+| `show_search_card` | boolean | Auto | Such-Karte bei installierten Abhängigkeiten automatisch anzeigen; `false` deaktiviert sie |
 | `search_card_variant` | `"custom"` \| `"tip"` | `"custom"` | Interaktive Custom-Suchkarte oder nativer Hinweis ohne Zusatzabhängigkeit |
 | `show_unavailable_alert_badge` | boolean | `false` | Badge mit Anzahl nicht verfügbarer sichtbarer Entitäten im Header |
 | `show_now_playing_badge` | boolean | `false` | Badge für den ersten gerade spielenden Media-Player im Header |
@@ -374,11 +374,11 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_updates_badge` | boolean | `false` | Badge mit Anzahl sichtbarer Update-Entitäten mit ausstehenden Updates |
 | `show_light_summary` | boolean | `true` | Lichter-Zusammenfassung |
 | `show_light_view` | boolean | `false` | Lichter-Unterseite auch ohne Zusammenfassung erzeugen |
-| `show_covers_summary` | boolean | `true` | Rollo-Zusammenfassung |
+| `show_covers_summary` | boolean | Auto | Rollo-Zusammenfassung bei vorhandenen sichtbaren Rollos; `false` deaktiviert sie |
 | `show_covers_view` | boolean | `false` | Rollo-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_security_summary` | boolean | `true` | Sicherheits-Zusammenfassung |
 | `show_security_view` | boolean | `false` | Sicherheits-Unterseite auch ohne Zusammenfassung erzeugen |
-| `show_climate_summary` | boolean | `false` | Klima-Zusammenfassung |
+| `show_climate_summary` | boolean | Auto | Klima-Zusammenfassung bei sichtbaren Klima-Entitäten anzeigen; `false` deaktiviert sie |
 | `show_climate_view` | boolean | `false` | Klima-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_battery_summary` | boolean | `true` | Batterie-Zusammenfassung |
 | `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
@@ -409,15 +409,15 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `overview_area_card_columns` | 4 \| 6 \| `"full"` | `"full"` | Breite generierter Bereichskarten |
 | `weather_start_weather_mode` | `"full"` \| `"compact_hourly"` | `"full"` | Vollständiges Wetter oder kompakte 6-Stunden-Tile |
 | `weather_start_date_card` | `"button-card"` \| `"markdown"` | `"button-card"` | Datumskarte mit optionalem nativem Fallback |
-| `show_plants_section` | boolean | `false` | Pflanzen-Section auf der Übersicht |
-| `show_agenda_section` | boolean | `false` | Agenda-Section auf der Übersicht |
+| `show_plants_section` | boolean | Auto | Pflanzen-Section bei vorhandenen sichtbaren Pflanzen |
+| `show_agenda_section` | boolean | Auto | Agenda bei Kalendern mit anstehenden Terminen anzeigen; `false` deaktiviert sie |
 | `agenda_calendar_entities` | string[] | Auto | Kalender-Entitäten für die Agenda-Section |
-| `show_todos_section` | boolean | `false` | Todo-Section auf der Übersicht |
+| `show_todos_section` | boolean | Auto | Todo-Section bei vorhandenen sichtbaren Todo-Entitäten |
 | `todos_entities` | string[] | Auto | Todo-Entitäten für die Todo-Section |
 | `show_persons_section` | boolean | `false` | Personen-Section auf der Übersicht |
-| `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
-| `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
-| `show_maintenance_view` | boolean | `false` | Eigene Wartungsansicht mit Updates und nicht verfügbaren Entitäten |
+| `show_vacuums_section` | boolean | Auto | Staubsauger-Section bei vorhandenen sichtbaren Staubsaugern oder Rasenmähern |
+| `show_maintenance_section` | boolean | Auto | Wartungs-Section bei verwertbaren Wartungsdaten anzeigen; `false` deaktiviert sie |
+| `show_maintenance_view` | boolean | Auto | Eigene Wartungsansicht bei verwertbaren Wartungsdaten anzeigen; `false` deaktiviert sie |
 | `show_maintenance_activity` | boolean | `true` | 24-Stunden-Aktivitätsverlauf in der Wartungsansicht |
 | `show_video_tips` | boolean | `true` | Passende statische Video-Tipps in der Wartungsansicht |
 | `section_visibility` | object | `{}` | Sichtbarkeit einzelner Übersichts-Sections an Entity-Zustände binden |
@@ -547,7 +547,7 @@ Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lo
 | editor | ~252 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
 | nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
 
-Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.26.1; Webpack-Hashes und Größen ändern sich bei neuen Builds.
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.28.0; Webpack-Hashes und Größen ändern sich bei neuen Builds.
 
 ### Performance-Design
 

@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.26.1`. The validated baseline is 32 test files with 155 tests.
+Current development version: `1.28.0`. The validated baseline is 36 test files with 167 tests.
 
 ## Public contract
 
@@ -71,6 +71,8 @@ Keep `src/types/strategy.ts`, editor panels/rendering, translations, README, and
 - custom content: YAML cards, guided tiles, full sections, custom badges, custom views with `after_view` placement or live references, per-room custom cards, and inline editor overrides
 - visibility: per-user view and overview-section display rules plus entity-state-based room and section visibility; these are presentation rules, not access control
 - availability and battery behavior: hidden/unavailable filtering, mobile-app and note entities, critical/low thresholds, unavailable battery bucket
+
+Automatic feature defaults are resolved centrally through `resolveFeatureToggle`: explicit `false` stays disabled, explicit `true` stays enabled, and unset options use currently available Home Assistant capabilities. Personal entity IDs, custom layouts, and camera view overrides remain configuration-owned.
 
 Important behavior:
 

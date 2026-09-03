@@ -247,7 +247,7 @@ export interface Simon42StrategyConfig {
   weather_sensors?: WeatherSensorConfig[]; // default: []
   show_energy?: boolean; // default: true
   show_energy_distribution_card?: boolean; // default: true
-  show_search_card?: boolean; // default: false
+  show_search_card?: boolean; // default: auto when search-card and card-tools are available
   search_card_variant?: 'custom' | 'tip'; // default: 'custom'
   show_summary_views?: boolean; // default: false
   show_room_views?: boolean; // default: false
@@ -265,7 +265,7 @@ export interface Simon42StrategyConfig {
   group_by_floors?: boolean; // default: false
   group_covers_by_floors?: boolean; // default: false
   group_covers_by_areas?: boolean; // default: false
-  show_covers_summary?: boolean; // default: true
+  show_covers_summary?: boolean; // default: auto when visible covers exist
   show_covers_view?: boolean; // default: false; keeps the view when the summary is hidden
   show_partially_open_covers?: boolean; // default: false
   show_clock_card?: boolean; // default: true
@@ -282,7 +282,7 @@ export interface Simon42StrategyConfig {
   show_battery_summary?: boolean; // default: true
   show_battery_view?: boolean; // default: false (summary remains the main trigger)
   group_batteries_by_areas?: boolean; // default: false
-  show_climate_summary?: boolean; // default: false
+  show_climate_summary?: boolean; // default: auto when visible climate entities exist
   show_climate_view?: boolean; // default: false; keeps the view when the summary is hidden
   hide_mobile_app_batteries?: boolean; // default: false
   hide_battery_notes_entities?: boolean; // default: false
@@ -310,15 +310,15 @@ export interface Simon42StrategyConfig {
   show_sun_badge?: boolean; // default: false
   show_updates_badge?: boolean; // default: false
   hide_unavailable_entities?: boolean; // default: false
-  show_plants_section?: boolean; // default: false
-  show_agenda_section?: boolean; // default: false
+  show_plants_section?: boolean; // default: auto when visible plants exist
+  show_agenda_section?: boolean; // default: auto when a calendar has an upcoming event
   agenda_calendar_entities?: string[];
-  show_todos_section?: boolean; // default: false
+  show_todos_section?: boolean; // default: auto when visible todo entities exist
   todos_entities?: string[];
   show_persons_section?: boolean; // default: false
-  show_vacuums_section?: boolean; // default: false
-  show_maintenance_section?: boolean; // default: false
-  show_maintenance_view?: boolean; // default: false
+  show_vacuums_section?: boolean; // default: auto when visible vacuums or lawn mowers exist
+  show_maintenance_section?: boolean; // default: auto when maintenance data exists
+  show_maintenance_view?: boolean; // default: auto when maintenance data exists
   show_maintenance_activity?: boolean; // default: true
   show_video_tips?: boolean; // default: true
   camera_renderer?: CameraRenderer; // default: 'native'

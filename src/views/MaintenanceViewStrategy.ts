@@ -32,6 +32,8 @@ import {
   listUnavailableBlocks,
   criticalBatteryIds,
   haVersionAtLeast,
+  getBackupEntityIds,
+  getMaintenanceStatusEntityIds,
 } from '../utils/maintenance-utils';
 import { matchVideoTips, readDismissedTips } from '../utils/video-tips';
 
@@ -260,6 +262,54 @@ export function buildCriticalBatteriesSection(
   return { type: 'grid', cards };
 }
 
+/** Backup sensors are discovered by semantic name, never by personal IDs. */
+export function buildBackupSection(hass: HomeAssistant): LovelaceSectionConfig | null {
+  const backupIds = getBackupEntityIds(hass);
+  if (backupIds.length === 0) return null;
+
+  return {
+    type: 'grid',
+    cards: [
+      {
+        type: 'heading',
+        heading: localize('maintenance.backups'),
+        heading_style: 'title',
+        icon: 'mdi:backup-restore',
+      },
+      ...backupIds.map((entityId) => ({
+        type: 'tile' as const,
+        entity: entityId,
+        vertical: false,
+        state_content: ['state', 'last_changed'],
+      })),
+    ],
+  };
+}
+
+/** Small, non-sensitive technical status block for the maintenance view. */
+export function buildTechnicalStatusSection(hass: HomeAssistant): LovelaceSectionConfig | null {
+  const statusIds = getMaintenanceStatusEntityIds(hass);
+  if (statusIds.length === 0) return null;
+
+  return {
+    type: 'grid',
+    cards: [
+      {
+        type: 'heading',
+        heading: localize('maintenance.technical_status'),
+        heading_style: 'title',
+        icon: 'mdi:server-network',
+      },
+      ...statusIds.map((entityId) => ({
+        type: 'tile' as const,
+        entity: entityId,
+        vertical: false,
+        state_content: ['state', 'last_changed'],
+      })),
+    ],
+  };
+}
+
 /**
  * "Expertentipps" — curated Dashboard Strategy videos matched to the installed
  * integrations. Default ON (opt-out via show_video_tips: false), max 3
@@ -310,6 +360,12 @@ export function buildMaintenanceView(
 
   const batteriesSection = buildCriticalBatteriesSection(hass, config);
   if (batteriesSection) sections.push(batteriesSection);
+
+  const backupSection = buildBackupSection(hass);
+  if (backupSection) sections.push(backupSection);
+
+  const technicalStatusSection = buildTechnicalStatusSection(hass);
+  if (technicalStatusSection) sections.push(technicalStatusSection);
 
   // Unavailable devices deliberately LAST — usually the longest list
   const unavailableSection = buildUnavailableSection(hass, config);

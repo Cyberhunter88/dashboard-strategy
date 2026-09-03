@@ -35,19 +35,19 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     key: 'plants',
     icon: 'mdi:flower-tulip',
     labelKey: 'sections.plants',
-    toggle: { flag: 'show_plants_section', defaultOn: false },
+    toggle: { flag: 'show_plants_section', defaultOn: true },
   },
   {
     key: 'agenda',
     icon: 'mdi:calendar',
     labelKey: 'sections.agenda',
-    toggle: { flag: 'show_agenda_section', defaultOn: false },
+    toggle: { flag: 'show_agenda_section', defaultOn: true },
   },
   {
     key: 'todos',
     icon: 'mdi:format-list-checks',
     labelKey: 'sections.todos',
-    toggle: { flag: 'show_todos_section', defaultOn: false },
+    toggle: { flag: 'show_todos_section', defaultOn: true },
   },
   {
     key: 'persons',
@@ -59,13 +59,13 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     key: 'vacuums',
     icon: 'mdi:robot-vacuum',
     labelKey: 'sections.vacuums',
-    toggle: { flag: 'show_vacuums_section', defaultOn: false },
+    toggle: { flag: 'show_vacuums_section', defaultOn: true },
   },
   {
     key: 'maintenance',
     icon: 'mdi:update',
     labelKey: 'sections.maintenance',
-    toggle: { flag: 'show_maintenance_section', defaultOn: false },
+    toggle: { flag: 'show_maintenance_section', defaultOn: true },
   },
 ];
 
