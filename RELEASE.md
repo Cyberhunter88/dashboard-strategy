@@ -32,13 +32,14 @@ workflow performs this sequence:
 
 1. Read and validate `VERSION.txt`.
 2. Verify that all derived version files match it.
-3. Fail if the tag or GitHub release already exists.
-4. Run the complete quality gate and production build.
-5. Create a draft GitHub release for the exact `v<version>` tag.
-6. Upload the complete `dist` asset set.
-7. Verify that the draft contains exactly the local release asset set.
-8. Publish the release.
-9. Verify that the published release still contains the complete asset set.
+3. If that version is already released, finish as a safe no-op.
+4. Fail if a tag exists without its corresponding GitHub release.
+5. Run the complete quality gate and production build.
+6. Create a draft GitHub release for the exact `v<version>` tag.
+7. Upload the complete `dist` asset set.
+8. Verify that the draft contains exactly the local release asset set.
+9. Publish the release.
+10. Verify that the published release still contains the complete asset set.
 
 The release is never intentionally published before its HACS assets pass the
 remote verification. The release workflow creates and publishes the release in
