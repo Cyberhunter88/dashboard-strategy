@@ -2,6 +2,12 @@ import fs from 'node:fs';
 
 const args = new Set(process.argv.slice(2));
 const requireTag = args.has('--require-tag');
+const tagIndex = process.argv.indexOf('--tag');
+const tagArgument = tagIndex >= 0 ? process.argv[tagIndex + 1] : undefined;
+
+if (tagIndex >= 0 && !tagArgument) {
+  throw new Error('--tag requires a value');
+}
 
 const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const packageVersion = packageJson.version;
@@ -20,7 +26,7 @@ if (strategyVersion !== packageVersion) {
 }
 
 if (requireTag) {
-  const actualTag = process.env.GITHUB_REF_NAME;
+  const actualTag = tagArgument ?? process.env.GITHUB_REF_NAME;
   const expectedTag = `v${packageVersion}`;
 
   if (!actualTag) {
@@ -37,5 +43,6 @@ console.log(
     packageVersion,
     strategyVersion,
     tagChecked: requireTag,
+    tag: requireTag ? tagArgument ?? process.env.GITHUB_REF_NAME : undefined,
   }),
 );
