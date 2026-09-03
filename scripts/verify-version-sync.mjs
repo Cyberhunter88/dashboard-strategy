@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { readVersion } from './version-utils.mjs';
 
 const args = new Set(process.argv.slice(2));
 const requireTag = args.has('--require-tag');
@@ -11,6 +12,7 @@ if (tagIndex >= 0 && !tagArgument) {
 
 const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const packageVersion = packageJson.version;
+const versionFileVersion = readVersion();
 
 const strategySource = fs.readFileSync(new URL('../src/dashboard-strategy.ts', import.meta.url), 'utf8');
 const strategyVersion = strategySource.match(/const STRATEGY_VERSION = '([^']+)';/)?.[1];
@@ -19,9 +21,9 @@ if (!strategyVersion) {
   throw new Error('Could not read STRATEGY_VERSION from src/dashboard-strategy.ts');
 }
 
-if (strategyVersion !== packageVersion) {
+if (versionFileVersion !== packageVersion || versionFileVersion !== strategyVersion) {
   throw new Error(
-    `src/dashboard-strategy.ts version ${strategyVersion} does not match package.json version ${packageVersion}`,
+    `VERSION.txt ${versionFileVersion} does not match package.json ${packageVersion} and strategy ${strategyVersion}`
   );
 }
 
@@ -40,9 +42,10 @@ if (requireTag) {
 
 console.log(
   JSON.stringify({
+    versionFileVersion,
     packageVersion,
     strategyVersion,
     tagChecked: requireTag,
-    tag: requireTag ? tagArgument ?? process.env.GITHUB_REF_NAME : undefined,
-  }),
+    tag: requireTag ? (tagArgument ?? process.env.GITHUB_REF_NAME) : undefined,
+  })
 );

@@ -1,8 +1,13 @@
 import fs from 'node:fs';
+import { readVersion } from './version-utils.mjs';
 
 const root = new URL('../', import.meta.url);
 const distUrl = new URL('dist/', root);
 const packageJson = JSON.parse(fs.readFileSync(new URL('package.json', root), 'utf8'));
+const version = readVersion();
+if (packageJson.version !== version) {
+  throw new Error(`package.json version ${packageJson.version} does not match VERSION.txt ${version}`);
+}
 const files = fs.readdirSync(distUrl);
 
 const assertNonEmpty = (name) => {
@@ -21,10 +26,8 @@ assertNonEmpty(`${entryName}.br`);
 
 const entry = fs.readFileSync(entryUrl, 'utf8');
 const markerPattern = /Dashboard Strategy v(?:\$\{[^}]+\}|[A-Za-z_$][\w$]*) loaded/;
-if (!markerPattern.test(entry) || !entry.includes(packageJson.version)) {
-  throw new Error(
-    `dist/${entryName} does not contain a versioned Dashboard Strategy load marker for ${packageJson.version}`,
-  );
+if (!markerPattern.test(entry) || !entry.includes(version)) {
+  throw new Error(`dist/${entryName} does not contain a versioned Dashboard Strategy load marker for ${version}`);
 }
 
 for (const chunkName of ['core', 'editor', 'views', 'lit']) {
@@ -47,7 +50,7 @@ for (const javascriptFile of javascriptFiles) {
 
 console.log(
   JSON.stringify({
-    version: packageJson.version,
+    version,
     javascriptFiles: javascriptFiles.length,
     compressedFiles: javascriptFiles.length * 2,
   })
