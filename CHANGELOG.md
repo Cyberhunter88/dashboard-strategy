@@ -2,7 +2,19 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.26.1...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.28.0...HEAD).
+
+<a name="1.28.0"></a>
+## [1.28.0] - 2026-09-03
+### Features
+- resolve overview, agenda, climate, maintenance, covers, plants, todo, and vacuum sections from live entity capabilities when options are unset
+- filter calendar sections to calendars with current or upcoming events
+- discover generic backup and non-sensitive technical status sensors for the maintenance view
+- add camera-device activity logs only when matching motion or detection entities and logbook are available
+- preserve explicit feature toggles, custom layouts, personal entity IDs, camera view overrides, and fork public identifiers
+
+### Compatibility
+- keep `show_camera_view` and `show_maintenance_summary` aliases and all existing HACS, strategy, view, and card identifiers
 
 <a name="1.26.1"></a>
 ## [1.26.1] - 2026-08-14

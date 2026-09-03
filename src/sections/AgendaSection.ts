@@ -1,7 +1,7 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
-import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
+import { getCalendarEntitiesWithUpcomingEvents } from '../utils/feature-availability';
 
 export function createAgendaSection(
   hass: HomeAssistant,
@@ -11,11 +11,7 @@ export function createAgendaSection(
 ): LovelaceSectionConfig | null {
   if (!enabled) return null;
 
-  const visible = Registry.getVisibleEntityIdsForDomain('calendar').filter((id) => hass.states[id] !== undefined);
-  const selected =
-    Array.isArray(calendarEntities) && calendarEntities.length > 0
-      ? calendarEntities.filter((id) => visible.includes(id))
-      : visible;
+  const selected = getCalendarEntitiesWithUpcomingEvents(hass, calendarEntities);
 
   if (selected.length === 0) return null;
 

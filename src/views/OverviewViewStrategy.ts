@@ -29,6 +29,7 @@ import { getVisibleAreas, normalizeAreasDisplay } from '../utils/name-utils';
 import { createPersonBadges } from '../utils/badge-builder';
 import {
   createAlarmSection,
+  createClimateSummarySection,
   createCustomCardsSection,
   createCustomSectionsArray,
   createFavoritesSection,
@@ -50,6 +51,7 @@ import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { mergeConfiguredOrder } from '../utils/order-utils';
+import { hasEnergyCapability, resolveAutomaticFeatures } from '../utils/feature-availability';
 import {
   parsedConfigToSections,
   renderParsedCustomCardAsSection,
@@ -293,6 +295,17 @@ function createWeatherStartSectionsFromItems(
 ): LovelaceSectionConfig[] {
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
   const normalizedItems = normalizeWeatherStartLayoutItemsForRender(items, visibleAreas, dashboardConfig, hass);
+  const existingTypes = new Set(normalizedItems.map((item) => item.type));
+  const automaticItems: WeatherStartLayoutItem[] = [];
+  for (const type of ['search', 'agenda', 'maintenance'] as const) {
+    if (existingTypes.has(type)) continue;
+    if (type === 'search' && dashboardConfig.show_search_card !== true) continue;
+    if (type === 'agenda' && dashboardConfig.show_agenda_section !== true) continue;
+    if (type === 'maintenance' && dashboardConfig.show_maintenance_section !== true) continue;
+    automaticItems.push({ id: `auto-${type}`, type });
+  }
+  const firstAreaItemIndex = normalizedItems.findIndex((item) => item.type === 'area' || item.type === 'floor');
+  normalizedItems.splice(firstAreaItemIndex >= 0 ? firstAreaItemIndex : normalizedItems.length, 0, ...automaticItems);
   const sections: LovelaceSectionConfig[] = [];
   const areaCardContext = createAreaCardBuildContext();
 
@@ -451,7 +464,8 @@ function createWeatherStartSectionsFromItems(
             dashboardConfig.show_energy !== false,
             dashboardConfig.energy_link_dashboard !== false,
             dashboardConfig.show_energy_distribution_card !== false,
-            (dashboardConfig.hidden_section_headings || []).includes('energy')
+            (dashboardConfig.hidden_section_headings || []).includes('energy'),
+            hasEnergyCapability(hass, dashboardConfig)
           );
         break;
       case 'plants':
@@ -548,6 +562,24 @@ function createWeatherStartSectionsFromItems(
 
     const visibleSection = applyUserVisibility(item.type, section);
     appendSection(visibleSection, visibleSection?.visibility ? false : item.stack_with_previous);
+  }
+
+  // A free weather-start layout may already contain a custom summaries block
+  // with lights/security/batteries. Add only the missing climate summary so
+  // capability-aware climate does not duplicate those user cards.
+  const hasClimateSummary = sections.some((section) =>
+    section.cards?.some(
+      (card) => card.type === 'custom:dashboard-strategy-summary-card' && card.summary_type === 'climate'
+    )
+  );
+  if (!hasClimateSummary) {
+    const climateSection = createClimateSummarySection(dashboardConfig);
+    if (climateSection) {
+      const firstAreaSectionIndex = sections.findIndex((section) =>
+        section.cards?.some((card) => card.type === 'custom:dashboard-strategy-area-card')
+      );
+      sections.splice(firstAreaSectionIndex >= 0 ? firstAreaSectionIndex : sections.length, 0, climateSection);
+    }
   }
 
   return sections;
@@ -723,12 +755,13 @@ function createWeatherStartSections(
 class Simon42ViewOverviewStrategy extends HTMLElement {
   static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     timeStart('overview-generate');
-    const dashboardConfig: Simon42StrategyConfig = config.dashboardConfig || {};
+    const rawDashboardConfig: Simon42StrategyConfig = config.dashboardConfig || {};
 
     // Initialize Registry (idempotent — skips if already done by another view)
-    if (!Registry.isCurrent(hass, dashboardConfig)) {
-      Registry.initialize(hass, dashboardConfig);
+    if (!Registry.isCurrent(hass, rawDashboardConfig)) {
+      Registry.initialize(hass, rawDashboardConfig);
     }
+    const dashboardConfig = resolveAutomaticFeatures(rawDashboardConfig, hass);
 
     // Visible areas (filtered + sorted by config)
     const normalizedAreasDisplay = normalizeAreasDisplay(Registry.areas, dashboardConfig.areas_display);
@@ -915,7 +948,8 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           dashboardConfig.show_energy !== false,
           dashboardConfig.energy_link_dashboard !== false,
           dashboardConfig.show_energy_distribution_card !== false,
-          hiddenHeadings.has('energy')
+          hiddenHeadings.has('energy'),
+          hasEnergyCapability(hass, dashboardConfig)
         )
       ),
       plants: decorateBlock(

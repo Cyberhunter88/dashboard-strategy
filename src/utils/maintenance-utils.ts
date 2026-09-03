@@ -18,6 +18,13 @@ import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { getBatteryEntities } from './entity-filter';
 
+const SENSITIVE_STATUS_PATTERN =
+  /(?:^|[._ -])(ip|ipv4|ipv6|mac|ssid|password|passwort|token|secret|public|öffentlich|oeffentlich)(?:$|[_ -])/i;
+const BACKUP_PATTERN = /(?:backup|back[-_ ]?up|sicherung)/i;
+const BACKUP_TIME_PATTERN = /(?:last|letz|next|nächst|upcoming|geplant|scheduled|success|erfolg|attempt|versuch)/i;
+const MAINTENANCE_STATUS_PATTERN =
+  /(?:active[_ -]?issues|ignored[_ -]?issues|backup|(?:^|[._ -])(?:controlroom|control_room|proxmox|diskstation)(?:$|[._ -])|(?:fritz|router|network|internet|wan|lan|speedtest|connectivity).*(?:status|state|connect|internet|download|upload|latency|uptime|speed|signal)|(?:^|[._ -])(?:areas|cameras|climate|devices|entities)(?:$|[_ -]))/i;
+
 /** Reflect.get keeps dynamic state lookups off the object-injection radar. */
 function stateFor(hass: HomeAssistant, entityId: string): HassEntity | undefined {
   return Reflect.get(hass.states, entityId) as HassEntity | undefined;
@@ -53,6 +60,44 @@ export function collectUpdateIds(): string[] {
     const entry = Registry.getEntity(id);
     return !entry?.hidden;
   });
+}
+
+function statusSearchText(hass: HomeAssistant, entityId: string): string {
+  const friendlyName = stateFor(hass, entityId)?.attributes?.friendly_name;
+  return `${entityId} ${typeof friendlyName === 'string' ? friendlyName : ''}`;
+}
+
+function isVisibleUsableSensor(hass: HomeAssistant, entityId: string): boolean {
+  if (!entityId.startsWith('sensor.')) return false;
+  if (Registry.isEntityExcluded(entityId)) return false;
+  const state = stateFor(hass, entityId);
+  return Boolean(state && state.state !== 'unknown' && state.state !== 'unavailable');
+}
+
+/** Automatically discover backup-related sensors without embedding user IDs. */
+export function getBackupEntityIds(hass: HomeAssistant): string[] {
+  return Registry.getVisibleEntityIdsForDomain('sensor')
+    .filter((entityId) => isVisibleUsableSensor(hass, entityId))
+    .filter((entityId) => BACKUP_PATTERN.test(statusSearchText(hass, entityId)))
+    .filter((entityId) => BACKUP_TIME_PATTERN.test(statusSearchText(hass, entityId)))
+    .sort((a, b) => statusSearchText(hass, a).localeCompare(statusSearchText(hass, b)));
+}
+
+/**
+ * Discover a deliberately small set of useful technical status sensors.
+ * Sensitive identifiers such as public IP, MAC, SSID and credentials are
+ * excluded before cards are generated.
+ */
+export function getMaintenanceStatusEntityIds(hass: HomeAssistant): string[] {
+  return Registry.getVisibleEntityIdsForDomain('sensor')
+    .filter((entityId) => isVisibleUsableSensor(hass, entityId))
+    .filter((entityId) => {
+      const text = statusSearchText(hass, entityId);
+      return !SENSITIVE_STATUS_PATTERN.test(text) && MAINTENANCE_STATUS_PATTERN.test(text);
+    })
+    .filter((entityId) => !BACKUP_PATTERN.test(statusSearchText(hass, entityId)))
+    .sort((a, b) => statusSearchText(hass, a).localeCompare(statusSearchText(hass, b)))
+    .slice(0, 12);
 }
 
 export function buildMaintenanceScan(hass: HomeAssistant, config: Simon42StrategyConfig): MaintenanceScan {

@@ -97,6 +97,20 @@ const PTZ_LAYOUT: PtzPadCell[][] = [
 // Same capability set the LightsGroupCard uses for its brightness slider.
 const LIGHT_BRIGHTNESS_MODES = ['brightness', 'color_temp', 'hs', 'xy', 'rgb', 'rgbw', 'rgbww', 'white'];
 
+const CAMERA_ACTIVITY_DEVICE_CLASSES = new Set([
+  'animal',
+  'doorbell',
+  'motion',
+  'occupancy',
+  'person',
+  'presence',
+  'sound',
+  'vehicle',
+  'vibration',
+]);
+const CAMERA_ACTIVITY_NAME_PATTERN =
+  /(?:motion|bewegung|occupancy|anwesenheit|presence|person|fahrzeug|vehicle|tier|animal|besucher|visitor|klingel|doorbell|detection|erkennung)/i;
+
 // =====================================================================
 // Reolink recordings — media browser deep links
 // =====================================================================
@@ -542,6 +556,58 @@ export function buildCameraSection(
   return { type: 'grid', cards };
 }
 
+/** Find only activity entities belonging to the generated camera devices. */
+export function collectCameraActivityEntityIds(hass: HomeAssistant, blocks: CameraBlock[]): string[] {
+  const ids = new Set<string>();
+  for (const block of blocks) {
+    if (!block.deviceId) continue;
+    for (const entityId of Registry.getEntityIdsForDevice(block.deviceId)) {
+      if (!isVisibleWithState(entityId, hass)) continue;
+      const state = stateFor(hass, entityId);
+      if (!state || state.state === 'unknown' || state.state === 'unavailable') continue;
+      const domain = entityId.split('.')[0];
+      const deviceClass = state.attributes?.device_class;
+      if (
+        (domain === 'binary_sensor' &&
+          (CAMERA_ACTIVITY_DEVICE_CLASSES.has(String(deviceClass)) ||
+            CAMERA_ACTIVITY_NAME_PATTERN.test(`${entityId} ${state.attributes?.friendly_name || ''}`))) ||
+        (domain === 'event' && deviceClass === 'doorbell')
+      ) {
+        ids.add(entityId);
+      }
+    }
+  }
+  return [...ids].sort();
+}
+
+/** Native 24-hour activity log; omitted when no matching sensor exists. */
+export function buildCctvActivitySection(
+  hass: HomeAssistant,
+  config: Simon42StrategyConfig,
+  blocks: CameraBlock[]
+): LovelaceSectionConfig | null {
+  if (config.cctv_show_activity !== true) return null;
+  if (!hass.config?.components?.includes('logbook')) return null;
+
+  const activityIds = collectCameraActivityEntityIds(hass, blocks);
+  if (activityIds.length === 0) return null;
+
+  return {
+    type: 'grid',
+    cards: [
+      { type: 'heading', heading: localize('cctv.activity'), heading_style: 'title', icon: 'mdi:history' },
+      {
+        type: 'logbook',
+        title: localize('cctv.activity'),
+        target: { entity_id: activityIds.slice(0, 50) },
+        hours_to_show: 24,
+        state_filter: ['on'],
+        grid_options: { columns: 'full', rows: 8 },
+      },
+    ],
+  };
+}
+
 // =====================================================================
 // LLM Vision event timelines
 // =====================================================================
@@ -647,6 +713,11 @@ export async function buildCctvSections(
     const device = block.deviceId ? Registry.getDevice(block.deviceId) : undefined;
     const recordingsPath = block.isReolink && firstOfDevice ? resolveRecordingsPath(device, camItems) : null;
     sections.push(buildCameraSection(block, hass, recordingsPath, firstOfDevice));
+  }
+
+  if (dashboardConfig.cctv_show_activity === true) {
+    const activitySection = buildCctvActivitySection(hass, dashboardConfig, blocks);
+    if (activitySection) sections.push(activitySection);
   }
 
   // Opt-in even when LLM Vision is present: the llmvision-card re-fetches

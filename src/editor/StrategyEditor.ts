@@ -1831,17 +1831,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
       case 'energy':
         return this._config.show_energy === false;
       case 'plants':
-        return this._config.show_plants_section !== true;
+        return this._config.show_plants_section === false;
       case 'agenda':
-        return this._config.show_agenda_section !== true;
+        return this._config.show_agenda_section === false;
       case 'todos':
-        return this._config.show_todos_section !== true;
+        return this._config.show_todos_section === false;
       case 'persons':
         return this._config.show_persons_section !== true;
       case 'vacuums':
-        return this._config.show_vacuums_section !== true;
+        return this._config.show_vacuums_section === false;
       case 'maintenance':
-        return this._config.show_maintenance_section !== true;
+        return this._config.show_maintenance_section === false;
       default:
         return false;
     }
@@ -2221,17 +2221,17 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       case 'energy':
         return this._config.show_energy === false;
       case 'plants':
-        return this._config.show_plants_section !== true;
+        return this._config.show_plants_section === false;
       case 'agenda':
-        return this._config.show_agenda_section !== true;
+        return this._config.show_agenda_section === false;
       case 'todos':
-        return this._config.show_todos_section !== true;
+        return this._config.show_todos_section === false;
       case 'persons':
         return this._config.show_persons_section !== true;
       case 'vacuums':
-        return this._config.show_vacuums_section !== true;
+        return this._config.show_vacuums_section === false;
       case 'maintenance':
-        return this._config.show_maintenance_section !== true;
+        return this._config.show_maintenance_section === false;
       case 'custom_cards':
         return (this._config.custom_cards || []).length === 0;
       case 'custom_sections':
@@ -2242,7 +2242,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           this._config.show_covers_summary === false &&
           this._config.show_security_summary === false &&
           this._config.show_battery_summary === false &&
-          this._config.show_climate_summary !== true
+          this._config.show_climate_summary === false
         );
       default:
         return false;
@@ -3614,7 +3614,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         ${this._renderCheckbox(
           'basic-show-climate-summary',
           localize('editor.show_climate_summary'),
-          this._config.show_climate_summary === true,
+          this._config.show_climate_summary !== false,
           (checked) => this._toggleChanged('show_climate_summary', checked, false)
         )}
         ${this._renderCheckbox(
@@ -3646,10 +3646,12 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
 
   private _renderOverviewSection(): TemplateResult {
     const showClockCard = this._config.show_clock_card !== false;
-    const showSearchCard = this._config.show_search_card === true;
+    const hasSearchCardDeps = this._checkSearchCardDependencies();
+    const showSearchCard =
+      this._config.show_search_card === true ||
+      (this._config.show_search_card === undefined && hasSearchCardDeps);
     const showPersonBadges = this._config.show_person_badges !== false;
     const personBadgeLayout = this._config.person_badge_layout || 'with_state';
-    const hasSearchCardDeps = this._checkSearchCardDependencies();
     const alarmEntity = this._config.alarm_entity || '';
     const alarmEntities = this._getAlarmEntities();
     const houseModeEntity = this._config.house_mode_entity || '';
@@ -3800,7 +3802,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const showCoversSummary = this._config.show_covers_summary !== false;
     const showSecuritySummary = this._config.show_security_summary !== false;
     const showBatterySummary = this._config.show_battery_summary !== false;
-    const showClimateSummary = this._config.show_climate_summary === true;
+    const showClimateSummary = this._config.show_climate_summary !== false;
 
     return html`
       <div class="section">
@@ -4466,7 +4468,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const showCctvView = this._config.show_cctv_view === true;
     const cctvShowActivity = this._config.cctv_show_activity === true;
     const showCamerasInSecurity = this._config.show_cameras_in_security === true;
-    const showMaintenanceView = this._config.show_maintenance_view === true;
+    const showMaintenanceView = this._config.show_maintenance_view !== false;
     const showMaintenanceActivity = this._config.show_maintenance_activity !== false;
     const showVideoTips = this._config.show_video_tips !== false;
 
@@ -4852,7 +4854,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     add(isUtilityViewEnabled(this._config, 'batteries'), 'batteries', 'views.batteries');
     add(isUtilityViewEnabled(this._config, 'climate'), 'climate', 'views.climate');
     add(this._config.show_cctv_view === true, 'cctv', 'views.cctv');
-    add(this._config.show_maintenance_view === true, 'maintenance', 'views.maintenance');
+    add(this._config.show_maintenance_view !== false, 'maintenance', 'views.maintenance');
 
     const hiddenAreas = new Set(this._config.areas_display?.hidden || []);
     for (const area of this._getSortedAreas()) {

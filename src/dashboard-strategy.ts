@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.26.1'; // x-release-please-version
+const STRATEGY_VERSION = '1.28.0'; // x-release-please-version
 
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
 
@@ -67,7 +67,8 @@ class Simon42DashboardStrategy extends HTMLElement {
     t('modules ready');
 
     const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden,
-      applyViewVisibility, insertCustomViews, resolveCustomViews, applyDesign, isUtilityViewEnabled } = runtime;
+      applyViewVisibility, insertCustomViews, resolveCustomViews, applyDesign, isUtilityViewEnabled,
+      resolveAutomaticFeatures } = runtime;
     t('imports done');
 
     const getStrategy = (tag: string): StrategyGenerator => {
@@ -80,6 +81,12 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     Registry.initialize(hass, config);
     t('registry initialized');
+
+    // Resolve only capability-aware defaults. Explicit user values remain
+    // authoritative, while generated views can react to the live HA setup.
+    config = resolveAutomaticFeatures(config, hass);
+    Registry.initialize(hass, config);
+    t('automatic features resolved');
 
     const normalizedAreasDisplay = normalizeAreasDisplay(Object.values(hass.areas), config.areas_display);
     const visibleAreas = getVisibleAreasFromHass(hass, normalizedAreasDisplay, config.use_default_area_sort);
@@ -215,4 +222,4 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
 
 // Keep the version literal in the production bundle: the CI artifact check
 // validates this exact marker before HACS can publish the release.
-console.log('Dashboard Strategy v1.26.1 loaded');
+console.log('Dashboard Strategy v1.28.0 loaded');
