@@ -222,4 +222,4 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
 
 // Keep the version literal in the production bundle: the CI artifact check
 // validates this exact marker before HACS can publish the release.
-console.log('Dashboard Strategy v1.29.0 loaded');
+console.log(`Dashboard Strategy v${STRATEGY_VERSION} loaded`);
