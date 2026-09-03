@@ -147,31 +147,6 @@ export function createSummariesSection(config: Simon42StrategyConfig, compact = 
  * security, and battery summaries while still surfacing available climate
  * entities automatically.
  */
-export function createClimateSummarySection(
-  config: Simon42StrategyConfig,
-  compact = false
-): LovelaceSectionConfig | null {
-  if (config.show_climate_summary !== true) return null;
-
-  const card: LovelaceCardConfig = {
-    type: 'custom:dashboard-strategy-summary-card',
-    summary_type: 'climate',
-    areas_options: config.areas_options || {},
-    hide_unavailable_entities: config.hide_unavailable_entities,
-    ...(compact ? { compact: true } : {}),
-  };
-  const visibility = userVisibilityConditions(getViewVisibleUsers(config, 'climate'));
-  if (visibility) card.visibility = visibility;
-
-  const heading: LovelaceCardConfig = {
-    type: 'heading',
-    heading: localize('sections.climate'),
-    heading_style: compact ? 'subtitle' : 'title',
-    icon: 'mdi:thermostat',
-  };
-  return { type: 'grid', cards: [heading, card] };
-}
-
 export function createWeatherStartSummariesSection(
   config: Simon42StrategyConfig,
   size: 'mini' | 'normal' = 'mini'

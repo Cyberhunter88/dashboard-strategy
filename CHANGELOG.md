@@ -2,7 +2,14 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.28.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...HEAD).
+
+<a name="1.29.0"></a>
+## [1.29.0] - 2026-09-03
+### Bugfixes
+- restore the historical opt-in behavior for search, agenda, climate, energy, plants, todos, vacuums, and overview maintenance sections
+- keep the generated maintenance view capability-aware when usable maintenance data exists
+- preserve grouped room views, technical-entity filtering, and generic camera activity handling
 
 <a name="1.28.0"></a>
 ## [1.28.0] - 2026-09-03
@@ -608,6 +615,8 @@ collapsible architecture section, full config reference table
 <a name="1.0.0"></a>
 ## [1.0.0] - 2025-10-15
 
+[1.29.0]: https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.28.0...v1.29.0
+[1.28.0]: https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.26.1...v1.28.0
 [1.3.4-beta.9]: https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.3.3...v1.3.4-beta.9
 [1.3.3]: https://github.com/TheRealSimon42/dashboard-strategy/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/TheRealSimon42/dashboard-strategy/compare/v1.3.1...v1.3.2

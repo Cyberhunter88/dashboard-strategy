@@ -1831,17 +1831,17 @@ class Simon42DashboardStrategyEditor extends LitElement {
       case 'energy':
         return this._config.show_energy === false;
       case 'plants':
-        return this._config.show_plants_section === false;
+        return this._config.show_plants_section !== true;
       case 'agenda':
-        return this._config.show_agenda_section === false;
+        return this._config.show_agenda_section !== true;
       case 'todos':
-        return this._config.show_todos_section === false;
+        return this._config.show_todos_section !== true;
       case 'persons':
         return this._config.show_persons_section !== true;
       case 'vacuums':
-        return this._config.show_vacuums_section === false;
+        return this._config.show_vacuums_section !== true;
       case 'maintenance':
-        return this._config.show_maintenance_section === false;
+        return this._config.show_maintenance_section !== true;
       default:
         return false;
     }
@@ -2221,17 +2221,17 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       case 'energy':
         return this._config.show_energy === false;
       case 'plants':
-        return this._config.show_plants_section === false;
+        return this._config.show_plants_section !== true;
       case 'agenda':
-        return this._config.show_agenda_section === false;
+        return this._config.show_agenda_section !== true;
       case 'todos':
-        return this._config.show_todos_section === false;
+        return this._config.show_todos_section !== true;
       case 'persons':
         return this._config.show_persons_section !== true;
       case 'vacuums':
-        return this._config.show_vacuums_section === false;
+        return this._config.show_vacuums_section !== true;
       case 'maintenance':
-        return this._config.show_maintenance_section === false;
+        return this._config.show_maintenance_section !== true;
       case 'custom_cards':
         return (this._config.custom_cards || []).length === 0;
       case 'custom_sections':
@@ -2242,7 +2242,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
           this._config.show_covers_summary === false &&
           this._config.show_security_summary === false &&
           this._config.show_battery_summary === false &&
-          this._config.show_climate_summary === false
+          this._config.show_climate_summary !== true
         );
       default:
         return false;
@@ -3614,7 +3614,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         ${this._renderCheckbox(
           'basic-show-climate-summary',
           localize('editor.show_climate_summary'),
-          this._config.show_climate_summary !== false,
+          this._config.show_climate_summary === true,
           (checked) => this._toggleChanged('show_climate_summary', checked, false)
         )}
         ${this._renderCheckbox(
@@ -3646,10 +3646,8 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
 
   private _renderOverviewSection(): TemplateResult {
     const showClockCard = this._config.show_clock_card !== false;
+    const showSearchCard = this._config.show_search_card === true;
     const hasSearchCardDeps = this._checkSearchCardDependencies();
-    const showSearchCard =
-      this._config.show_search_card === true ||
-      (this._config.show_search_card === undefined && hasSearchCardDeps);
     const showPersonBadges = this._config.show_person_badges !== false;
     const personBadgeLayout = this._config.person_badge_layout || 'with_state';
     const alarmEntity = this._config.alarm_entity || '';
@@ -3802,7 +3800,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const showCoversSummary = this._config.show_covers_summary !== false;
     const showSecuritySummary = this._config.show_security_summary !== false;
     const showBatterySummary = this._config.show_battery_summary !== false;
-    const showClimateSummary = this._config.show_climate_summary !== false;
+    const showClimateSummary = this._config.show_climate_summary === true;
 
     return html`
       <div class="section">
