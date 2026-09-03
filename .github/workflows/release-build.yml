@@ -1,56 +1,77 @@
 name: Release build
+
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: Published release tag to rebuild
+        description: Existing release tag to rebuild, for example v1.29.0
         required: true
+        type: string
+      publish:
+        description: Publish the release after its assets pass validation
+        required: true
+        default: false
+        type: boolean
+
 permissions:
   contents: write
+
+concurrency:
+  group: release-build-${{ inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: Resolve release tag
-        id: release
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/checkout@v7
+      - name: Check out release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ steps.release.outputs.tag }}
+          ref: ${{ inputs.tag }}
           fetch-depth: 0
+
       - name: Require release commit on main
         run: |
           git fetch origin main
           git merge-base --is-ancestor HEAD origin/main
-      - uses: actions/setup-node@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
-      - name: Verify release version and bundle
-        shell: bash
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate and build release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          node scripts/verify-version-sync.mjs --require-tag
-          test -s dist/dashboard-strategy.js
-          test -s dist/dashboard-strategy.js.gz
-          test -s dist/dashboard-strategy.js.br
-          package_version="$(node -p "require('./package.json').version")"
-          grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
-          node scripts/verify-hacs-distribution.mjs
-      - name: Upload release assets
+          node scripts/verify-version-sync.mjs --require-tag --tag "$RELEASE_TAG"
+          npm run verify:release
+
+      - name: Upload complete release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.release.outputs.tag }}" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber -R "${{ github.repository }}"
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release upload "$RELEASE_TAG" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber -R "$GITHUB_REPOSITORY"
+
+      - name: Verify release assets
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG"
+
+      - name: Publish release after asset validation
+        if: inputs.publish == true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release edit "$RELEASE_TAG" --draft=false -R "$GITHUB_REPOSITORY"
+
+      - name: Verify published release
+        if: inputs.publish == true
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-published

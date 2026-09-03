@@ -12,7 +12,10 @@
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify:quality": "npm run typecheck && npm run lint && node scripts/lint-translations.mjs && npm test",
+    "verify:production": "node scripts/verify-version-sync.mjs && node scripts/verify-production-artifacts.mjs && node scripts/verify-hacs-distribution.mjs",
+    "verify:release": "npm run verify:quality && npm run build && npm run verify:production"
   },
   "dependencies": {
     "js-yaml": "^4.3.1",

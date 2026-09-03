@@ -1,84 +1,80 @@
 name: Release Please
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: write
+  issues: write
   pull-requests: write
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Check release app credentials
-        id: credentials
-        env:
-          CLIENT_ID: ${{ secrets.RELEASE_APP_CLIENT_ID }}
-          PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-        run: |
-          if [ -n "$CLIENT_ID" ] && [ -n "$PRIVATE_KEY" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Release App credentials are not configured; skipping."
-          fi
-      - name: Create release app token
-        if: steps.credentials.outputs.available == 'true'
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-        with:
-          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - name: Maintain stable release PR
-        if: steps.credentials.outputs.available == 'true'
         id: release
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
       - name: Check out release tag
         if: steps.release.outputs.release_created == 'true'
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ steps.release.outputs.tag_name }}
           fetch-depth: 0
+
       - name: Set up Node.js
         if: steps.release.outputs.release_created == 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 22
           cache: npm
+
       - name: Install dependencies
         if: steps.release.outputs.release_created == 'true'
         run: npm ci
-      - name: Validate release source
-        if: steps.release.outputs.release_created == 'true'
-        run: |
-          npm run typecheck
-          npm run lint
-          npm test
-      - name: Build release assets
-        if: steps.release.outputs.release_created == 'true'
-        run: npm run build
-      - name: Verify release version and bundle
-        if: steps.release.outputs.release_created == 'true'
-        shell: bash
-        run: |
-          node scripts/verify-version-sync.mjs --require-tag
-          test -s dist/dashboard-strategy.js
-          test -s dist/dashboard-strategy.js.gz
-          test -s dist/dashboard-strategy.js.br
-          package_version="$(node -p "require('./package.json').version")"
-          grep -q "Dashboard Strategy v$package_version loaded" dist/dashboard-strategy.js
-          node scripts/verify-hacs-distribution.mjs
-      - name: Upload release assets
+
+      - name: Validate and build release
         if: steps.release.outputs.release_created == 'true'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh release upload "${{ steps.release.outputs.tag_name }}" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber -R "${{ github.repository }}"
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          node scripts/verify-version-sync.mjs --require-tag --tag "$RELEASE_TAG"
+          npm run verify:release
+
+      - name: Upload complete release assets
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber -R "$GITHUB_REPOSITORY"
+
+      - name: Verify draft release assets
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-draft
+
       - name: Publish complete release
         if: steps.release.outputs.release_created == 'true'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh release edit "${{ steps.release.outputs.tag_name }}" --draft=false -R "${{ github.repository }}"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh release edit "$RELEASE_TAG" --draft=false -R "$GITHUB_REPOSITORY"
+
+      - name: Verify published release assets
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-published

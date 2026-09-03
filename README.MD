@@ -10,6 +10,8 @@ Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, di
 
 Aktueller Entwicklungsstand: **1.29.0**
 
+Der automatisierte Release-Ablauf ist in [RELEASE.md](RELEASE.md) dokumentiert.
+
 
 ---
 
