@@ -5,6 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...HEAD).
 
 <a name="1.29.0"></a>
+## [1.29.2](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.1...v1.29.2) (2026-09-03)
+
+
+### Bug Fixes
+
+* keep release version marker in bundle ([f179450](https://github.com/Cyberhunter88/dashboard-strategy/commit/f1794506af7773595eb8360d3ddfb191d2eed438))
+* keep release version marker in bundle ([385e0a9](https://github.com/Cyberhunter88/dashboard-strategy/commit/385e0a981f24ad051800587f29f2051288b42db1))
+
 ## [1.29.1](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...v1.29.1) (2026-09-03)
 
 
