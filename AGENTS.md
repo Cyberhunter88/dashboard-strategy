@@ -146,7 +146,7 @@ into `main`, the GitHub Actions release workflow creates the corresponding
 
 CI must run for pull requests targeting `main`, after pushes or merges to
 `main`, and through `workflow_dispatch`. CI performs the project quality,
-build, test, validation, and dependency checks but never creates tags or
+build, test, and validation checks but never creates tags or
 releases.
 
 ## Porting upstream/community changes
