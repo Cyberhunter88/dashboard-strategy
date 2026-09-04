@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { readVersion, versionTag, VERSION_FILE_NAME } from './version-utils.mjs';
 
 const getArgument = (name) => {
   const index = process.argv.indexOf(name);
@@ -34,6 +35,11 @@ if (requireDraft && requirePublished) {
 
 const root = new URL('../', import.meta.url);
 const distUrl = new URL('dist/', root);
+const version = readVersion();
+const expectedTag = versionTag(version);
+if (tag !== expectedTag) {
+  throw new Error(`Release tag ${tag} does not match ${VERSION_FILE_NAME} version ${version}`);
+}
 const releaseAssetPattern = /\.js(?:\.gz|\.br)?$|\.js\.LICENSE\.txt$/;
 const expectedAssets = fs
   .readdirSync(distUrl)
@@ -50,6 +56,13 @@ const release = JSON.parse(
 
 if (release.tagName !== tag) {
   throw new Error(`GitHub returned release ${release.tagName}, expected ${tag}`);
+}
+
+const expectedPrerelease = version.includes('-');
+if (release.isPrerelease !== expectedPrerelease) {
+  throw new Error(
+    `Release ${tag} prerelease=${release.isPrerelease} does not match ${VERSION_FILE_NAME} ${version}`
+  );
 }
 
 if (requireDraft && !release.isDraft) {

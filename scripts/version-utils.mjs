@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
-const versionFileUrl = new URL('../VERSION.txt', import.meta.url);
+export const VERSION_FILE_NAME = 'VERSION.txt';
+const versionFileUrl = new URL(`../${VERSION_FILE_NAME}`, import.meta.url);
 
 const semverPattern =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
@@ -8,7 +9,7 @@ const semverPattern =
 export function readVersion() {
   const version = fs.readFileSync(versionFileUrl, 'utf8').trim();
   if (!semverPattern.test(version)) {
-    throw new Error(`VERSION.txt must contain exactly one SemVer version, received: ${JSON.stringify(version)}`);
+    throw new Error(`${VERSION_FILE_NAME} must contain exactly one SemVer version, received: ${JSON.stringify(version)}`);
   }
 
   return version;
