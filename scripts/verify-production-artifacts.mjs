@@ -1,12 +1,12 @@
 import fs from 'node:fs';
-import { readVersion } from './version-utils.mjs';
+import { readVersion, VERSION_FILE_NAME } from './version-utils.mjs';
 
 const root = new URL('../', import.meta.url);
 const distUrl = new URL('dist/', root);
 const packageJson = JSON.parse(fs.readFileSync(new URL('package.json', root), 'utf8'));
 const version = readVersion();
 if (packageJson.version !== version) {
-  throw new Error(`package.json version ${packageJson.version} does not match version.txt ${version}`);
+  throw new Error(`package.json version ${packageJson.version} does not match ${VERSION_FILE_NAME} ${version}`);
 }
 const files = fs.readdirSync(distUrl);
 

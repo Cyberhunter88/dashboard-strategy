@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.29.2`. The validated baseline is 35 test files with 163 tests.
+Current development version: `1.29.3`. The validated baseline is 35 test files with 163 tests.
 
 ## Public contract
 
@@ -127,6 +127,7 @@ Version surfaces must stay aligned:
 
 | File | Field |
 | --- | --- |
+| `VERSION.txt` | source-of-truth SemVer |
 | `package.json` | `version` |
 | `package-lock.json` | lockfile version metadata |
 | `src/dashboard-strategy.ts` | `STRATEGY_VERSION` |
@@ -135,13 +136,18 @@ Version surfaces must stay aligned:
 
 Use `scripts/verify-version-sync.mjs` early for release work, then rebuild `dist`. Patch versions are bugfixes; minor versions are features; beta releases are GitHub pre-releases. A hygiene-only change without a version bump does not need a release/tag.
 
-Normal feature flow: branch from `main`, implement, validate, build, commit source and generated output when applicable, push, open a PR, wait for CI/HACS validation, then merge and release only when requested.
+Normal feature flow: branch from `main`, implement, validate, build, commit source and generated output when applicable, push, open a PR, wait for CI/HACS validation, then merge. After the merge, the release workflow runs only when `VERSION.txt` changed.
 
 For every functional change, determine whether the version change is PATCH,
-MINOR, or MAJOR and update `version.txt` in the same pull request. Never create
+MINOR, or MAJOR and update `VERSION.txt` in the same pull request. Never create
 or push Git tags or GitHub releases manually. After the pull request is merged
 into `main`, the GitHub Actions release workflow creates the corresponding
 `v<version>` tag and GitHub Release automatically.
+
+CI must run for pull requests targeting `main`, after pushes or merges to
+`main`, and through `workflow_dispatch`. CI performs the project quality,
+build, test, validation, and dependency checks but never creates tags or
+releases.
 
 ## Porting upstream/community changes
 

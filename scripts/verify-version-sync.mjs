@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { readVersion } from './version-utils.mjs';
+import { readVersion, VERSION_FILE_NAME } from './version-utils.mjs';
 
 const args = new Set(process.argv.slice(2));
 const requireTag = args.has('--require-tag');
@@ -14,6 +14,12 @@ const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import
 const packageVersion = packageJson.version;
 const versionFileVersion = readVersion();
 
+const releaseWorkflow = fs.readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
+const escapedVersionFileName = VERSION_FILE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+if (!new RegExp(`^\\s*-\\s*${escapedVersionFileName}\\s*$`, 'm').test(releaseWorkflow)) {
+  throw new Error(`.github/workflows/release.yml must trigger on ${VERSION_FILE_NAME}`);
+}
+
 const strategySource = fs.readFileSync(new URL('../src/dashboard-strategy.ts', import.meta.url), 'utf8');
 const strategyVersion = strategySource.match(/const STRATEGY_VERSION = '([^']+)';/)?.[1];
 
@@ -23,7 +29,7 @@ if (!strategyVersion) {
 
 if (versionFileVersion !== packageVersion || versionFileVersion !== strategyVersion) {
   throw new Error(
-    `version.txt ${versionFileVersion} does not match package.json ${packageVersion} and strategy ${strategyVersion}`
+    `${VERSION_FILE_NAME} ${versionFileVersion} does not match package.json ${packageVersion} and strategy ${strategyVersion}`
   );
 }
 
