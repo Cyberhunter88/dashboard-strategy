@@ -39,7 +39,17 @@ jobs:
         run: npm run format:check
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        timeout-minutes: 2
+        run: |
+          set +e
+          timeout 90s npm audit --audit-level=high --fetch-retries=0 --fetch-timeout=30000
+          AUDIT_EXIT=$?
+          set -e
+          if [[ "$AUDIT_EXIT" -eq 124 ]]; then
+            echo "::warning::npm audit timed out while contacting the registry; retry it outside CI."
+            exit 0
+          fi
+          exit "$AUDIT_EXIT"
 
       - name: Verify quality, build, and production distribution
         run: npm run verify:release

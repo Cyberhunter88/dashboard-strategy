@@ -27,8 +27,8 @@ merges to `main`, and manual `workflow_dispatch` runs. It installs dependencies,
 checks formatting, audits dependencies, and runs the complete quality, test,
 build, production-artifact, and HACS-distribution checks. The formatting check
 is currently reported without failing the job because the existing source
-baseline has pre-existing Prettier deviations; the dependency audit remains
-blocking.
+baseline has pre-existing Prettier deviations. Dependency findings remain
+blocking; a registry timeout is reported as a warning so CI cannot hang.
 
 ## Automated release
 
