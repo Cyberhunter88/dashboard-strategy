@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - VERSION.txt
-  workflow_dispatch:
+      - version.txt
 
 permissions:
   contents: write
@@ -41,73 +40,94 @@ jobs:
             exit 1
           fi
 
-      - name: Read release version
+      - name: Read and validate version
         id: version
+        shell: bash
         run: |
-          VERSION="$(node scripts/read-version.mjs)"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          VERSION="$(tr -d '[:space:]' < version.txt)"
 
-      - name: Check release state
-        id: release_state
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Release already exists for $RELEASE_TAG; no new release is needed."
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Verify version and release uniqueness
-        if: steps.release_state.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          node scripts/verify-version-sync.mjs --require-tag --tag "$RELEASE_TAG"
-          if git ls-remote --exit-code origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Release tag exists without a GitHub release: $RELEASE_TAG"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version in version.txt: $VERSION"
             exit 1
           fi
 
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag or release exists
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $RELEASE_TAG already exists; nothing to change."
+            exit 0
+          fi
+
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release $RELEASE_TAG already exists; nothing to change."
+            exit 0
+          fi
+
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+          echo "No existing tag or release found for $RELEASE_TAG."
+
+      - name: Verify synchronized version files
+        if: steps.existing.outputs.exists == 'false'
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          node scripts/verify-version-sync.mjs --require-tag --tag "$RELEASE_TAG"
+
       - name: Validate and build release
-        if: steps.release_state.outputs.skip != 'true'
+        if: steps.existing.outputs.exists == 'false'
         run: npm run verify:release
 
-      - name: Create draft release
-        if: steps.release_state.outputs.skip != 'true'
+      - name: Create and push annotated tag
+        if: steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
-        run: gh release create "$RELEASE_TAG" --draft --generate-notes --target "$GITHUB_SHA" --title "Dashboard Strategy $RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$RELEASE_TAG" "$GITHUB_SHA" -m "Release $RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+      - name: Create draft release
+        if: steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: gh release create "$RELEASE_TAG" --draft --generate-notes --verify-tag --title "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
 
       - name: Upload complete release assets
-        if: steps.release_state.outputs.skip != 'true'
+        if: steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: gh release upload "$RELEASE_TAG" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber --repo "$GITHUB_REPOSITORY"
 
       - name: Verify draft release assets
-        if: steps.release_state.outputs.skip != 'true'
+        if: steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-draft
 
       - name: Publish complete release
-        if: steps.release_state.outputs.skip != 'true'
+        if: steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: gh release edit "$RELEASE_TAG" --draft=false --repo "$GITHUB_REPOSITORY"
 
       - name: Verify published release assets
-        if: steps.release_state.outputs.skip != 'true'
+        if: steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-published

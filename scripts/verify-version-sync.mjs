@@ -23,7 +23,7 @@ if (!strategyVersion) {
 
 if (versionFileVersion !== packageVersion || versionFileVersion !== strategyVersion) {
   throw new Error(
-    `VERSION.txt ${versionFileVersion} does not match package.json ${packageVersion} and strategy ${strategyVersion}`
+    `version.txt ${versionFileVersion} does not match package.json ${packageVersion} and strategy ${strategyVersion}`
   );
 }
 
