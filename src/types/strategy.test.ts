@@ -5,13 +5,14 @@ import { DEFAULT_WEATHER_START_ORDER } from './strategy';
 describe('weather-start defaults', () => {
   it('contains every migrated overview feature in a stable order', () => {
     expect(DEFAULT_WEATHER_START_ORDER).toEqual([
-      'clock',
-      'date',
+      'house_mode',
+      'alarm',
       'summaries',
       'favorites',
       'light_favorites',
-      'alarm',
-      'house_mode',
+      'areas',
+      'clock',
+      'date',
       'search',
       'overview',
       'weather_current',
@@ -27,7 +28,6 @@ describe('weather-start defaults', () => {
       'maintenance',
       'custom_cards',
       'custom_sections',
-      'areas',
     ]);
   });
 });

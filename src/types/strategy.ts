@@ -115,13 +115,14 @@ export type WeatherStartKey =
   | 'custom_sections';
 
 export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
-  'clock',
-  'date',
+  'house_mode',
+  'alarm',
   'summaries',
   'favorites',
   'light_favorites',
-  'alarm',
-  'house_mode',
+  'areas',
+  'clock',
+  'date',
   'search',
   'overview',
   'weather_current',
@@ -137,7 +138,6 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'maintenance',
   'custom_cards',
   'custom_sections',
-  'areas',
 ];
 
 // -- Weather-Start Block Config (per-block YAML override) --------------
@@ -342,7 +342,7 @@ export interface Simon42StrategyConfig {
   dense_section_placement?: boolean; // default: false
   overview_max_columns?: 1 | 2 | 3 | 4; // default: 3
   overview_area_card_columns?: 4 | 6 | 'full'; // default: 'full'
-  weather_start_weather_mode?: 'full' | 'compact_hourly'; // default: 'full'
+  weather_start_weather_mode?: 'full' | 'compact_hourly'; // default: compact_hourly unless a custom order/layout is configured
   weather_start_date_card?: 'button-card' | 'markdown'; // default: 'button-card'
   hidden_section_headings?: HeadingKey[]; // default: []
 
