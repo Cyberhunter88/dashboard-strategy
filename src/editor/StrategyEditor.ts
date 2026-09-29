@@ -35,6 +35,7 @@ import {
 } from '../types/strategy';
 import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
+import { getEffectiveDeviceAreaId } from '../utils/device-utils';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
@@ -350,11 +351,11 @@ class Simon42DashboardStrategyEditor extends LitElement {
     const devices = Object.values(this._hass.devices || {});
 
     // Build device-to-area lookup
+    const devicesById = new Map(devices.map((device) => [device.id, device]));
     const deviceAreaMap = new Map<string, string>();
     devices.forEach((device) => {
-      if (device.area_id) {
-        deviceAreaMap.set(device.id, device.area_id);
-      }
+      const areaId = getEffectiveDeviceAreaId(device, (id) => devicesById.get(id));
+      if (areaId) deviceAreaMap.set(device.id, areaId);
     });
 
     const hass = this._hass;
@@ -3353,7 +3354,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     if (has('energy')) present.add('energy');
 
     // These stacks are not reliably represented in the editor's area cache.
-    present.add('cameras');
+    if (this._config.show_cameras_in_rooms !== false) present.add('cameras');
     present.add('room_pins');
 
     return present;
@@ -4187,6 +4188,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const showVacuumsSectionInRooms = this._config.show_vacuums_section_in_rooms === true;
     const showSwitchesSectionInRooms = this._config.show_switches_section_in_rooms === true;
     const cameraLiveToggle = this._config.camera_live_toggle === true;
+    const showCamerasInRooms = this._config.show_cameras_in_rooms !== false;
     const showCoverControlsInRooms = this._config.show_cover_controls_in_rooms === true;
     const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
@@ -4292,6 +4294,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               (checked) => this._toggleChanged('show_cover_controls_in_rooms', checked, false)
             )}
             <div class="description">${localize('editor.show_cover_controls_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox(
+              'show-cameras-in-rooms',
+              localize('editor.show_cameras_in_rooms'),
+              showCamerasInRooms,
+              (checked) => this._toggleChanged('show_cameras_in_rooms', checked, true)
+            )}
+            <div class="description">${localize('editor.show_cameras_in_rooms_desc')}</div>
 
             ${this._renderCheckbox(
               'camera-live-toggle',

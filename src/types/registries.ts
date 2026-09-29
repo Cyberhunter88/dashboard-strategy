@@ -49,6 +49,7 @@ export interface DeviceRegistryEntry {
   serial_number: string | null;
   via_device_id: string | null;
   area_id: string | null;
+  parent_device_id?: string | null;
   entry_type: 'service' | null;
   disabled_by: 'user' | 'integration' | 'config_entry' | null;
   configuration_url: string | null;

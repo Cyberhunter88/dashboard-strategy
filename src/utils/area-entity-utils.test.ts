@@ -28,6 +28,22 @@ describe('createRoomEntities', () => {
     expect(result.lights).toEqual(['light.driveway']);
   });
 
+  it('can omit cameras from room views without changing other entities', () => {
+    const camera = { entity_id: 'camera.driveway' } as EntityRegistryEntry;
+    const light = { entity_id: 'light.driveway' } as EntityRegistryEntry;
+    const hass = {
+      states: {
+        'camera.driveway': { attributes: {} },
+        'light.driveway': { attributes: {} },
+      },
+    } as unknown as HomeAssistant;
+
+    const result = createRoomEntities([camera, light], hass, [], { includeCameras: false });
+
+    expect(result.cameras).toEqual([]);
+    expect(result.lights).toEqual(['light.driveway']);
+  });
+
   it('classifies humidifiers, valves, and water heaters into room misc groups', () => {
     const humidifier = {
       entity_id: 'humidifier.office',

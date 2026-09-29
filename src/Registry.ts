@@ -21,6 +21,7 @@ import {
 import type { Simon42StrategyConfig } from './types/strategy';
 import { timeStart, timeEnd, debugLog } from './utils/debug';
 import { setupLocalize } from './utils/localize';
+import { getEffectiveDeviceAreaId } from './utils/device-utils';
 
 /**
  * Static singleton registry that holds all HA registry data and provides
@@ -247,7 +248,7 @@ class Registry {
     Registry._visibleEntitiesByArea = new Map();
 
     for (const e of entities) {
-      const areaId = e.area_id || (e.device_id ? Registry._deviceById.get(e.device_id)?.area_id : undefined);
+      const areaId = e.area_id || (e.device_id ? Registry.getDeviceAreaId(e.device_id) : undefined);
       if (!areaId) continue;
 
       // Raw map (all entities in area)
@@ -401,6 +402,10 @@ class Registry {
   /** Get device registry entry by device id. O(1). */
   static getDevice(deviceId: string): DeviceRegistryEntry | undefined {
     return Registry._deviceById.get(deviceId);
+  }
+
+  static getDeviceAreaId(deviceId: string): string | null {
+    return getEffectiveDeviceAreaId(Registry._deviceById.get(deviceId), (id) => Registry._deviceById.get(id));
   }
 
   // =====================================================================

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Registry } from './Registry';
 import type { HomeAssistant } from './types/homeassistant';
-import type { EntityRegistryEntry, FloorRegistryEntry } from './types/registries';
+import type { DeviceRegistryEntry, EntityRegistryEntry, FloorRegistryEntry } from './types/registries';
 import type { Simon42StrategyConfig } from './types/strategy';
 import { localize } from './utils/localize';
 
@@ -141,5 +141,63 @@ describe('Registry', () => {
     expect(Registry.isHiddenByConfig('sensor.power')).toBe(false);
     expect(Registry.getVisibleEntitiesForArea('living_room').map((entry) => entry.entity_id))
       .toContain('sensor.power');
+  });
+
+  it('resolves an entity area through its parent device', () => {
+    const childEntity = entity('sensor.child_temperature', { area_id: null, device_id: 'child' });
+    const hass = hassWith([childEntity], {
+      devices: {
+        parent: {
+          id: 'parent',
+          area_id: 'living_room',
+          config_entries: [],
+          connections: [],
+          identifiers: [],
+          manufacturer: null,
+          model: null,
+          model_id: null,
+          name: null,
+          name_by_user: null,
+          labels: [],
+          sw_version: null,
+          hw_version: null,
+          serial_number: null,
+          via_device_id: null,
+          entry_type: null,
+          disabled_by: null,
+          configuration_url: null,
+          primary_config_entry: null,
+        },
+        child: {
+          id: 'child',
+          area_id: null,
+          parent_device_id: 'parent',
+          config_entries: [],
+          connections: [],
+          identifiers: [],
+          manufacturer: null,
+          model: null,
+          model_id: null,
+          name: null,
+          name_by_user: null,
+          labels: [],
+          sw_version: null,
+          hw_version: null,
+          serial_number: null,
+          via_device_id: null,
+          entry_type: null,
+          disabled_by: null,
+          configuration_url: null,
+          primary_config_entry: null,
+        } as DeviceRegistryEntry,
+      },
+    });
+
+    Registry.initialize(hass, {} as Simon42StrategyConfig);
+
+    expect(Registry.getVisibleEntitiesForArea('living_room').map((entry) => entry.entity_id)).toContain(
+      'sensor.child_temperature'
+    );
+    expect(Registry.getDeviceAreaId('child')).toBe('living_room');
   });
 });

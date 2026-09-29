@@ -230,6 +230,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       includeAutomations: !!dashboardConfig.show_automations_in_rooms,
       includeLocks: !!dashboardConfig.show_locks_in_rooms,
       includeScripts: !!dashboardConfig.show_scripts_in_rooms,
+      includeCameras: dashboardConfig.show_cameras_in_rooms !== false,
     });
     const usedByUps = new Set(upsGroups.flatMap(({ batteryId, sensorIds }) => [batteryId, ...sensorIds]));
     const upsDevices: UpsDeviceRender[] = [];
