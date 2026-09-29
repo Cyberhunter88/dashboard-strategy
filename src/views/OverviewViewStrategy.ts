@@ -15,8 +15,10 @@ import type {
   WeatherStartBlockConfig,
   WeatherStartLayoutItem,
   CustomSection,
+  HeadingKey,
 } from '../types/strategy';
 import { DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
+import { SECTION_META_BY_KEY, isSectionHiddenByConfig } from '../sections/section-registry';
 import type {
   LovelaceViewConfig,
   LovelaceSectionConfig,
@@ -51,6 +53,7 @@ import { localize } from '../utils/localize';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { mergeConfiguredOrder } from '../utils/order-utils';
 import { resolveAutomaticFeatures } from '../utils/feature-availability';
+import { attachCustomCardsToSection } from '../utils/custom-card-section-utils';
 import {
   parsedConfigToSections,
   renderParsedCustomCardAsSection,
@@ -763,13 +766,37 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
     }
 
     // Build sections
-    const areasSections = createAreasSection(
+    const createdAreasSections = createAreasSection(
       visibleAreas,
       groupByFloors,
       hass,
       hiddenHeadings.has('areas'),
       hiddenHeadings.has('areas_other')
     );
+    const areasSections = Array.isArray(createdAreasSections) ? createdAreasSections : [createdAreasSections];
+    const assignedAreaCards = customCardsBySection.get('areas') || [];
+    const renderedAreaCards = renderParsedCustomCards(assignedAreaCards, 'subtitle');
+    if (renderedAreaCards.length > 0) {
+      const lastAreaSection = areasSections[areasSections.length - 1];
+      const hasGeneratedAreaCards = areasSections.some((section) =>
+        section.cards?.some((card) => card.type === 'custom:dashboard-strategy-area-card')
+      );
+      if (hasGeneratedAreaCards) {
+        attachCustomCardsToSection(lastAreaSection, assignedAreaCards);
+      } else {
+      const cards: LovelaceCardConfig[] = [];
+      if (!hiddenHeadings.has('areas')) {
+        cards.push({
+          type: 'heading',
+          heading: localize('sections.areas'),
+          heading_style: 'title',
+          icon: 'mdi:floor-plan',
+        });
+      }
+      cards.push(...renderedAreaCards);
+      areasSections.push({ type: 'grid', cards });
+      }
+    }
 
     const customBadges = (dashboardConfig.custom_badges || [])
       .filter((b) => b.parsed_config)
@@ -875,11 +902,21 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       return withSectionVisibility(section, dashboardConfig.section_visibility?.[key]);
     };
     const decorateBlock = (key: SectionKey, section: LovelaceSectionConfig | null): LovelaceSectionConfig | null => {
-      const result = applyVisibility(key, section);
-      if (!result) return null;
       const assigned = customCardsBySection.get(key);
-      if (assigned?.length && result.cards) result.cards.push(...renderParsedCustomCards(assigned, 'subtitle'));
-      return result;
+      let result = applyVisibility(key, section);
+      if (!result && assigned?.length && !isSectionHiddenByConfig(key, dashboardConfig)) {
+        const meta = SECTION_META_BY_KEY.get(key);
+        if (meta) {
+          result = attachCustomCardsToSection(null, assigned, {
+            title: localize(meta.labelKey),
+            icon: meta.icon,
+            showHeading: !hiddenHeadings.has(key as HeadingKey),
+          });
+          if (result) result = withSectionVisibility(result, dashboardConfig.section_visibility?.[key]);
+          return result;
+        }
+      }
+      return attachCustomCardsToSection(result, assigned || []);
     };
     const additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {
       favorites: applyVisibility('overview', createFavoritesSection(hass, dashboardConfig)),

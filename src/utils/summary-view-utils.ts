@@ -1,4 +1,6 @@
+import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
+import { isEntityCurrentlyAvailable } from './availability-utils';
 
 export type UtilityViewKey = 'lights' | 'covers' | 'security' | 'batteries' | 'climate';
 
@@ -16,4 +18,24 @@ export function isUtilityViewEnabled(config: Simon42StrategyConfig, view: Utilit
     case 'climate':
       return config.show_climate_summary === true || config.show_climate_view === true;
   }
+}
+
+export function countActiveClimateEntities(
+  hass: HomeAssistant,
+  entityIds: Set<string> | null,
+  config: Simon42StrategyConfig
+): number {
+  let count = 0;
+  if (!entityIds) return count;
+  for (const id of entityIds) {
+    if (!isEntityCurrentlyAvailable(hass, id, config)) continue;
+    const state = hass.states[id];
+    if (!state || !state.state || state.state === 'off' || state.state === 'unavailable' || state.state === 'unknown') {
+      continue;
+    }
+    const action = state.attributes?.hvac_action;
+    if (action === 'idle' || action === 'off') continue;
+    count++;
+  }
+  return count;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isUtilityViewEnabled } from '../../src/utils/summary-view-utils';
+import { countActiveClimateEntities, isUtilityViewEnabled } from '../../src/utils/summary-view-utils';
+import { makeHass } from '../fixtures/hass';
 
 describe('isUtilityViewEnabled', () => {
   it('preserves existing defaults', () => {
@@ -21,5 +22,18 @@ describe('isUtilityViewEnabled', () => {
   it('disables a view when neither trigger is enabled', () => {
     expect(isUtilityViewEnabled({ show_light_summary: false }, 'lights')).toBe(false);
     expect(isUtilityViewEnabled({ show_climate_summary: false, show_climate_view: false }, 'climate')).toBe(false);
+  });
+});
+
+describe('countActiveClimateEntities', () => {
+  it('does not count idle or off thermostats as active', () => {
+    const hass = makeHass({
+      entities: [
+        { entity_id: 'climate.idle', state: 'heat', attributes: { hvac_action: 'idle' } },
+        { entity_id: 'climate.off', state: 'heat', attributes: { hvac_action: 'off' } },
+        { entity_id: 'climate.heating', state: 'heat', attributes: { hvac_action: 'heating' } },
+      ],
+    });
+    expect(countActiveClimateEntities(hass, new Set(['climate.idle', 'climate.off', 'climate.heating']), {})).toBe(1);
   });
 });

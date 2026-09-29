@@ -12,6 +12,8 @@ import type { SummaryType } from '../types/strategy';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { haveEntityStatesChanged } from '../utils/card-element-utils';
 import { getBatteryStatus } from '../utils/battery-utils';
+import { countOpenCoverEntities } from '../utils/cover-state-utils';
+import { countActiveClimateEntities } from '../utils/summary-view-utils';
 
 interface SummaryCardConfig {
   summary_type: SummaryType;
@@ -275,12 +277,7 @@ class Simon42SummaryCard extends LitElement {
         return count;
 
       case 'covers':
-        for (const id of this._relevantEntityIds) {
-          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
-          const s = hass.states[id]?.state;
-          if (s === 'open' || s === 'opening') count++;
-        }
-        return count;
+        return countOpenCoverEntities(hass, this._relevantEntityIds, this._config);
 
       case 'security':
         for (const id of this._relevantEntityIds) {
@@ -301,12 +298,7 @@ class Simon42SummaryCard extends LitElement {
       }
 
       case 'climate':
-        for (const id of this._relevantEntityIds) {
-          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
-          const s = hass.states[id]?.state;
-          if (s && s !== 'off' && s !== 'unavailable' && s !== 'unknown') count++;
-        }
-        return count;
+        return countActiveClimateEntities(hass, this._relevantEntityIds, this._config);
 
       default:
         return 0;

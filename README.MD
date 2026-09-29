@@ -224,7 +224,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **UPS/USV** — Unterstützte USV-Geräte werden automatisch in Raum-Views gruppiert. Die Gruppe zeigt eine Batterie-Gauge und zugehörige Kacheln, z.B. NUT-/UPS-Signale. Die Erkennung ist standardmäßig aktiv und kann über `show_ups_in_rooms: false` deaktiviert werden.
 
-**Kameras in Räumen** — Standardmäßig verwendet die Strategy native Home-Assistant-Kamerakarten. Optional aktiviert `camera_live_toggle` einen ressourcenschonenden Start/Stopp-Schalter. Fortgeschrittene YAML-Konfigurationen können mit `camera_renderer: webrtc` stattdessen `custom:webrtc-camera` verwenden; dafür muss die externe WebRTC-Karte separat installiert sein. Streams oder zusätzliche Kartenoptionen lassen sich pro Kamera über `camera_webrtc_streams` hinterlegen. Dual-Lens-Geräte erzeugen einen Block pro Linse; gemeinsame Begleitsteuerungen erscheinen nur beim ersten Block des Geräts.
+**Kameras in Räumen** — Raum-Kameras lassen sich mit `show_cameras_in_rooms` zentral ausblenden (Standard: sichtbar); Security- und CCTV-Ansichten bleiben davon unberührt. Standardmäßig verwendet die Strategy native Home-Assistant-Kamerakarten. Optional aktiviert `camera_live_toggle` einen ressourcenschonenden Start/Stopp-Schalter. Fortgeschrittene YAML-Konfigurationen können mit `camera_renderer: webrtc` stattdessen `custom:webrtc-camera` verwenden; dafür muss die externe WebRTC-Karte separat installiert sein. Streams oder zusätzliche Kartenoptionen lassen sich pro Kamera über `camera_webrtc_streams` hinterlegen. Dual-Lens-Geräte erzeugen einen Block pro Linse; gemeinsame Begleitsteuerungen erscheinen nur beim ersten Block des Geräts.
 
 **Rollo-Sammelsteuerung** — Optional zeigt `show_cover_controls_in_rooms` Öffnen-, Stopp- und Schließen-Buttons an Rollo-/Vorhang-Überschriften. Pro Aktion werden nur unterstützte Entitäten angesprochen; Fenster, Türen, Tore und Garagen bleiben ausgeschlossen.
 
@@ -446,6 +446,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
 | `show_switches_section_in_rooms` | boolean | `false` | Schalter und smarte Steckdosen in einem eigenen Raum-Abschnitt anzeigen |
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
+| `show_cameras_in_rooms` | boolean | `true` | Kameras in Raum-Views ausblenden, ohne Security/CCTV zu beeinflussen |
 | `camera_renderer` | `"native"` \| `"webrtc"` | `"native"` | Renderer für Kameras in Raum-Views; `webrtc` benötigt `custom:webrtc-camera` |
 | `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc` |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
@@ -577,7 +578,7 @@ Siehe LICENSE-Datei für vollständige Details.
 ## Credits
 
 - Home Assistant Community
-- [js-yaml](https://github.com/nodeca/js-yaml) 4.3.1 (MIT) — YAML-Parser
+- [js-yaml](https://github.com/nodeca/js-yaml) 4.3.2 (MIT) — YAML-Parser
 - **Claude** (Anthropic) — Co-Entwickler und Nachtschicht-Begleiter
 
 ## Support

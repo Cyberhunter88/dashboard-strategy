@@ -13,6 +13,7 @@ import { createEntityRenderKey } from '../utils/entity-render-key';
 import { stripCoverType } from '../utils/name-utils';
 import { groupEntityIdsByAreas } from '../utils/area-group-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
+import { isCoverRelevantForGroup } from '../utils/cover-state-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
@@ -192,8 +193,7 @@ class Simon42CoversGroupCard extends LitElement {
     const entity = Registry.getEntity(entityId);
     let areaId: string | null = entity?.area_id ?? null;
     if (!areaId && entity?.device_id) {
-      const device = Registry.getDevice(entity.device_id);
-      areaId = device?.area_id ?? null;
+      areaId = Registry.getDeviceAreaId(entity.device_id);
     }
 
     this._cachedAreaForEntity.set(entityId, areaId);
@@ -275,36 +275,7 @@ class Simon42CoversGroupCard extends LitElement {
       if (!state) continue;
 
       const position = (state.attributes as any)?.current_position;
-      const hasPosition = typeof position === 'number';
-      const isMoving = state.state === 'opening' || state.state === 'closing';
-
-      if (groupType === 'partially_open') {
-        // Partially open: position between 0 and 100 (open or currently moving)
-        if (state.state === 'open' || isMoving) {
-          if (hasPosition && position > 0 && position < 100) {
-            relevant.push(id);
-          }
-        }
-      } else if (groupType === 'open') {
-        if (state.state === 'open' || state.state === 'opening') {
-          if (showPartiallyOpen) {
-            // Only fully open (100%) or covers without position attribute
-            if (!hasPosition || position >= 100) {
-              relevant.push(id);
-            }
-          } else {
-            relevant.push(id);
-          }
-        }
-      } else {
-        if (state.state === 'closed') {
-          relevant.push(id);
-        } else if (state.state === 'closing') {
-          // When partially_open is active, closing covers with position > 0 belong to partially_open
-          if (showPartiallyOpen && hasPosition && position > 0) continue;
-          relevant.push(id);
-        }
-      }
+      if (isCoverRelevantForGroup(state.state, position, groupType, showPartiallyOpen)) relevant.push(id);
     }
 
     relevant.sort((a, b) => {
