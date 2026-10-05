@@ -18,12 +18,12 @@ import {
   resolveRecordingsPath,
   getReolinkCamItems,
   resetReolinkMediaCacheForTesting,
-} from '../../src/views/CctvViewStrategy';
-import { Registry } from '../../src/Registry';
-import { makeHass, type HassFixtureSpec } from '../fixtures/hass';
-import type { HomeAssistant } from '../../src/types/homeassistant';
-import type { DeviceRegistryEntry } from '../../src/types/registries';
-import type { LovelaceCardConfig } from '../../src/types/lovelace';
+} from './CctvViewStrategy';
+import { Registry } from '../Registry';
+import { makeHass, type HassFixtureSpec } from '../../tests/fixtures/hass';
+import type { HomeAssistant } from '../types/homeassistant';
+import type { DeviceRegistryEntry } from '../types/registries';
+import type { LovelaceCardConfig } from '../types/lovelace';
 
 const REOLINK_ROOT_SEGMENT = encodeURIComponent(',media-source://reolink');
 const ROOT_PATH = `/media-browser/browser/${REOLINK_ROOT_SEGMENT}`;
@@ -43,26 +43,87 @@ function reolinkSpec(): HassFixtureSpec {
       },
     ],
     entities: [
-      { entity_id: 'camera.garten_main', device_id: 'dev_garten', platform: 'reolink', translation_key: 'main', attributes: { friendly_name: 'Garten Kamera Klar' } },
-      { entity_id: 'camera.garten_sub', device_id: 'dev_garten', platform: 'reolink', translation_key: 'sub', attributes: { friendly_name: 'Garten Kamera' } },
-      { entity_id: 'light.garten_scheinwerfer', device_id: 'dev_garten', platform: 'reolink', attributes: { supported_color_modes: ['brightness'] } },
-      { entity_id: 'binary_sensor.garten_bewegung', device_id: 'dev_garten', platform: 'reolink', attributes: { device_class: 'motion' } },
-      { entity_id: 'button.garten_ptz_auf', device_id: 'dev_garten', platform: 'reolink', translation_key: 'ptz_up', entity_category: 'config' },
-      { entity_id: 'button.garten_ptz_ab', device_id: 'dev_garten', platform: 'reolink', translation_key: 'ptz_down', entity_category: 'config' },
-      { entity_id: 'button.garten_ptz_links', device_id: 'dev_garten', platform: 'reolink', translation_key: 'ptz_left', entity_category: 'config' },
-      { entity_id: 'button.garten_ptz_rechts', device_id: 'dev_garten', platform: 'reolink', translation_key: 'ptz_right', entity_category: 'config' },
-      { entity_id: 'button.garten_ptz_stopp', device_id: 'dev_garten', platform: 'reolink', translation_key: 'ptz_stop', entity_category: 'config' },
-      { entity_id: 'button.garten_startposition', device_id: 'dev_garten', platform: 'reolink', translation_key: 'guard_go_to', entity_category: 'config' },
+      {
+        entity_id: 'camera.garten_main',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'main',
+        attributes: { friendly_name: 'Garten Kamera Klar' },
+      },
+      {
+        entity_id: 'camera.garten_sub',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'sub',
+        attributes: { friendly_name: 'Garten Kamera' },
+      },
+      {
+        entity_id: 'light.garten_scheinwerfer',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        attributes: { supported_color_modes: ['brightness'] },
+      },
+      {
+        entity_id: 'binary_sensor.garten_bewegung',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        attributes: { device_class: 'motion' },
+      },
+      {
+        entity_id: 'button.garten_ptz_auf',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'ptz_up',
+        entity_category: 'config',
+      },
+      {
+        entity_id: 'button.garten_ptz_ab',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'ptz_down',
+        entity_category: 'config',
+      },
+      {
+        entity_id: 'button.garten_ptz_links',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'ptz_left',
+        entity_category: 'config',
+      },
+      {
+        entity_id: 'button.garten_ptz_rechts',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'ptz_right',
+        entity_category: 'config',
+      },
+      {
+        entity_id: 'button.garten_ptz_stopp',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'ptz_stop',
+        entity_category: 'config',
+      },
+      {
+        entity_id: 'button.garten_startposition',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'guard_go_to',
+        entity_category: 'config',
+      },
       // Non-PTZ button must never show up in the pad
-      { entity_id: 'button.garten_neustart', device_id: 'dev_garten', platform: 'reolink', translation_key: 'reboot', entity_category: 'config' },
+      {
+        entity_id: 'button.garten_neustart',
+        device_id: 'dev_garten',
+        platform: 'reolink',
+        translation_key: 'reboot',
+        entity_category: 'config',
+      },
     ],
   };
 }
 
-function withCallWS(
-  hass: HomeAssistant,
-  impl: () => Promise<unknown>
-): ReturnType<typeof vi.fn> {
+function withCallWS(hass: HomeAssistant, impl: () => Promise<unknown>): ReturnType<typeof vi.fn> {
   const mock = vi.fn(impl);
   (hass as unknown as { callWS: unknown }).callWS = mock;
   return mock;
@@ -110,10 +171,22 @@ describe('collectCameraBlocks', () => {
   it('prefers the Ring live view over the last-recording camera', () => {
     const hass = makeHass({
       areas: [{ area_id: 'eingang', name: 'Eingang' }],
-      devices: [{ id: 'dev_ring', area_id: 'eingang', manufacturer: 'Ring', model: 'Video Doorbell', name: 'Haustür Klingel' }],
+      devices: [
+        { id: 'dev_ring', area_id: 'eingang', manufacturer: 'Ring', model: 'Video Doorbell', name: 'Haustür Klingel' },
+      ],
       entities: [
-        { entity_id: 'camera.haustuer_last_recording', device_id: 'dev_ring', platform: 'ring', translation_key: 'last_recording' },
-        { entity_id: 'camera.haustuer_live_view', device_id: 'dev_ring', platform: 'ring', translation_key: 'live_view' },
+        {
+          entity_id: 'camera.haustuer_last_recording',
+          device_id: 'dev_ring',
+          platform: 'ring',
+          translation_key: 'last_recording',
+        },
+        {
+          entity_id: 'camera.haustuer_live_view',
+          device_id: 'dev_ring',
+          platform: 'ring',
+          translation_key: 'live_view',
+        },
       ],
     });
     initRegistry(hass);
@@ -126,9 +199,7 @@ describe('collectCameraBlocks', () => {
 
   it('keeps cameras without a device as standalone blocks', () => {
     const hass = makeHass({
-      entities: [
-        { entity_id: 'camera.einfahrt', platform: 'generic', attributes: { friendly_name: 'Einfahrt' } },
-      ],
+      entities: [{ entity_id: 'camera.einfahrt', platform: 'generic', attributes: { friendly_name: 'Einfahrt' } }],
     });
     initRegistry(hass);
 
@@ -141,7 +212,11 @@ describe('collectCameraBlocks', () => {
   it('keeps cameras from overview-hidden areas by default', () => {
     const spec = reolinkSpec();
     // Area-less standalone camera must survive the filter
-    spec.entities?.push({ entity_id: 'camera.einfahrt', platform: 'generic', attributes: { friendly_name: 'Einfahrt' } });
+    spec.entities?.push({
+      entity_id: 'camera.einfahrt',
+      platform: 'generic',
+      attributes: { friendly_name: 'Einfahrt' },
+    });
     const hass = makeHass(spec);
     initRegistry(hass);
 
@@ -164,13 +239,18 @@ describe('collectCameraBlocks', () => {
   it('keeps one preferred stream block per lens on dual-lens devices', () => {
     const spec = reolinkSpec();
     spec.entities?.push({
-      entity_id: 'camera.garten_zoom', device_id: 'dev_garten', platform: 'reolink', translation_key: 'sub',
+      entity_id: 'camera.garten_zoom',
+      device_id: 'dev_garten',
+      platform: 'reolink',
+      translation_key: 'sub',
     });
     const hass = makeHass(spec);
     initRegistry(hass);
-    expect(collectCameraBlocks(hass, {}).map((block) => block.cameraId).sort()).toEqual([
-      'camera.garten_sub', 'camera.garten_zoom',
-    ]);
+    expect(
+      collectCameraBlocks(hass, {})
+        .map((block) => block.cameraId)
+        .sort()
+    ).toEqual(['camera.garten_sub', 'camera.garten_zoom']);
   });
 });
 
@@ -221,9 +301,7 @@ describe('buildCameraSection', () => {
 
   it('renders a plain picture-entity without companions and no recordings link', () => {
     const hass = makeHass({
-      entities: [
-        { entity_id: 'camera.einfahrt', platform: 'generic', attributes: { friendly_name: 'Einfahrt' } },
-      ],
+      entities: [{ entity_id: 'camera.einfahrt', platform: 'generic', attributes: { friendly_name: 'Einfahrt' } }],
     });
     initRegistry(hass);
 
@@ -260,12 +338,20 @@ describe('recordings deep link', () => {
     const device = Registry.getDevice('dev_garten') as DeviceRegistryEntry;
 
     const path = resolveRecordingsPath(device, [
-      { entryId: 'entry_a', title: 'Garten Kamera', mediaContentId: 'media-source://reolink/CAM|entry_a|0', mediaContentType: 'playlist' },
-      { entryId: 'entry_b', title: 'Andere', mediaContentId: 'media-source://reolink/CAM|entry_b|0', mediaContentType: 'playlist' },
+      {
+        entryId: 'entry_a',
+        title: 'Garten Kamera',
+        mediaContentId: 'media-source://reolink/CAM|entry_a|0',
+        mediaContentType: 'playlist',
+      },
+      {
+        entryId: 'entry_b',
+        title: 'Andere',
+        mediaContentId: 'media-source://reolink/CAM|entry_b|0',
+        mediaContentType: 'playlist',
+      },
     ]);
-    expect(path).toBe(
-      `${ROOT_PATH}/${encodeURIComponent('playlist,media-source://reolink/CAM|entry_a|0')}`
-    );
+    expect(path).toBe(`${ROOT_PATH}/${encodeURIComponent('playlist,media-source://reolink/CAM|entry_a|0')}`);
   });
 
   it('matches NVR channels by device name and falls back to the root otherwise', () => {
@@ -275,17 +361,35 @@ describe('recordings deep link', () => {
 
     // Two channels on the same entry — title decides
     const matched = resolveRecordingsPath(device, [
-      { entryId: 'entry_a', title: 'Garten Kamera', mediaContentId: 'media-source://reolink/CAM|entry_a|0', mediaContentType: 'playlist' },
-      { entryId: 'entry_a', title: 'Hof Kamera', mediaContentId: 'media-source://reolink/CAM|entry_a|1', mediaContentType: 'playlist' },
+      {
+        entryId: 'entry_a',
+        title: 'Garten Kamera',
+        mediaContentId: 'media-source://reolink/CAM|entry_a|0',
+        mediaContentType: 'playlist',
+      },
+      {
+        entryId: 'entry_a',
+        title: 'Hof Kamera',
+        mediaContentId: 'media-source://reolink/CAM|entry_a|1',
+        mediaContentType: 'playlist',
+      },
     ]);
-    expect(matched).toBe(
-      `${ROOT_PATH}/${encodeURIComponent('playlist,media-source://reolink/CAM|entry_a|0')}`
-    );
+    expect(matched).toBe(`${ROOT_PATH}/${encodeURIComponent('playlist,media-source://reolink/CAM|entry_a|0')}`);
 
     // Ambiguous titles → Reolink root
     const ambiguous = resolveRecordingsPath(device, [
-      { entryId: 'entry_a', title: 'Kanal 1', mediaContentId: 'media-source://reolink/CAM|entry_a|0', mediaContentType: 'playlist' },
-      { entryId: 'entry_a', title: 'Kanal 2', mediaContentId: 'media-source://reolink/CAM|entry_a|1', mediaContentType: 'playlist' },
+      {
+        entryId: 'entry_a',
+        title: 'Kanal 1',
+        mediaContentId: 'media-source://reolink/CAM|entry_a|0',
+        mediaContentType: 'playlist',
+      },
+      {
+        entryId: 'entry_a',
+        title: 'Kanal 2',
+        mediaContentId: 'media-source://reolink/CAM|entry_a|1',
+        mediaContentType: 'playlist',
+      },
     ]);
     expect(ambiguous).toBe(ROOT_PATH);
 
@@ -372,7 +476,10 @@ describe('buildCctvSections', () => {
   it('renders PTZ controls and recordings only once per dual-lens device', async () => {
     const spec = reolinkSpec();
     spec.entities?.push({
-      entity_id: 'camera.garten_zoom', device_id: 'dev_garten', platform: 'reolink', translation_key: 'sub',
+      entity_id: 'camera.garten_zoom',
+      device_id: 'dev_garten',
+      platform: 'reolink',
+      translation_key: 'sub',
     });
     const hass = makeHass(spec);
     initRegistry(hass);
@@ -381,8 +488,9 @@ describe('buildCctvSections', () => {
     const sections = await buildCctvSections(hass, {});
     expect(sections).toHaveLength(2);
     const shortcuts = sections.map((section) => findCards(section.cards, 'shortcut'));
-    expect(shortcuts.filter((cards) => cards.some((card) => card.tap_action?.action === 'perform-action')))
-      .toHaveLength(1);
+    expect(
+      shortcuts.filter((cards) => cards.some((card) => card.tap_action?.action === 'perform-action'))
+    ).toHaveLength(1);
     expect(shortcuts.flat().filter((card) => card.tap_action?.action === 'navigate')).toHaveLength(1);
   });
 
@@ -407,19 +515,13 @@ describe('buildCctvSections', () => {
     withCallWS(hass, function browse() {
       return Promise.resolve({ children: [] });
     });
-    (globalThis as unknown as { customCards?: Array<{ type: string }> }).customCards = [
-      { type: 'llmvision-card' },
-    ];
+    (globalThis as unknown as { customCards?: Array<{ type: string }> }).customCards = [{ type: 'llmvision-card' }];
 
     const withoutFlag = await buildCctvSections(hass, {});
-    expect(
-      findCards(withoutFlag[withoutFlag.length - 1].cards, 'custom:llmvision-card')
-    ).toHaveLength(0);
+    expect(findCards(withoutFlag[withoutFlag.length - 1].cards, 'custom:llmvision-card')).toHaveLength(0);
 
     const withFlag = await buildCctvSections(hass, { show_camera_events: true });
-    expect(
-      findCards(withFlag[withFlag.length - 1].cards, 'custom:llmvision-card')
-    ).toHaveLength(3);
+    expect(findCards(withFlag[withFlag.length - 1].cards, 'custom:llmvision-card')).toHaveLength(3);
   });
 });
 
@@ -444,19 +546,17 @@ describe('buildLlmVisionSection', () => {
     spec.language = 'de';
     const hass = makeHass(spec);
     initRegistry(hass);
-    (globalThis as unknown as { customCards?: Array<{ type: string }> }).customCards = [
-      { type: 'llmvision-card' },
-    ];
+    (globalThis as unknown as { customCards?: Array<{ type: string }> }).customCards = [{ type: 'llmvision-card' }];
 
     const section = buildLlmVisionSection(hass);
     expect(section).not.toBeNull();
     const timelines = findCards(section?.cards, 'custom:llmvision-card');
     expect(timelines).toHaveLength(3);
-    expect(timelines.map(function filters(card) { return card.category_filters; })).toEqual([
-      ['person'],
-      ['animal'],
-      ['vehicle'],
-    ]);
+    expect(
+      timelines.map(function filters(card) {
+        return card.category_filters;
+      })
+    ).toEqual([['person'], ['animal'], ['vehicle']]);
     expect(timelines[0].language).toBe('de');
   });
 });

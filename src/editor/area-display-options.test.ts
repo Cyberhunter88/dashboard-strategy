@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from '../../src/editor/area-display-options';
+import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
 
 describe('area display editor config', () => {
   it('stores picture globally and prunes the compact default', () => {

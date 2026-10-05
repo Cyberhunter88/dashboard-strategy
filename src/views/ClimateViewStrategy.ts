@@ -17,9 +17,7 @@ class Simon42ViewClimateStrategy extends HTMLElement {
       Registry.initialize(hass, strategyConfig);
     }
 
-    const climateIds = Registry.getVisibleEntityIdsForDomain('climate').filter(
-      (id) => hass.states[id] !== undefined
-    );
+    const climateIds = Registry.getVisibleEntityIdsForDomain('climate').filter((id) => hass.states[id] !== undefined);
 
     // Group by hvac_action or state
     const heating: string[] = [];
@@ -46,11 +44,7 @@ class Simon42ViewClimateStrategy extends HTMLElement {
 
     const sections: LovelaceSectionConfig[] = [];
 
-    const buildSection = (
-      entities: string[],
-      heading: string,
-      icon: string
-    ): void => {
+    const buildSection = (entities: string[], heading: string, icon: string): void => {
       if (entities.length === 0) return;
       sections.push({
         type: 'grid',

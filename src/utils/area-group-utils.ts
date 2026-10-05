@@ -22,10 +22,12 @@ export function groupEntityIdsByAreas(
     const areaId = resolveAreaId(entityId);
     if (areaId) {
       let group = byArea.get(areaId);
-      if (!group) { group = []; byArea.set(areaId, group); }
+      if (!group) {
+        group = [];
+        byArea.set(areaId, group);
+      }
       group.push(entityId);
-    }
-    else noArea.push(entityId);
+    } else noArea.push(entityId);
   }
   const groups: EntityAreaGroup[] = getVisibleAreasFromHass(
     hass,

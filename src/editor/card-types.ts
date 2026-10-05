@@ -1,0 +1,78 @@
+export const CARD_TYPES: Array<{ type: string; name: string; icon: string; template: string }> = [
+  { type: 'tile', name: 'Kachel', icon: 'mdi:square-rounded', template: 'type: tile\nentity: ""\n' },
+  {
+    type: 'entities',
+    name: 'Entitätsliste',
+    icon: 'mdi:format-list-bulleted',
+    template: 'type: entities\nentities:\n  - entity: ""\n',
+  },
+  { type: 'glance', name: 'Glance', icon: 'mdi:eye', template: 'type: glance\nentities:\n  - entity: ""\n' },
+  {
+    type: 'button',
+    name: 'Button',
+    icon: 'mdi:gesture-tap-button',
+    template: 'type: button\nentity: ""\ntap_action:\n  action: toggle\n',
+  },
+  {
+    type: 'markdown',
+    name: 'Text / Markdown',
+    icon: 'mdi:language-markdown',
+    template: 'type: markdown\ncontent: "**Text**"\n',
+  },
+  {
+    type: 'heading',
+    name: 'Überschrift',
+    icon: 'mdi:format-header-1',
+    template: 'type: heading\nheading: "Überschrift"\nheading_style: title\nicon: mdi:home\n',
+  },
+  {
+    type: 'weather-forecast',
+    name: 'Wettervorhersage',
+    icon: 'mdi:weather-partly-cloudy',
+    template: 'type: weather-forecast\nentity: ""\nshow_current: true\nshow_forecast: true\nforecast_type: daily\n',
+  },
+  { type: 'gauge', name: 'Messanzeige', icon: 'mdi:gauge', template: 'type: gauge\nentity: ""\nmin: 0\nmax: 100\n' },
+  { type: 'thermostat', name: 'Thermostat', icon: 'mdi:thermostat', template: 'type: thermostat\nentity: ""\n' },
+  {
+    type: 'media-control',
+    name: 'Mediensteuerung',
+    icon: 'mdi:play-circle',
+    template: 'type: media-control\nentity: ""\n',
+  },
+  {
+    type: 'history-graph',
+    name: 'Verlaufsgraph',
+    icon: 'mdi:chart-line',
+    template: 'type: history-graph\nentities:\n  - entity: ""\nhours_to_show: 24\n',
+  },
+  {
+    type: 'statistics-graph',
+    name: 'Statistikgraph',
+    icon: 'mdi:chart-bar',
+    template:
+      'type: statistics-graph\nentities:\n  - entity: ""\nstat_types:\n  - mean\nchart_type: line\nperiod: 5minute\n',
+  },
+  { type: 'picture', name: 'Bild', icon: 'mdi:image', template: 'type: picture\nimage: ""\n' },
+  {
+    type: 'picture-entity',
+    name: 'Entity-Bild',
+    icon: 'mdi:image-outline',
+    template: 'type: picture-entity\nentity: ""\n',
+  },
+  { type: 'map', name: 'Karte', icon: 'mdi:map', template: 'type: map\nentities:\n  - entity: ""\n' },
+  {
+    type: 'todo-list',
+    name: 'Aufgabenliste',
+    icon: 'mdi:checkbox-marked-circle',
+    template: 'type: todo-list\nentity: ""\n',
+  },
+  { type: 'logbook', name: 'Logbuch', icon: 'mdi:history', template: 'type: logbook\nentity: ""\nhours_to_show: 24\n' },
+  { type: 'alarm-panel', name: 'Alarmanlage', icon: 'mdi:shield-home', template: 'type: alarm-panel\nentity: ""\n' },
+  {
+    type: 'energy-distribution',
+    name: 'Energieverteilung',
+    icon: 'mdi:lightning-bolt',
+    template: 'type: energy-distribution\n',
+  },
+  { type: 'grid', name: 'Raster', icon: 'mdi:grid', template: 'type: grid\ncards: []\n' },
+];

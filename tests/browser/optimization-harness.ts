@@ -241,11 +241,59 @@ async function layout(sidebar: boolean) {
   const editor = await strategy().getConfigElement() as TestCard;
   editor.setConfig(config); editor.hass = hass; content.appendChild(editor);
   content.prepend(editor);
-  (editor as any)._expandedPanels = new Set(['overview', 'summaries', 'section-order', 'diagnostics']);
+  (editor as any)._expandedPanels = new Set(['overview', 'summaries', 'section-order', 'diagnostics', 'area-options', 'custom-content']);
+  (editor as any)._expandedAreas = new Set(['room_0']);
   (editor as any)._diagnosticsChecked = true;
   await settle(summary); await settle(batteries); await settle(editor);
   assert(document.documentElement.scrollWidth <= innerWidth + 1, 'Horizontal page overflow');
   return { width: innerWidth, sidebar, contentWidth: content.clientWidth };
 }
 
-(window as any).optimization = { benchmark, checkCards, checkCamera, checkAsyncCards, layout };
+async function checkEditor() {
+  const content = document.getElementById('content')!;
+  content.replaceChildren();
+  const { hass, config } = makeOptimizationFixture(48);
+  const editor = await strategy().getConfigElement() as any;
+  const custom = { ...config, extension_option: { retained: true }, weather_start_layout_items: [{ id: 'browser-yaml', type: 'clock', yaml: 'type: markdown\ncontent: Original', parsed_config: { type: 'markdown', content: 'Original' } }] };
+  editor.setConfig(custom); editor.hass = hass; content.appendChild(editor);
+  await settle(editor);
+  const events: any[] = [];
+  editor.addEventListener('config-changed', (event: CustomEvent) => events.push(event.detail.config));
+  const panel = editor.shadowRoot.querySelector('.panel-header') as HTMLButtonElement;
+  panel.click(); await settle(editor);
+  const expanded = [...editor._expandedPanels];
+  assert(expanded.length > 0, 'Panel did not expand');
+  editor.hass = { ...hass }; await settle(editor);
+  assert(JSON.stringify([...editor._expandedPanels]) === JSON.stringify(expanded), 'Hass update lost expansion');
+  editor._updateWeatherStartItemYaml('browser-yaml', 'type: markdown\ncontent: Updated\ncustom_field: preserved');
+  await settle(editor);
+  assert(events.at(-1)?.weather_start_layout_items[0].parsed_config.custom_field === 'preserved', 'YAML roundtrip lost custom field');
+  assert(events.at(-1)?.extension_option.retained, 'Config event lost unknown option');
+  const count = events.length;
+  editor._updateWeatherStartItemYaml('browser-yaml', 'type: [broken');
+  await settle(editor);
+  assert(editor._config.weather_start_layout_items[0]._yaml_error, 'Invalid YAML error missing');
+  assert(events.length === count, 'Invalid YAML emitted persistent config');
+  editor._updateWeatherStartItemYaml('browser-yaml', 'type: markdown\ncontent: Recovered');
+  await settle(editor);
+  assert(events.length === count + 1, 'YAML recovery failed');
+  editor._openCardPickerForCustomCard(); await settle(editor);
+  assert(editor.shadowRoot.querySelector('.card-type-grid'), 'Card picker did not open');
+  (editor.shadowRoot.querySelector('.card-type-btn') as HTMLButtonElement).click(); await settle(editor);
+  const textarea = editor.shadowRoot.querySelector('.card-editor-yaml-area') as HTMLTextAreaElement;
+  assert(textarea, 'YAML picker fallback missing');
+  textarea.value = 'type: markdown\ncontent: Browser card';
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  (editor.shadowRoot.querySelector('.card-picker-footer .btn-primary') as HTMLButtonElement).click();
+  await settle(editor);
+  assert(events.at(-1)?.custom_cards.at(-1).parsed_config.content === 'Browser card', 'Picker save failed');
+  assert(!editor._cardPickerOpen, 'Picker did not close');
+  editor.remove();
+  const reopened = await strategy().getConfigElement() as any;
+  reopened.setConfig(custom); reopened.hass = hass; content.appendChild(reopened); await settle(reopened);
+  assert(JSON.stringify([...reopened._expandedPanels]) === JSON.stringify(expanded), 'Expansion persistence failed');
+  reopened.remove();
+  return ['editor startup', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save'];
+}
+
+(window as any).optimization = { benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };

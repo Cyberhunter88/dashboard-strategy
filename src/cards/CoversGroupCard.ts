@@ -144,13 +144,13 @@ class Simon42CoversGroupCard extends LitElement {
     setupLocalize(this.hass);
 
     if (
-      hasHassPresentationChanged(oldHass, this.hass)
-      || haveEntityMembershipChanged(oldHass, this.hass, Registry.getVisibleCandidateIdsForDomain('cover'))
-      || !oldHass
-      || oldHass.entities !== this.hass.entities
-      || oldHass.devices !== this.hass.devices
-      || (this._config.group_by_floors && oldHass.floors !== this.hass.floors)
-      || (this._config.group_by_areas && oldHass.areas !== this.hass.areas)
+      hasHassPresentationChanged(oldHass, this.hass) ||
+      haveEntityMembershipChanged(oldHass, this.hass, Registry.getVisibleCandidateIdsForDomain('cover')) ||
+      !oldHass ||
+      oldHass.entities !== this.hass.entities ||
+      oldHass.devices !== this.hass.devices ||
+      (this._config.group_by_floors && oldHass.floors !== this.hass.floors) ||
+      (this._config.group_by_areas && oldHass.areas !== this.hass.areas)
     ) {
       Registry.initialize(this.hass, this._config.config || {});
       this._cachedFilteredIds = null;
@@ -262,7 +262,9 @@ class Simon42CoversGroupCard extends LitElement {
       type: 'heading',
       heading: group.areaName,
       heading_style: 'subtitle',
-      ...(group.areaId && this.hass && isRoomNavigationAvailable(this._config.config || {}, this.hass, group.areaId) ? { tap_action: { action: 'navigate', navigation_path: group.areaId } } : {}),
+      ...(group.areaId && this.hass && isRoomNavigationAvailable(this._config.config || {}, this.hass, group.areaId)
+        ? { tap_action: { action: 'navigate', navigation_path: group.areaId } }
+        : {}),
     };
   }
 
@@ -331,9 +333,11 @@ class Simon42CoversGroupCard extends LitElement {
     }
 
     const isOpen = groupType === 'open';
-    const headingLabel = floorLabel || (isOpen
-      ? (this._config.heading_open || localize('covers.open'))
-      : (this._config.heading_closed || localize('covers.closed')));
+    const headingLabel =
+      floorLabel ||
+      (isOpen
+        ? this._config.heading_open || localize('covers.open')
+        : this._config.heading_closed || localize('covers.closed'));
     return {
       type: 'heading',
       heading: `${headingLabel} (${covers.length})`,
@@ -357,23 +361,31 @@ class Simon42CoversGroupCard extends LitElement {
     let card = this._tileCards.get(entityId);
     card ??= createTileCardElement();
     card.hass = this.hass;
-    setPooledCardConfig(card, buildAdaptiveTileCardConfig(this.hass!, entityId, {
-      name: this.hass ? stripCoverType(entityId, this.hass) : entityId,
-      vertical: false,
-      state_content: ['current_position', 'last_changed'],
-    }));
+    setPooledCardConfig(
+      card,
+      buildAdaptiveTileCardConfig(this.hass!, entityId, {
+        name: this.hass ? stripCoverType(entityId, this.hass) : entityId,
+        vertical: false,
+        state_content: ['current_position', 'last_changed'],
+      })
+    );
     this._tileCards.set(entityId, card);
     return card;
   }
 
   private _calculateRenderKey(covers: string[]): string {
     return createEntityRenderKey(covers, (id) => {
-        const state = this.hass?.states[id];
-        if (!state) return null;
-        const position = (state.attributes as any)?.current_position;
-        return [state.state, typeof position === 'number' ? position : null,
-          state.attributes.friendly_name, state.attributes.supported_features, state.attributes.device_class];
-      });
+      const state = this.hass?.states[id];
+      if (!state) return null;
+      const position = (state.attributes as any)?.current_position;
+      return [
+        state.state,
+        typeof position === 'number' ? position : null,
+        state.attributes.friendly_name,
+        state.attributes.supported_features,
+        state.attributes.device_class,
+      ];
+    });
   }
 
   protected render() {

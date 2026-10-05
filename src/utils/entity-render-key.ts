@@ -9,7 +9,5 @@ export function createEntityRenderKey(
   entityIds: Iterable<string>,
   getStructuralFingerprint: (entityId: string) => unknown
 ): string {
-  return JSON.stringify(
-    Array.from(entityIds, (entityId) => [entityId, getStructuralFingerprint(entityId)])
-  );
+  return JSON.stringify(Array.from(entityIds, (entityId) => [entityId, getStructuralFingerprint(entityId)]));
 }

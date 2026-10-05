@@ -8,13 +8,15 @@ function device(id: string, areaId: string | null, parentDeviceId?: string | nul
 
 describe('getEffectiveDeviceAreaId', () => {
   it('uses the child device area when assigned', () => {
-    expect(getEffectiveDeviceAreaId(device('child', 'child-room', 'parent'), () => device('parent', 'parent-room')))
-      .toBe('child-room');
+    expect(
+      getEffectiveDeviceAreaId(device('child', 'child-room', 'parent'), () => device('parent', 'parent-room'))
+    ).toBe('child-room');
   });
 
   it('inherits the parent device area when the child has none', () => {
-    expect(getEffectiveDeviceAreaId(device('child', null, 'parent'), () => device('parent', 'parent-room')))
-      .toBe('parent-room');
+    expect(getEffectiveDeviceAreaId(device('child', null, 'parent'), () => device('parent', 'parent-room'))).toBe(
+      'parent-room'
+    );
   });
 
   it('returns null when no device or parent area exists', () => {

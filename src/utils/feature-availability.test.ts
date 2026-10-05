@@ -4,9 +4,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { EntityRegistryEntry } from '../types/registries';
 import { resolveAutomaticFeatures, resolveFeatureToggle } from './feature-availability';
 
-function createHass(
-  states: Record<string, { state: string; attributes?: Record<string, unknown> }>
-): HomeAssistant {
+function createHass(states: Record<string, { state: string; attributes?: Record<string, unknown> }>): HomeAssistant {
   const entities = Object.fromEntries(
     Object.keys(states).map((entityId) => [
       entityId,
@@ -67,7 +65,11 @@ describe('feature availability', () => {
 
   it('does not inspect maintenance state when the choice is explicit', () => {
     const hass = createHass({});
-    Object.defineProperty(hass, 'states', { get: () => { throw new Error('unnecessary scan'); } });
+    Object.defineProperty(hass, 'states', {
+      get: () => {
+        throw new Error('unnecessary scan');
+      },
+    });
     const config = { show_maintenance_view: false };
     expect(resolveAutomaticFeatures(config, hass)).toBe(config);
   });

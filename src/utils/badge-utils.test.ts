@@ -4,8 +4,8 @@ import {
   isBadgeCandidate,
   isEnergyBlockSensor,
   selectBadgeEntitiesOfType,
-} from '../../src/utils/badge-utils';
-import { makeHass } from '../fixtures/hass';
+} from './badge-utils';
+import { makeHass } from '../../tests/fixtures/hass';
 
 describe('badge regressions', () => {
   it('keeps one automatic sensor per type until manually curated', () => {
@@ -15,12 +15,13 @@ describe('badge regressions', () => {
   });
 
   it('applies hidden and additional badges without mutating candidates', () => {
-    const hass = makeHass({ entities: [
-      { entity_id: 'sensor.co2', state: '500', attributes: { device_class: 'carbon_dioxide' } },
-    ] });
+    const hass = makeHass({
+      entities: [{ entity_id: 'sensor.co2', state: '500', attributes: { device_class: 'carbon_dioxide' } }],
+    });
     const input = [{ entity: 'sensor.lux', color: 'amber' }];
-    expect(applyBadgeGroupOptions(input, { hidden: ['sensor.lux'], additional: ['sensor.co2'] }, hass))
-      .toEqual([{ entity: 'sensor.co2', color: 'green' }]);
+    expect(applyBadgeGroupOptions(input, { hidden: ['sensor.lux'], additional: ['sensor.co2'] }, hass)).toEqual([
+      { entity: 'sensor.co2', color: 'green' },
+    ]);
     expect(input).toHaveLength(1);
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "dashboard-strategy",
-  "version": "1.33.0",
+  "version": "1.33.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:browser": "node scripts/verify-browser-optimization.mjs",
-    "verify:quality": "npm run typecheck && npm run lint && node scripts/lint-translations.mjs && npm test",
+    "verify:quality": "npm run typecheck && npm run lint && npm run format:check && node scripts/lint-translations.mjs && npm test",
     "verify:production": "node scripts/verify-version-sync.mjs && node scripts/verify-production-artifacts.mjs && node scripts/verify-hacs-distribution.mjs",
     "verify:release": "npm run verify:quality && npm run build && npm run verify:production"
   },
@@ -34,6 +34,7 @@
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
     "home-assistant-js-websocket": "^9.6.0",
+    "playwright": "^1.63.0",
     "prettier": "^3.8.1",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",

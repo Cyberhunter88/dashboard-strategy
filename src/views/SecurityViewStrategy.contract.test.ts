@@ -10,12 +10,12 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { buildSecuritySections, buildSecurityActivitySidebar } from '../../src/views/SecurityViewStrategy';
-import { Registry } from '../../src/Registry';
-import { makeHass, type HassFixtureSpec } from '../fixtures/hass';
-import type { HomeAssistant } from '../../src/types/homeassistant';
-import type { Simon42StrategyConfig } from '../../src/types/strategy';
-import type { LovelaceCardConfig, LovelaceSectionConfig } from '../../src/types/lovelace';
+import { buildSecuritySections, buildSecurityActivitySidebar } from './SecurityViewStrategy';
+import { Registry } from '../Registry';
+import { makeHass, type HassFixtureSpec } from '../../tests/fixtures/hass';
+import type { HomeAssistant } from '../types/homeassistant';
+import type { Simon42StrategyConfig } from '../types/strategy';
+import type { LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
 
 function securitySpec(): HassFixtureSpec {
   return {
@@ -24,14 +24,38 @@ function securitySpec(): HassFixtureSpec {
       { area_id: 'flur', name: 'Flur' },
     ],
     devices: [
-      { id: 'dev_cam', area_id: 'garten', manufacturer: 'Reolink', name: 'Garten Kamera', primary_config_entry: 'entry_a', config_entries: ['entry_a'] },
+      {
+        id: 'dev_cam',
+        area_id: 'garten',
+        manufacturer: 'Reolink',
+        name: 'Garten Kamera',
+        primary_config_entry: 'entry_a',
+        config_entries: ['entry_a'],
+      },
     ],
     entities: [
       // Reolink device with two streams — must dedup to ONE lean card
-      { entity_id: 'camera.garten_sub', device_id: 'dev_cam', platform: 'reolink', translation_key: 'sub', attributes: { friendly_name: 'Garten Kamera' } },
-      { entity_id: 'camera.garten_main', device_id: 'dev_cam', platform: 'reolink', translation_key: 'main', attributes: { friendly_name: 'Garten Kamera Klar' } },
+      {
+        entity_id: 'camera.garten_sub',
+        device_id: 'dev_cam',
+        platform: 'reolink',
+        translation_key: 'sub',
+        attributes: { friendly_name: 'Garten Kamera' },
+      },
+      {
+        entity_id: 'camera.garten_main',
+        device_id: 'dev_cam',
+        platform: 'reolink',
+        translation_key: 'main',
+        attributes: { friendly_name: 'Garten Kamera Klar' },
+      },
       { entity_id: 'lock.haustuer', area_id: 'flur', state: 'locked' },
-      { entity_id: 'binary_sensor.garten_fenster', area_id: 'garten', state: 'off', attributes: { device_class: 'window' } },
+      {
+        entity_id: 'binary_sensor.garten_fenster',
+        area_id: 'garten',
+        state: 'off',
+        attributes: { device_class: 'window' },
+      },
       // No area — must land in the trailing bucket in area mode
       { entity_id: 'binary_sensor.keller_rauch', state: 'off', attributes: { device_class: 'smoke' } },
     ],
@@ -89,20 +113,14 @@ describe('cameras in security view', () => {
 
   it('keeps the category sections intact and renders cameras after them', () => {
     const sections = build(makeHass(securitySpec()), { show_cameras_in_security: true });
-    const lockTiles = allCards(sections).filter(
-      (c) => c.type === 'tile' && c.entity === 'lock.haustuer'
-    );
+    const lockTiles = allCards(sections).filter((c) => c.type === 'tile' && c.entity === 'lock.haustuer');
     expect(lockTiles).toHaveLength(1);
     expect(lockTiles[0].features).toEqual([{ type: 'lock-commands' }]);
 
     // Cameras come last in category mode (Simon's call — HA-like glance
     // stays, but the actionable device categories lead)
-    const cameraSectionIndex = sections.findIndex((s) =>
-      (s.cards || []).some((c) => c.type === 'picture-entity')
-    );
-    const lockSectionIndex = sections.findIndex((s) =>
-      (s.cards || []).some((c) => c.entity === 'lock.haustuer')
-    );
+    const cameraSectionIndex = sections.findIndex((s) => (s.cards || []).some((c) => c.type === 'picture-entity'));
+    const lockSectionIndex = sections.findIndex((s) => (s.cards || []).some((c) => c.entity === 'lock.haustuer'));
     expect(cameraSectionIndex).toBeGreaterThan(lockSectionIndex);
   });
 });
@@ -226,9 +244,7 @@ describe('activity sidebar', () => {
   it('returns undefined when disabled via show_security_activity', () => {
     const spec = securitySpec();
     spec.components = ['logbook'];
-    expect(
-      buildSidebar(spec, { group_security_by_areas: true, show_security_activity: false })
-    ).toBeUndefined();
+    expect(buildSidebar(spec, { group_security_by_areas: true, show_security_activity: false })).toBeUndefined();
   });
 
   it('category mode: leading section by default, end on request, sidebar only when grouped', () => {
@@ -255,10 +271,12 @@ describe('activity sidebar', () => {
       show_security_activity: true,
     });
     expect(allCards(groupedSections).some((c) => c.type === 'logbook')).toBe(false);
-    expect(buildSidebar(spec, {
-      group_security_by_areas: true,
-      show_security_activity: true,
-    })).toBeDefined();
+    expect(
+      buildSidebar(spec, {
+        group_security_by_areas: true,
+        show_security_activity: true,
+      })
+    ).toBeDefined();
   });
 
   it('excludes no_seclog-labeled entities from the log but not the view', () => {
@@ -310,7 +328,9 @@ describe('overview-hidden areas', () => {
 
   it('remain visible without invalid room links in grouped mode', () => {
     const sections = build(makeHass(securitySpec()), {
-      ...hidden, group_security_by_areas: true, show_cameras_in_security: true,
+      ...hidden,
+      group_security_by_areas: true,
+      show_cameras_in_security: true,
     });
     const garden = headings(sections).find((card) => card.heading === 'Garten');
     const hall = headings(sections).find((card) => card.heading === 'Flur');
@@ -320,12 +340,14 @@ describe('overview-hidden areas', () => {
 
   it('are filtered from both layouts when explicitly requested', () => {
     for (const grouped of [false, true]) {
-      const cards = allCards(build(makeHass(securitySpec()), {
-        ...hidden,
-        group_security_by_areas: grouped,
-        show_cameras_in_security: true,
-        hide_hidden_areas_in_security: true,
-      }));
+      const cards = allCards(
+        build(makeHass(securitySpec()), {
+          ...hidden,
+          group_security_by_areas: grouped,
+          show_cameras_in_security: true,
+          hide_hidden_areas_in_security: true,
+        })
+      );
       expect(cards.some((card) => card.entity === 'binary_sensor.garten_fenster')).toBe(false);
       expect(cards.some((card) => card.entity === 'camera.garten_sub')).toBe(false);
       expect(cards.some((card) => card.entity === 'lock.haustuer')).toBe(true);
@@ -338,7 +360,12 @@ describe('safety status sensors', () => {
     const spec = securitySpec();
     spec.entities?.push(
       // e.g. Versatile Thermostat per-room safety status
-      { entity_id: 'binary_sensor.kinderzimmer_sicherheitsstatus', area_id: 'flur', state: 'off', attributes: { device_class: 'safety' } },
+      {
+        entity_id: 'binary_sensor.kinderzimmer_sicherheitsstatus',
+        area_id: 'flur',
+        state: 'off',
+        attributes: { device_class: 'safety' },
+      },
       { entity_id: 'binary_sensor.keller_co', state: 'off', attributes: { device_class: 'carbon_monoxide' } }
     );
     const sections = build(makeHass(spec), {});

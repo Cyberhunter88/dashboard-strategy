@@ -61,7 +61,6 @@ export function findDummySensor(hass: HomeAssistant): string {
   return 'sun.sun';
 }
 
-
 /**
  * Platforms that create binary_sensor entities with security-like device_classes
  * (opening, door, window) but are NOT actual physical security sensors.
@@ -113,5 +112,5 @@ export function getBatteryEntities(hass: HomeAssistant, config: Simon42StrategyC
     if (!id.startsWith('binary_sensor.')) return true;
     const deviceId = hass.entities[id]?.device_id;
     return !deviceId || !sensorDeviceIds.has(deviceId);
-  })
+  });
 }

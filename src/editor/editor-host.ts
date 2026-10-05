@@ -12,9 +12,11 @@ export interface StrategyEditorHost {
 }
 
 export function dispatchStrategyConfigChanged(host: HTMLElement, config: Simon42StrategyConfig): void {
-  host.dispatchEvent(new CustomEvent('config-changed', {
-    detail: { config },
-    bubbles: true,
-    composed: true,
-  }));
+  host.dispatchEvent(
+    new CustomEvent('config-changed', {
+      detail: { config },
+      bubbles: true,
+      composed: true,
+    })
+  );
 }

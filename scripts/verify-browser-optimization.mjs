@@ -42,6 +42,7 @@ try {
   await page.waitForFunction(() => window.optimization);
   const benchmark = await page.evaluate(() => window.optimization.benchmark());
   const checks = process.env.OPTIMIZATION_BASELINE ? [] : [
+    ...await page.evaluate(() => window.optimization.checkEditor()),
     ...await page.evaluate(() => window.optimization.checkCards()),
     ...await page.evaluate(() => { document.getElementById('content').replaceChildren(); return window.optimization.checkCamera(); }),
     ...await page.evaluate(() => window.optimization.checkAsyncCards()),

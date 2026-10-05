@@ -332,9 +332,10 @@ function createWeatherStartSectionsFromItems(
     let section: LovelaceSectionConfig | null = null;
     switch (item.type) {
       case 'clock':
-        section = dashboardConfig.show_clock_card !== false
-          ? { type: 'grid', cards: [createLargeTimeCard(compactDefaultPresentation)] }
-          : null;
+        section =
+          dashboardConfig.show_clock_card !== false
+            ? { type: 'grid', cards: [createLargeTimeCard(compactDefaultPresentation)] }
+            : null;
         break;
       case 'date':
         section = { type: 'grid', cards: [createLargeDateCard(dashboardConfig, compactDefaultPresentation)] };
@@ -352,10 +353,9 @@ function createWeatherStartSectionsFromItems(
         section = additionalBlocks.house_mode ?? createHouseModeSection(dashboardConfig);
         break;
       case 'search':
-        section = additionalBlocks.search ?? createSearchSection(
-          dashboardConfig.show_search_card === true,
-          dashboardConfig.search_card_variant
-        );
+        section =
+          additionalBlocks.search ??
+          createSearchSection(dashboardConfig.show_search_card === true, dashboardConfig.search_card_variant);
         break;
       case 'light_favorites':
         section = createLightFavoritesSection(hass, dashboardConfig);
@@ -390,9 +390,7 @@ function createWeatherStartSectionsFromItems(
         break;
       case 'weather_hourly':
         section =
-          weatherEntity &&
-          dashboardConfig.show_weather !== false &&
-          weatherStartMode !== 'compact_hourly'
+          weatherEntity && dashboardConfig.show_weather !== false && weatherStartMode !== 'compact_hourly'
             ? {
                 type: 'grid',
                 cards: [
@@ -647,9 +645,7 @@ function createWeatherStartSections(
     'weather_hourly',
     withBlockOverride(
       'weather_hourly',
-      weatherEntity &&
-        dashboardConfig.show_weather !== false &&
-        weatherStartMode !== 'compact_hourly'
+      weatherEntity && dashboardConfig.show_weather !== false && weatherStartMode !== 'compact_hourly'
         ? {
             type: 'grid',
             cards: [
@@ -791,17 +787,17 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       if (hasGeneratedAreaCards) {
         attachCustomCardsToSection(lastAreaSection, assignedAreaCards);
       } else {
-      const cards: LovelaceCardConfig[] = [];
-      if (!hiddenHeadings.has('areas')) {
-        cards.push({
-          type: 'heading',
-          heading: localize('sections.areas'),
-          heading_style: 'title',
-          icon: 'mdi:floor-plan',
-        });
-      }
-      cards.push(...renderedAreaCards);
-      areasSections.push({ type: 'grid', cards });
+        const cards: LovelaceCardConfig[] = [];
+        if (!hiddenHeadings.has('areas')) {
+          cards.push({
+            type: 'heading',
+            heading: localize('sections.areas'),
+            heading_style: 'title',
+            icon: 'mdi:floor-plan',
+          });
+        }
+        cards.push(...renderedAreaCards);
+        areasSections.push({ type: 'grid', cards });
       }
     }
 

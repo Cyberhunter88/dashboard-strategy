@@ -28,11 +28,13 @@ const hass = {
 
 describe('normalizeAreasDisplay', () => {
   it('drops invalid and duplicate area ids from display lists', () => {
-    expect(normalizeAreasDisplay(areas, {
-      hidden: ['cams', 'garten', 'garten'],
-      order: ['wohnzimmer', 'cams', 'wohnzimmer', 'innen_kameras'],
-      nav_items: ['garten', 'cams', 'innen_kameras', 'garten'],
-    })).toEqual({
+    expect(
+      normalizeAreasDisplay(areas, {
+        hidden: ['cams', 'garten', 'garten'],
+        order: ['wohnzimmer', 'cams', 'wohnzimmer', 'innen_kameras'],
+        nav_items: ['garten', 'cams', 'innen_kameras', 'garten'],
+      })
+    ).toEqual({
       hidden: ['garten'],
       order: ['wohnzimmer', 'innen_kameras'],
       nav_items: ['garten', 'innen_kameras'],
@@ -40,11 +42,13 @@ describe('normalizeAreasDisplay', () => {
   });
 
   it('returns undefined when no valid area ids remain', () => {
-    expect(normalizeAreasDisplay(areas, {
-      hidden: ['cams'],
-      order: ['deleted_area'],
-      nav_items: ['missing'],
-    })).toBeUndefined();
+    expect(
+      normalizeAreasDisplay(areas, {
+        hidden: ['cams'],
+        order: ['deleted_area'],
+        nav_items: ['missing'],
+      })
+    ).toBeUndefined();
   });
 });
 
@@ -89,9 +93,7 @@ describe('sortLights', () => {
     const ids = ['light.kitchen_ceiling', 'light.accent'];
 
     ids.sort((a, b) =>
-      sortLights(a, b, hass, 'name', (entityId) =>
-        entityId === 'light.kitchen_ceiling' ? 'Ceiling' : 'Accent'
-      )
+      sortLights(a, b, hass, 'name', (entityId) => (entityId === 'light.kitchen_ceiling' ? 'Ceiling' : 'Accent'))
     );
 
     expect(ids).toEqual(['light.accent', 'light.kitchen_ceiling']);

@@ -3,7 +3,8 @@ import type { Simon42StrategyConfig } from '../types/strategy';
 
 export function getViewVisibleUsers(config: Simon42StrategyConfig, path: string): string[] | undefined {
   const rules = config.view_visible_users || {};
-  if (Object.prototype.hasOwnProperty.call(rules, path)) return (Reflect.get(rules, path) as string[] | undefined) || [];
+  if (Object.prototype.hasOwnProperty.call(rules, path))
+    return (Reflect.get(rules, path) as string[] | undefined) || [];
   return undefined;
 }
 

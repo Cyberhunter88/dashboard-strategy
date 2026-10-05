@@ -197,13 +197,14 @@ export function createSearchSection(
   variant: 'custom' | 'tip' = 'custom'
 ): LovelaceSectionConfig | null {
   if (!enabled) return null;
-  const card: LovelaceCardConfig = variant === 'tip'
-    ? {
-        type: 'markdown',
-        content: `### 🔍 ${localize('editor.search_card_tip_title')}\n\n${localize('editor.search_card_tip_body')}`,
-        grid_options: { columns: 'full' },
-      }
-    : { type: 'custom:search-card', grid_options: { columns: 'full' } };
+  const card: LovelaceCardConfig =
+    variant === 'tip'
+      ? {
+          type: 'markdown',
+          content: `### 🔍 ${localize('editor.search_card_tip_title')}\n\n${localize('editor.search_card_tip_body')}`,
+          grid_options: { columns: 'full' },
+        }
+      : { type: 'custom:search-card', grid_options: { columns: 'full' } };
   return {
     type: 'grid',
     cards: [

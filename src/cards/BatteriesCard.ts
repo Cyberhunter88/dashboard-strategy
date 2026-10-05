@@ -127,14 +127,13 @@ class DashboardStrategyBatteriesCard extends LitElement {
     trackHassUpdate('batteries-card');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     setupLocalize(this.hass);
-    if (
-      oldHass
-      && this._config.group_batteries_by_areas === true
-      && oldHass.areas !== this.hass.areas
-    ) {
+    if (oldHass && this._config.group_batteries_by_areas === true && oldHass.areas !== this.hass.areas) {
       this._lastLayoutKey = '';
     }
-    if (hasHassPresentationChanged(oldHass, this.hass) || haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())) {
+    if (
+      hasHassPresentationChanged(oldHass, this.hass) ||
+      haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())
+    ) {
       Registry.initialize(this.hass, this._config);
       this._sourceIds = null;
       this._lastLayoutKey = '';
@@ -188,7 +187,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
     if (!this.hass || !this._sourceIds) return;
 
     const layoutKey = `${this._config.group_batteries_by_areas === true}|${BATTERY_STATUSES.map(
-      (status) => `${status}:${JSON.stringify(this._renderedGroups[status].map((id) => [id, this._getTileName(id), this.hass?.states[id]?.attributes.supported_features]))}`
+      (status) =>
+        `${status}:${JSON.stringify(this._renderedGroups[status].map((id) => [id, this._getTileName(id), this.hass?.states[id]?.attributes.supported_features]))}`
     ).join('|')}`;
     if (layoutKey === this._lastLayoutKey) return;
     this._lastLayoutKey = layoutKey;
@@ -260,7 +260,10 @@ class DashboardStrategyBatteriesCard extends LitElement {
   }
 
   private _getCandidates(): string[] {
-    return [...Registry.getVisibleCandidateIdsForDomain('sensor'), ...Registry.getVisibleCandidateIdsForDomain('binary_sensor')];
+    return [
+      ...Registry.getVisibleCandidateIdsForDomain('sensor'),
+      ...Registry.getVisibleCandidateIdsForDomain('binary_sensor'),
+    ];
   }
 
   private _emptyAreaGroups(): BatteryAreaGroups {
@@ -337,11 +340,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
   }
 
   private _getTileName(entityId: string): string | undefined {
-    if (
-      this._config.group_batteries_by_areas === true
-      || this._config.show_area_in_battery_view !== true
-      || !this.hass
-    ) return undefined;
+    if (this._config.group_batteries_by_areas === true || this._config.show_area_in_battery_view !== true || !this.hass)
+      return undefined;
 
     const areaName = this._getAreaNameForEntity(entityId);
     if (!areaName) return undefined;
@@ -375,7 +375,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
     }
 
     if (this.hass) {
-      setPooledCardConfig(card,
+      setPooledCardConfig(
+        card,
         buildAdaptiveTileCardConfig(this.hass!, entityId, {
           vertical: false,
           state_content: ['state', 'last_changed'],

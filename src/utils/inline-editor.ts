@@ -9,11 +9,12 @@ const EDITABLE_CARD_TYPE = 'custom:dashboard-strategy-editable-card';
 const CONTAINER_CARD_TYPES = new Set(['horizontal-stack', 'vertical-stack', 'grid']);
 
 function slug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'item';
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9_.-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'item'
+  );
 }
 
 function stableStringify(value: unknown): string {
@@ -85,9 +86,10 @@ function wrapEditableCard(
 
   const sourceHash = hashCardConfig(card);
   const override = edits?.generated_card_overrides?.[editId];
-  const renderedCard = override?.parsed_config && typeof override.parsed_config === 'object'
-    ? override.parsed_config as LovelaceCardConfig
-    : card;
+  const renderedCard =
+    override?.parsed_config && typeof override.parsed_config === 'object'
+      ? (override.parsed_config as LovelaceCardConfig)
+      : card;
 
   return {
     type: EDITABLE_CARD_TYPE,
@@ -97,9 +99,7 @@ function wrapEditableCard(
     ...(renderedCard.grid_options || card.grid_options
       ? { grid_options: renderedCard.grid_options || card.grid_options }
       : {}),
-    ...(renderedCard.visibility || card.visibility
-      ? { visibility: renderedCard.visibility || card.visibility }
-      : {}),
+    ...(renderedCard.visibility || card.visibility ? { visibility: renderedCard.visibility || card.visibility } : {}),
     ...(renderedCard.view_layout || card.view_layout
       ? { view_layout: renderedCard.view_layout || card.view_layout }
       : {}),
@@ -161,7 +161,10 @@ function applyToSection(
   };
 }
 
-function applySectionOrder(sections: LovelaceSectionConfig[], edits: InlineViewEdits | undefined): LovelaceSectionConfig[] {
+function applySectionOrder(
+  sections: LovelaceSectionConfig[],
+  edits: InlineViewEdits | undefined
+): LovelaceSectionConfig[] {
   if (!edits?.section_order?.length) return sections;
 
   const order = new Map<string, number>(edits.section_order.map((id: string, index: number) => [id, index]));

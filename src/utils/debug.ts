@@ -82,8 +82,7 @@ export function trackHassUpdate(componentName: string): void {
 
 /** Dump all s42 performance measures to console as sorted table */
 function dumpAllMeasures(): void {
-  const entries = [...recentMeasures]
-    .sort((a, b) => a.startTime - b.startTime);
+  const entries = [...recentMeasures].sort((a, b) => a.startTime - b.startTime);
 
   if (entries.length === 0) {
     console.log('[s42-perf] No measures recorded. Load page with ?s42_debug=true');

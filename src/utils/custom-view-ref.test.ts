@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { insertCustomViews, isRefView, resolveCustomViews } from '../../src/utils/custom-view-ref';
-import type { HomeAssistant } from '../../src/types/homeassistant';
-import type { LovelaceViewConfig } from '../../src/types/lovelace';
-import type { CustomView } from '../../src/types/strategy';
+import { insertCustomViews, isRefView, resolveCustomViews } from './custom-view-ref';
+import type { HomeAssistant } from '../types/homeassistant';
+import type { LovelaceViewConfig } from '../types/lovelace';
+import type { CustomView } from '../types/strategy';
 
 function makeHass(dashboards: Record<string, unknown>): HomeAssistant {
   const callWS = vi.fn((msg: { type: string; url_path?: string | null }) => {
@@ -38,12 +38,23 @@ describe('resolveCustomViews', () => {
   });
 
   it('resolves by path and applies the local navigation metadata', async () => {
-    const views: CustomView[] = [{
-      title: 'Energy ref', path: 'energy-ref', icon: 'mdi:flash', ref_dashboard: 'dash-a', ref_view: 'energy',
-    }];
-    expect(await resolveCustomViews(views, makeHass({ 'dash-a': SOURCE }))).toEqual([{
-      title: 'Energy ref', path: 'energy-ref', icon: 'mdi:flash', sections: [{ type: 'grid', cards: [] }],
-    }]);
+    const views: CustomView[] = [
+      {
+        title: 'Energy ref',
+        path: 'energy-ref',
+        icon: 'mdi:flash',
+        ref_dashboard: 'dash-a',
+        ref_view: 'energy',
+      },
+    ];
+    expect(await resolveCustomViews(views, makeHass({ 'dash-a': SOURCE }))).toEqual([
+      {
+        title: 'Energy ref',
+        path: 'energy-ref',
+        icon: 'mdi:flash',
+        sections: [{ type: 'grid', cards: [] }],
+      },
+    ]);
   });
 
   it('resolves path-less views by stringified index', async () => {
@@ -94,10 +105,14 @@ describe('insertCustomViews', () => {
 
   it('inserts after anchors and preserves same-anchor config order', () => {
     const generated = [view('home'), view('kitchen')];
-    insertCustomViews(generated, [
-      { title: 'A', path: 'a', after_view: 'home' },
-      { title: 'B', path: 'b', after_view: 'home' },
-    ], [view('a'), view('b')]);
+    insertCustomViews(
+      generated,
+      [
+        { title: 'A', path: 'a', after_view: 'home' },
+        { title: 'B', path: 'b', after_view: 'home' },
+      ],
+      [view('a'), view('b')]
+    );
     expect(generated.map((item) => item.path)).toEqual(['home', 'a', 'b', 'kitchen']);
   });
 

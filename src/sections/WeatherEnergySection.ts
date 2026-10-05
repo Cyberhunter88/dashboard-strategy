@@ -54,10 +54,7 @@ function buildWeatherSensorRow(sensors: WeatherSensorConfig[]): LovelaceCardConf
   };
 }
 
-function buildPresentationCard(
-  weatherEntity: string,
-  presentation: WeatherPresentation
-): LovelaceCardConfig | null {
+function buildPresentationCard(weatherEntity: string, presentation: WeatherPresentation): LovelaceCardConfig | null {
   switch (presentation) {
     case 'forecast_daily':
       return { type: 'weather-forecast', entity: weatherEntity, forecast_type: 'daily' };
@@ -84,8 +81,7 @@ export function createWeatherSection(
 ): LovelaceSectionConfig | null {
   if (!weatherEntity || !showWeather) return null;
 
-  const resolvedPresentation: WeatherPresentation =
-    presentation ?? (showForecastCard ? 'forecast_daily' : 'none');
+  const resolvedPresentation: WeatherPresentation = presentation ?? (showForecastCard ? 'forecast_daily' : 'none');
 
   const cards: LovelaceCardConfig[] = [];
   if (!hideHeading) {

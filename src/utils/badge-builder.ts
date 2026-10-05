@@ -46,9 +46,7 @@ export function createPersonBadges(
       name: firstName,
       show_entity_picture: true,
       show_state: stateContent.length > 0,
-      ...(stateContent.length > 0
-        ? { state_content: stateContent.length === 1 ? stateContent[0] : stateContent }
-        : {}),
+      ...(stateContent.length > 0 ? { state_content: stateContent.length === 1 ? stateContent[0] : stateContent } : {}),
       show_name: true,
       show_icon: true,
       tap_action: { action: 'more-info' },

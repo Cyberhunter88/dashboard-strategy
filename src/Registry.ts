@@ -113,8 +113,7 @@ class Registry {
       (config === Registry._config || config.areas_options === Registry._config?.areas_options)
     ) {
       const languageChanged =
-        hass.locale?.language !== Registry._hass.locale?.language ||
-        hass.language !== Registry._hass.language;
+        hass.locale?.language !== Registry._hass.locale?.language || hass.language !== Registry._hass.language;
       // Keep live state, floor and locale data current without rebuilding maps.
       Registry._hass = hass;
       Registry._config = config;
@@ -226,7 +225,6 @@ class Registry {
         Registry._entitiesByDomain.set(domain, []);
       }
       Registry._entitiesByDomain.get(domain)?.push(e.entity_id);
-
     }
 
     // Entities by device (raw only — device grouping is internal)

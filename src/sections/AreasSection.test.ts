@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveAreaDisplayType } from '../../src/sections/AreasSection';
-import type { AreaRegistryEntry } from '../../src/types/registries';
+import { resolveAreaDisplayType } from './AreasSection';
+import type { AreaRegistryEntry } from '../types/registries';
 
 function area(picture: string | null = null): AreaRegistryEntry {
   return { area_id: 'living_room', name: 'Living room', picture } as AreaRegistryEntry;

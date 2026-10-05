@@ -40,13 +40,17 @@ function buildErrorView(cv: CustomView, messageKey: string): LovelaceViewConfig 
   return {
     type: 'sections',
     max_columns: 1,
-    sections: [{
-      type: 'grid',
-      cards: [{
-        type: 'markdown',
-        content: `**${localize('custom_views.ref_error_title')}**\n\n${localize(messageKey)}\n\n${source}`,
-      }],
-    }],
+    sections: [
+      {
+        type: 'grid',
+        cards: [
+          {
+            type: 'markdown',
+            content: `**${localize('custom_views.ref_error_title')}**\n\n${localize(messageKey)}\n\n${source}`,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -68,9 +72,11 @@ export async function resolveCustomViews(
   }
 
   const fetched = new Map<string, FetchedDashboard>();
-  await Promise.all([...refDashboards].map(async (urlPath) => {
-    fetched.set(urlPath, await fetchDashboardConfig(hass, urlPath));
-  }));
+  await Promise.all(
+    [...refDashboards].map(async (urlPath) => {
+      fetched.set(urlPath, await fetchDashboardConfig(hass, urlPath));
+    })
+  );
 
   const resolved: LovelaceViewConfig[] = [];
   for (const view of customViews) {

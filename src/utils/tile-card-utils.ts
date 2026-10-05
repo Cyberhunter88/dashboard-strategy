@@ -6,11 +6,7 @@
 // ====================================================================
 
 import type { HomeAssistant, HassEntity } from '../types/homeassistant';
-import type {
-  LovelaceCardConfig,
-  LovelaceTileCardConfig,
-  LovelaceTileCardFeatureConfig,
-} from '../types/lovelace';
+import type { LovelaceCardConfig, LovelaceTileCardConfig, LovelaceTileCardFeatureConfig } from '../types/lovelace';
 
 const LIGHT_BRIGHTNESS_MODES = ['brightness', 'color_temp', 'hs', 'xy', 'rgb', 'rgbw', 'rgbww', 'white'];
 const LEGACY_FAN_SET_SPEED = 1;
@@ -18,7 +14,10 @@ const LEGACY_MEDIA_PAUSE = 1;
 const LEGACY_MEDIA_STOP = 4096;
 const LEGACY_MEDIA_PLAY = 16384;
 
-export interface AdaptiveTileCardOptions extends Omit<Partial<LovelaceTileCardConfig>, 'type' | 'entity' | 'features' | 'features_position'> {
+export interface AdaptiveTileCardOptions extends Omit<
+  Partial<LovelaceTileCardConfig>,
+  'type' | 'entity' | 'features' | 'features_position'
+> {
   allowAdaptiveFeatures?: boolean;
   preferFeaturePosition?: 'auto' | 'inline' | 'bottom' | 'none';
 }
@@ -54,10 +53,7 @@ function mediaPlayerSupportsSoundModeSelection(state: HassEntity): boolean {
   return Array.isArray(soundModeList) && soundModeList.length > 0;
 }
 
-function buildAdaptiveFeatures(
-  entityId: string,
-  state: HassEntity | undefined
-): LovelaceTileCardFeatureConfig[] {
+function buildAdaptiveFeatures(entityId: string, state: HassEntity | undefined): LovelaceTileCardFeatureConfig[] {
   if (!state) return [];
 
   switch (getDomain(entityId)) {
@@ -120,12 +116,7 @@ export function buildAdaptiveTileCardConfig(
   entityId: string,
   options: AdaptiveTileCardOptions = {}
 ): LovelaceTileCardConfig {
-  const {
-    allowAdaptiveFeatures = true,
-    preferFeaturePosition = 'auto',
-    vertical,
-    ...rest
-  } = options;
+  const { allowAdaptiveFeatures = true, preferFeaturePosition = 'auto', vertical, ...rest } = options;
 
   const card: LovelaceTileCardConfig = {
     type: 'tile',

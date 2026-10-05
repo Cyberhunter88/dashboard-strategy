@@ -2,21 +2,21 @@
 
 ## Version source
 
-The release version is maintained in `VERSION.txt`. It contains exactly one
+The release version is maintained in `package.json`. Its `version` field contains a
 SemVer value without a leading `v`, for example:
 
-```text
-1.29.3
+```json
+{ "version": "1.33.1" }
 ```
 
-After changing `VERSION.txt`, synchronize the derived project version files:
+After changing `package.json.version`, synchronize the derived project version files:
 
 ```text
 npm run version:sync
 npm run verify:version
 ```
 
-Commit `VERSION.txt` together with the synchronized package, lockfile, and
+Commit `package.json` together with the synchronized lockfile and
 runtime version files. The release tag is generated automatically as
 `v<version>`.
 
@@ -25,9 +25,9 @@ runtime version files. The release tag is generated automatically as
 `.github/workflows/ci.yml` runs for pull requests targeting `main`, pushes or
 merges to `main`, and manual `workflow_dispatch` runs. It installs dependencies,
 checks formatting and runs the complete quality, test, build,
-production-artifact, and HACS-distribution checks. The formatting check
-is currently reported without failing the job because the existing source
-baseline has pre-existing Prettier deviations.
+production-artifact, and HACS-distribution checks. Formatting is mandatory.
+A separate required browser job installs Chromium through Playwright and checks
+editor behavior and responsive rendering with simulated Home Assistant components.
 
 ## Automated release
 
@@ -36,10 +36,12 @@ Normal feature and fix pull requests use Conventional Commit prefixes such as
 dispatches. It checks the version source, typecheck, lint, translations, tests,
 the production build, all code-split assets, and the HACS distribution.
 
-When a change to `VERSION.txt` reaches `main`, the version-driven release
+When a change to `package.json.version` reaches `main`, the version-driven release
 workflow performs this sequence:
 
-1. Read and validate `VERSION.txt` through the shared version parser.
+1. Compare `package.json.version` with the previous push commit before installing
+   dependencies. Skip publication when only dependencies or scripts changed.
+   Manual dispatch bypasses this comparison for recovery. Then validate the version.
 2. Inspect the existing tag and release state.
 3. Verify that all derived version files match it.
 4. Run the complete quality gate and production build.
@@ -51,7 +53,7 @@ workflow performs this sequence:
 10. Verify that the published release still contains the complete asset set.
 
 The release workflow also supports an explicit manual dispatch on `main`; the
-normal automatic trigger remains limited to pushes that change `VERSION.txt`.
+normal automatic trigger remains limited to pushes that change `package.json.version`.
 If a run fails after creating a tag or draft release, rerunning it resumes the
 missing steps instead of treating the partial state as complete. Published
 releases are checked and their assets are repaired idempotently when necessary.
