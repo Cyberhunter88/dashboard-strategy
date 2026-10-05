@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attachCustomCardsToSection } from '../../src/utils/custom-card-section-utils';
+import { attachCustomCardsToSection } from './custom-card-section-utils';
 
 describe('attachCustomCardsToSection', () => {
   const customCards = [{ parsed_config: { type: 'markdown', content: 'custom' } }];

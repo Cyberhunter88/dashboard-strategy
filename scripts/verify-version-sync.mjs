@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { readVersion, VERSION_FILE_NAME } from './version-utils.mjs';
+import { readVersion, verifyVersionFields, VERSION_FILE_NAME } from './version-utils.mjs';
 
 const args = new Set(process.argv.slice(2));
 const requireTag = args.has('--require-tag');
@@ -32,6 +32,9 @@ if (versionFileVersion !== packageVersion || versionFileVersion !== strategyVers
     `${VERSION_FILE_NAME} ${versionFileVersion} does not match package.json ${packageVersion} and strategy ${strategyVersion}`
   );
 }
+
+const lockfile = JSON.parse(fs.readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'));
+verifyVersionFields(packageVersion, lockfile, strategyVersion);
 
 if (requireTag) {
   const actualTag = tagArgument ?? process.env.GITHUB_REF_NAME;

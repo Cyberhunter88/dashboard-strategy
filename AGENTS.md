@@ -4,7 +4,8 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.33.0`. The validated baseline is 45 test files with 198 tests.
+Current development version: `1.33.1`. Unit tests live beside source modules;
+browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
 
@@ -88,6 +89,11 @@ Important behavior:
 - `camera_renderer: webrtc` requires the external `custom:webrtc-camera` card. `camera_webrtc_streams` is keyed by camera entity id and can contain a URL or card options. Keep the native renderer as the dependency-free default.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
 - The editor is the main complexity hotspot: preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting.
+- Weather layout, room options, and the card picker have focused panel modules.
+  Keep configuration and expansion state in the editor host; use its stable typed
+  facades for panel actions. Simple option metadata lives in `src/utils/option-metadata.ts`.
+- Project documentation lives in this repository under `docs/`. There is no
+  external Second Brain dependency; do not look for or create the retired Homelab vault.
 
 ## Performance constraints
 
@@ -108,7 +114,9 @@ Useful checks:
 ```bash
 npm run typecheck
 npm run lint
+npm run format:check
 npm test
+npm run test:browser
 npm run build
 node scripts/lint-translations.mjs
 node scripts/verify-version-sync.mjs
@@ -127,8 +135,7 @@ Version surfaces must stay aligned:
 
 | File | Field |
 | --- | --- |
-| `VERSION.txt` | source-of-truth SemVer |
-| `package.json` | `version` |
+| `package.json` | `version`, source-of-truth SemVer |
 | `package-lock.json` | lockfile version metadata |
 | `src/dashboard-strategy.ts` | `STRATEGY_VERSION` |
 | `dist/dashboard-strategy.js` | built version output |
@@ -136,10 +143,10 @@ Version surfaces must stay aligned:
 
 Use `scripts/verify-version-sync.mjs` early for release work, then rebuild `dist`. Patch versions are bugfixes; minor versions are features; beta releases are GitHub pre-releases. A hygiene-only change without a version bump does not need a release/tag.
 
-Normal feature flow: branch from `main`, implement, validate, build, commit source and generated output when applicable, push, open a PR, wait for CI/HACS validation, then merge. After the merge, the release workflow runs only when `VERSION.txt` changed.
+Normal feature flow: branch from `main`, implement, validate, build, commit source and generated output when applicable, push, open a PR, wait for CI/HACS validation, then merge. After the merge, the release workflow runs only when `package.json.version` changed.
 
 For every functional change, determine whether the version change is PATCH,
-MINOR, or MAJOR and update `VERSION.txt` in the same pull request. Never create
+MINOR, or MAJOR and update `package.json.version` in the same pull request. Never create
 or push Git tags or GitHub releases manually. After the pull request is merged
 into `main`, the GitHub Actions release workflow creates the corresponding
 `v<version>` tag and GitHub Release automatically.

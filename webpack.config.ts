@@ -57,7 +57,8 @@ const config: webpack.Configuration = {
           priority: 10,
         },
         editor: {
-          test: /[\\/](?:src[\\/]editor|node_modules[\\/]js-yaml)[\\/]/,
+          // Metadata is consumed by the editor/diagnostics and stays on demand.
+          test: /[\\/](?:src[\\/]editor|node_modules[\\/]js-yaml)[\\/]|[\\/]src[\\/]utils[\\/]option-metadata\.ts$/,
           name: 'editor',
           chunks: 'async',
           enforce: true,

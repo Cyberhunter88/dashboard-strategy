@@ -3,8 +3,18 @@ import { localize } from '../utils/localize';
 import type { PanelMeta } from './panels/panel-shell';
 
 export type EditorPanelKey =
-  | 'overview' | 'summaries' | 'favorites' | 'areas' | 'appearance' | 'details'
-  | 'areaOptions' | 'roomPins' | 'views' | 'advanced' | 'sectionOrder' | 'customContent';
+  | 'overview'
+  | 'summaries'
+  | 'favorites'
+  | 'areas'
+  | 'appearance'
+  | 'details'
+  | 'areaOptions'
+  | 'roomPins'
+  | 'views'
+  | 'advanced'
+  | 'sectionOrder'
+  | 'customContent';
 
 const PANEL_DEFINITIONS: Record<EditorPanelKey, { key: string; icon: string; labelKey: string }> = {
   overview: { key: 'overview', icon: 'mdi:view-dashboard-outline', labelKey: 'editor.section_overview' },
@@ -18,7 +28,11 @@ const PANEL_DEFINITIONS: Record<EditorPanelKey, { key: string; icon: string; lab
   views: { key: 'views', icon: 'mdi:tab', labelKey: 'editor.section_views' },
   advanced: { key: 'advanced-options', icon: 'mdi:cog-outline', labelKey: 'editor.section_advanced_options' },
   sectionOrder: { key: 'section-order', icon: 'mdi:sort', labelKey: 'editor.section_order' },
-  customContent: { key: 'custom-content', icon: 'mdi:view-grid-plus-outline', labelKey: 'editor.section_custom_content' },
+  customContent: {
+    key: 'custom-content',
+    icon: 'mdi:view-grid-plus-outline',
+    labelKey: 'editor.section_custom_content',
+  },
 };
 
 export function editorPanelMeta(key: EditorPanelKey): PanelMeta {

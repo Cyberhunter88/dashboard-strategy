@@ -44,7 +44,10 @@ class DashboardStrategyCameraCard extends HTMLElement {
     const languageChanged = this._hass?.language !== hass?.language || this._hass?.locale !== hass?.locale;
     this._hass = hass;
     if (this._card) this._card.hass = hass;
-    if (languageChanged && hass) { setupLocalize(hass); this._updateStreamButton(); }
+    if (languageChanged && hass) {
+      setupLocalize(hass);
+      this._updateStreamButton();
+    }
   }
 
   get hass(): HomeAssistant | undefined {
@@ -109,7 +112,10 @@ class DashboardStrategyCameraCard extends HTMLElement {
         this._renderContents();
       })
       .catch(() => {
-        if (token === this._renderToken) { this._card = undefined; this._pending = false; }
+        if (token === this._renderToken) {
+          this._card = undefined;
+          this._pending = false;
+        }
       });
   }
 
@@ -131,7 +137,10 @@ class DashboardStrategyCameraCard extends HTMLElement {
     const config = this._config!;
     const common = {
       camera_image: config.entity,
-      camera_view: this._liveRequested && (!config.camera_pause_when_hidden || (this._visible && !document.hidden)) ? 'live' : 'auto',
+      camera_view:
+        this._liveRequested && (!config.camera_pause_when_hidden || (this._visible && !document.hidden))
+          ? 'live'
+          : 'auto',
       fit_mode: config.fit_mode ?? 'cover',
       aspect_ratio: config.aspect_ratio ?? '16:9',
     };

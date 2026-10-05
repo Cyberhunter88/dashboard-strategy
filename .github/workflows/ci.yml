@@ -33,10 +33,21 @@ jobs:
         run: npm ci --no-audit
 
       - name: Check formatting
-        # The existing source baseline has pre-existing Prettier deviations.
-        # Keep the result visible without turning unrelated CI green status red.
-        continue-on-error: true
         run: npm run format:check
 
       - name: Verify quality, build, and production distribution
         run: npm run verify:release
+
+  browser:
+    name: Browser editor and responsive regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

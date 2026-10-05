@@ -1,4 +1,5 @@
 import type { Simon42StrategyConfig } from '../types/strategy';
+import { CONFIG_ALIASES } from './config-aliases';
 
 export interface UpstreamCompatibleStrategyConfig extends Simon42StrategyConfig {
   /** Upstream compatibility alias for show_cctv_view. */
@@ -11,22 +12,15 @@ export interface UpstreamCompatibleStrategyConfig extends Simon42StrategyConfig 
  * Normalize supported upstream option names to the fork's public contract.
  * Explicit fork options always win, including an explicit false value.
  */
-export function normalizeStrategyConfig(
-  config: UpstreamCompatibleStrategyConfig
-): Simon42StrategyConfig {
+export function normalizeStrategyConfig(config: UpstreamCompatibleStrategyConfig): Simon42StrategyConfig {
   const normalized: UpstreamCompatibleStrategyConfig = { ...config };
 
-  if (normalized.show_cctv_view === undefined && normalized.show_camera_view !== undefined) {
-    normalized.show_cctv_view = normalized.show_camera_view;
+  const values = normalized as Record<string, unknown>;
+  for (const [key, aliases] of Object.entries(CONFIG_ALIASES)) {
+    for (const alias of aliases) {
+      if (values[key] === undefined && values[alias] !== undefined) values[key] = values[alias];
+      delete values[alias];
+    }
   }
-  if (
-    normalized.show_maintenance_view === undefined &&
-    normalized.show_maintenance_summary !== undefined
-  ) {
-    normalized.show_maintenance_view = normalized.show_maintenance_summary;
-  }
-
-  delete normalized.show_camera_view;
-  delete normalized.show_maintenance_summary;
   return normalized;
 }

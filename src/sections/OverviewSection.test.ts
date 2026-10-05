@@ -45,15 +45,17 @@ describe('createOverviewSection', () => {
 
 describe('weather-start overview blocks', () => {
   it('creates a full-width native house-mode selector', () => {
-    expect(createHouseModeSection({ house_mode_entity: 'input_select.house_mode' })?.cards).toEqual([{
-      type: 'tile',
-      entity: 'input_select.house_mode',
-      hide_state: true,
-      vertical: false,
-      features: [{ type: 'select-options' }],
-      features_position: 'inline',
-      grid_options: { columns: 'full' },
-    }]);
+    expect(createHouseModeSection({ house_mode_entity: 'input_select.house_mode' })?.cards).toEqual([
+      {
+        type: 'tile',
+        entity: 'input_select.house_mode',
+        hide_state: true,
+        vertical: false,
+        features: [{ type: 'select-options' }],
+        features_position: 'inline',
+        grid_options: { columns: 'full' },
+      },
+    ]);
     expect(createHouseModeSection({})).toBeNull();
   });
 
@@ -87,8 +89,11 @@ describe('weather-start overview blocks', () => {
   });
 
   it('creates light favorites only from existing light entities', () => {
-    expect(createLightFavoritesSection(hass, { light_favorite_entities: ['light.favorite', 'sensor.missing'] })
-      ?.cards?.some((card: any) => card.entity === 'light.favorite')).toBe(true);
+    expect(
+      createLightFavoritesSection(hass, { light_favorite_entities: ['light.favorite', 'sensor.missing'] })?.cards?.some(
+        (card: any) => card.entity === 'light.favorite'
+      )
+    ).toBe(true);
     expect(createLightFavoritesSection(hass, { light_favorite_entities: [] })).toBeNull();
   });
 });

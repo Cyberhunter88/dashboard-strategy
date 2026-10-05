@@ -96,7 +96,6 @@ describe('getEditableAreaEntities', () => {
       ],
     });
     Registry.resetForTesting();
-    expect(getEditableAreaEntities('office', hass, {}).map((entry) => entry.entity_id))
-      .toEqual(['sensor.visible']);
+    expect(getEditableAreaEntities('office', hass, {}).map((entry) => entry.entity_id)).toEqual(['sensor.visible']);
   });
 });

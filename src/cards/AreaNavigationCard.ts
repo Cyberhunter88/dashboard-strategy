@@ -108,7 +108,10 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
         this.replaceChildren(this._card);
       })
       .catch(() => {
-        if (token === this._renderToken) { this._card = undefined; this._pending = false; }
+        if (token === this._renderToken) {
+          this._card = undefined;
+          this._pending = false;
+        }
       });
   }
 
@@ -182,7 +185,12 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   }
 
   private _handlePointerUp(ev: PointerEvent): void {
-    if (ev.pointerType === 'mouse' || !this._tapStart || this._tapStart.pointerId !== ev.pointerId || !this._canNavigate(ev)) {
+    if (
+      ev.pointerType === 'mouse' ||
+      !this._tapStart ||
+      this._tapStart.pointerId !== ev.pointerId ||
+      !this._canNavigate(ev)
+    ) {
       this._tapStart = null;
       return;
     }
@@ -226,7 +234,10 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   }
 
   private _updateLabel(): void {
-    this.setAttribute('aria-label', String(this._config?.name ?? this._hass?.areas[String(this._config?.area)]?.name ?? this._config?.area ?? ''));
+    this.setAttribute(
+      'aria-label',
+      String(this._config?.name ?? this._hass?.areas[String(this._config?.area)]?.name ?? this._config?.area ?? '')
+    );
   }
 }
 

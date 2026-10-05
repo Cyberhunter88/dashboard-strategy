@@ -5,10 +5,12 @@ import type { Simon42StrategyConfig } from '../../types/strategy';
 import { localize } from '../../utils/localize';
 import type { StrategyEditorHost } from '../editor-host';
 
-const BG_IMAGE_FORM_SCHEMA = [{
-  name: 'image',
-  selector: { media: { accept: ['image/*'], clearable: true, image_upload: true, hide_content_type: true } },
-}];
+const BG_IMAGE_FORM_SCHEMA = [
+  {
+    name: 'image',
+    selector: { media: { accept: ['image/*'], clearable: true, image_upload: true, hide_content_type: true } },
+  },
+];
 
 export function renderDesignSection(host: StrategyEditorHost): TemplateResult {
   const selectedTheme = host._config.theme || '';
@@ -20,11 +22,14 @@ export function renderDesignSection(host: StrategyEditorHost): TemplateResult {
   return html`
     <div class="form-row">
       <label style="margin-right: 8px; min-width: 120px;">${localize('editor.theme')}</label>
-      <select style="flex: 1;" @change=${(event: Event) =>
-        themeChanged(host, (event.target as HTMLSelectElement).value.trim())}>
+      <select
+        style="flex: 1;"
+        @change=${(event: Event) => themeChanged(host, (event.target as HTMLSelectElement).value.trim())}
+      >
         <option value="" ?selected=${!selectedTheme}>${localize('editor.theme_default')}</option>
-        ${themeNames.map((theme) =>
-          html`<option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option>`)}
+        ${themeNames.map(
+          (theme) => html`<option value=${theme} ?selected=${theme === selectedTheme}>${theme}</option>`
+        )}
       </select>
     </div>
     <div class="form-row" style="display: block;">
@@ -38,26 +43,35 @@ export function renderDesignSection(host: StrategyEditorHost): TemplateResult {
               backgroundImageChanged(host, event.detail.value.image)}
           ></ha-form>`
         : html`<label>${localize('editor.background_image')}</label>
-            <input type="text" .value=${typeof backgroundImage === 'string' ? backgroundImage : ''}
+            <input
+              type="text"
+              .value=${typeof backgroundImage === 'string' ? backgroundImage : ''}
               placeholder="/local/background.jpg"
-              @change=${(event: Event) =>
-                backgroundImageChanged(host, (event.target as HTMLInputElement).value.trim())} />`}
+              @change=${(event: Event) => backgroundImageChanged(host, (event.target as HTMLInputElement).value.trim())}
+            />`}
       <div class="description">${localize('editor.background_image_desc')}</div>
     </div>
     ${backgroundImage
       ? html`<div class="form-row">
-          <label style="margin-right: 8px; min-width: 120px;">${localize('editor.background_opacity')}</label>
-          <input type="range" min="10" max="100" step="5" style="flex: 1;" .value=${String(opacity)}
-            @change=${(event: Event) =>
-              backgroundOptionChanged(host, 'opacity', Number((event.target as HTMLInputElement).value))} />
-          <span>${opacity}%</span>
-        </div>
-        ${host._renderCheckbox(
-          'dashboard-background-fixed',
-          localize('editor.background_fixed'),
-          background.attachment === 'fixed',
-          (checked) => backgroundOptionChanged(host, 'attachment', checked ? 'fixed' : undefined)
-        )}`
+            <label style="margin-right: 8px; min-width: 120px;">${localize('editor.background_opacity')}</label>
+            <input
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+              style="flex: 1;"
+              .value=${String(opacity)}
+              @change=${(event: Event) =>
+                backgroundOptionChanged(host, 'opacity', Number((event.target as HTMLInputElement).value))}
+            />
+            <span>${opacity}%</span>
+          </div>
+          ${host._renderCheckbox(
+            'dashboard-background-fixed',
+            localize('editor.background_fixed'),
+            background.attachment === 'fixed',
+            (checked) => backgroundOptionChanged(host, 'attachment', checked ? 'fixed' : undefined)
+          )}`
       : nothing}
   `;
 }
@@ -69,10 +83,7 @@ function themeChanged(host: StrategyEditorHost, theme: string): void {
   host._fireConfigChanged(config);
 }
 
-function backgroundImageChanged(
-  host: StrategyEditorHost,
-  image: string | MediaSelectorValue | undefined
-): void {
+function backgroundImageChanged(host: StrategyEditorHost, image: string | MediaSelectorValue | undefined): void {
   const config: Simon42StrategyConfig = { ...host._config };
   if (typeof image === 'string' ? image !== '' : !!image) {
     config.background = { ...(config.background || {}), image };

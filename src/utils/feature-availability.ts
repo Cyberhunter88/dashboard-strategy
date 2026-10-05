@@ -1,6 +1,11 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
-import { buildMaintenanceScan, countMaintenanceItems, getBackupEntityIds, getMaintenanceStatusEntityIds } from './maintenance-utils';
+import {
+  buildMaintenanceScan,
+  countMaintenanceItems,
+  getBackupEntityIds,
+  getMaintenanceStatusEntityIds,
+} from './maintenance-utils';
 
 /** Explicit false always disables a feature; undefined uses runtime capability. */
 export function resolveFeatureToggle(value: boolean | undefined, capabilityAvailable: boolean): boolean {
@@ -24,10 +29,7 @@ export function hasMaintenanceCapability(hass: HomeAssistant, config: Simon42Str
 }
 
 /** Resolve the generated maintenance view without changing personal layout. */
-export function resolveAutomaticFeatures(
-  config: Simon42StrategyConfig,
-  hass: HomeAssistant
-): Simon42StrategyConfig {
+export function resolveAutomaticFeatures(config: Simon42StrategyConfig, hass: HomeAssistant): Simon42StrategyConfig {
   if (config.show_maintenance_view !== undefined) return config;
   const maintenanceAvailable = hasMaintenanceCapability(hass, config);
   return {

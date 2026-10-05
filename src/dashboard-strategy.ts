@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.33.0'; // x-version-file
+const STRATEGY_VERSION = '1.33.1'; // synchronized from package.json
 
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
 
@@ -20,8 +20,7 @@ declare let __webpack_get_script_filename__: (chunkId: number | string) => strin
 // resource has HACS' `hacstag` cache buster, but Webpack's lazy chunks did not.
 // Keep emitted filenames unchanged while versioning every chunk request as well.
 const getChunkScriptFilename = __webpack_get_script_filename__;
-__webpack_get_script_filename__ = (chunkId) =>
-  `${getChunkScriptFilename(chunkId)}?v=${STRATEGY_VERSION}`;
+__webpack_get_script_filename__ = (chunkId) => `${getChunkScriptFilename(chunkId)}?v=${STRATEGY_VERSION}`;
 
 const DEBUG = new URLSearchParams(window.location.search).has('s42_debug');
 const T0 = performance.now();
@@ -36,17 +35,20 @@ type StrategyGenerator = {
 
 // Start loading all runtime chunks IMMEDIATELY. The two loader modules avoid
 // creating one mostly-empty async chunk for every card and view module.
-const modulesPromise = Promise.all([
-  import('./loaders/core-modules'),
-  import('./loaders/view-modules'),
-]).catch((error: unknown) => {
-  const detail = error instanceof Error ? `: ${error.message}` : '';
-  throw new Error(`Dashboard Strategy runtime modules could not be loaded${detail}`);
-});
+const modulesPromise = Promise.all([import('./loaders/core-modules'), import('./loaders/view-modules')]).catch(
+  (error: unknown) => {
+    const detail = error instanceof Error ? `: ${error.message}` : '';
+    throw new Error(`Dashboard Strategy runtime modules could not be loaded${detail}`);
+  }
+);
 
 // Attach a rejection handler immediately so an early network failure does not
 // surface as an unhandled promise rejection before Home Assistant calls generate().
-void modulesPromise.then(() => { t('all chunks loaded'); }).catch(() => undefined);
+void modulesPromise
+  .then(() => {
+    t('all chunks loaded');
+  })
+  .catch(() => undefined);
 
 class Simon42DashboardStrategy extends HTMLElement {
   // HA 2026.7+: tell the dashboard picker/runtime which registry updates
@@ -66,9 +68,19 @@ class Simon42DashboardStrategy extends HTMLElement {
     const [runtime] = await modulesPromise;
     t('modules ready');
 
-    const { Registry, getVisibleAreasFromHass, localize, normalizeAreasDisplay, withUnavailableEntitiesHidden,
-      applyViewVisibility, insertCustomViews, resolveCustomViews, applyDesign, isUtilityViewEnabled,
-      resolveAutomaticFeatures } = runtime;
+    const {
+      Registry,
+      getVisibleAreasFromHass,
+      localize,
+      normalizeAreasDisplay,
+      withUnavailableEntitiesHidden,
+      applyViewVisibility,
+      insertCustomViews,
+      resolveCustomViews,
+      applyDesign,
+      isUtilityViewEnabled,
+      resolveAutomaticFeatures,
+    } = runtime;
     t('imports done');
 
     const getStrategy = (tag: string): StrategyGenerator => {
@@ -106,21 +118,59 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     // Only resolve utility views for enabled summaries
     const utilityViewDefs = [
-      { enabled: isUtilityViewEnabled(config, 'lights'), title: localize('views.lights'), path: 'lights', icon: 'mdi:lamps',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-lights').generate({ config }, hass) },
-      { enabled: isUtilityViewEnabled(config, 'covers'), title: localize('views.covers'), path: 'covers', icon: 'mdi:blinds-horizontal',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-covers').generate(
-          { device_classes: ['awning', 'blind', 'curtain', 'shade', 'shutter', 'window'], config }, hass) },
-      { enabled: isUtilityViewEnabled(config, 'security'), title: localize('views.security'), path: 'security', icon: 'mdi:security',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-security').generate({ config }, hass) },
-      { enabled: isUtilityViewEnabled(config, 'batteries'), title: localize('views.batteries'), path: 'batteries', icon: 'mdi:battery-alert',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-batteries').generate({ config }, hass) },
-      { enabled: isUtilityViewEnabled(config, 'climate'), title: localize('views.climate'), path: 'climate', icon: 'mdi:thermostat',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-climate').generate({ config }, hass) },
-      { enabled: showCctvView, title: localize('views.cctv'), path: 'cctv', icon: 'mdi:cctv',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-cctv').generate({ config }, hass) },
-      { enabled: showMaintenanceView, title: localize('views.maintenance'), path: 'maintenance', icon: 'mdi:wrench-outline',
-        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-maintenance').generate({ config }, hass) },
+      {
+        enabled: isUtilityViewEnabled(config, 'lights'),
+        title: localize('views.lights'),
+        path: 'lights',
+        icon: 'mdi:lamps',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-lights').generate({ config }, hass),
+      },
+      {
+        enabled: isUtilityViewEnabled(config, 'covers'),
+        title: localize('views.covers'),
+        path: 'covers',
+        icon: 'mdi:blinds-horizontal',
+        resolve: () =>
+          getStrategy('ll-strategy-dashboard-strategy-view-covers').generate(
+            { device_classes: ['awning', 'blind', 'curtain', 'shade', 'shutter', 'window'], config },
+            hass
+          ),
+      },
+      {
+        enabled: isUtilityViewEnabled(config, 'security'),
+        title: localize('views.security'),
+        path: 'security',
+        icon: 'mdi:security',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-security').generate({ config }, hass),
+      },
+      {
+        enabled: isUtilityViewEnabled(config, 'batteries'),
+        title: localize('views.batteries'),
+        path: 'batteries',
+        icon: 'mdi:battery-alert',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-batteries').generate({ config }, hass),
+      },
+      {
+        enabled: isUtilityViewEnabled(config, 'climate'),
+        title: localize('views.climate'),
+        path: 'climate',
+        icon: 'mdi:thermostat',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-climate').generate({ config }, hass),
+      },
+      {
+        enabled: showCctvView,
+        title: localize('views.cctv'),
+        path: 'cctv',
+        icon: 'mdi:cctv',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-cctv').generate({ config }, hass),
+      },
+      {
+        enabled: showMaintenanceView,
+        title: localize('views.maintenance'),
+        path: 'maintenance',
+        icon: 'mdi:wrench-outline',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-maintenance').generate({ config }, hass),
+      },
     ];
 
     const enabledDefs = utilityViewDefs.filter((d) => d.enabled);
@@ -179,9 +229,9 @@ class Simon42DashboardStrategy extends HTMLElement {
 
     return {
       title: localize('dashboard.title'),
-      views: views.map((view) => applyViewVisibility(
-        applyDesign(withUnavailableEntitiesHidden(view, config), config), config
-      )),
+      views: views.map((view) =>
+        applyViewVisibility(applyDesign(withUnavailableEntitiesHidden(view, config), config), config)
+      ),
     };
   }
 

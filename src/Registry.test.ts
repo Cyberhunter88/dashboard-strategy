@@ -5,10 +5,7 @@ import type { DeviceRegistryEntry, EntityRegistryEntry, FloorRegistryEntry } fro
 import type { Simon42StrategyConfig } from './types/strategy';
 import { localize } from './utils/localize';
 
-function entity(
-  entityId: string,
-  overrides: Partial<EntityRegistryEntry> = {}
-): EntityRegistryEntry {
+function entity(entityId: string, overrides: Partial<EntityRegistryEntry> = {}): EntityRegistryEntry {
   return {
     entity_id: entityId,
     area_id: 'living_room',
@@ -53,7 +50,9 @@ beforeEach(() => {
 
 describe('Registry', () => {
   it('tracks returning states without rebuilding registries or exposing disabled candidates', () => {
-    const hass = hassWith([entity('light.returning'), entity('light.disabled', { disabled_by: 'user' })], { states: {} });
+    const hass = hassWith([entity('light.returning'), entity('light.disabled', { disabled_by: 'user' })], {
+      states: {},
+    });
     Registry.initialize(hass, {});
     const candidates = Registry.getVisibleCandidateIdsForDomain('light');
     expect(candidates).toEqual(['light.returning']);
@@ -98,11 +97,7 @@ describe('Registry', () => {
     expect(Registry.getVisibleEntitiesForArea('living_room').map((entry) => entry.entity_id)).toEqual([
       'light.visible',
     ]);
-    expect(Registry.getEntityIdsForDomain('light')).toEqual([
-      'light.visible',
-      'light.hidden',
-      'light.excluded',
-    ]);
+    expect(Registry.getEntityIdsForDomain('light')).toEqual(['light.visible', 'light.hidden', 'light.excluded']);
     expect(Registry.getVisibleEntityIdsForDomain('light')).toEqual(['light.visible']);
   });
 
@@ -160,8 +155,7 @@ describe('Registry', () => {
     } as Simon42StrategyConfig;
     Registry.initialize(hass, config);
     expect(Registry.isHiddenByConfig('sensor.power')).toBe(false);
-    expect(Registry.getVisibleEntitiesForArea('living_room').map((entry) => entry.entity_id))
-      .toContain('sensor.power');
+    expect(Registry.getVisibleEntitiesForArea('living_room').map((entry) => entry.entity_id)).toContain('sensor.power');
   });
 
   it('resolves an entity area through its parent device', () => {

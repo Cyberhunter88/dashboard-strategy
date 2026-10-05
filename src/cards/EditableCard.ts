@@ -118,7 +118,7 @@ class DashboardStrategyEditableCard extends LitElement {
       padding: 4px;
       border-radius: 999px;
       background: color-mix(in srgb, var(--card-background-color, #111) 88%, transparent);
-      box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0, 0, 0, .24));
+      box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.24));
     }
 
     .overlay button,
@@ -144,7 +144,7 @@ class DashboardStrategyEditableCard extends LitElement {
       z-index: 2147483646;
       display: grid;
       place-items: center;
-      background: rgba(0, 0, 0, .55);
+      background: rgba(0, 0, 0, 0.55);
       padding: 24px;
     }
 
@@ -156,7 +156,7 @@ class DashboardStrategyEditableCard extends LitElement {
       background: var(--card-background-color, #1c1c1c);
       color: var(--primary-text-color);
       border-radius: var(--ha-card-border-radius, 12px);
-      box-shadow: var(--ha-card-box-shadow, 0 12px 36px rgba(0, 0, 0, .42));
+      box-shadow: var(--ha-card-box-shadow, 0 12px 36px rgba(0, 0, 0, 0.42));
       overflow: hidden;
     }
 
@@ -167,12 +167,12 @@ class DashboardStrategyEditableCard extends LitElement {
       justify-content: space-between;
       gap: 12px;
       padding: 12px 16px;
-      border-bottom: 1px solid var(--divider-color, rgba(255,255,255,.12));
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
     }
 
     .dialog-actions {
       justify-content: flex-end;
-      border-top: 1px solid var(--divider-color, rgba(255,255,255,.12));
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
       border-bottom: 0;
     }
 
@@ -449,7 +449,9 @@ class DashboardStrategyEditableCard extends LitElement {
     } as any);
 
     if (!lovelaceConfig.strategy || typeof lovelaceConfig.strategy !== 'object') {
-      throw new Error('Dieses Dashboard kann nicht automatisch gespeichert werden. YAML-Dashboards bitte manuell bearbeiten.');
+      throw new Error(
+        'Dieses Dashboard kann nicht automatisch gespeichert werden. YAML-Dashboards bitte manuell bearbeiten.'
+      );
     }
 
     const strategyConfig = clone(lovelaceConfig.strategy);
@@ -464,9 +466,7 @@ class DashboardStrategyEditableCard extends LitElement {
       generated_card_overrides: currentView.generated_card_overrides
         ? { ...currentView.generated_card_overrides }
         : undefined,
-      hidden_generated_cards: currentView.hidden_generated_cards
-        ? [...currentView.hidden_generated_cards]
-        : undefined,
+      hidden_generated_cards: currentView.hidden_generated_cards ? [...currentView.hidden_generated_cards] : undefined,
     };
 
     mutator(viewEdits);
@@ -515,11 +515,7 @@ class DashboardStrategyEditableCard extends LitElement {
           </div>
           <div class="dialog-body">
             <div class="editor-host"></div>
-            <textarea
-              spellcheck="false"
-              .value=${this._yamlText}
-              @input=${this._yamlChanged}
-            ></textarea>
+            <textarea spellcheck="false" .value=${this._yamlText} @input=${this._yamlChanged}></textarea>
             ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
           </div>
           <div class="dialog-actions">

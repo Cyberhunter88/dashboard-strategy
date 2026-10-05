@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { countActiveClimateEntities, isUtilityViewEnabled } from '../../src/utils/summary-view-utils';
-import { makeHass } from '../fixtures/hass';
+import { countActiveClimateEntities, isUtilityViewEnabled } from './summary-view-utils';
+import { makeHass } from '../../tests/fixtures/hass';
 
 describe('isUtilityViewEnabled', () => {
   it('preserves existing defaults', () => {

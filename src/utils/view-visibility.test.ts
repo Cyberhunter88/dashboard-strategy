@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyViewVisibility, unionVisibleUsers, userVisibilityConditions } from '../../src/utils/view-visibility';
+import { applyViewVisibility, unionVisibleUsers, userVisibilityConditions } from './view-visibility';
 
 describe('view visibility', () => {
   it('keeps unrestricted views unchanged', () => {
@@ -8,8 +8,9 @@ describe('view visibility', () => {
   });
 
   it('maps allow-lists and explicit empty rules to native view visibility', () => {
-    expect(applyViewVisibility({ path: 'lights' }, { view_visible_users: { lights: ['user-1'] } }).visible)
-      .toEqual([{ user: 'user-1' }]);
+    expect(applyViewVisibility({ path: 'lights' }, { view_visible_users: { lights: ['user-1'] } }).visible).toEqual([
+      { user: 'user-1' },
+    ]);
     expect(applyViewVisibility({ path: 'lights' }, { view_visible_users: { lights: [] } }).visible).toBe(false);
   });
 

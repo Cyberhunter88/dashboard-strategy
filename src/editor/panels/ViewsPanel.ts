@@ -16,8 +16,7 @@ export interface ViewsPanelOptions {
 
 export function renderViewsPanel(options: ViewsPanelOptions): TemplateResult {
   const row = (id: string, key: string, checked: boolean, defaultValue = false): TemplateResult => html`
-    ${options.checkbox(id, localize(`editor.${key}`), checked, (value) =>
-      options.change(key, value, defaultValue))}
+    ${options.checkbox(id, localize(`editor.${key}`), checked, (value) => options.change(key, value, defaultValue))}
     <div class="description">${localize(`editor.${key}_desc`)}</div>
   `;
   return html`<div class="section">

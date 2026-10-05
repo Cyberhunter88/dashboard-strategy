@@ -74,7 +74,11 @@ describe('maintenance view technical discovery', () => {
     Registry.initialize(hass, {});
 
     const view = buildMaintenanceView(hass, {});
-    expect(view.sections?.some((section) => section.cards?.some((card) => card.entity?.includes('backup_')))).toBe(true);
-    expect(view.sections?.some((section) => section.cards?.some((card) => card.entity?.includes('proxmox')))).toBe(true);
+    expect(view.sections?.some((section) => section.cards?.some((card) => card.entity?.includes('backup_')))).toBe(
+      true
+    );
+    expect(view.sections?.some((section) => section.cards?.some((card) => card.entity?.includes('proxmox')))).toBe(
+      true
+    );
   });
 });

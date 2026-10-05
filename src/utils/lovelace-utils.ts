@@ -15,10 +15,7 @@ export interface ParsedCustomCardLike {
   _yaml_error?: string;
 }
 
-export function createHeadingCard(
-  heading: string,
-  options: HeadingCardOptions = {}
-): LovelaceCardConfig {
+export function createHeadingCard(heading: string, options: HeadingCardOptions = {}): LovelaceCardConfig {
   return {
     type: 'heading',
     heading,

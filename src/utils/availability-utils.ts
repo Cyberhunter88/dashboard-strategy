@@ -149,10 +149,7 @@ function isDecorativeSectionCard(card: LovelaceCardConfig): boolean {
   return card.type === 'heading';
 }
 
-function shouldApplySectionAvailability(
-  cards: LovelaceCardConfig[],
-  entityIdsByCard: string[][]
-): boolean {
+function shouldApplySectionAvailability(cards: LovelaceCardConfig[], entityIdsByCard: string[][]): boolean {
   let contentCardCount = 0;
   for (let i = 0; i < cards.length; i++) {
     if (isDecorativeSectionCard(cards[i])) continue;

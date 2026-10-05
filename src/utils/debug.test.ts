@@ -1,6 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
-afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); vi.restoreAllMocks(); });
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 it('bounds debug measures and lets the aggregation timer finish', async () => {
   vi.resetModules();
@@ -9,7 +13,10 @@ it('bounds debug measures and lets the aggregation timer finish', async () => {
   const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   const table = vi.spyOn(console, 'table').mockImplementation(() => undefined);
   const debug = await import('./debug');
-  for (let i = 0; i < 150; i++) { debug.timeStart('test'); debug.timeEnd('test'); }
+  for (let i = 0; i < 150; i++) {
+    debug.timeStart('test');
+    debug.timeEnd('test');
+  }
   expect(performance.getEntriesByName('s42-test')).toEqual([]);
   expect(performance.getEntriesByName('s42-start-test')).toEqual([]);
   (window as unknown as { __s42_dump(): void }).__s42_dump();

@@ -23,14 +23,16 @@ export function buildCoverControlBadges(entities: string[], hass: HomeAssistant)
     const targets = coversSupportingFeature(entities, hass, feature);
     return targets.length === 0
       ? []
-      : [{
-          type: 'button',
-          icon,
-          tap_action: {
-            action: 'perform-action',
-            perform_action: service,
-            target: { entity_id: targets },
-          },
-        } as LovelaceBadgeConfig];
+      : [
+          {
+            type: 'button',
+            icon,
+            tap_action: {
+              action: 'perform-action',
+              perform_action: service,
+              target: { entity_id: targets },
+            },
+          } as LovelaceBadgeConfig,
+        ];
   });
 }

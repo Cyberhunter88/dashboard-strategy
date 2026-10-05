@@ -64,20 +64,34 @@ export function setPooledCardConfig(card: LovelaceCardElement, config: Record<st
 }
 
 export function hasHassPresentationChanged(oldHass: HomeAssistant | undefined, hass: HomeAssistant): boolean {
-  return !oldHass || oldHass.entities !== hass.entities || oldHass.devices !== hass.devices
-    || oldHass.areas !== hass.areas || oldHass.floors !== hass.floors
-    || oldHass.language !== hass.language || oldHass.locale !== hass.locale;
+  return (
+    !oldHass ||
+    oldHass.entities !== hass.entities ||
+    oldHass.devices !== hass.devices ||
+    oldHass.areas !== hass.areas ||
+    oldHass.floors !== hass.floors ||
+    oldHass.language !== hass.language ||
+    oldHass.locale !== hass.locale
+  );
 }
 
 /** State metadata can change group membership even for an entity not yet rendered. */
-export function haveEntityMembershipChanged(oldHass: HomeAssistant | undefined, hass: HomeAssistant, ids: Iterable<string>): boolean {
+export function haveEntityMembershipChanged(
+  oldHass: HomeAssistant | undefined,
+  hass: HomeAssistant,
+  ids: Iterable<string>
+): boolean {
   if (!oldHass) return true;
   if (oldHass.states === hass.states) return false;
   for (const id of ids) {
     const before = oldHass.states[id];
     const after = hass.states[id];
-    if (!!before !== !!after || before?.attributes.device_class !== after?.attributes.device_class
-      || before?.attributes.unit_of_measurement !== after?.attributes.unit_of_measurement) return true;
+    if (
+      !!before !== !!after ||
+      before?.attributes.device_class !== after?.attributes.device_class ||
+      before?.attributes.unit_of_measurement !== after?.attributes.unit_of_measurement
+    )
+      return true;
   }
   return false;
 }

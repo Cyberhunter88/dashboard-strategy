@@ -621,7 +621,8 @@
     "diagnostics_camera_preload": "Kamera-Vorladen ist aktiv und automatische Pause ausdrücklich deaktiviert. Das kann zusätzliche Last verursachen; es wurde kein Streamverbrauch gemessen.",
     "camera_pause_when_hidden": "Manuelles Livebild bei Unsichtbarkeit pausieren",
     "camera_pause_when_hidden_desc": "Optional für native Kameras mit Live-Schalter: pausiert außerhalb des sichtbaren Bereichs oder bei verborgenem Browser und setzt manuell gestartetes Livebild bei Rückkehr fort. Eigene WebRTC-Karten bleiben unverändert.",
-    "diagnostics_navigation_target": "Relatives Navigationsziel wird mit dieser Konfiguration nicht erzeugt"
+    "diagnostics_navigation_target": "Relatives Navigationsziel wird mit dieser Konfiguration nicht erzeugt",
+    "camera_renderer": "Kamera-Darstellung"
   },
   "custom_views": {
     "ref_error_title": "Referenzierte View konnte nicht geladen werden",

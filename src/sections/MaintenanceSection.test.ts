@@ -6,10 +6,7 @@ import { createMaintenanceSection } from './MaintenanceSection';
 
 function createHass(entities: EntityRegistryEntry[]): HomeAssistant {
   const states = Object.fromEntries(
-    entities.map((entry) => [
-      entry.entity_id,
-      { entity_id: entry.entity_id, state: 'on', attributes: {} },
-    ])
+    entities.map((entry) => [entry.entity_id, { entity_id: entry.entity_id, state: 'on', attributes: {} }])
   );
 
   return {

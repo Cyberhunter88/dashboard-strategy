@@ -4,10 +4,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { EntityRegistryEntry } from '../types/registries';
 import { getBatteryEntities } from './entity-filter';
 
-function createHass(
-  states: HomeAssistant['states'],
-  entities: HomeAssistant['entities']
-): HomeAssistant {
+function createHass(states: HomeAssistant['states'], entities: HomeAssistant['entities']): HomeAssistant {
   return {
     states,
     entities,

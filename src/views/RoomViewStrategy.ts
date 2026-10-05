@@ -34,11 +34,7 @@ import {
 import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { createSectionsView } from '../utils/view-builder';
-import {
-  createRoomEntities,
-  findUpsEntityGroups,
-  getVisibleAreaEntities,
-} from '../utils/area-entity-utils';
+import { createRoomEntities, findUpsEntityGroups, getVisibleAreaEntities } from '../utils/area-entity-utils';
 import { buildCoverControlBadges } from '../utils/cover-controls';
 
 const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
@@ -153,8 +149,8 @@ function buildAreaCustomCardSection(
     if (mode === 'section') {
       if (!card.parsed_config || card._yaml_error) continue;
       const parsedSections = Array.isArray(card.parsed_config) ? card.parsed_config : [card.parsed_config];
-      const validSections = parsedSections.filter((section) =>
-        section && typeof section === 'object' && Array.isArray((section as LovelaceSectionConfig).cards)
+      const validSections = parsedSections.filter(
+        (section) => section && typeof section === 'object' && Array.isArray((section as LovelaceSectionConfig).cards)
       ) as LovelaceSectionConfig[];
 
       if (validSections.length === 0) continue;
@@ -417,8 +413,10 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // Convert to LovelaceBadgeConfig
     const badges: LovelaceBadgeConfig[] = [];
-    if (primaryTemp) badges.push({ type: 'entity', entity: primaryTemp, color: 'red', tap_action: { action: 'more-info' } });
-    if (primaryHumidity) badges.push({ type: 'entity', entity: primaryHumidity, color: 'indigo', tap_action: { action: 'more-info' } });
+    if (primaryTemp)
+      badges.push({ type: 'entity', entity: primaryTemp, color: 'red', tap_action: { action: 'more-info' } });
+    if (primaryHumidity)
+      badges.push({ type: 'entity', entity: primaryHumidity, color: 'indigo', tap_action: { action: 'more-info' } });
     for (const b of filteredCandidates) {
       const showName = resolveShowName(b.entity, !!b.showName, namesVisible, namesHidden);
       badges.push({
@@ -432,9 +430,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // === SECTIONS ===
     // Custom cards (position 'top') always come first, before all auto-stacks.
-    const sections: LovelaceSectionConfig[] = [
-      ...buildAreaCustomCardSection(customCards, hass, 'top'),
-    ];
+    const sections: LovelaceSectionConfig[] = [...buildAreaCustomCardSection(customCards, hass, 'top')];
 
     // Per-area stack ordering: collect each auto-section under a StackKey,
     // then emit them in the user-configured order (areas_options.{areaId}.stacks_order).
@@ -456,9 +452,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       for (const upsDevice of upsDevices) {
         if (hiddenUpsEntities.has(upsDevice.batteryId)) continue;
 
-        const sortedSensors = [...upsDevice.sensorIds].sort(
-          (a, b) => upsSensorRole(a, hass) - upsSensorRole(b, hass) || a.localeCompare(b)
-        ).filter((entityId) => !hiddenUpsEntities.has(entityId));
+        const sortedSensors = [...upsDevice.sensorIds]
+          .sort((a, b) => upsSensorRole(a, hass) - upsSensorRole(b, hass) || a.localeCompare(b))
+          .filter((entityId) => !hiddenUpsEntities.has(entityId));
 
         pushStack('ups', {
           type: 'grid',
@@ -602,13 +598,25 @@ class Simon42ViewRoomStrategy extends HTMLElement {
             )
           );
         } else {
-          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle, undefined, false, dashboardConfig.camera_pause_when_hidden === true));
+          cameraCards.push(
+            buildNativeCameraCard(
+              cameraId,
+              cameraName,
+              cameraLiveToggle,
+              undefined,
+              false,
+              dashboardConfig.camera_pause_when_hidden === true
+            )
+          );
         }
       }
       if (cameraCards.length > 0) {
         pushStack('cameras', {
           type: 'grid',
-          cards: [{ type: 'heading', heading: localize('room.cameras'), heading_style: 'title', icon: 'mdi:cctv' }, ...cameraCards],
+          cards: [
+            { type: 'heading', heading: localize('room.cameras'), heading_style: 'title', icon: 'mdi:cctv' },
+            ...cameraCards,
+          ],
         });
       }
     }
@@ -705,20 +713,30 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       }
       pushStack('covers', {
         type: 'grid',
-        cards: [heading, ...roomShadingCovers.map((e) => buildAdaptiveTileCardConfig(hass, e, {
-        name: stripAreaName(e, area, hass),
-        vertical: false,
-        state_content: ['current_position', 'last_changed'],
-        }))],
+        cards: [
+          heading,
+          ...roomShadingCovers.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              name: stripAreaName(e, area, hass),
+              vertical: false,
+              state_content: ['current_position', 'last_changed'],
+            })
+          ),
+        ],
       });
     }
 
-    domainSection('covers_window', roomEntities.covers_window, localize('room.windows'), 'mdi:window-open-variant', (e) =>
-      buildAdaptiveTileCardConfig(hass, e, {
-        name: stripAreaName(e, area, hass),
-        vertical: false,
-        state_content: ['current_position', 'last_changed'],
-      })
+    domainSection(
+      'covers_window',
+      roomEntities.covers_window,
+      localize('room.windows'),
+      'mdi:window-open-variant',
+      (e) =>
+        buildAdaptiveTileCardConfig(hass, e, {
+          name: stripAreaName(e, area, hass),
+          vertical: false,
+          state_content: ['current_position', 'last_changed'],
+        })
     );
 
     domainSection('media', roomEntities.media_player, localize('room.media'), 'mdi:speaker', (e) =>

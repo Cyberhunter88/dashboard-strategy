@@ -166,10 +166,7 @@ function getDashboardBasePath(): string {
 }
 
 /** Resolve picture mode conservatively: native area cards require a picture. */
-export function resolveAreaDisplayType(
-  area: AreaRegistryEntry,
-  config: Simon42StrategyConfig
-): AreaDisplayType {
+export function resolveAreaDisplayType(area: AreaRegistryEntry, config: Simon42StrategyConfig): AreaDisplayType {
   const areaOptions = Reflect.get(config.areas_options ?? {}, area.area_id) as AreaOptions | undefined;
   const requested = areaOptions?.display_type ?? config.area_display_type ?? 'compact';
   return requested === 'picture' && area.picture ? 'picture' : 'compact';
@@ -214,7 +211,9 @@ export function buildAreaCard(
   };
 }
 
-function areaHeadingVisibility(areas: AreaRegistryEntry[]): { visibility: LovelaceCondition[] } | Record<string, never> {
+function areaHeadingVisibility(
+  areas: AreaRegistryEntry[]
+): { visibility: LovelaceCondition[] } | Record<string, never> {
   const visibility = userVisibilityConditions(
     unionVisibleUsers(areas.map((area) => getViewVisibleUsers(Registry.config, area.area_id)))
   );

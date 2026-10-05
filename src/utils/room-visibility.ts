@@ -8,5 +8,7 @@ export function isRoomViewVisible(config: Simon42StrategyConfig, hass: HomeAssis
 }
 
 export function isRoomNavigationAvailable(config: Simon42StrategyConfig, hass: HomeAssistant, areaId: string): boolean {
-  return !!hass.areas[areaId] && !config.areas_display?.hidden?.includes(areaId) && isRoomViewVisible(config, hass, areaId);
+  return (
+    !!hass.areas[areaId] && !config.areas_display?.hidden?.includes(areaId) && isRoomViewVisible(config, hass, areaId)
+  );
 }

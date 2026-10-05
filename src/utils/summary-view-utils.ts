@@ -9,7 +9,8 @@ export type UtilityViewKey = 'lights' | 'covers' | 'security' | 'batteries' | 'c
 /** Shared route knowledge for diagnostics; unset automatic maintenance stays a possible target. */
 export function getConfiguredNavigationPaths(config: Simon42StrategyConfig, hass: HomeAssistant): Set<string> {
   const paths = new Set<string>(['home']);
-  for (const key of ['lights', 'covers', 'security', 'batteries', 'climate'] as const) if (isUtilityViewEnabled(config, key)) paths.add(key);
+  for (const key of ['lights', 'covers', 'security', 'batteries', 'climate'] as const)
+    if (isUtilityViewEnabled(config, key)) paths.add(key);
   if (config.show_cctv_view === true) paths.add('cctv');
   if (config.show_maintenance_view !== false) paths.add('maintenance');
   for (const area of getVisibleAreasFromHass(hass, config.areas_display, config.use_default_area_sort)) {

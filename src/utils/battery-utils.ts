@@ -10,10 +10,7 @@ export type BatteryStatus = 'critical' | 'low' | 'good';
 
 type BatteryStatusConfig = Pick<
   Simon42StrategyConfig,
-  | 'battery_critical_threshold'
-  | 'battery_low_threshold'
-  | 'hide_unavailable_entities'
-  | 'unavailable_batteries_bucket'
+  'battery_critical_threshold' | 'battery_low_threshold' | 'hide_unavailable_entities' | 'unavailable_batteries_bucket'
 >;
 
 export function getBatteryStatus(
