@@ -3,6 +3,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
+import { trackOperation } from './debug';
 
 export interface LovelaceCardElement extends HTMLElement {
   hass?: HomeAssistant;
@@ -10,6 +11,7 @@ export interface LovelaceCardElement extends HTMLElement {
 }
 
 export function createHuiCardElement(tagName: string): LovelaceCardElement {
+  trackOperation(`create-${tagName}`);
   return document.createElement(tagName) as LovelaceCardElement;
 }
 
@@ -49,5 +51,33 @@ export function haveEntityStatesChanged(
     if (oldHass.states[entityId] !== hass.states[entityId]) return true;
   }
 
+  return false;
+}
+
+const cardConfigKeys = new WeakMap<LovelaceCardElement, string>();
+export function setPooledCardConfig(card: LovelaceCardElement, config: Record<string, unknown>): void {
+  const key = JSON.stringify(config);
+  if (cardConfigKeys.get(card) === key) return;
+  card.setConfig(config);
+  cardConfigKeys.set(card, key);
+  trackOperation('configure-native-card');
+}
+
+export function hasHassPresentationChanged(oldHass: HomeAssistant | undefined, hass: HomeAssistant): boolean {
+  return !oldHass || oldHass.entities !== hass.entities || oldHass.devices !== hass.devices
+    || oldHass.areas !== hass.areas || oldHass.floors !== hass.floors
+    || oldHass.language !== hass.language || oldHass.locale !== hass.locale;
+}
+
+/** State metadata can change group membership even for an entity not yet rendered. */
+export function haveEntityMembershipChanged(oldHass: HomeAssistant | undefined, hass: HomeAssistant, ids: Iterable<string>): boolean {
+  if (!oldHass) return true;
+  if (oldHass.states === hass.states) return false;
+  for (const id of ids) {
+    const before = oldHass.states[id];
+    const after = hass.states[id];
+    if (!!before !== !!after || before?.attributes.device_class !== after?.attributes.device_class
+      || before?.attributes.unit_of_measurement !== after?.attributes.unit_of_measurement) return true;
+  }
   return false;
 }

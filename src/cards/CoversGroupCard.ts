@@ -7,17 +7,21 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { AreaRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
-import { localize } from '../utils/localize';
+import { localize, setupLocalize } from '../utils/localize';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { createEntityRenderKey } from '../utils/entity-render-key';
 import { stripCoverType } from '../utils/name-utils';
 import { groupEntityIdsByAreas } from '../utils/area-group-utils';
+import { isRoomNavigationAvailable } from '../utils/room-visibility';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { isCoverRelevantForGroup } from '../utils/cover-state-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
   haveEntityStatesChanged,
+  hasHassPresentationChanged,
+  haveEntityMembershipChanged,
+  setPooledCardConfig,
   propagateHassToCards,
   type LovelaceCardElement,
 } from '../utils/card-element-utils';
@@ -120,6 +124,8 @@ class Simon42CoversGroupCard extends LitElement {
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (hasHassPresentationChanged(oldHass, this.hass)) return true;
+    if (haveEntityMembershipChanged(oldHass, this.hass, Registry.getVisibleCandidateIdsForDomain('cover'))) return true;
     if (!oldHass) return true;
     if (oldHass.entities !== this.hass.entities) return true;
     if (oldHass.devices !== this.hass.devices) return true;
@@ -131,21 +137,22 @@ class Simon42CoversGroupCard extends LitElement {
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
-    if (!changedProps.has('hass') || !this.hass) return;
+    if (!this.hass) return;
 
     trackHassUpdate('covers-group');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    setupLocalize(this.hass);
 
     if (
-      !oldHass
+      hasHassPresentationChanged(oldHass, this.hass)
+      || haveEntityMembershipChanged(oldHass, this.hass, Registry.getVisibleCandidateIdsForDomain('cover'))
+      || !oldHass
       || oldHass.entities !== this.hass.entities
       || oldHass.devices !== this.hass.devices
       || (this._config.group_by_floors && oldHass.floors !== this.hass.floors)
       || (this._config.group_by_areas && oldHass.areas !== this.hass.areas)
     ) {
-      if (!Registry.isCurrent(this.hass, this._config.config || {})) {
-        Registry.initialize(this.hass, this._config.config || {});
-      }
+      Registry.initialize(this.hass, this._config.config || {});
       this._cachedFilteredIds = null;
       this._cachedAreaForEntity = null;
       this._lastCoversList = '';
@@ -255,7 +262,7 @@ class Simon42CoversGroupCard extends LitElement {
       type: 'heading',
       heading: group.areaName,
       heading_style: 'subtitle',
-      ...(group.areaId ? { tap_action: { action: 'navigate', navigation_path: group.areaId } } : {}),
+      ...(group.areaId && this.hass && isRoomNavigationAvailable(this._config.config || {}, this.hass, group.areaId) ? { tap_action: { action: 'navigate', navigation_path: group.areaId } } : {}),
     };
   }
 
@@ -348,11 +355,9 @@ class Simon42CoversGroupCard extends LitElement {
 
   private _getOrCreateTileCard(entityId: string): LovelaceCardElement {
     let card = this._tileCards.get(entityId);
-    if (card) return card;
-
-    card = createTileCardElement();
+    card ??= createTileCardElement();
     card.hass = this.hass;
-    card.setConfig(buildAdaptiveTileCardConfig(this.hass!, entityId, {
+    setPooledCardConfig(card, buildAdaptiveTileCardConfig(this.hass!, entityId, {
       name: this.hass ? stripCoverType(entityId, this.hass) : entityId,
       vertical: false,
       state_content: ['current_position', 'last_changed'],
@@ -366,10 +371,8 @@ class Simon42CoversGroupCard extends LitElement {
         const state = this.hass?.states[id];
         if (!state) return null;
         const position = (state.attributes as any)?.current_position;
-        if (typeof position === 'number') {
-          return [state.state, position];
-        }
-        return state.state;
+        return [state.state, typeof position === 'number' ? position : null,
+          state.attributes.friendly_name, state.attributes.supported_features, state.attributes.device_class];
       });
   }
 

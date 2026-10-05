@@ -324,6 +324,7 @@ export interface Simon42StrategyConfig {
   show_video_tips?: boolean; // default: true
   camera_renderer?: CameraRenderer; // default: 'native'
   camera_live_toggle?: boolean; // default: false
+  camera_pause_when_hidden?: boolean; // default: false; native manual live wrapper only
   camera_webrtc_streams?: CameraWebrtcStreamsConfig;
 
   // Layout

@@ -608,7 +608,20 @@
     "design_bg_image_label": "Hintergrundbild",
     "design_bg_image_hint": "Bild über den Medien-Dialog wählen oder direkt hochladen. Alternativ per YAML: background.image auch als Pfad/URL (z.B. /local/hintergrund.jpg); Größe/Ausrichtung über weitere background-Schlüssel.",
     "design_bg_opacity_label": "Deckkraft",
-    "design_bg_fixed_label": "Hintergrund beim Scrollen fixieren"
+    "design_bg_fixed_label": "Hintergrund beim Scrollen fixieren",
+    "diagnostics_no_state": "Registriert, aber ohne Zustand",
+    "diagnostics_disabled": "Deaktivierte Entität",
+    "diagnostics_unknown": "Zustand unbekannt",
+    "diagnostics_severity_error": "Fehler",
+    "diagnostics_severity_warning": "Warnungen",
+    "diagnostics_severity_info": "Hinweise",
+    "diagnostics_house_mode_unconfigured": "Hausmodus-Block ohne ausgewählte Entität",
+    "diagnostics_layout_reference": "Layout verweist auf einen nicht vorhandenen eigenen Block",
+    "diagnostics_room_override": "Eigenes Raumlayout ersetzt die automatisch erzeugten Raumsektionen. Raumoptionen gelten dort nur, wenn das eigene Layout sie nutzt.",
+    "diagnostics_camera_preload": "Kamera-Vorladen ist aktiv und automatische Pause ausdrücklich deaktiviert. Das kann zusätzliche Last verursachen; es wurde kein Streamverbrauch gemessen.",
+    "camera_pause_when_hidden": "Manuelles Livebild bei Unsichtbarkeit pausieren",
+    "camera_pause_when_hidden_desc": "Optional für native Kameras mit Live-Schalter: pausiert außerhalb des sichtbaren Bereichs oder bei verborgenem Browser und setzt manuell gestartetes Livebild bei Rückkehr fort. Eigene WebRTC-Karten bleiben unverändert.",
+    "diagnostics_navigation_target": "Relatives Navigationsziel wird mit dieser Konfiguration nicht erzeugt"
   },
   "custom_views": {
     "ref_error_title": "Referenzierte View konnte nicht geladen werden",

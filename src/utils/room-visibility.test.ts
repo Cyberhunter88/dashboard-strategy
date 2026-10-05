@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { HomeAssistant } from '../types/homeassistant';
-import { isRoomViewVisible } from './room-visibility';
+import { isRoomViewVisible, isRoomNavigationAvailable } from './room-visibility';
+
+it('omits room links for absent and hidden rooms', () => {
+  const hass = { areas: { fixture: { area_id: 'fixture', name: 'Fixture' } }, states: {} } as unknown as HomeAssistant;
+  expect(isRoomNavigationAvailable({}, hass, 'fixture')).toBe(true);
+  expect(isRoomNavigationAvailable({}, hass, 'absent')).toBe(false);
+  expect(isRoomNavigationAvailable({ areas_display: { hidden: ['fixture'] } }, hass, 'fixture')).toBe(false);
+});
 
 const hass = { states: { 'input_boolean.guests': { state: 'on' } } } as unknown as HomeAssistant;
 

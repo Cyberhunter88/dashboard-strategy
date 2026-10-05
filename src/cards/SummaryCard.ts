@@ -6,11 +6,11 @@ import { LitElement, html, css, type PropertyValues } from 'lit';
 import type { HomeAssistant, HassEntity } from '../types/homeassistant';
 import { Registry } from '../Registry';
 import { trackHassUpdate, debugLog, timeStart, timeEnd } from '../utils/debug';
-import { localize } from '../utils/localize';
+import { localize, setupLocalize } from '../utils/localize';
 import { getBatteryEntities, SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
 import type { SummaryType } from '../types/strategy';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
-import { haveEntityStatesChanged } from '../utils/card-element-utils';
+import { haveEntityStatesChanged, hasHassPresentationChanged, haveEntityMembershipChanged } from '../utils/card-element-utils';
 import { getBatteryStatus } from '../utils/battery-utils';
 import { countOpenCoverEntities } from '../utils/cover-state-utils';
 import { countActiveClimateEntities } from '../utils/summary-view-utils';
@@ -83,6 +83,7 @@ class Simon42SummaryCard extends LitElement {
       transform: scale(0.97);
       transition: transform 0.1s;
     }
+    ha-card:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
     .icon-wrap {
       display: flex;
       align-items: center;
@@ -107,7 +108,7 @@ class Simon42SummaryCard extends LitElement {
       color: var(--primary-text-color);
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
     }
     ha-card.compact {
       padding: 8px 12px;
@@ -145,18 +146,23 @@ class Simon42SummaryCard extends LitElement {
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (hasHassPresentationChanged(oldHass, this.hass)) return true;
+    if (haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())) return true;
     if (!oldHass || oldHass.entities !== this.hass.entities) return true;
     if (!this._relevantEntityIds) return true;
     return haveEntityStatesChanged(oldHass, this.hass, this._relevantEntityIds);
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
-    if (!changedProps.has('hass') || !this.hass) return;
+    if (!this.hass) return;
 
     trackHassUpdate(`summary-${this._config.summary_type}`);
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    setupLocalize(this.hass);
 
-    if (!oldHass || oldHass.entities !== this.hass.entities) {
+    const membershipChanged = haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates());
+    if (hasHassPresentationChanged(oldHass, this.hass) || membershipChanged) {
+      if (Registry.initialized) Registry.initialize(this.hass, Registry.config);
       this._relevantEntityIds = null;
       debugLog(`summary-${this._config.summary_type}: cache invalidated (registry changed)`);
     }
@@ -164,6 +170,7 @@ class Simon42SummaryCard extends LitElement {
     this._getRelevantEntities();
     if (
       oldHass &&
+      !hasHassPresentationChanged(oldHass, this.hass) && !membershipChanged &&
       this._relevantEntityIds &&
       !haveEntityStatesChanged(oldHass, this.hass, this._relevantEntityIds)
     ) {
@@ -178,6 +185,11 @@ class Simon42SummaryCard extends LitElement {
 
   private _isEntityRelevant(id: string, _state: HassEntity): boolean {
     return !Registry.isEntityExcludedWithStateCategory(id);
+  }
+
+  private _getCandidates(): string[] {
+    const domains = { lights: ['light'], covers: ['cover'], security: ['lock', 'cover', 'binary_sensor'], batteries: ['sensor', 'binary_sensor'], climate: ['climate'] };
+    return (domains[this._config.summary_type] ?? []).flatMap((domain) => Registry.getVisibleCandidateIdsForDomain(domain));
   }
 
   private _getRelevantEntities(): void {
@@ -376,7 +388,8 @@ class Simon42SummaryCard extends LitElement {
       <ha-card class=${[
         this._config.compact ? 'compact' : '',
         this._config.alignment === 'center' ? 'center' : '',
-      ].filter(Boolean).join(' ')} @click=${() => this._handleClick()}>
+      ].filter(Boolean).join(' ')} role="link" tabindex="0" aria-label=${display.name} @click=${() => this._handleClick()}
+        @keydown=${(event: KeyboardEvent) => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); this._handleClick(); } }}>
         <div class="icon-wrap">
           <ha-icon class="icon" .icon=${display.icon} style="color: ${colorCss}"></ha-icon>
         </div>

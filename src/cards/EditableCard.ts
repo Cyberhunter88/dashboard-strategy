@@ -209,6 +209,7 @@ class DashboardStrategyEditableCard extends LitElement {
   private _hass?: HomeAssistant;
   private _child?: HTMLElement;
   private _childConfig?: LovelaceCardConfig;
+  private _childRenderToken = 0;
   private _editorElement?: HTMLElement;
 
   _editMode = editMode;
@@ -245,9 +246,12 @@ class DashboardStrategyEditableCard extends LitElement {
     super.connectedCallback();
     ensureToggleButton();
     window.addEventListener(EDIT_MODE_EVENT, this._handleEditModeChange as EventListener);
+    this.requestUpdate();
   }
 
   override disconnectedCallback(): void {
+    this._childRenderToken++;
+    this._childConfig = undefined;
     window.removeEventListener(EDIT_MODE_EVENT, this._handleEditModeChange as EventListener);
     super.disconnectedCallback();
   }
@@ -262,30 +266,32 @@ class DashboardStrategyEditableCard extends LitElement {
   };
 
   private async _renderChild(): Promise<void> {
-    if (!this.card || stableSame(this._childConfig, this.card)) return;
-    this._childConfig = clone(this.card);
+    if (!this.card || !this.isConnected || stableSame(this._childConfig, this.card)) return;
 
     const host = this.shadowRoot?.querySelector('.card-host') as HTMLElement | null;
     if (!host) {
       this.requestUpdate();
       return;
     }
-
-    host.innerHTML = '';
+    const token = ++this._childRenderToken;
+    const config = clone(this.card);
+    this._childConfig = config;
 
     try {
       const helpers = await (window as EditableWindow).loadCardHelpers?.();
+      if (token !== this._childRenderToken || !this.isConnected) return;
       const child = helpers?.createCardElement
-        ? helpers.createCardElement(this.card)
-        : document.createElement((this.card.type || '').replace(/^custom:/, ''));
+        ? helpers.createCardElement(config)
+        : document.createElement((config.type || '').replace(/^custom:/, ''));
 
       if (!helpers?.createCardElement && 'setConfig' in child) {
-        (child as any).setConfig(this.card);
+        (child as any).setConfig(config);
       }
       if (this._hass) (child as any).hass = this._hass;
-      host.appendChild(child);
+      host.replaceChildren(child);
       this._child = child;
     } catch (error) {
+      if (token !== this._childRenderToken || !this.isConnected) return;
       const fallback = document.createElement('hui-error-card');
       if ('setConfig' in fallback) {
         (fallback as any).setConfig({
@@ -295,7 +301,7 @@ class DashboardStrategyEditableCard extends LitElement {
         });
       }
       if (this._hass) (fallback as any).hass = this._hass;
-      host.appendChild(fallback);
+      host.replaceChildren(fallback);
       this._child = fallback;
     }
   }

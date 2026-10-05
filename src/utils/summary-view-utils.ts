@@ -1,8 +1,23 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { isEntityCurrentlyAvailable } from './availability-utils';
+import { getVisibleAreasFromHass } from './name-utils';
+import { isRoomViewVisible } from './room-visibility';
 
 export type UtilityViewKey = 'lights' | 'covers' | 'security' | 'batteries' | 'climate';
+
+/** Shared route knowledge for diagnostics; unset automatic maintenance stays a possible target. */
+export function getConfiguredNavigationPaths(config: Simon42StrategyConfig, hass: HomeAssistant): Set<string> {
+  const paths = new Set<string>(['home']);
+  for (const key of ['lights', 'covers', 'security', 'batteries', 'climate'] as const) if (isUtilityViewEnabled(config, key)) paths.add(key);
+  if (config.show_cctv_view === true) paths.add('cctv');
+  if (config.show_maintenance_view !== false) paths.add('maintenance');
+  for (const area of getVisibleAreasFromHass(hass, config.areas_display, config.use_default_area_sort)) {
+    if (isRoomViewVisible(config, hass, area.area_id)) paths.add(area.area_id);
+  }
+  for (const view of config.custom_views ?? []) if (view.path) paths.add(view.path);
+  return paths;
+}
 
 /** Single source of truth for summary-backed utility view generation. */
 export function isUtilityViewEnabled(config: Simon42StrategyConfig, view: UtilityViewKey): boolean {

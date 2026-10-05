@@ -110,13 +110,14 @@ class Registry {
       hass.areas === Registry._hass?.areas &&
       hass.devices === Registry._hass?.devices &&
       hass.floors === Registry._hass?.floors &&
-      config === Registry._config
+      (config === Registry._config || config.areas_options === Registry._config?.areas_options)
     ) {
       const languageChanged =
         hass.locale?.language !== Registry._hass.locale?.language ||
         hass.language !== Registry._hass.language;
       // Keep live state, floor and locale data current without rebuilding maps.
       Registry._hass = hass;
+      Registry._config = config;
       if (languageChanged) setupLocalize(hass);
       return;
     }
@@ -211,11 +212,14 @@ class Registry {
     Registry._entitiesByDomain = new Map();
     Registry._visibleEntitiesByDomain = new Map();
     for (const e of entities) {
+      const domain = e.entity_id.substring(0, e.entity_id.indexOf('.'));
+      // Keep stateless candidates indexed so a returning state needs no registry rebuild.
+      if (Registry._isEntityVisible(e) && !e.disabled_by) {
+        if (!Registry._visibleEntitiesByDomain.has(domain)) Registry._visibleEntitiesByDomain.set(domain, []);
+        Registry._visibleEntitiesByDomain.get(domain)?.push(e.entity_id);
+      }
       // Only include entities that have a state (disabled entities don't)
       if (!(e.entity_id in Registry._hass.states)) continue;
-
-      const dotIndex = e.entity_id.indexOf('.');
-      const domain = e.entity_id.substring(0, dotIndex);
 
       // Raw map (all registry entities with a state)
       if (!Registry._entitiesByDomain.has(domain)) {
@@ -223,13 +227,6 @@ class Registry {
       }
       Registry._entitiesByDomain.get(domain)?.push(e.entity_id);
 
-      // Visible map (pre-filtered)
-      if (Registry._isEntityVisible(e)) {
-        if (!Registry._visibleEntitiesByDomain.has(domain)) {
-          Registry._visibleEntitiesByDomain.set(domain, []);
-        }
-        Registry._visibleEntitiesByDomain.get(domain)?.push(e.entity_id);
-      }
     }
 
     // Entities by device (raw only — device grouping is internal)
@@ -380,10 +377,15 @@ class Registry {
   // =====================================================================
 
   /**
-   * Get visible entity IDs for a domain. O(1).
+   * Get visible entity IDs with current states, using the domain index.
    * Pre-filtered: no hidden, no_dboard, config/diagnostic, config-hidden.
    */
   static getVisibleEntityIdsForDomain(domain: string): string[] {
+    return Registry.getVisibleCandidateIdsForDomain(domain).filter((id) => !!Registry._hass.states[id]);
+  }
+
+  /** Visible registry candidates including entries temporarily without a state. O(1). */
+  static getVisibleCandidateIdsForDomain(domain: string): string[] {
     return Registry._visibleEntitiesByDomain.get(domain) || [];
   }
 

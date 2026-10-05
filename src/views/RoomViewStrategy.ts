@@ -93,7 +93,8 @@ function buildNativeCameraCard(
   name: string,
   liveToggle: boolean,
   entities?: Array<string | Record<string, unknown>>,
-  isAqara: boolean = false
+  isAqara: boolean = false,
+  pauseWhenHidden: boolean = false
 ): LovelaceCardConfig {
   if (!liveToggle) {
     if (entities) {
@@ -118,6 +119,7 @@ function buildNativeCameraCard(
   }
   return {
     type: 'custom:dashboard-strategy-camera-card',
+    camera_pause_when_hidden: pauseWhenHidden,
     entity: cameraId,
     name,
     ...(entities?.length ? { entities } : {}),
@@ -595,11 +597,12 @@ class Simon42ViewRoomStrategy extends HTMLElement {
               cameraName,
               cameraLiveToggle,
               firstOfDevice ? glanceEntities : [],
-              isAqara
+              isAqara,
+              dashboardConfig.camera_pause_when_hidden === true
             )
           );
         } else {
-          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle));
+          cameraCards.push(buildNativeCameraCard(cameraId, cameraName, cameraLiveToggle, undefined, false, dashboardConfig.camera_pause_when_hidden === true));
         }
       }
       if (cameraCards.length > 0) {

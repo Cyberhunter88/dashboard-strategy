@@ -20,7 +20,11 @@ export function groupEntityIdsByAreas(
   const noArea: string[] = [];
   for (const entityId of entityIds) {
     const areaId = resolveAreaId(entityId);
-    if (areaId) byArea.set(areaId, [...(byArea.get(areaId) || []), entityId]);
+    if (areaId) {
+      let group = byArea.get(areaId);
+      if (!group) { group = []; byArea.set(areaId, group); }
+      group.push(entityId);
+    }
     else noArea.push(entityId);
   }
   const groups: EntityAreaGroup[] = getVisibleAreasFromHass(
