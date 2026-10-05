@@ -8,7 +8,7 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.29.2**
+Aktueller Entwicklungsstand: **1.33.0**
 
 Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RELEASE.md) dokumentiert.
 
@@ -147,6 +147,39 @@ Anschließend öffnet sich über das **Stift-Icon** oben rechts in dem Strategy-
 
 
 ## Konfiguration
+
+### Optimierung und Dashboard-Prüfung
+
+Die Dashboard-Prüfung unterscheidet Fehler, Warnungen und Hinweise. Sie erkennt fehlende,
+deaktivierte, zustandslose sowie nicht verfügbare Entitäten. `unknown` wird bei Sensoren
+gemeldet, bei noch unbenutzten Buttons, Szenen und Ereignisentitäten jedoch nicht als Fehler
+behandelt. Ausblendungslisten erzeugen keine Verfügbarkeitswarnungen. YAML wird pro
+Konfigurationsstand ausgewertet; Zustandsänderungen verwenden die gespeicherten Referenzen.
+Templates, freie Texte und go2rtc-Streamnamen werden nicht als Entitätsverweise interpretiert.
+
+Zusätzliche Hinweise betreffen Hausmodus-Blöcke ohne Entität, fehlende Layoutreferenzen,
+eindeutig fehlende relative View-Ziele und eigene vollständige Raumlayouts. Ein Raumlayout
+ersetzt die automatisch erzeugten Raumsektionen; die Raumoptionen gelten dort nur, soweit
+das eigene Layout sie verwendet. Hinweise entfernen oder verändern keine Konfiguration.
+
+Für native Kameras mit `camera_live_toggle: true` lässt sich optional
+`camera_pause_when_hidden: true` setzen. Manuell gestartetes Livebild pausiert außerhalb
+des sichtbaren Bereichs und bei verborgenem Browserdokument und wird bei Rückkehr fortgesetzt.
+Ein manuell gestopptes Bild bleibt gestoppt. Standard ist `false`; eigene WebRTC- und
+Advanced-Camera-Karten werden nicht verändert. Der Schalter wirkt nur im nativen Renderer
+mit Live-Schalter. Bei Advanced-Camera-YAML weist die Prüfung auf aktiviertes Vorladen mit
+ausdrücklich deaktivierter automatischer Pause hin; das ist keine Messung der Streamlast.
+
+Optionale Vereinfachungen: vorhandene Wetterblöcke und die integrierte Uhr anstelle
+zusätzlicher verschachtelter Karten nutzen; die automatische USV-Sektion vor einem eigenen
+USV-Layout prüfen und nur eine Darstellung wählen; Kameraaktivitäten auf einer Detailansicht
+anzeigen und Vorladen in externen Kamerakarten nach deren Dokumentation bewusst konfigurieren.
+Diese Entscheidungen bleiben beim Nutzer. Bestehendes YAML wird nicht automatisch umgebaut.
+
+Entwickler können mit `?s42_debug=true` begrenzte Laufzeitmessungen und aggregierte
+Erzeugungs-/Aktualisierungszähler aktivieren. `window.__s42_dump()` zeigt die letzten
+100 Messungen. Der lokale synthetische Browsertest und seine Grenzen sind in
+[docs/dashboard-optimization.md](docs/dashboard-optimization.md) beschrieben.
 
 Der Editor bietet eine eingeklappte **Dashboard-Prüfung** für strukturierte Entitätsverweise, einschließlich eigener YAML-Karten und Aktionstargets. Fehlende und momentan nicht verfügbare Entitäten werden mit Konfigurationsstelle und einem Link zum Editorabschnitt angezeigt. Die Prüfung verändert keine Einstellungen; Templates und go2rtc-Streamnamen werden nicht geprüft. Eigene vollständige Raumlayouts sind direkt in der Bereichsliste markiert und können dort zum Bearbeiten geöffnet werden. Diagnose- und Konfigurationsentitäten werden bei der allgemeinen Entitätsauswahl nur angeboten, wenn sie bereits konfiguriert sind.
 

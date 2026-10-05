@@ -7,7 +7,10 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import yaml from 'js-yaml';
-import { collectEntityReferences, inspectConfig, isRestrictedEntity, isSelectableEntity } from './config-diagnostics';
+import { ConfigDiagnostics, isRestrictedEntity, isSelectableEntity } from './config-diagnostics';
+import { haveEntityOptionSourcesChanged } from './entity-option-cache';
+import { hasHassPresentationChanged } from '../utils/card-element-utils';
+import { timeStart, timeEnd } from '../utils/debug';
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type {
@@ -227,6 +230,8 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _roomPinSearch = '';
   _expandedPanels = loadExpandedPanels();
   private _diagnosticsChecked = false;
+  private readonly _diagnostics = new ConfigDiagnostics();
+  private _openingMeasured = false;
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<
     string,
@@ -284,12 +289,18 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Lifecycle --------------------------------------------------------
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    timeStart('editor-open');
+    this._openingMeasured = false;
+  }
+
   set hass(hass: HomeAssistant) {
     const oldHass = this._hass;
     this._hass = hass;
     if (
       oldHass &&
-      (oldHass.entities !== hass.entities || oldHass.devices !== hass.devices || oldHass.states !== hass.states)
+      (oldHass.entities !== hass.entities || oldHass.devices !== hass.devices || oldHass.language !== hass.language || oldHass.locale !== hass.locale)
     ) {
       this._entitySelectOptionsCache = null;
     }
@@ -298,7 +309,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._weatherStartFloorOptionsCache = null;
       this._sortedAreasCache = null;
     }
-    if (!oldHass || this._expandedPanels.has('diagnostics')) this.requestUpdate();
+    if (oldHass && hasHassPresentationChanged(oldHass, hass)) {
+      this._areaEntitiesCache.clear();
+      for (const id of this._expandedAreas) void this._loadAreaEntities(id);
+    }
+    const visualEditor = this.shadowRoot?.querySelector('.card-editor-visual-host') as (HTMLElement & { hass?: HomeAssistant }) | null;
+    if (visualEditor?.firstElementChild) (visualEditor.firstElementChild as HTMLElement & { hass?: HomeAssistant }).hass = hass;
+    if (hasHassPresentationChanged(oldHass ?? undefined, hass) || this._expandedPanels.has('diagnostics')) this.requestUpdate();
   }
 
   setConfig(config: Simon42StrategyConfig): void {
@@ -337,8 +354,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._entitySelectOptionsCache.config === this._config &&
       this._entitySelectOptionsCache.entities === this._hass.entities &&
       this._entitySelectOptionsCache.devices === this._hass.devices &&
-      this._entitySelectOptionsCache.states === this._hass.states
+      !haveEntityOptionSourcesChanged(this._entitySelectOptionsCache.states, this._hass.states)
     ) {
+      this._entitySelectOptionsCache.states = this._hass.states;
       return this._entitySelectOptionsCache.options;
     }
 
@@ -354,7 +372,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     });
 
     const hass = this._hass;
-    const selected = new Set(collectEntityReferences(this._config).map((ref) => ref.entityId));
+    const selected = new Set(this._diagnostics.analyze(this._config).references.map((ref) => ref.entityId));
     const options = [...new Set([...Object.keys(hass.states), ...selected])]
       .filter((id) => isSelectableEntity(hass, id, selected))
       .map((entityId) => {
@@ -1724,7 +1742,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderDiagnostics(): TemplateResult {
-    const issues = this._diagnosticsChecked && this._hass ? inspectConfig(this._config, this._hass) : [];
+    const issues = this._diagnosticsChecked && this._hass ? this._diagnostics.inspect(this._config, this._hass) : [];
     return html`
       <p>${localize('editor.diagnostics_help')}</p>
       <button type="button" @click=${() => { this._diagnosticsChecked = true; this.requestUpdate(); }}>
@@ -1733,13 +1751,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
       <div role="status" aria-live="polite">
         ${this._diagnosticsChecked && !issues.length ? html`<p>${localize('editor.diagnostics_ok')}</p>` : nothing}
       </div>
-      ${issues.map((issue) => html`<div class="custom-item">
-        <strong>${localize('editor.diagnostics_' + issue.status)}</strong>: ${issue.entityId}
+      ${(['error', 'warning', 'info'] as const).map((severity) => html`
+      ${issues.some((issue) => issue.severity === severity) ? html`<h3>${localize('editor.diagnostics_severity_' + severity)}</h3>` : nothing}
+      ${issues.filter((issue) => issue.severity === severity).map((issue) => html`<div class="custom-item" style="overflow-wrap:anywhere">
+        <strong>${localize('editor.diagnostics_' + (issue.status ?? issue.code))}</strong>${issue.entityId ? html`: ${issue.entityId}` : nothing}
         <div>${issue.path}</div>
         <button type="button" @click=${() => void this._openDiagnosticLocation(issue.path)}>
           ${localize('editor.diagnostics_open')}
         </button>
-      </div>`)}
+      </div>`)}`)}
     `;
   }
 
@@ -3673,6 +3693,13 @@ class Simon42DashboardStrategyEditor extends LitElement {
               (checked) => this._toggleChanged('camera_live_toggle', checked, false)
             )}
             <div class="description">${localize('editor.camera_live_toggle_desc')}</div>
+            ${this._renderCheckbox(
+              'camera-pause-when-hidden',
+              localize('editor.camera_pause_when_hidden'),
+              this._config.camera_pause_when_hidden === true,
+              (checked) => this._toggleChanged('camera_pause_when_hidden', checked, false)
+            )}
+            <div class="description">${localize('editor.camera_pause_when_hidden_desc')}</div>
 
             ${this._renderCheckbox(
               'show-energy-in-rooms',
@@ -6650,6 +6677,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   override updated(changedProps: Map<string, unknown>): void {
     super.updated(changedProps);
+    if (!this._openingMeasured) { timeEnd('editor-open'); this._openingMeasured = true; }
     if (this._cardPickerOpen && this._cardPickerStep === 'editor' && !this._cardPickerHasVisualEditor) {
       this._tryMountVisualCardEditor();
     }

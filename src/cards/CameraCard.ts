@@ -4,7 +4,7 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig } from '../types/lovelace';
-import { localize } from '../utils/localize';
+import { localize, setupLocalize } from '../utils/localize';
 
 interface CameraCardConfig extends LovelaceCardConfig {
   entity: string;
@@ -12,6 +12,7 @@ interface CameraCardConfig extends LovelaceCardConfig {
   entities?: Array<string | Record<string, unknown>>;
   fit_mode?: 'cover' | 'contain' | 'fill';
   aspect_ratio?: string;
+  camera_pause_when_hidden?: boolean;
 }
 
 type NativeCameraCard = HTMLElement & {
@@ -33,10 +34,17 @@ class DashboardStrategyCameraCard extends HTMLElement {
   private _streamButton?: HTMLButtonElement;
   private _liveRequested = false;
   private _renderToken = 0;
+  private _observer?: IntersectionObserver;
+  private _visible = true;
+  private _pending = false;
+  private _nativeConfigKey = '';
+  private readonly _visibilityChanged = () => this._updateNativeCard();
 
   set hass(hass: HomeAssistant | undefined) {
+    const languageChanged = this._hass?.language !== hass?.language || this._hass?.locale !== hass?.locale;
     this._hass = hass;
     if (this._card) this._card.hass = hass;
+    if (languageChanged && hass) { setupLocalize(hass); this._updateStreamButton(); }
   }
 
   get hass(): HomeAssistant | undefined {
@@ -45,22 +53,33 @@ class DashboardStrategyCameraCard extends HTMLElement {
 
   setConfig(config: CameraCardConfig): void {
     if (!config?.entity) throw new Error('Camera entity must be specified');
+    if (JSON.stringify(this._config) === JSON.stringify(config)) return;
     this._config = config;
     this._liveRequested = false;
+    this._renderToken++;
+    this._pending = false;
+    this._configureVisibility();
     this._ensureCard();
   }
 
   connectedCallback(): void {
     this.style.display = 'block';
     this.style.position = 'relative';
+    this._configureVisibility();
     this._ensureCard();
   }
 
   disconnectedCallback(): void {
     // Invalidate card-helper work that may still be awaiting custom elements.
     this._renderToken++;
+    this._pending = false;
+    this._observer?.disconnect();
+    this._observer = undefined;
+    document.removeEventListener('visibilitychange', this._visibilityChanged);
     this._card = undefined;
     this._streamButton = undefined;
+    this._nativeConfigKey = '';
+    this.replaceChildren();
   }
 
   getCardSize(): number {
@@ -72,20 +91,25 @@ class DashboardStrategyCameraCard extends HTMLElement {
 
     if (this._card) {
       this._updateNativeCard();
-      this._renderContents();
       return;
     }
 
+    if (this._pending) return;
+    this._pending = true;
+
     const token = ++this._renderToken;
-    void this._createNativeCard(this._createNativeConfig())
+    const nativeConfig = this._createNativeConfig();
+    void this._createNativeCard(nativeConfig)
       .then((card) => {
-        if (token !== this._renderToken) return;
+        if (token !== this._renderToken || !this.isConnected) return;
+        this._pending = false;
         this._card = card;
+        this._nativeConfigKey = JSON.stringify(nativeConfig);
         this._updateNativeCard();
         this._renderContents();
       })
       .catch(() => {
-        if (token === this._renderToken) this._card = undefined;
+        if (token === this._renderToken) { this._card = undefined; this._pending = false; }
       });
   }
 
@@ -107,7 +131,7 @@ class DashboardStrategyCameraCard extends HTMLElement {
     const config = this._config!;
     const common = {
       camera_image: config.entity,
-      camera_view: this._liveRequested ? 'live' : 'auto',
+      camera_view: this._liveRequested && (!config.camera_pause_when_hidden || (this._visible && !document.hidden)) ? 'live' : 'auto',
       fit_mode: config.fit_mode ?? 'cover',
       aspect_ratio: config.aspect_ratio ?? '16:9',
     };
@@ -135,9 +159,31 @@ class DashboardStrategyCameraCard extends HTMLElement {
 
   private _updateNativeCard(): void {
     if (!this._card || !this._config) return;
-    this._card.setConfig?.(this._createNativeConfig());
+    const config = this._createNativeConfig();
+    const key = JSON.stringify(config);
+    if (key !== this._nativeConfigKey) {
+      this._card.setConfig?.(config);
+      this._nativeConfigKey = key;
+    }
     if (this._hass) this._card.hass = this._hass;
     this._updateStreamButton();
+  }
+
+  private _configureVisibility(): void {
+    this._observer?.disconnect();
+    this._observer = undefined;
+    document.removeEventListener('visibilitychange', this._visibilityChanged);
+    this._visible = true;
+    if (!this.isConnected || !this._config?.camera_pause_when_hidden) return;
+    document.addEventListener('visibilitychange', this._visibilityChanged);
+    if (typeof IntersectionObserver !== 'undefined') {
+      this._visible = false;
+      this._observer = new IntersectionObserver((entries) => {
+        this._visible = entries.some((entry) => entry.isIntersecting);
+        this._updateNativeCard();
+      });
+      this._observer.observe(this);
+    }
   }
 
   private _renderContents(): void {

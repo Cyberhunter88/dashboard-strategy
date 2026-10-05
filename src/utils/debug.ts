@@ -6,6 +6,7 @@
 // ====================================================================
 
 const DEBUG_PARAM = 's42_debug';
+const recentMeasures: Array<{ name: string; startTime: number; duration: number }> = [];
 
 /** Check if debug mode is active (cached after first check) */
 let _debugActive: boolean | null = null;
@@ -34,9 +35,15 @@ export function timeEnd(label: string): void {
   performance.mark(endMark);
   try {
     const measure = performance.measure(`s42-${label}`, startMark, endMark);
+    recentMeasures.push({ name: measure.name, startTime: measure.startTime, duration: measure.duration });
+    if (recentMeasures.length > 100) recentMeasures.shift();
     console.log(`[s42-perf] ${label}: ${measure.duration.toFixed(2)}ms`);
   } catch {
     // Start mark missing — timer was never started
+  } finally {
+    performance.clearMarks(startMark);
+    performance.clearMarks(endMark);
+    performance.clearMeasures(`s42-${label}`);
   }
 }
 
@@ -48,7 +55,12 @@ export function debugLog(message: string, ...args: unknown[]): void {
 
 /** Track how often set hass() is called on a component */
 const _hassCallCounts = new Map<string, number>();
-let _hassLogInterval: ReturnType<typeof setInterval> | null = null;
+let _hassLogInterval: ReturnType<typeof setTimeout> | null = null;
+
+/** Aggregated debug counters, including DOM creation and expensive computations. */
+export function trackOperation(name: string): void {
+  trackHassUpdate(name);
+}
 
 export function trackHassUpdate(componentName: string): void {
   if (!isDebugActive()) return;
@@ -56,7 +68,8 @@ export function trackHassUpdate(componentName: string): void {
 
   // Log aggregated counts every 5 seconds
   if (!_hassLogInterval) {
-    _hassLogInterval = setInterval(() => {
+    _hassLogInterval = setTimeout(() => {
+      _hassLogInterval = null;
       if (_hassCallCounts.size === 0) return;
       const entries = Array.from(_hassCallCounts.entries())
         .map(([name, count]) => `${name}=${count}`)
@@ -69,9 +82,7 @@ export function trackHassUpdate(componentName: string): void {
 
 /** Dump all s42 performance measures to console as sorted table */
 function dumpAllMeasures(): void {
-  const entries = performance
-    .getEntriesByType('measure')
-    .filter((e) => e.name.startsWith('s42-'))
+  const entries = [...recentMeasures]
     .sort((a, b) => a.startTime - b.startTime);
 
   if (entries.length === 0) {

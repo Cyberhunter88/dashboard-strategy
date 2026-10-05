@@ -64,4 +64,11 @@ describe('feature availability', () => {
     expect(resolveAutomaticFeatures({ show_maintenance_view: false }, hass).show_maintenance_view).toBe(false);
     expect(resolveAutomaticFeatures({ show_maintenance_view: true }, createHass({})).show_maintenance_view).toBe(true);
   });
+
+  it('does not inspect maintenance state when the choice is explicit', () => {
+    const hass = createHass({});
+    Object.defineProperty(hass, 'states', { get: () => { throw new Error('unnecessary scan'); } });
+    const config = { show_maintenance_view: false };
+    expect(resolveAutomaticFeatures(config, hass)).toBe(config);
+  });
 });

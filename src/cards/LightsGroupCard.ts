@@ -7,9 +7,10 @@ import type { HomeAssistant, HassEntity } from '../types/homeassistant';
 import type { AreaRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
-import { localize } from '../utils/localize';
+import { localize, setupLocalize } from '../utils/localize';
 import { stripAreaName, sortLights } from '../utils/name-utils';
 import { groupEntityIdsByAreas } from '../utils/area-group-utils';
+import { isRoomNavigationAvailable } from '../utils/room-visibility';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
 import { createEntityRenderKey } from '../utils/entity-render-key';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
@@ -17,6 +18,9 @@ import {
   createHeadingCardElement,
   createTileCardElement,
   haveEntityStatesChanged,
+  haveEntityMembershipChanged,
+  hasHassPresentationChanged,
+  setPooledCardConfig,
   propagateHassToCards,
   type LovelaceCardElement,
 } from '../utils/card-element-utils';
@@ -174,6 +178,8 @@ class Simon42LightsGroupCard extends LitElement {
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (hasHassPresentationChanged(oldHass, this.hass)) return true;
+    if (haveEntityMembershipChanged(oldHass, this.hass, this._config.entities ?? Registry.getVisibleCandidateIdsForDomain('light'))) return true;
     if (!oldHass) return true;
     if (oldHass.entities !== this.hass.entities) return true;
     if (oldHass.devices !== this.hass.devices) return true;
@@ -185,21 +191,22 @@ class Simon42LightsGroupCard extends LitElement {
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
-    if (!changedProps.has('hass') || !this.hass) return;
+    if (!this.hass) return;
 
     trackHassUpdate('lights-group');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    setupLocalize(this.hass);
 
     if (
-      !oldHass
+      hasHassPresentationChanged(oldHass, this.hass)
+      || haveEntityMembershipChanged(oldHass, this.hass, this._config.entities ?? Registry.getVisibleCandidateIdsForDomain('light'))
+      || !oldHass
       || oldHass.entities !== this.hass.entities
       || oldHass.devices !== this.hass.devices
       || (this._config.group_by_floors && oldHass.floors !== this.hass.floors)
       || (this._config.group_by_areas && oldHass.areas !== this.hass.areas)
     ) {
-      if (!Registry.isCurrent(this.hass, this._config.config || {})) {
-        Registry.initialize(this.hass, this._config.config || {});
-      }
+      Registry.initialize(this.hass, this._config.config || {});
       this._cachedSourceIds = null;
       this._cachedAreaForEntity = null;
       this._lastLightsList = '';
@@ -261,9 +268,9 @@ class Simon42LightsGroupCard extends LitElement {
 
   private _calculateRenderKey(lights: Iterable<string>): string {
     return createEntityRenderKey(lights, (entityId) => {
-      if (this._config.nested_groups !== true) return null;
-      const members = this._getState(entityId)?.attributes?.entity_id;
-      return Array.isArray(members) ? members : null;
+      const attrs = this._getState(entityId)?.attributes;
+      return [this._getDisplayName(entityId), attrs?.supported_features, attrs?.supported_color_modes,
+        this._config.nested_groups === true ? attrs?.entity_id : null];
     });
   }
 
@@ -292,7 +299,7 @@ class Simon42LightsGroupCard extends LitElement {
   private _getDisplayName(entityId: string): string | undefined {
     if (!this.hass) return undefined;
     if (this._config.area) {
-      return stripAreaName(entityId, this._config.area, this.hass);
+      return stripAreaName(entityId, this.hass.areas[this._config.area.area_id] ?? this._config.area, this.hass);
     }
     return undefined;
   }
@@ -430,7 +437,7 @@ class Simon42LightsGroupCard extends LitElement {
       type: 'heading',
       heading: group.areaName,
       heading_style: 'subtitle',
-      ...(group.areaId ? { tap_action: { action: 'navigate', navigation_path: group.areaId } } : {}),
+      ...(group.areaId && this.hass && isRoomNavigationAvailable(this._config.config || {}, this.hass, group.areaId) ? { tap_action: { action: 'navigate', navigation_path: group.areaId } } : {}),
     };
   }
 
@@ -486,9 +493,7 @@ class Simon42LightsGroupCard extends LitElement {
 
   private _getOrCreateTileCard(entityId: string): LovelaceCardElement {
     const existingCard = this._tileCards.get(entityId);
-    if (existingCard) return existingCard;
-
-    const card = createTileCardElement();
+    const card = existingCard ?? createTileCardElement();
     card.hass = this.hass;
     const cardConfig = buildAdaptiveTileCardConfig(this.hass!, entityId, {
       vertical: false,
@@ -502,7 +507,7 @@ class Simon42LightsGroupCard extends LitElement {
       delete cardConfig.features;
       delete cardConfig.features_position;
     }
-    card.setConfig(cardConfig);
+    setPooledCardConfig(card, cardConfig);
     card.dataset.entityId = entityId;
     this._tileCards.set(entityId, card);
     return card;

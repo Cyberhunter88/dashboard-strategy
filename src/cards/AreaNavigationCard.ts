@@ -33,14 +33,19 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private _config?: AreaNavigationCardConfig;
   private _card?: NativeAreaCard;
   private _renderToken = 0;
+  private _pending = false;
   private _tapStart: { pointerId: number; x: number; y: number } | null = null;
   private _lastPointerNavigation = 0;
   private readonly _boundHandleClick = (ev: MouseEvent) => this._handleClick(ev);
   private readonly _boundHandlePointerDown = (ev: PointerEvent) => this._handlePointerDown(ev);
   private readonly _boundHandlePointerUp = (ev: PointerEvent) => this._handlePointerUp(ev);
+  private readonly _boundHandleKeyDown = (ev: KeyboardEvent) => {
+    if ((ev.key === 'Enter' || ev.key === ' ') && this._canNavigate(ev) && !ev.repeat) this._navigate(ev);
+  };
 
   set hass(hass: HomeAssistant | undefined) {
     this._hass = hass;
+    this._updateLabel();
     if (this._card) this._card.hass = hass;
   }
 
@@ -50,6 +55,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
 
   setConfig(config: AreaNavigationCardConfig): void {
     this._config = config;
+    this._updateLabel();
     this._ensureCard();
   }
 
@@ -57,6 +63,10 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     this.style.display = 'block';
     this.style.cursor = 'pointer';
     this.style.touchAction = 'manipulation';
+    this.tabIndex = 0;
+    this.setAttribute('role', 'link');
+    this._updateLabel();
+    this.addEventListener('keydown', this._boundHandleKeyDown);
     this.addEventListener('pointerdown', this._boundHandlePointerDown, { capture: true });
     this.addEventListener('pointerup', this._boundHandlePointerUp, { capture: true });
     this.addEventListener('click', this._boundHandleClick, { capture: true });
@@ -64,32 +74,41 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this._renderToken++;
+    this._pending = false;
+    this.removeEventListener('keydown', this._boundHandleKeyDown);
+    this._tapStart = null;
     this.removeEventListener('pointerdown', this._boundHandlePointerDown, { capture: true });
     this.removeEventListener('pointerup', this._boundHandlePointerUp, { capture: true });
     this.removeEventListener('click', this._boundHandleClick, { capture: true });
   }
 
   private _ensureCard(): void {
-    if (!this._config) return;
+    if (!this._config || !this.isConnected) return;
 
     if (this._card) {
       this._updateNativeCard();
       return;
     }
 
+    if (this._pending) return;
+    this._pending = true;
+
     const token = ++this._renderToken;
     const nativeConfig = this._createNativeConfig();
 
     void this._createNativeCard(nativeConfig)
       .then((card) => {
-        if (token !== this._renderToken) return;
+        if (token !== this._renderToken || !this.isConnected) return;
+        this._pending = false;
 
         this._card = card;
+        this._updateNativeCard();
         if (this._hass) this._card.hass = this._hass;
         this.replaceChildren(this._card);
       })
       .catch(() => {
-        if (token === this._renderToken) this._card = undefined;
+        if (token === this._renderToken) { this._card = undefined; this._pending = false; }
       });
   }
 
@@ -204,6 +223,10 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
 
   getCardSize(): number {
     return this._card?.getCardSize?.() ?? 1;
+  }
+
+  private _updateLabel(): void {
+    this.setAttribute('aria-label', String(this._config?.name ?? this._hass?.areas[String(this._config?.area)]?.name ?? this._config?.area ?? ''));
   }
 }
 

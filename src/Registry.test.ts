@@ -52,6 +52,27 @@ beforeEach(() => {
 });
 
 describe('Registry', () => {
+  it('tracks returning states without rebuilding registries or exposing disabled candidates', () => {
+    const hass = hassWith([entity('light.returning'), entity('light.disabled', { disabled_by: 'user' })], { states: {} });
+    Registry.initialize(hass, {});
+    const candidates = Registry.getVisibleCandidateIdsForDomain('light');
+    expect(candidates).toEqual(['light.returning']);
+    expect(Registry.getVisibleEntityIdsForDomain('light')).toEqual([]);
+    const returning = hassWith([entity('light.returning')]).states;
+    Registry.initialize({ ...hass, states: returning }, {});
+    expect(Registry.getVisibleCandidateIdsForDomain('light')).toBe(candidates);
+    expect(Registry.getVisibleEntityIdsForDomain('light')).toEqual(['light.returning']);
+  });
+  it('reuses indexes when only non-filtering dashboard options change', () => {
+    const hass = hassWith([entity('light.visible')]);
+    const config = {};
+    Registry.initialize(hass, config);
+    const entries = Registry.getVisibleEntitiesForArea('living_room');
+    const updated = { show_maintenance_view: true };
+    Registry.initialize(hass, updated);
+    expect(Registry.getVisibleEntitiesForArea('living_room')).toBe(entries);
+    expect(Registry.config).toBe(updated);
+  });
   it('keeps raw entries while filtering hidden, excluded, and diagnostic entries', () => {
     const entries = [
       entity('light.visible'),

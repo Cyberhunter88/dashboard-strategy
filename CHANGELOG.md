@@ -4,6 +4,14 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...HEAD).
 
+## 1.33.0 (unreleased)
+
+- Reuse registry indexes and pooled native cards across dashboard generation and state updates; refresh relevant attributes, language and area metadata.
+- Extend the existing editor diagnostics with cached YAML analysis, entity status classification, configuration paths and grouped layout/navigation hints.
+- Add optional native camera pause while hidden (`camera_pause_when_hidden`, default `false`), with manual start/stop preservation and asynchronous cleanup.
+- Improve mobile editor fields, readable summary labels and keyboard navigation; preserve custom YAML layouts and public strategy identifiers.
+- Add synthetic large-household benchmarks, browser regression checks and bounded debug measurements. Refresh compatible development dependencies.
+
 <a name="1.29.0"></a>
 ## [1.29.2](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.1...v1.29.2) (2026-09-03)
 

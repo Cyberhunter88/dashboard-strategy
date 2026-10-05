@@ -28,6 +28,7 @@ export function resolveAutomaticFeatures(
   config: Simon42StrategyConfig,
   hass: HomeAssistant
 ): Simon42StrategyConfig {
+  if (config.show_maintenance_view !== undefined) return config;
   const maintenanceAvailable = hasMaintenanceCapability(hass, config);
   return {
     ...config,

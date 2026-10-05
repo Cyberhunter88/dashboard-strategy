@@ -7,16 +7,20 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
-import { localize } from '../utils/localize';
+import { localize, setupLocalize } from '../utils/localize';
 import { getBatteryEntities } from '../utils/entity-filter';
 import { getBatteryStatus, type BatteryStatus } from '../utils/battery-utils';
 import { getEntityDisplayName } from '../utils/name-utils';
 import { groupEntityIdsByAreas } from '../utils/area-group-utils';
+import { isRoomNavigationAvailable } from '../utils/room-visibility';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import {
   createHeadingCardElement,
   createTileCardElement,
   haveEntityStatesChanged,
+  hasHassPresentationChanged,
+  haveEntityMembershipChanged,
+  setPooledCardConfig,
   propagateHassToCards,
   type LovelaceCardElement,
 } from '../utils/card-element-utils';
@@ -93,6 +97,7 @@ class DashboardStrategyBatteriesCard extends LitElement {
   `;
 
   setConfig(config: BatteriesCardConfig): void {
+    if (config.config === this._config) return;
     this._config = config.config || {};
     this._sourceIds = null;
     this._lastLayoutKey = '';
@@ -108,6 +113,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    if (hasHassPresentationChanged(oldHass, this.hass)) return true;
+    if (haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())) return true;
     if (!oldHass || oldHass.entities !== this.hass.entities || oldHass.devices !== this.hass.devices) return true;
     if (this._config.group_batteries_by_areas === true && oldHass.areas !== this.hass.areas) return true;
     if (!this._sourceIds) return true;
@@ -115,10 +122,11 @@ class DashboardStrategyBatteriesCard extends LitElement {
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
-    if (!changedProps.has('hass') || !this.hass) return;
+    if (!this.hass) return;
 
     trackHassUpdate('batteries-card');
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    setupLocalize(this.hass);
     if (
       oldHass
       && this._config.group_batteries_by_areas === true
@@ -126,13 +134,11 @@ class DashboardStrategyBatteriesCard extends LitElement {
     ) {
       this._lastLayoutKey = '';
     }
-    if (!oldHass || oldHass.entities !== this.hass.entities || oldHass.devices !== this.hass.devices) {
-      if (!Registry.isCurrent(this.hass, this._config)) {
-        Registry.initialize(this.hass, this._config);
-      }
+    if (hasHassPresentationChanged(oldHass, this.hass) || haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())) {
+      Registry.initialize(this.hass, this._config);
       this._sourceIds = null;
       this._lastLayoutKey = '';
-      this._clearCardPool();
+      this._tileStatuses.clear();
     }
 
     if (!this._sourceIds) {
@@ -182,7 +188,7 @@ class DashboardStrategyBatteriesCard extends LitElement {
     if (!this.hass || !this._sourceIds) return;
 
     const layoutKey = `${this._config.group_batteries_by_areas === true}|${BATTERY_STATUSES.map(
-      (status) => `${status}:${this._renderedGroups[status].join(',')}`
+      (status) => `${status}:${JSON.stringify(this._renderedGroups[status].map((id) => [id, this._getTileName(id), this.hass?.states[id]?.attributes.supported_features]))}`
     ).join('|')}`;
     if (layoutKey === this._lastLayoutKey) return;
     this._lastLayoutKey = layoutKey;
@@ -213,7 +219,7 @@ class DashboardStrategyBatteriesCard extends LitElement {
               type: 'heading',
               heading: areaGroup.areaName,
               heading_style: 'subtitle',
-              ...(areaGroup.areaId
+              ...(areaGroup.areaId && isRoomNavigationAvailable(this._config, this.hass, areaGroup.areaId)
                 ? { tap_action: { action: 'navigate', navigation_path: areaGroup.areaId } }
                 : {}),
             });
@@ -251,6 +257,10 @@ class DashboardStrategyBatteriesCard extends LitElement {
 
   private _emptyGroups(): BatteryGroups {
     return { critical: [], low: [], good: [] };
+  }
+
+  private _getCandidates(): string[] {
+    return [...Registry.getVisibleCandidateIdsForDomain('sensor'), ...Registry.getVisibleCandidateIdsForDomain('binary_sensor')];
   }
 
   private _emptyAreaGroups(): BatteryAreaGroups {
@@ -364,8 +374,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
       this._tileCards.set(entityId, card);
     }
 
-    if (this._tileStatuses.get(entityId) !== status) {
-      card.setConfig(
+    if (this.hass) {
+      setPooledCardConfig(card,
         buildAdaptiveTileCardConfig(this.hass!, entityId, {
           vertical: false,
           state_content: ['state', 'last_changed'],
