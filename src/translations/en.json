@@ -165,6 +165,16 @@
     "stop_camera_stream": "Stop live stream"
   },
   "editor": {
+    "diagnostics_title": "Dashboard check",
+    "diagnostics_check": "Check configuration",
+    "diagnostics_help": "Checks structured entity references. Templates and stream names are not checked. Settings are preserved.",
+    "diagnostics_ok": "No missing or unavailable entity references found.",
+    "diagnostics_missing": "Entity missing",
+    "diagnostics_unavailable": "Currently unavailable",
+    "diagnostics_open": "Open editor section",
+    "entity_existing_restricted": "Existing diagnostic/configuration entry",
+    "override_active": "Custom room layout",
+    "override_active_help": "Replaces the automatic room view. Click to edit its YAML.",
     "section_order": "Section Order",
     "section_order_desc": "Drag sections to reorder them on the overview page. Empty sections are hidden automatically.",
     "section_hidden": "hidden",

@@ -148,6 +148,8 @@ Anschließend öffnet sich über das **Stift-Icon** oben rechts in dem Strategy-
 
 ## Konfiguration
 
+Der Editor bietet eine eingeklappte **Dashboard-Prüfung** für strukturierte Entitätsverweise, einschließlich eigener YAML-Karten und Aktionstargets. Fehlende und momentan nicht verfügbare Entitäten werden mit Konfigurationsstelle und einem Link zum Editorabschnitt angezeigt. Die Prüfung verändert keine Einstellungen; Templates und go2rtc-Streamnamen werden nicht geprüft. Eigene vollständige Raumlayouts sind direkt in der Bereichsliste markiert und können dort zum Bearbeiten geöffnet werden. Diagnose- und Konfigurationsentitäten werden bei der allgemeinen Entitätsauswahl nur angeboten, wenn sie bereits konfiguriert sind.
+
 Alle Einstellungen lassen sich bequem über den **grafischen Editor** vornehmen (Stift-Icon → Drei Punkte → Dashboard bearbeiten). Die folgenden Abschnitte dokumentieren die verfügbaren Optionen.
 
 <p align="center">
@@ -409,7 +411,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `favorites_hide_last_changed` | boolean | `false` | `last_changed` auf Favoriten-Kacheln ausblenden |
 | `overview_max_columns` | 1 \| 2 \| 3 \| 4 | `3` | Maximale Spaltenzahl der Startseite |
 | `overview_area_card_columns` | 4 \| 6 \| `"full"` | `"full"` | Breite generierter Bereichskarten |
-| `weather_start_weather_mode` | `"full"` \| `"compact_hourly"` | `"full"` | Vollständiges Wetter oder kompakte 6-Stunden-Tile |
+| `weather_start_weather_mode` | `"full"` \| `"compact_hourly"` | `"compact_hourly"` bei Standardlayout, sonst `"full"` | Vollständiges Wetter oder kompakte 6-Stunden-Tile |
 | `weather_start_date_card` | `"button-card"` \| `"markdown"` | `"button-card"` | Datumskarte mit optionalem nativem Fallback |
 | `show_plants_section` | boolean | `false` | Pflanzen-Section auf der Übersicht |
 | `show_agenda_section` | boolean | `false` | Agenda-Section auf der Übersicht |
@@ -426,7 +428,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `view_visible_users` | object | `{}` | Sichtbare Benutzer pro View-Pfad; leeres Array blendet die View für alle aus |
 | `section_visible_users` | object | `{}` | Sichtbare Benutzer pro Übersichtsabschnitt; leeres Array blendet den Abschnitt für alle aus |
 | `room_visibility` | object | `{}` | Raum-View und Navigation an einen Entity-Zustand binden |
-| `weather_start_order` | string[] | Standard-Reihenfolge | Reihenfolge der Blöcke in der Wetter-Startseite |
+| `weather_start_order` | string[] | Hausmodus, Alarm, Status, Favoriten, Räume, Uhr/Datum, Wetter und weitere Bereiche | Reihenfolge der Blöcke in der Wetter-Startseite; eigene Reihenfolgen bleiben maßgeblich |
 | `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
 | `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |
 | `group_by_floors` | boolean | `false` | Bereiche nach Etagen gliedern |

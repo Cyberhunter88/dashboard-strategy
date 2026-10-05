@@ -135,7 +135,7 @@ function applyToCard(
   return wrapEditableCard(viewPath, editId, card, edits);
 }
 
-function sectionId(viewPath: string, section: LovelaceSectionConfig, index: number): string {
+function sectionId(section: LovelaceSectionConfig, index: number): string {
   if (typeof section.id === 'string') return slug(section.id);
   if (typeof section.title === 'string') return slug(section.title);
   const firstHeading = section.cards?.find((card) => card.type === 'heading' && typeof card.heading === 'string');
@@ -151,7 +151,7 @@ function applyToSection(
   usedIds: Map<string, number>
 ): LovelaceSectionConfig {
   if (!Array.isArray(section.cards)) return section;
-  const id = sectionId(viewPath, section, index);
+  const id = sectionId(section, index);
 
   return {
     ...section,

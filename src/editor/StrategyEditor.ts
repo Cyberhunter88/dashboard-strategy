@@ -1,13 +1,13 @@
 // ====================================================================
 // SIMON42 DASHBOARD STRATEGY - EDITOR (LitElement)
 // ====================================================================
-// Single-file LitElement editor replacing the previous 4-file
-// vanilla HTMLElement + innerHTML pattern.
+// LitElement editor host with focused rendering panels under ./panels.
 // ====================================================================
 
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import yaml from 'js-yaml';
+import { collectEntityReferences, inspectConfig, isRestrictedEntity, isSelectableEntity } from './config-diagnostics';
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type {
@@ -22,20 +22,17 @@ import type {
   SectionKey,
   StackKey,
   AreaDisplayType,
-  WeatherPresentation,
-  WeatherSensorConfig,
   WeatherStartKey,
   WeatherStartLayoutItem,
 } from '../types/strategy';
 import {
-  ALL_HEADING_KEYS,
-  DEFAULT_SECTIONS_ORDER,
   DEFAULT_STACKS_ORDER,
   DEFAULT_WEATHER_START_ORDER,
 } from '../types/strategy';
 import type { AreaRegistryEntry } from '../types/registries';
 import { localize } from '../utils/localize';
 import { getEffectiveDeviceAreaId } from '../utils/device-utils';
+import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../utils/weather-start-defaults';
 import { isDefaultShowName, resolveShowName } from '../utils/badge-utils';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
@@ -44,6 +41,7 @@ import { extractedPanelStyles } from './editor-styles';
 import { renderViewsPanel } from './panels/ViewsPanel';
 import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
 import { renderDesignSection } from './panels/DesignPanel';
+import { renderWeatherStartOrderPanel, type WeatherStartFloorOption } from './panels/WeatherStartPanel';
 import { loadExpandedPanels, renderCollapsiblePanel } from './panels/panel-shell';
 import { editorPanelMeta, WEATHER_START_BLOCK_META } from './editor-panel-registry';
 import {
@@ -75,12 +73,6 @@ interface DomainGroup {
   key: string;
   label: string;
   icon: string;
-}
-
-interface WeatherStartFloorOption {
-  floor_id: string | null;
-  name: string;
-  icon?: string | null;
 }
 
 interface ParsedEditorYaml {
@@ -234,6 +226,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _favoriteSearch = '';
   private _roomPinSearch = '';
   _expandedPanels = loadExpandedPanels();
+  private _diagnosticsChecked = false;
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<
     string,
@@ -250,6 +243,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
   >();
   private _entitySelectOptionsCache: {
+    config: Simon42StrategyConfig;
     entities: HomeAssistant['entities'];
     devices: HomeAssistant['devices'];
     states: HomeAssistant['states'];
@@ -275,7 +269,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // Drag state (not reactive — no render needed)
   private _draggedElement: HTMLElement | null = null;
-  private _sectionDraggedElement: HTMLElement | null = null;
   private _stackDraggedElement: HTMLElement | null = null;
   private _weatherStartDraggedElement: HTMLElement | null = null;
 
@@ -305,7 +298,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._weatherStartFloorOptionsCache = null;
       this._sortedAreasCache = null;
     }
-    if (!oldHass) this.requestUpdate();
+    if (!oldHass || this._expandedPanels.has('diagnostics')) this.requestUpdate();
   }
 
   setConfig(config: Simon42StrategyConfig): void {
@@ -319,6 +312,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._invalidateWeatherStartOptionsCaches();
     }
     this._config = config;
+    this._entitySelectOptionsCache = null;
   }
 
   private _invalidateWeatherStartOptionsCaches(): void {
@@ -340,6 +334,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!this._hass) return [];
     if (
       this._entitySelectOptionsCache &&
+      this._entitySelectOptionsCache.config === this._config &&
       this._entitySelectOptionsCache.entities === this._hass.entities &&
       this._entitySelectOptionsCache.devices === this._hass.devices &&
       this._entitySelectOptionsCache.states === this._hass.states
@@ -359,7 +354,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     });
 
     const hass = this._hass;
-    const options = Object.keys(hass.states)
+    const selected = new Set(collectEntityReferences(this._config).map((ref) => ref.entityId));
+    const options = [...new Set([...Object.keys(hass.states), ...selected])]
+      .filter((id) => isSelectableEntity(hass, id, selected))
       .map((entityId) => {
         const stateObj = hass.states[entityId];
         const entity = entityMap[entityId];
@@ -371,13 +368,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
         return {
           entity_id: entityId,
-          name: stateObj.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '),
+          name: (stateObj?.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '))
+            + (isRestrictedEntity(hass, entityId) ? ` (${localize('editor.entity_existing_restricted')})` : ''),
           area_id: areaId,
           device_area_id: areaId,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
     this._entitySelectOptionsCache = {
+      config: this._config,
       entities: this._hass.entities,
       devices: this._hass.devices,
       states: this._hass.states,
@@ -427,61 +426,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  private _getEntitiesByDomains(domains: string[]): { entity_id: string; name: string }[] {
-    if (!this._hass) return [];
-    const allowed = new Set(domains);
-    return Object.keys(this._hass.states)
-      .filter((entityId) => allowed.has(entityId.split('.')[0]))
-      .map((entityId) => {
-        const stateObj = this._hass!.states[entityId];
-        return {
-          entity_id: entityId,
-          name: stateObj.attributes?.friendly_name || entityId,
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  private _formatEntityList(value?: string[]): string {
-    return (value || []).join(', ');
-  }
-
-  private _formatWeatherSensors(value?: WeatherSensorConfig[]): string {
-    return (value || [])
-      .map((sensor) => [sensor.entity, sensor.icon || '', sensor.unit || '', sensor.round ?? ''].join('|'))
-      .join('\n');
-  }
-
-  private _parseEntityList(value: string): string[] {
-    return value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  private _parseWeatherSensors(value: string): WeatherSensorConfig[] {
-    return value
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [entity, icon, unit, round] = line.split('|').map((part) => part.trim());
-        const parsedRound = round === undefined || round === '' ? undefined : Number.parseInt(round, 10);
-        return {
-          entity,
-          ...(icon ? { icon } : {}),
-          ...(unit ? { unit } : {}),
-          ...(Number.isInteger(parsedRound) ? { round: parsedRound } : {}),
-        };
-      })
-      .filter((sensor) => sensor.entity.includes('.'));
-  }
-
-  private _getThemeNames(): string[] {
-    if (!this._hass?.themes?.themes) return [];
-    return Object.keys(this._hass.themes.themes).sort((a, b) => a.localeCompare(b));
   }
 
   _getSortedAreas(): AreaRegistryEntry[] {
@@ -987,30 +931,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
         color: var(--secondary-text-color);
         font-style: italic;
         margin-left: 8px;
-      }
-      .section-order-item .section-toggle {
-        margin-left: auto;
-        cursor: pointer;
-      }
-      .section-order-item .section-toggle input {
-        cursor: pointer;
-        width: 16px;
-        height: 16px;
-      }
-      .section-order-sub {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px 8px 56px;
-        border-bottom: 1px solid var(--divider-color);
-        font-size: 13px;
-        color: var(--secondary-text-color);
-      }
-      .section-order-sub input {
-        cursor: pointer;
-      }
-      .section-order-sub label {
-        cursor: pointer;
       }
       .section-order-compact {
         margin-top: 8px;
@@ -1751,6 +1671,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
+        ${renderCollapsiblePanel(this, { key: 'diagnostics', icon: 'mdi:clipboard-check-outline', label: localize('editor.diagnostics_title') }, () => this._renderDiagnostics())}
         ${renderCollapsiblePanel(this, editorPanelMeta('overview'), () => this._renderBasicOverviewSection())}
         ${renderCollapsiblePanel(this, editorPanelMeta('summaries'), () => this._renderBasicSummariesSection())}
         ${renderCollapsiblePanel(this, editorPanelMeta('favorites'), () => this._renderFavoritesSection())}
@@ -1781,6 +1702,47 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Section order panel -----------------------------------------------
 
+  private async _openDiagnosticLocation(path: string): Promise<void> {
+    const key = path.startsWith('areas_') ? 'areaOptions' : path.startsWith('room_pin') ? 'roomPins'
+      : path.startsWith('weather_start') ? 'sectionOrder' : path.startsWith('custom_') ? 'customContent'
+      : path.includes('favorite') ? 'favorites' : 'overview';
+    const panel = editorPanelMeta(key);
+    this._expandedPanels.add(panel.key);
+    const areaId = path.startsWith('areas_options.') ? path.split('.')[1] : undefined;
+    if (areaId) {
+      this._expandedAreas = new Set([...this._expandedAreas, areaId]);
+      if (!this._areaEntitiesCache.has(areaId)) void this._loadAreaEntities(areaId);
+    }
+    this.requestUpdate();
+    await this.updateComplete;
+    const header = [...(this.shadowRoot?.querySelectorAll('.panel-header') ?? [])]
+      .find((element) => element.textContent?.includes(panel.label));
+    const area = areaId ? [...(this.shadowRoot?.querySelectorAll<HTMLElement>('.area-item') ?? [])]
+      .find((element) => element.dataset.areaId === areaId) : undefined;
+    (area ?? header)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (areaId && path.includes('view_override')) area?.querySelector('textarea')?.focus();
+  }
+
+  private _renderDiagnostics(): TemplateResult {
+    const issues = this._diagnosticsChecked && this._hass ? inspectConfig(this._config, this._hass) : [];
+    return html`
+      <p>${localize('editor.diagnostics_help')}</p>
+      <button type="button" @click=${() => { this._diagnosticsChecked = true; this.requestUpdate(); }}>
+        ${localize('editor.diagnostics_check')}
+      </button>
+      <div role="status" aria-live="polite">
+        ${this._diagnosticsChecked && !issues.length ? html`<p>${localize('editor.diagnostics_ok')}</p>` : nothing}
+      </div>
+      ${issues.map((issue) => html`<div class="custom-item">
+        <strong>${localize('editor.diagnostics_' + issue.status)}</strong>: ${issue.entityId}
+        <div>${issue.path}</div>
+        <button type="button" @click=${() => void this._openDiagnosticLocation(issue.path)}>
+          ${localize('editor.diagnostics_open')}
+        </button>
+      </div>`)}
+    `;
+  }
+
   private _renderAdvancedOptionsSection(): TemplateResult {
     const hideUnavailableEntities = this._config.hide_unavailable_entities === true;
     const denseSectionPlacement = this._config.dense_section_placement === true;
@@ -1808,388 +1770,6 @@ class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _getSectionsOrder(): SectionKey[] {
-    return this._config.sections_order || [...DEFAULT_SECTIONS_ORDER];
-  }
-
-  private _updateSectionsOrder(newOrder: SectionKey[]): void {
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      sections_order: newOrder,
-    };
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  }
-
-  private _isSectionDisabled(key: SectionKey): boolean {
-    switch (key) {
-      case 'custom_cards':
-        return (this._config.custom_cards || []).length === 0;
-      case 'custom_sections':
-        return (this._config.custom_sections || []).length === 0;
-      case 'weather':
-        return this._config.show_weather === false;
-      case 'energy':
-        return this._config.show_energy === false;
-      case 'plants':
-        return this._config.show_plants_section !== true;
-      case 'agenda':
-        return this._config.show_agenda_section !== true;
-      case 'todos':
-        return this._config.show_todos_section !== true;
-      case 'persons':
-        return this._config.show_persons_section !== true;
-      case 'vacuums':
-        return this._config.show_vacuums_section !== true;
-      case 'maintenance':
-        return this._config.show_maintenance_section !== true;
-      default:
-        return false;
-    }
-  }
-
-  private static _sectionMeta = new Map<SectionKey, { icon: string; labelKey: string }>([
-    ['overview', { icon: 'mdi:home-outline', labelKey: 'sections.overview' }],
-    ['custom_cards', { icon: 'mdi:cards', labelKey: 'sections.custom_cards' }],
-    ['custom_sections', { icon: 'mdi:view-grid-plus-outline', labelKey: 'sections.custom_sections' }],
-    ['areas', { icon: 'mdi:floor-plan', labelKey: 'sections.areas' }],
-    ['weather', { icon: 'mdi:weather-partly-cloudy', labelKey: 'sections.weather' }],
-    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'sections.energy' }],
-    ['plants', { icon: 'mdi:flower-outline', labelKey: 'sections.plants' }],
-    ['agenda', { icon: 'mdi:calendar-outline', labelKey: 'sections.agenda' }],
-    ['todos', { icon: 'mdi:checkbox-marked-circle-outline', labelKey: 'sections.todos' }],
-    ['persons', { icon: 'mdi:account-group-outline', labelKey: 'sections.persons' }],
-    ['vacuums', { icon: 'mdi:robot-vacuum', labelKey: 'sections.vacuums' }],
-    ['maintenance', { icon: 'mdi:wrench-outline', labelKey: 'sections.maintenance' }],
-  ]);
-
-  private _isSectionToggleable(key: SectionKey): boolean {
-    return ['weather', 'energy', 'plants', 'agenda', 'todos', 'persons', 'vacuums', 'maintenance'].includes(key);
-  }
-
-  private _toggleSectionVisibility(key: SectionKey, visible: boolean): void {
-    if (key === 'weather') {
-      this._toggleChanged('show_weather', visible, true);
-    } else if (key === 'energy') {
-      this._toggleChanged('show_energy', visible, true);
-    } else if (key === 'plants') {
-      this._toggleChanged('show_plants_section', visible, false);
-    } else if (key === 'agenda') {
-      this._toggleChanged('show_agenda_section', visible, false);
-    } else if (key === 'todos') {
-      this._toggleChanged('show_todos_section', visible, false);
-    } else if (key === 'persons') {
-      this._toggleChanged('show_persons_section', visible, false);
-    } else if (key === 'vacuums') {
-      this._toggleChanged('show_vacuums_section', visible, false);
-    } else if (key === 'maintenance') {
-      this._toggleChanged('show_maintenance_section', visible, false);
-    }
-  }
-
-  private _toggleHiddenHeading(key: string, hide: boolean): void {
-    const current = new Set(this._config.hidden_section_headings || []);
-    if (hide) current.add(key as any);
-    else current.delete(key as any);
-
-    const updated: Simon42StrategyConfig = { ...this._config };
-    if (current.size === 0) delete updated.hidden_section_headings;
-    else updated.hidden_section_headings = [...current] as any;
-
-    this._config = updated;
-    this._fireConfigChanged(updated);
-  }
-
-  private _sectionVisibilityChanged(sectionKey: SectionKey, field: 'entity' | 'state', value: string): void {
-    const updated: Simon42StrategyConfig = { ...this._config };
-    const current = { ...(updated.section_visibility || {}) };
-    const rule = { ...(current[sectionKey] || { entity: '', state: '' }) };
-    rule[field] = value.trim();
-
-    if (!rule.entity && !rule.state) delete current[sectionKey];
-    else current[sectionKey] = rule;
-
-    if (Object.keys(current).length === 0) delete updated.section_visibility;
-    else updated.section_visibility = current;
-
-    this._config = updated;
-    this._fireConfigChanged(updated);
-  }
-
-  private _renderSectionOrderPanel(): TemplateResult {
-    const order = this._getSectionsOrder();
-    const energyLinkDashboard = this._config.energy_link_dashboard !== false;
-    const showEnergy = this._config.show_energy !== false;
-    const weatherPresentation = this._config.weather_presentation || 'forecast_daily';
-    const showDistributionCard = this._config.show_energy_distribution_card !== false;
-    const powerBadgeEntity = this._config.power_badge_entity || '';
-    const powerBadgeEntities = this._getEntitiesByDomains(['sensor', 'binary_sensor', 'number', 'input_number']);
-    const hiddenHeadings = new Set(this._config.hidden_section_headings || []);
-
-    return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.section_order')}</div>
-        <div class="description" style="margin-left: 0; margin-bottom: 12px;">
-          ${localize('editor.section_order_desc')}
-        </div>
-        <div class="section-order-list" id="section-order-list">
-          ${order.map((key) => {
-            const meta = Simon42DashboardStrategyEditor._sectionMeta.get(key);
-            if (!meta) return nothing;
-            const disabled = this._isSectionDisabled(key);
-            const toggleable = this._isSectionToggleable(key);
-            return html`
-              <div
-                class="section-order-item ${disabled ? 'disabled' : ''}"
-                data-section-key=${key}
-                draggable="true"
-                @dragstart=${this._handleSectionDragStart}
-                @dragend=${this._handleSectionDragEnd}
-                @dragover=${this._handleSectionDragOver}
-                @dragleave=${this._handleSectionDragLeave}
-                @drop=${this._handleSectionDrop}
-              >
-                <span class="drag-handle" draggable="true">&#x2630;</span>
-                <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
-                <span class="section-label">${localize(meta.labelKey)}</span>
-                ${disabled && !toggleable
-                  ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>`
-                  : nothing}
-                ${toggleable
-                  ? html`
-                      <label
-                        class="section-toggle"
-                        @mousedown=${(e: Event) => {
-                          e.stopPropagation();
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          ?checked=${!disabled}
-                          @change=${(e: Event) => {
-                            this._toggleSectionVisibility(key, (e.target as HTMLInputElement).checked);
-                          }}
-                          @dragstart=${(e: Event) => {
-                            e.stopPropagation();
-                          }}
-                        />
-                      </label>
-                    `
-                  : nothing}
-              </div>
-              ${key === 'energy' && showEnergy
-                ? html`
-                    <div class="section-order-sub">
-                      <input
-                        type="checkbox"
-                        id="energy-link-dashboard"
-                        ?checked=${energyLinkDashboard}
-                        @change=${(e: Event) => {
-                          this._toggleChanged('energy_link_dashboard', (e.target as HTMLInputElement).checked, true);
-                        }}
-                      />
-                      <label for="energy-link-dashboard">${localize('editor.energy_link_dashboard')}</label>
-                    </div>
-                    <div class="section-order-sub">
-                      <input
-                        type="checkbox"
-                        id="show-energy-distribution-card"
-                        ?checked=${showDistributionCard}
-                        @change=${(e: Event) => {
-                          this._toggleChanged(
-                            'show_energy_distribution_card',
-                            (e.target as HTMLInputElement).checked,
-                            true
-                          );
-                        }}
-                      />
-                      <label for="show-energy-distribution-card"
-                        >${localize('editor.show_energy_distribution_card')}</label
-                      >
-                    </div>
-                    <div class="section-order-sub">
-                      <label for="power-badge-entity" style="min-width: 140px;"
-                        >${localize('editor.power_badge_entity')}</label
-                      >
-                      <select id="power-badge-entity" style="flex: 1;" @change=${this._powerBadgeEntityChanged}>
-                        <option value="" ?selected=${!powerBadgeEntity}>${localize('editor.power_badge_none')}</option>
-                        ${powerBadgeEntities.map(
-                          (entity) => html`
-                            <option value=${entity.entity_id} ?selected=${entity.entity_id === powerBadgeEntity}>
-                              ${entity.name}
-                            </option>
-                          `
-                        )}
-                      </select>
-                    </div>
-                    <div class="description">${localize('editor.power_badge_entity_desc')}</div>
-                  `
-                : nothing}
-              ${key === 'weather' && !disabled
-                ? html`
-                    <div class="section-order-sub">
-                      <label for="weather-presentation" style="min-width: 140px;"
-                        >${localize('editor.weather_presentation')}</label
-                      >
-                      <select id="weather-presentation" style="flex: 1;" @change=${this._weatherPresentationChanged}>
-                        <option value="forecast_daily" ?selected=${weatherPresentation === 'forecast_daily'}>
-                          ${localize('editor.weather_presentation_forecast_daily')}
-                        </option>
-                        <option value="forecast_hourly" ?selected=${weatherPresentation === 'forecast_hourly'}>
-                          ${localize('editor.weather_presentation_forecast_hourly')}
-                        </option>
-                        <option
-                          value="forecast_twice_daily"
-                          ?selected=${weatherPresentation === 'forecast_twice_daily'}
-                        >
-                          ${localize('editor.weather_presentation_forecast_twice_daily')}
-                        </option>
-                        <option value="tile" ?selected=${weatherPresentation === 'tile'}>
-                          ${localize('editor.weather_presentation_tile')}
-                        </option>
-                        <option value="none" ?selected=${weatherPresentation === 'none'}>
-                          ${localize('editor.weather_presentation_none')}
-                        </option>
-                      </select>
-                    </div>
-                    ${this._renderCheckbox(
-                      'show-weather-forecast-card',
-                      localize('editor.show_weather_forecast_card'),
-                      this._config.show_weather_forecast_card !== false,
-                      (checked) => this._toggleChanged('show_weather_forecast_card', checked, true)
-                    )}
-                    <div class="description">${localize('editor.show_weather_forecast_card_desc')}</div>
-                    <div class="form-row" style="align-items: flex-start;">
-                      <label for="weather-sensors" style="min-width: 140px; margin-top: 6px;"
-                        >${localize('editor.section_weather_sensors')}</label
-                      >
-                      <textarea
-                        id="weather-sensors"
-                        rows="4"
-                        style="flex: 1;"
-                        placeholder="sensor.outside_temperature|mdi:thermometer|°C|1"
-                        @change=${this._weatherSensorsChanged}
-                      >
-${this._formatWeatherSensors(this._config.weather_sensors)}</textarea
-                      >
-                    </div>
-                    <div class="description">${localize('editor.weather_sensors_desc')}</div>
-                  `
-                : nothing}
-              ${key === 'agenda' && !disabled
-                ? html`
-                    <div class="form-row" style="align-items: flex-start;">
-                      <label for="agenda-calendar-entities" style="min-width: 140px; margin-top: 6px;"
-                        >${localize('editor.agenda_calendar_entities')}</label
-                      >
-                      <textarea
-                        id="agenda-calendar-entities"
-                        rows="3"
-                        style="flex: 1;"
-                        placeholder="calendar.family, calendar.work"
-                        @change=${this._agendaCalendarEntitiesChanged}
-                      >
-${this._formatEntityList(this._config.agenda_calendar_entities)}</textarea
-                      >
-                    </div>
-                    <div class="description">${localize('editor.agenda_calendar_entities_desc')}</div>
-                  `
-                : nothing}
-              ${key === 'todos' && !disabled
-                ? html`
-                    <div class="form-row" style="align-items: flex-start;">
-                      <label for="todos-entities" style="min-width: 140px; margin-top: 6px;"
-                        >${localize('editor.todos_entities')}</label
-                      >
-                      <textarea
-                        id="todos-entities"
-                        rows="3"
-                        style="flex: 1;"
-                        placeholder="todo.home, todo.shopping"
-                        @change=${this._todosEntitiesChanged}
-                      >
-${this._formatEntityList(this._config.todos_entities)}</textarea
-                      >
-                    </div>
-                    <div class="description">${localize('editor.todos_entities_desc')}</div>
-                  `
-                : nothing}
-            `;
-          })}
-        </div>
-        <details style="margin-top: 12px;">
-          <summary style="cursor: pointer; font-weight: 500;">${localize('editor.hidden_section_headings')}</summary>
-          <div style="margin-left: 14px; margin-top: 6px;">
-            <div class="description" style="margin-left: 0; margin-bottom: 8px;">
-              ${localize('editor.hidden_section_headings_desc')}
-            </div>
-            ${ALL_HEADING_KEYS.map(
-              (key) => html`
-                <div class="form-row">
-                  <input
-                    type="checkbox"
-                    id=${`hide-heading-${key}`}
-                    ?checked=${hiddenHeadings.has(key)}
-                    @change=${(e: Event) => this._toggleHiddenHeading(key, (e.target as HTMLInputElement).checked)}
-                  />
-                  <label for=${`hide-heading-${key}`}>${localize(`sections.${key}`)}</label>
-                </div>
-              `
-            )}
-          </div>
-        </details>
-        <details style="margin-top: 12px;">
-          <summary style="cursor: pointer; font-weight: 500;">${localize('editor.section_visibility')}</summary>
-          <div style="margin-left: 14px; margin-top: 6px;">
-            <div class="description" style="margin-left: 0; margin-bottom: 8px;">
-              ${localize('editor.section_visibility_desc')}
-            </div>
-            ${order.map((key) => {
-              const meta = Simon42DashboardStrategyEditor._sectionMeta.get(key);
-              if (!meta) return nothing;
-              const rule = this._config.section_visibility?.[key];
-              return html`
-                <div
-                  style="border: 1px solid var(--divider-color); border-radius: 6px; padding: 8px; margin-bottom: 8px;"
-                >
-                  <div style="font-weight: 500; margin-bottom: 6px;">${localize(meta.labelKey)}</div>
-                  <div class="form-row">
-                    <label for=${`visibility-entity-${key}`} style="min-width: 80px; font-size: 12px;"
-                      >${localize('editor.section_visibility_entity')}</label
-                    >
-                    <input
-                      type="text"
-                      id=${`visibility-entity-${key}`}
-                      style="flex: 1;"
-                      placeholder="input_boolean.guest_mode"
-                      .value=${rule?.entity || ''}
-                      @change=${(e: Event) =>
-                        this._sectionVisibilityChanged(key, 'entity', (e.target as HTMLInputElement).value)}
-                    />
-                  </div>
-                  <div class="form-row">
-                    <label for=${`visibility-state-${key}`} style="min-width: 80px; font-size: 12px;"
-                      >${localize('editor.section_visibility_state')}</label
-                    >
-                    <input
-                      type="text"
-                      id=${`visibility-state-${key}`}
-                      style="flex: 1;"
-                      placeholder="on"
-                      .value=${rule?.state || ''}
-                      @change=${(e: Event) =>
-                        this._sectionVisibilityChanged(key, 'state', (e.target as HTMLInputElement).value)}
-                    />
-                  </div>
-                </div>
-              `;
-            })}
-          </div>
-        </details>
-      </div>
-    `;
-  }
-
   // -- Weather-start block order panel -----------------------------------
 
   private _getWeatherStartOrder(): WeatherStartKey[] {
@@ -2204,7 +1784,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       case 'weather_daily':
         return this._config.show_weather === false;
       case 'weather_hourly':
-        return this._config.show_weather === false || this._config.weather_start_weather_mode === 'compact_hourly';
+        return this._config.show_weather === false || getWeatherStartWeatherMode(this._config) === 'compact_hourly';
       case 'weather_details':
         return (this._config.weather_sensors || []).length === 0 && (this._config.pollen_entities || []).length === 0;
       case 'favorites':
@@ -2253,6 +1833,14 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
   private static _weatherStartBlockMeta = new Map<WeatherStartKey, { icon: string; labelKey: string }>(
     Object.entries(WEATHER_START_BLOCK_META) as [WeatherStartKey, { icon: string; labelKey: string }][]
   );
+
+  private static _sectionMeta = new Map<SectionKey, { icon: string; labelKey: string }>([
+    ['overview', { icon: 'mdi:home-outline', labelKey: 'sections.overview' }],
+    ['custom_cards', { icon: 'mdi:cards', labelKey: 'sections.custom_cards' }],
+    ['areas', { icon: 'mdi:floor-plan', labelKey: 'sections.areas' }],
+    ['weather', { icon: 'mdi:weather-partly-cloudy', labelKey: 'sections.weather' }],
+    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'sections.energy' }],
+  ]);
 
   private _createWeatherStartItemId(prefix: string): string {
     return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -2926,9 +2514,7 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     for (const item of items) {
       if (item.type !== 'floor') continue;
       for (const area of areas) {
-        if (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id) {
-          placedAreaIds.add(area.area_id);
-        }
+        if (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id) placedAreaIds.add(area.area_id);
       }
     }
     const unplacedAreas = areas.filter((area) => !placedAreaIds.has(area.area_id));
@@ -2937,203 +2523,50 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
       stackRun = item.stack_with_previous ? stackRun + 1 : 0;
       return stackRun >= 2;
     });
+    const panelItems = items.map((item) => {
+      const meta = this._getWeatherStartItemMeta(item, areas, customCards, customSections);
+      const customCardIndex = this._getWeatherStartCustomCardIndex(item, customCards);
+      const customSectionIndex = this._getWeatherStartCustomSectionIndex(item, customSections);
+      return {
+        item,
+        ...meta,
+        disabled: this._isWeatherStartItemDisabled(item, customCards, customSections),
+        expanded: this._expandedWeatherBlocks.has(item.id),
+        customCard: customCardIndex >= 0 ? customCards[customCardIndex] : undefined,
+        customCardIndex,
+        customSection: customSectionIndex >= 0 ? customSections[customSectionIndex] : undefined,
+        customSectionIndex,
+        fixedGridCount: this._countNestedFixedGrids(item.parsed_config),
+      };
+    });
 
-    return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.weather_start_order')}</div>
-        <div class="description" style="margin-left: 0; margin-bottom: 12px;">
-          ${localize('editor.weather_start_order_desc')}
-        </div>
-        ${hasLongStackChain
-          ? html`
-              <div style="color:var(--warning-color,#f0a000);font-size:12px;margin:0 0 10px 0;">
-                ${localize('editor.weather_start_stack_warning')}
-              </div>
-            `
-          : nothing}
-        <div class="section-order-list" id="weather-start-order-list">
-          ${items.map((item) => {
-            const meta = this._getWeatherStartItemMeta(item, areas, customCards, customSections);
-            const disabled = this._isWeatherStartItemDisabled(item, customCards, customSections);
-            const isExpanded = this._expandedWeatherBlocks.has(item.id);
-            const hasOverride = !!item.yaml;
-            const canRemove = item.type !== 'area' && item.type !== 'floor';
-            const customCardIndex = this._getWeatherStartCustomCardIndex(item, customCards);
-            const customCard = customCardIndex >= 0 ? customCards[customCardIndex] : undefined;
-            const customSectionIndex = this._getWeatherStartCustomSectionIndex(item, customSections);
-            const customSection = customSectionIndex >= 0 ? customSections[customSectionIndex] : undefined;
-            const fixedGridCount = this._countNestedFixedGrids(item.parsed_config);
-            return html`
-              <div>
-                <div
-                  class="section-order-item ${disabled ? 'disabled' : ''}"
-                  data-ws-id=${item.id}
-                  draggable="true"
-                  @dragstart=${this._handleWeatherStartDragStart}
-                  @dragend=${this._handleWeatherStartDragEnd}
-                  @dragover=${this._handleWeatherStartDragOver}
-                  @dragleave=${this._handleWeatherStartDragLeave}
-                  @drop=${this._handleWeatherStartDrop}
-                >
-                  <span class="drag-handle" draggable="true">&#x2630;</span>
-                  <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
-                  <span class="section-label">${meta.label}</span>
-                  ${disabled
-                    ? html`<span class="section-hidden-tag">(${localize('editor.section_hidden')})</span>`
-                    : nothing}
-                  ${hasOverride
-                    ? html`<span
-                        class="section-hidden-tag"
-                        style="background:var(--primary-color);color:#fff;margin-left:4px;"
-                        >✎</span
-                      >`
-                    : nothing}
-                  <button
-                    class="icon-btn"
-                    style="margin-left:auto;"
-                    title=${localize('editor.weather_start_block_expand')}
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._toggleWeatherBlockExpanded(item.id);
-                    }}
-                  >
-                    <ha-icon icon=${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}></ha-icon>
-                  </button>
-                  ${canRemove
-                    ? html`
-                        <button
-                          class="icon-btn"
-                          title=${localize('editor.remove')}
-                          @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._removeWeatherStartItem(item.id);
-                          }}
-                        >
-                          <ha-icon icon="mdi:delete-outline"></ha-icon>
-                        </button>
-                      `
-                    : nothing}
-                </div>
-                ${isExpanded
-                  ? html`
-                      <div
-                        style="padding: 8px 12px 12px 12px; background: var(--secondary-background-color); border-radius: 0 0 8px 8px; margin-bottom: 4px;"
-                      >
-                        ${customCard ? this._renderWeatherStartCustomCardEditor(customCard, customCardIndex) : nothing}
-                        ${customSection
-                          ? this._renderWeatherStartCustomSectionEditor(customSection, customSectionIndex)
-                          : nothing}
-                        ${!customCard && !customSection && item.type === 'summaries'
-                          ? html`
-                              <label class="form-row" style="margin: 0 0 8px 0;">
-                                <span style="min-width: 120px;">${localize('editor.weather_start_summary_size')}</span>
-                                <select
-                                  style="flex:1;"
-                                  .value=${item.summary_size || 'mini'}
-                                  @change=${(e: Event) =>
-                                    this._weatherStartSummarySizeChanged(
-                                      item.id,
-                                      (e.target as HTMLSelectElement).value as 'mini' | 'normal'
-                                    )}
-                                >
-                                  <option value="mini">${localize('editor.weather_start_summary_size_mini')}</option>
-                                  <option value="normal">
-                                    ${localize('editor.weather_start_summary_size_normal')}
-                                  </option>
-                                </select>
-                              </label>
-                            `
-                          : nothing}
-                        ${!customCard && !customSection
-                          ? html`
-                              <label class="form-row" style="margin: 0 0 8px 0;">
-                                <input
-                                  type="checkbox"
-                                  ?checked=${item.stack_with_previous === true}
-                                  @change=${(e: Event) =>
-                                    this._toggleWeatherStartItemStack(item.id, (e.target as HTMLInputElement).checked)}
-                                />
-                                <span>${localize('editor.weather_start_stack_with_previous')}</span>
-                              </label>
-                              <div class="description" style="margin: 0 0 6px 0;">
-                                ${localize('editor.weather_start_block_yaml_desc')}
-                              </div>
-                              <textarea
-                                rows="6"
-                                style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
-                                placeholder=${localize('editor.yaml_placeholder')}
-                                .value=${item.yaml || ''}
-                                @change=${(e: Event) =>
-                                  this._updateWeatherStartItemYaml(item.id, (e.target as HTMLTextAreaElement).value)}
-                              ></textarea>
-                              ${item._yaml_error
-                                ? html`<div style="color:var(--error-color);font-size:12px;margin-top:4px;">
-                                    ${item._yaml_error}
-                                  </div>`
-                                : nothing}
-                              ${fixedGridCount > 0
-                                ? html`<div style="color:var(--warning-color,#f0a000);font-size:12px;margin-top:4px;">
-                                    ${localize('editor.weather_start_responsive_warning').replace(
-                                      '{count}',
-                                      String(fixedGridCount)
-                                    )}
-                                  </div>`
-                                : nothing}
-                              ${item.parsed_config
-                                ? html`<div style="color:var(--success-color,green);font-size:12px;margin-top:4px;">
-                                    ${localize('editor.yaml_valid')}
-                                  </div>`
-                                : nothing}
-                              ${hasOverride
-                                ? html`
-                                    <button
-                                      class="text-btn"
-                                      style="margin-top:8px;"
-                                      @click=${() => this._resetWeatherStartItemYaml(item.id)}
-                                    >
-                                      ${localize('editor.weather_start_block_reset')}
-                                    </button>
-                                  `
-                                : nothing}
-                            `
-                          : nothing}
-                      </div>
-                    `
-                  : nothing}
-              </div>
-            `;
-          })}
-        </div>
-        <div class="description" style="margin: 12px 0 6px 0;">
-          ${localize('editor.weather_start_add_content_desc')}
-        </div>
-        <div class="custom-item-row weather-start-add-row">
-          <button class="btn-primary" @click=${this._openCardPickerForWeatherStartCard}>
-            ${localize('editor.weather_start_add_card')}
-          </button>
-          ${!hasSummariesBlock
-            ? html`
-                <button class="btn-primary" @click=${this._addWeatherStartSummaries}>
-                  ${localize('editor.weather_start_add_summaries')}
-                </button>
-              `
-            : nothing}
-          <button class="btn-primary" @click=${this._addWeatherStartSection}>
-            ${localize('editor.weather_start_add_section')}
-          </button>
-          <select @change=${this._addWeatherStartArea}>
-            <option value="">${localize('editor.weather_start_add_area')}</option>
-            ${unplacedAreas.map((area) => html`<option value=${area.area_id}>${area.name}</option>`)}
-          </select>
-          <select @change=${this._addWeatherStartFloor}>
-            <option value="">${localize('editor.weather_start_add_floor')}</option>
-            ${floors.map((floor) => html`<option value=${floor.floor_id || '__none__'}>${floor.name}</option>`)}
-          </select>
-        </div>
-      </div>
-    `;
+    return renderWeatherStartOrderPanel({
+      items: panelItems,
+      areas,
+      floors,
+      unplacedAreas,
+      hasSummariesBlock,
+      hasLongStackChain,
+      renderCustomCardEditor: (card, index) => this._renderWeatherStartCustomCardEditor(card, index),
+      renderCustomSectionEditor: (section, index) => this._renderWeatherStartCustomSectionEditor(section, index),
+      onDragStart: this._handleWeatherStartDragStart,
+      onDragEnd: this._handleWeatherStartDragEnd,
+      onDragOver: this._handleWeatherStartDragOver,
+      onDragLeave: this._handleWeatherStartDragLeave,
+      onDrop: this._handleWeatherStartDrop,
+      onToggleExpanded: (itemId) => this._toggleWeatherBlockExpanded(itemId),
+      onRemove: (itemId) => this._removeWeatherStartItem(itemId),
+      onSummarySizeChanged: (itemId, size) => this._weatherStartSummarySizeChanged(itemId, size),
+      onStackChanged: (itemId, checked) => this._toggleWeatherStartItemStack(itemId, checked),
+      onYamlChanged: (itemId, value) => this._updateWeatherStartItemYaml(itemId, value),
+      onResetYaml: (itemId) => this._resetWeatherStartItemYaml(itemId),
+      onAddCard: this._openCardPickerForWeatherStartCard,
+      onAddSummaries: () => this._addWeatherStartSummaries(),
+      onAddSection: () => this._addWeatherStartSection(),
+      onAddArea: (event) => this._addWeatherStartArea(event),
+      onAddFloor: (event) => this._addWeatherStartFloor(event),
+    });
   }
-
   // -- Weather-start block order drag & drop -----------------------------
 
   private _handleWeatherStartDragStart = (ev: DragEvent): void => {
@@ -3207,81 +2640,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     newOrder.splice(dropIndex, 0, currentOrder[draggedIndex]);
 
     this._saveWeatherStartLayoutItems(newOrder);
-  };
-
-  // -- Section order drag & drop -----------------------------------------
-
-  private _handleSectionDragStart = (ev: DragEvent): void => {
-    const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) {
-      ev.preventDefault();
-      return;
-    }
-
-    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (!item) {
-      ev.preventDefault();
-      return;
-    }
-
-    item.classList.add('dragging');
-    if (ev.dataTransfer) {
-      ev.dataTransfer.effectAllowed = 'move';
-      ev.dataTransfer.setData('text/plain', item.dataset.sectionKey || '');
-    }
-    this._sectionDraggedElement = item;
-  };
-
-  private _handleSectionDragEnd = (ev: DragEvent): void => {
-    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (item) item.classList.remove('dragging');
-
-    const list = this.shadowRoot?.querySelector('#section-order-list');
-    if (list) {
-      list.querySelectorAll('.section-order-item').forEach((el) => {
-        el.classList.remove('drag-over');
-      });
-    }
-    this._sectionDraggedElement = null;
-  };
-
-  private _handleSectionDragOver = (ev: DragEvent): void => {
-    ev.preventDefault();
-    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
-
-    const item = ev.currentTarget as HTMLElement;
-    if (item !== this._sectionDraggedElement) {
-      item.classList.add('drag-over');
-    }
-  };
-
-  private _handleSectionDragLeave = (ev: DragEvent): void => {
-    (ev.currentTarget as HTMLElement).classList.remove('drag-over');
-  };
-
-  private _handleSectionDrop = (ev: DragEvent): void => {
-    ev.stopPropagation();
-    ev.preventDefault();
-
-    const dropTarget = ev.currentTarget as HTMLElement;
-    dropTarget.classList.remove('drag-over');
-
-    if (!this._sectionDraggedElement || this._sectionDraggedElement === dropTarget) return;
-
-    const draggedKey = this._sectionDraggedElement.dataset.sectionKey as SectionKey | undefined;
-    const dropKey = dropTarget.dataset.sectionKey as SectionKey | undefined;
-    if (!draggedKey || !dropKey) return;
-
-    const currentOrder = this._getSectionsOrder();
-    const draggedIndex = currentOrder.indexOf(draggedKey);
-    const dropIndex = currentOrder.indexOf(dropKey);
-    if (draggedIndex === -1 || dropIndex === -1) return;
-
-    const newOrder = [...currentOrder];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(dropIndex, 0, draggedKey);
-
-    this._updateSectionsOrder(newOrder);
   };
 
   // -- Room stack order panel -------------------------------------------
@@ -3504,7 +2862,8 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const weatherEntities = this._getWeatherEntities();
     const overviewMaxColumns = this._config.overview_max_columns ?? 3;
     const areaCardColumns = this._config.overview_area_card_columns ?? 'full';
-    const weatherMode = this._config.weather_start_weather_mode ?? 'full';
+    const weatherMode = getWeatherStartWeatherMode(this._config);
+    const weatherModeDefault = usesDefaultWeatherStartLayout(this._config) ? 'compact_hourly' : 'full';
     const dateCard = this._config.weather_start_date_card ?? 'button-card';
 
     return html`
@@ -3559,9 +2918,13 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
         <div class="form-row">
           <label style="margin-right: 8px; min-width: 120px;">${localize('editor.weather_start_weather_mode')}</label>
           <select
-            style="flex: 1;"
-            @change=${(e: Event) =>
-              this._simpleOptionChanged('weather_start_weather_mode', (e.target as HTMLSelectElement).value, 'full')}
+          style="flex: 1;"
+          @change=${(e: Event) =>
+              this._simpleOptionChanged(
+                'weather_start_weather_mode',
+                (e.target as HTMLSelectElement).value,
+                weatherModeDefault
+              )}
           >
             <option value="full" ?selected=${weatherMode === 'full'}>${localize('editor.weather_mode_full')}</option>
             <option value="compact_hourly" ?selected=${weatherMode === 'compact_hourly'}>
@@ -4494,81 +3857,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     })}${renderRoomVisibilityPanel(this)}${renderUserVisibilityPanel(this)}`;
   }
 
-  private _renderRoomVisibilityRules(): TemplateResult {
-    if (!this._hass) return html``;
-    return html`<div class="section">
-      <div class="section-title">${localize('editor.room_visibility')}</div>
-      <div class="description" style="margin-left: 0;">${localize('editor.room_visibility_desc')}</div>
-      ${this._getSortedAreas().map((area) => {
-        const rule = this._config.room_visibility?.[area.area_id];
-        return html`<div class="option-group">
-          <div class="option-group-title">${area.name}</div>
-          <div class="form-row">
-            <ha-textfield label=${localize('editor.room_visibility_entity')} .value=${rule?.entity || ''}
-              @change=${(event: Event) => this._roomVisibilityChanged(area.area_id, 'entity', (event.target as HTMLInputElement).value)}></ha-textfield>
-            <ha-textfield label=${localize('editor.room_visibility_state')} .value=${rule?.state || ''}
-              @change=${(event: Event) => this._roomVisibilityChanged(area.area_id, 'state', (event.target as HTMLInputElement).value)}></ha-textfield>
-          </div>
-        </div>`;
-      })}
-    </div>`;
-  }
-
-  private _roomVisibilityChanged(areaId: string, field: 'entity' | 'state', value: string): void {
-    const rules = { ...(this._config.room_visibility || {}) };
-    const next = { entity: rules[areaId]?.entity || '', state: rules[areaId]?.state || '', [field]: value.trim() };
-    if (next.entity || next.state) rules[areaId] = next;
-    else delete rules[areaId];
-    const updated = { ...this._config };
-    if (Object.keys(rules).length > 0) updated.room_visibility = rules;
-    else delete updated.room_visibility;
-    this._fireConfigChanged(updated);
-  }
-
-  private _renderUserVisibilityRules(): TemplateResult {
-    if (!this._hass) return html``;
-    const users = Object.entries(this._hass.states)
-      .filter(([id, state]) => id.startsWith('person.') && typeof state.attributes.user_id === 'string')
-      .map(([id, state]) => ({ id: state.attributes.user_id as string, name: String(state.attributes.friendly_name || id) }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    if (users.length === 0) return html``;
-    const viewOptions = [
-      ['home', localize('views.overview')], ['lights', localize('views.lights')],
-      ['covers', localize('views.covers')], ['security', localize('views.security')],
-      ['batteries', localize('views.batteries')], ['climate', localize('views.climate')],
-      ['cctv', localize('views.cctv')], ['maintenance', localize('views.maintenance')],
-      ...Object.values(this._hass.areas).map((area) => [area.area_id, area.name]),
-      ...(this._config.custom_views || []).filter((view) => view.path && view.title).map((view) => [view.path, view.title]),
-    ] as [string, string][];
-    const sectionOptions = DEFAULT_WEATHER_START_ORDER.map((key) => [key, localize(`weather_start_blocks.${key}`)] as [string, string]);
-    const renderRules = (kind: 'view' | 'section', options: [string, string][]) => options.map(([key, title]) => {
-      const map = kind === 'view' ? this._config.view_visible_users : this._config.section_visible_users;
-      const selected = Object.prototype.hasOwnProperty.call(map || {}, key) ? map?.[key] || [] : users.map((user) => user.id);
-      return html`<div class="option-group"><div class="option-group-title">${title}</div>${users.map((user) =>
-        this._renderCheckbox(`${kind}-${key}-${user.id}`, user.name, selected.includes(user.id), (checked) =>
-          this._userVisibilityChanged(kind, key, user.id, users.map((entry) => entry.id), checked))
-      )}</div>`;
-    });
-    return html`<div class="section"><div class="section-title">${localize('editor.user_visibility')}</div>
-      <div class="description" style="margin-left: 0;">${localize('editor.user_visibility_warning')}</div>
-      <div class="option-group-title">${localize('editor.user_visibility_views')}</div>${renderRules('view', viewOptions)}
-      <div class="option-group-title">${localize('editor.user_visibility_sections')}</div>${renderRules('section', sectionOptions)}
-    </div>`;
-  }
-
-  private _userVisibilityChanged(kind: 'view' | 'section', key: string, userId: string, knownUsers: string[], checked: boolean): void {
-    const current = { ...((kind === 'view' ? this._config.view_visible_users : this._config.section_visible_users) || {}) };
-    const selected = new Set(Object.prototype.hasOwnProperty.call(current, key) ? current[key] : knownUsers);
-    if (checked) selected.add(userId); else selected.delete(userId);
-    if (knownUsers.every((id) => selected.has(id)) && [...selected].every((id) => knownUsers.includes(id))) delete current[key];
-    else current[key] = [...selected];
-    const updated = { ...this._config };
-    if (kind === 'view') {
-      if (Object.keys(current).length) updated.view_visible_users = current; else delete updated.view_visible_users;
-    } else if (Object.keys(current).length) updated.section_visible_users = current; else delete updated.section_visible_users;
-    this._fireConfigChanged(updated);
-  }
-
   private _renderCustomContentSection(): TemplateResult {
     const isWeatherStart = true;
 
@@ -5190,6 +4478,10 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
               @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)}
             />
             <span class="area-name">${area.name}</span>
+            ${this._config.areas_options?.[area.area_id]?.view_override?.yaml
+              ? html`<button type="button" title=${localize('editor.override_active_help')}
+                  @click=${() => void this._openDiagnosticLocation(`areas_options.${area.area_id}.view_override`)}>
+                  ${localize('editor.override_active')}</button>` : nothing}
             ${area.icon ? html`<ha-icon class="area-icon" icon=${area.icon}></ha-icon>` : nothing}
             <button
               class="nav-pin-button ${isPinned ? 'pinned' : ''}"
@@ -5986,51 +5278,6 @@ ${this._formatEntityList(this._config.todos_entities)}</textarea
     const newConfig: Simon42StrategyConfig = { ...this._config };
     if (value === 'with_state') delete newConfig.person_badge_layout;
     else newConfig.person_badge_layout = value;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _weatherPresentationChanged = (e: Event): void => {
-    const value = (e.target as HTMLSelectElement).value as WeatherPresentation;
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (value === 'forecast_daily') delete newConfig.weather_presentation;
-    else newConfig.weather_presentation = value;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _powerBadgeEntityChanged = (e: Event): void => {
-    const value = (e.target as HTMLSelectElement).value.trim();
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (!value) delete newConfig.power_badge_entity;
-    else newConfig.power_badge_entity = value;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _agendaCalendarEntitiesChanged = (e: Event): void => {
-    const values = this._parseEntityList((e.target as HTMLTextAreaElement).value);
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (values.length === 0) delete newConfig.agenda_calendar_entities;
-    else newConfig.agenda_calendar_entities = values;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _todosEntitiesChanged = (e: Event): void => {
-    const values = this._parseEntityList((e.target as HTMLTextAreaElement).value);
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (values.length === 0) delete newConfig.todos_entities;
-    else newConfig.todos_entities = values;
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-  };
-
-  private _weatherSensorsChanged = (e: Event): void => {
-    const values = this._parseWeatherSensors((e.target as HTMLTextAreaElement).value);
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (values.length === 0) delete newConfig.weather_sensors;
-    else newConfig.weather_sensors = values;
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
   };

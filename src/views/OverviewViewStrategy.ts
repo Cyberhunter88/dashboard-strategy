@@ -54,6 +54,7 @@ import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { mergeConfiguredOrder } from '../utils/order-utils';
 import { resolveAutomaticFeatures } from '../utils/feature-availability';
 import { attachCustomCardsToSection } from '../utils/custom-card-section-utils';
+import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../utils/weather-start-defaults';
 import {
   parsedConfigToSections,
   renderParsedCustomCardAsSection,
@@ -61,27 +62,27 @@ import {
   withSectionVisibility,
 } from '../utils/lovelace-utils';
 
-function createLargeTimeCard(): LovelaceCardConfig {
+function createLargeTimeCard(compact = false): LovelaceCardConfig {
   // Native clock card — DOMPurify strips style in markdown cards in recent HA versions.
   return {
     type: 'clock',
     clock_style: 'digital',
-    clock_size: 'large',
+    clock_size: compact ? 'small' : 'large',
     show_seconds: false,
     no_background: false,
     face_style: 'markers',
     grid_options: {
       columns: 'full',
-      rows: 2,
+      rows: compact ? 1 : 2,
     },
   };
 }
 
-function createLargeDateCard(config: Simon42StrategyConfig): LovelaceCardConfig {
+function createLargeDateCard(config: Simon42StrategyConfig, compact = false): LovelaceCardConfig {
   if (config.weather_start_date_card === 'markdown') {
     return {
       type: 'markdown',
-      content: "# {{ now().strftime('%d.%m.%Y') }}",
+      content: `${compact ? '####' : '#'} {{ now().strftime('%d.%m.%Y') }}`,
       text_only: true,
       grid_options: { columns: 'full', rows: 1 },
     };
@@ -111,7 +112,7 @@ function createLargeDateCard(config: Simon42StrategyConfig): LovelaceCardConfig 
         { 'box-shadow': 'var(--ha-card-box-shadow, none)' },
         { border: 'var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, transparent)' },
         { height: '100%' },
-        { 'min-height': '56px' },
+        { 'min-height': compact ? '40px' : '56px' },
         { display: 'flex' },
         { 'align-items': 'center' },
         { 'justify-content': 'center' },
@@ -119,7 +120,7 @@ function createLargeDateCard(config: Simon42StrategyConfig): LovelaceCardConfig 
       ],
       grid: [{ height: '100%' }, { display: 'flex' }, { 'align-items': 'center' }, { 'justify-content': 'center' }],
       name: [
-        { 'font-size': '32px' },
+        { 'font-size': compact ? '20px' : '32px' },
         { 'font-weight': '600' },
         { 'line-height': '1' },
         { color: 'var(--primary-text-color)' },
@@ -295,6 +296,8 @@ function createWeatherStartSectionsFromItems(
   hass: HomeAssistant,
   additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {}
 ): LovelaceSectionConfig[] {
+  const compactDefaultPresentation = usesDefaultWeatherStartLayout(dashboardConfig);
+  const weatherStartMode = getWeatherStartWeatherMode(dashboardConfig);
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
   const normalizedItems = normalizeWeatherStartLayoutItemsForRender(items, visibleAreas, dashboardConfig, hass);
   const sections: LovelaceSectionConfig[] = [];
@@ -329,10 +332,12 @@ function createWeatherStartSectionsFromItems(
     let section: LovelaceSectionConfig | null = null;
     switch (item.type) {
       case 'clock':
-        section = dashboardConfig.show_clock_card !== false ? { type: 'grid', cards: [createLargeTimeCard()] } : null;
+        section = dashboardConfig.show_clock_card !== false
+          ? { type: 'grid', cards: [createLargeTimeCard(compactDefaultPresentation)] }
+          : null;
         break;
       case 'date':
-        section = { type: 'grid', cards: [createLargeDateCard(dashboardConfig)] };
+        section = { type: 'grid', cards: [createLargeDateCard(dashboardConfig, compactDefaultPresentation)] };
         break;
       case 'summaries':
         section = createWeatherStartSummariesSection(dashboardConfig, item.summary_size || 'mini');
@@ -361,7 +366,7 @@ function createWeatherStartSectionsFromItems(
       case 'weather_current':
         section =
           weatherEntity && dashboardConfig.show_weather !== false
-            ? dashboardConfig.weather_start_weather_mode === 'compact_hourly'
+            ? weatherStartMode === 'compact_hourly'
               ? createCompactWeatherSection(weatherEntity)
               : {
                   type: 'grid',
@@ -387,7 +392,7 @@ function createWeatherStartSectionsFromItems(
         section =
           weatherEntity &&
           dashboardConfig.show_weather !== false &&
-          dashboardConfig.weather_start_weather_mode !== 'compact_hourly'
+          weatherStartMode !== 'compact_hourly'
             ? {
                 type: 'grid',
                 cards: [
@@ -568,6 +573,8 @@ function createWeatherStartSections(
   blocksConfig: Partial<Record<WeatherStartKey, WeatherStartBlockConfig>> = {},
   additionalBlocks: Partial<Record<WeatherStartKey, LovelaceSectionConfig | null>> = {}
 ): LovelaceSectionConfig[] {
+  const compactDefaultPresentation = usesDefaultWeatherStartLayout(dashboardConfig);
+  const weatherStartMode = getWeatherStartWeatherMode(dashboardConfig);
   const normalizedOrder = mergeConfiguredOrder(order, DEFAULT_WEATHER_START_ORDER);
 
   const blockMap = new Map<WeatherStartKey, LovelaceSectionConfig | LovelaceSectionConfig[] | null>();
@@ -579,7 +586,7 @@ function createWeatherStartSections(
       dashboardConfig.show_clock_card !== false
         ? {
             type: 'grid',
-            cards: [createLargeTimeCard()],
+            cards: [createLargeTimeCard(compactDefaultPresentation)],
           }
         : null,
       blocksConfig
@@ -592,7 +599,7 @@ function createWeatherStartSections(
       'date',
       {
         type: 'grid',
-        cards: [createLargeDateCard(dashboardConfig)],
+        cards: [createLargeDateCard(dashboardConfig, compactDefaultPresentation)],
       },
       blocksConfig
     )
@@ -611,7 +618,7 @@ function createWeatherStartSections(
     withBlockOverride(
       'weather_current',
       weatherEntity && dashboardConfig.show_weather !== false
-        ? dashboardConfig.weather_start_weather_mode === 'compact_hourly'
+        ? weatherStartMode === 'compact_hourly'
           ? createCompactWeatherSection(weatherEntity)
           : {
               type: 'grid',
@@ -642,7 +649,7 @@ function createWeatherStartSections(
       'weather_hourly',
       weatherEntity &&
         dashboardConfig.show_weather !== false &&
-        dashboardConfig.weather_start_weather_mode !== 'compact_hourly'
+        weatherStartMode !== 'compact_hourly'
         ? {
             type: 'grid',
             cards: [
