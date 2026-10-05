@@ -7,6 +7,7 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import yaml from 'js-yaml';
+import { collectEntityReferences, inspectConfig, isRestrictedEntity, isSelectableEntity } from './config-diagnostics';
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type {
@@ -225,6 +226,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
   private _favoriteSearch = '';
   private _roomPinSearch = '';
   _expandedPanels = loadExpandedPanels();
+  private _diagnosticsChecked = false;
   // Cache for loaded area entities (avoid re-fetching on every render)
   private _areaEntitiesCache = new Map<
     string,
@@ -241,6 +243,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     }
   >();
   private _entitySelectOptionsCache: {
+    config: Simon42StrategyConfig;
     entities: HomeAssistant['entities'];
     devices: HomeAssistant['devices'];
     states: HomeAssistant['states'];
@@ -295,7 +298,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._weatherStartFloorOptionsCache = null;
       this._sortedAreasCache = null;
     }
-    if (!oldHass) this.requestUpdate();
+    if (!oldHass || this._expandedPanels.has('diagnostics')) this.requestUpdate();
   }
 
   setConfig(config: Simon42StrategyConfig): void {
@@ -309,6 +312,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
       this._invalidateWeatherStartOptionsCaches();
     }
     this._config = config;
+    this._entitySelectOptionsCache = null;
   }
 
   private _invalidateWeatherStartOptionsCaches(): void {
@@ -330,6 +334,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
     if (!this._hass) return [];
     if (
       this._entitySelectOptionsCache &&
+      this._entitySelectOptionsCache.config === this._config &&
       this._entitySelectOptionsCache.entities === this._hass.entities &&
       this._entitySelectOptionsCache.devices === this._hass.devices &&
       this._entitySelectOptionsCache.states === this._hass.states
@@ -349,7 +354,9 @@ class Simon42DashboardStrategyEditor extends LitElement {
     });
 
     const hass = this._hass;
-    const options = Object.keys(hass.states)
+    const selected = new Set(collectEntityReferences(this._config).map((ref) => ref.entityId));
+    const options = [...new Set([...Object.keys(hass.states), ...selected])]
+      .filter((id) => isSelectableEntity(hass, id, selected))
       .map((entityId) => {
         const stateObj = hass.states[entityId];
         const entity = entityMap[entityId];
@@ -361,13 +368,15 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
         return {
           entity_id: entityId,
-          name: stateObj.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '),
+          name: (stateObj?.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '))
+            + (isRestrictedEntity(hass, entityId) ? ` (${localize('editor.entity_existing_restricted')})` : ''),
           area_id: areaId,
           device_area_id: areaId,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
     this._entitySelectOptionsCache = {
+      config: this._config,
       entities: this._hass.entities,
       devices: this._hass.devices,
       states: this._hass.states,
@@ -1662,6 +1671,7 @@ class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
+        ${renderCollapsiblePanel(this, { key: 'diagnostics', icon: 'mdi:clipboard-check-outline', label: localize('editor.diagnostics_title') }, () => this._renderDiagnostics())}
         ${renderCollapsiblePanel(this, editorPanelMeta('overview'), () => this._renderBasicOverviewSection())}
         ${renderCollapsiblePanel(this, editorPanelMeta('summaries'), () => this._renderBasicSummariesSection())}
         ${renderCollapsiblePanel(this, editorPanelMeta('favorites'), () => this._renderFavoritesSection())}
@@ -1691,6 +1701,47 @@ class Simon42DashboardStrategyEditor extends LitElement {
   // ====================================================================
 
   // -- Section order panel -----------------------------------------------
+
+  private async _openDiagnosticLocation(path: string): Promise<void> {
+    const key = path.startsWith('areas_') ? 'areaOptions' : path.startsWith('room_pin') ? 'roomPins'
+      : path.startsWith('weather_start') ? 'sectionOrder' : path.startsWith('custom_') ? 'customContent'
+      : path.includes('favorite') ? 'favorites' : 'overview';
+    const panel = editorPanelMeta(key);
+    this._expandedPanels.add(panel.key);
+    const areaId = path.startsWith('areas_options.') ? path.split('.')[1] : undefined;
+    if (areaId) {
+      this._expandedAreas = new Set([...this._expandedAreas, areaId]);
+      if (!this._areaEntitiesCache.has(areaId)) void this._loadAreaEntities(areaId);
+    }
+    this.requestUpdate();
+    await this.updateComplete;
+    const header = [...(this.shadowRoot?.querySelectorAll('.panel-header') ?? [])]
+      .find((element) => element.textContent?.includes(panel.label));
+    const area = areaId ? [...(this.shadowRoot?.querySelectorAll<HTMLElement>('.area-item') ?? [])]
+      .find((element) => element.dataset.areaId === areaId) : undefined;
+    (area ?? header)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (areaId && path.includes('view_override')) area?.querySelector('textarea')?.focus();
+  }
+
+  private _renderDiagnostics(): TemplateResult {
+    const issues = this._diagnosticsChecked && this._hass ? inspectConfig(this._config, this._hass) : [];
+    return html`
+      <p>${localize('editor.diagnostics_help')}</p>
+      <button type="button" @click=${() => { this._diagnosticsChecked = true; this.requestUpdate(); }}>
+        ${localize('editor.diagnostics_check')}
+      </button>
+      <div role="status" aria-live="polite">
+        ${this._diagnosticsChecked && !issues.length ? html`<p>${localize('editor.diagnostics_ok')}</p>` : nothing}
+      </div>
+      ${issues.map((issue) => html`<div class="custom-item">
+        <strong>${localize('editor.diagnostics_' + issue.status)}</strong>: ${issue.entityId}
+        <div>${issue.path}</div>
+        <button type="button" @click=${() => void this._openDiagnosticLocation(issue.path)}>
+          ${localize('editor.diagnostics_open')}
+        </button>
+      </div>`)}
+    `;
+  }
 
   private _renderAdvancedOptionsSection(): TemplateResult {
     const hideUnavailableEntities = this._config.hide_unavailable_entities === true;
@@ -4427,6 +4478,10 @@ class Simon42DashboardStrategyEditor extends LitElement {
               @change=${(e: Event) => this._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)}
             />
             <span class="area-name">${area.name}</span>
+            ${this._config.areas_options?.[area.area_id]?.view_override?.yaml
+              ? html`<button type="button" title=${localize('editor.override_active_help')}
+                  @click=${() => void this._openDiagnosticLocation(`areas_options.${area.area_id}.view_override`)}>
+                  ${localize('editor.override_active')}</button>` : nothing}
             ${area.icon ? html`<ha-icon class="area-icon" icon=${area.icon}></ha-icon>` : nothing}
             <button
               class="nav-pin-button ${isPinned ? 'pinned' : ''}"

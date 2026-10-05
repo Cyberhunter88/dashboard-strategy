@@ -148,6 +148,8 @@ Anschließend öffnet sich über das **Stift-Icon** oben rechts in dem Strategy-
 
 ## Konfiguration
 
+Der Editor bietet eine eingeklappte **Dashboard-Prüfung** für strukturierte Entitätsverweise, einschließlich eigener YAML-Karten und Aktionstargets. Fehlende und momentan nicht verfügbare Entitäten werden mit Konfigurationsstelle und einem Link zum Editorabschnitt angezeigt. Die Prüfung verändert keine Einstellungen; Templates und go2rtc-Streamnamen werden nicht geprüft. Eigene vollständige Raumlayouts sind direkt in der Bereichsliste markiert und können dort zum Bearbeiten geöffnet werden. Diagnose- und Konfigurationsentitäten werden bei der allgemeinen Entitätsauswahl nur angeboten, wenn sie bereits konfiguriert sind.
+
 Alle Einstellungen lassen sich bequem über den **grafischen Editor** vornehmen (Stift-Icon → Drei Punkte → Dashboard bearbeiten). Die folgenden Abschnitte dokumentieren die verfügbaren Optionen.
 
 <p align="center">

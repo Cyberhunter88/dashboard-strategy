@@ -165,6 +165,16 @@
     "stop_camera_stream": "Live-Stream stoppen"
   },
   "editor": {
+    "diagnostics_title": "Dashboard-Prüfung",
+    "diagnostics_check": "Konfiguration prüfen",
+    "diagnostics_help": "Prüft strukturierte Entitätsverweise. Vorlagen und Streamnamen werden nicht geprüft. Einstellungen bleiben erhalten.",
+    "diagnostics_ok": "Keine fehlenden oder nicht verfügbaren Entitätsverweise gefunden.",
+    "diagnostics_missing": "Entität fehlt",
+    "diagnostics_unavailable": "Momentan nicht verfügbar",
+    "diagnostics_open": "Editorabschnitt öffnen",
+    "entity_existing_restricted": "Bestehender Diagnose-/Konfigurationseintrag",
+    "override_active": "Eigenes Raumlayout",
+    "override_active_help": "Ersetzt die automatische Raumansicht. Klicken, um das YAML zu bearbeiten.",
     "section_order": "Abschnitts-Reihenfolge",
     "section_order_desc": "Ziehe die Abschnitte per Drag & Drop in die gewünschte Reihenfolge. Leere Abschnitte werden automatisch ausgeblendet.",
     "section_hidden": "ausgeblendet",
