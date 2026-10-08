@@ -190,7 +190,7 @@ function appendWeatherStartBlock(
 
   const lastSection = sections[sections.length - 1];
   if (stackWithPrevious && lastSection?.cards && block.cards) {
-    lastSection.cards.push(...block.cards);
+    sections[sections.length - 1] = { ...lastSection, cards: [...lastSection.cards, ...block.cards] };
     return;
   }
 
@@ -314,7 +314,7 @@ function createWeatherStartSectionsFromItems(
     if (!section) return;
     const lastSection = sections[sections.length - 1];
     if (stackWithPrevious && lastSection?.cards && section.cards) {
-      lastSection.cards.push(...section.cards);
+      sections[sections.length - 1] = { ...lastSection, cards: [...lastSection.cards, ...section.cards] };
       return;
     }
     sections.push(section);

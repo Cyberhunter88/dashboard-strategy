@@ -186,3 +186,26 @@ describe('overview default presentation', () => {
     ).toBeDefined();
   });
 });
+
+describe('weather layout regeneration', () => {
+  it.each([false, true])('keeps 100 generations stable with frozen input=%s', async (frozen) => {
+    const { makeWeatherStackingFixture, deepFreeze } = await import('../../tests/fixtures/weather-stacking');
+    const { hass, config } = makeWeatherStackingFixture();
+    const original = JSON.stringify(config);
+    if (frozen) deepFreeze(config);
+    const first = await overviewStrategy.generate({ dashboardConfig: config }, hass);
+    const expected = JSON.stringify(first);
+    expect(first.sections?.[0].cards?.slice(0, 4).map((card) => card.heading || card.entity)).toEqual([
+      'Weather',
+      'weather.fixture',
+      'Waste',
+      'sensor.waste',
+    ]);
+    for (let i = 0; i < 100; i++) {
+      const view = await overviewStrategy.generate({ dashboardConfig: config }, hass);
+      expect(JSON.stringify(view)).toBe(expected);
+      expect(JSON.stringify(config)).toBe(original);
+      expect(JSON.stringify(first)).toBe(expected);
+    }
+  });
+});

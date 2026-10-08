@@ -47,6 +47,13 @@ try {
     ...await page.evaluate(() => { document.getElementById('content').replaceChildren(); return window.optimization.checkCamera(); }),
     ...await page.evaluate(() => window.optimization.checkAsyncCards()),
   ];
+  const memoryGrowth = [];
+  if (!process.env.OPTIMIZATION_BASELINE) {
+    for (const width of [360, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      memoryGrowth.push(...await page.evaluate((value) => window.optimization.checkMemoryGrowth(value), width));
+    }
+  }
   const layouts = [];
   if (!process.env.OPTIMIZATION_BASELINE) for (const width of [360, 768, 1280]) for (const sidebar of [false, true]) {
     await page.setViewportSize({ width, height: 900 });
@@ -54,7 +61,7 @@ try {
     await page.screenshot({ path: path.join(output, `layout-${width}-${sidebar}.png`), fullPage: false });
   }
   if (errors.length) throw new Error(errors.join('\n'));
-  const report = { root, benchmark, checks, layouts, screenshots: output };
+  const report = { root, benchmark, checks, memoryGrowth, layouts, screenshots: output };
   if (process.env.OPTIMIZATION_REPORT) fs.writeFileSync(process.env.OPTIMIZATION_REPORT, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report, null, 2));
 } finally {

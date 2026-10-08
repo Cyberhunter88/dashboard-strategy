@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.33.1'; // synchronized from package.json
+const STRATEGY_VERSION = '1.33.2'; // synchronized from package.json
 
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
 

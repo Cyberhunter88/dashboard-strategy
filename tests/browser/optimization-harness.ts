@@ -1,3 +1,4 @@
+import { deepFreeze, makeWeatherStackingFixture } from '../fixtures/weather-stacking';
 import '../../src/dashboard-strategy';
 import { Registry } from '../../src/Registry';
 import { makeOptimizationFixture } from '../fixtures/optimization';
@@ -37,6 +38,37 @@ const card = (tag: string, config: any, hass: HomeAssistant): TestCard => {
   document.getElementById('content')!.appendChild(element);
   return element;
 };
+
+async function checkMemoryGrowth(width: number) {
+  const results = [];
+  const host = document.getElementById('content')!;
+  {
+    const { hass, config } = makeWeatherStackingFixture();
+    const original = JSON.stringify(config);
+    deepFreeze(config);
+    const first = await strategy().generate(config, hass);
+    const expected = JSON.stringify(first);
+    let maximumCards = 0;
+    host.style.width = width + 'px';
+    for (let i = 0; i < 100; i++) {
+      const dashboard = await strategy().generate(config, hass);
+      assert(JSON.stringify(dashboard) === expected, 'Dashboard grew during regeneration');
+      assert(JSON.stringify(first) === expected, 'Previous output was mutated');
+      assert(JSON.stringify(config) === original, 'Input was mutated');
+      const areas = dashboard.views[0].sections.flatMap((section: any) => section.cards || []).filter((entry: any) => entry.type === 'custom:dashboard-strategy-area-card');
+      for (const entry of areas) card('dashboard-strategy-area-card', entry, hass);
+      await settle();
+      assert(host.querySelectorAll('hui-area-card').length === areas.length, 'Native card count grew');
+      maximumCards = Math.max(maximumCards, host.querySelectorAll('hui-area-card').length);
+      host.replaceChildren();
+      await settle();
+      assert(host.childElementCount === 0, 'Cards remained mounted');
+    }
+    results.push({ width, generations: 100, maximumCards, outputBytes: new TextEncoder().encode(expected).length });
+  }
+  host.style.width = '';
+  return results;
+}
 
 async function benchmark() {
   const results = [];
@@ -296,4 +328,4 @@ async function checkEditor() {
   return ['editor startup', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save'];
 }
 
-(window as any).optimization = { benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };
+(window as any).optimization = { checkMemoryGrowth, benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };
