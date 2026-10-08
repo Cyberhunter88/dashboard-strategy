@@ -118,7 +118,14 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private async _createNativeCard(config: LovelaceCardConfig): Promise<NativeAreaCard> {
     if (window.loadCardHelpers) {
       const helpers = await window.loadCardHelpers();
-      return helpers.createCardElement(config);
+      const card = helpers.createCardElement(config);
+      // HA may return an unregistered element while its native card chunk loads.
+      // Keep one pending element instead of recreating it in a microtask loop.
+      if (typeof card.setConfig !== 'function') {
+        await customElements.whenDefined(card.localName);
+        customElements.upgrade(card);
+      }
+      return card;
     }
 
     await customElements.whenDefined('hui-area-card');
@@ -225,8 +232,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
       return;
     }
 
-    this._card = undefined;
-    this._ensureCard();
+    // A helper-provided placeholder must never trigger repeated creation.
   }
 
   getCardSize(): number {
