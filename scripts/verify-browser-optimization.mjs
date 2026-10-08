@@ -46,6 +46,7 @@ try {
     ...await page.evaluate(() => window.optimization.checkCards()),
     ...await page.evaluate(() => { document.getElementById('content').replaceChildren(); return window.optimization.checkCamera(); }),
     ...await page.evaluate(() => window.optimization.checkAsyncCards()),
+    ...await page.evaluate(() => window.optimization.checkLazyAreaCard()),
   ];
   const memoryGrowth = [];
   if (!process.env.OPTIMIZATION_BASELINE) {

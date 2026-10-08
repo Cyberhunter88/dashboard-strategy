@@ -242,6 +242,60 @@ async function checkCamera() {
   return ['manual start/stop', 'viewport and document pause/resume', 'unchanged config reuse', 'reconnect cleanup'];
 }
 
+async function checkLazyAreaCard() {
+  const originalHelpers = window.loadCardHelpers;
+  const { hass } = makeOptimizationFixture();
+  let creations = 0;
+  const tag = 'hui-delayed-area-regression-card';
+  window.loadCardHelpers = async () => ({ createCardElement(config: any) {
+    if (++creations > 50) throw new Error('Bounded guard: repeated creation of unregistered area card');
+    const element = document.createElement(tag) as NativeTestCard;
+    // Match HA's lazy native-card factory: upgrade/configure this same element later.
+    customElements.whenDefined(tag).then(() => {
+      customElements.upgrade(element);
+      element.dispatchEvent(new Event('ll-upgrade', { bubbles: true, composed: true }));
+      element.setConfig(config);
+    });
+    return element;
+  } });
+  const area = card('dashboard-strategy-area-card', { area: 'room_0', name: 'Old', navigation_path: '/synthetic-dashboard/room_0' }, hass);
+  try {
+    await settle();
+    const beforeRegistration = creations;
+    area.setConfig({ area: 'room_1', name: 'Latest', navigation_path: '/synthetic-dashboard/room_1' });
+    area.hass = { ...hass };
+    await settle();
+    customElements.define(tag, class extends NativeTestCard {});
+    await settle();
+    assert(beforeRegistration === 1, 'Unregistered native area created repeatedly: ' + beforeRegistration);
+    assert(creations === 1, 'Pending native area was recreated after config update');
+    const native = area.firstElementChild as NativeTestCard;
+    assert(native?.config.area === 'room_1' && native.config.name === 'Latest', 'Lazy area lost latest config');
+    assert(native.hass === area.hass, 'Lazy area lost latest hass');
+    area.remove();
+    const detachedTag = 'hui-detached-area-regression-card';
+    let detachedCreations = 0;
+    window.loadCardHelpers = async () => ({ createCardElement() {
+      detachedCreations++;
+      return document.createElement(detachedTag) as NativeTestCard;
+    } });
+    const detached = card('dashboard-strategy-area-card', { area: 'room_0', navigation_path: '/synthetic-dashboard/room_0' }, hass);
+    await settle();
+    detached.remove();
+    customElements.define(detachedTag, class extends NativeTestCard {});
+    await settle();
+    assert(!detached.firstElementChild && detachedCreations === 1, 'Late registration mounted a detached area');
+    document.getElementById('content')!.appendChild(detached);
+    await settle();
+    assert(detached.firstElementChild?.localName === detachedTag && Number(detachedCreations) === 2, 'Lazy area failed to reconnect');
+    detached.remove();
+    return ['cold-start area registration waits without recreating cards', 'pending area keeps latest config and hass', 'late area registration respects disconnect and reconnect'];
+  } finally {
+    area.remove();
+    window.loadCardHelpers = originalHelpers;
+  }
+}
+
 async function checkAsyncCards() {
   const helpers = window.loadCardHelpers!;
   const { hass } = makeOptimizationFixture();
@@ -328,4 +382,4 @@ async function checkEditor() {
   return ['editor startup', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save'];
 }
 
-(window as any).optimization = { checkMemoryGrowth, benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };
+(window as any).optimization = { checkLazyAreaCard, checkMemoryGrowth, benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };
