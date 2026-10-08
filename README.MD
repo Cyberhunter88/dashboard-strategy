@@ -8,7 +8,7 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.33.1**
+Aktueller Entwicklungsstand: **1.33.2**
 
 Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RELEASE.md) dokumentiert.
 

@@ -70,3 +70,9 @@ Das passiert, wenn die alte Resource-URL noch registriert ist und die JS-Datei d
 
 </details>
 
+
+## Speicherwachstum beim Wetterlayout (behoben in 1.33.2)
+
+Gestapelte YAML-Abschnitte konnten bei wiederholter Dashboard-Erzeugung die Kartenarrays der Eingabekonfiguration vergrößern. Die Strategy setzt Abschnitte jetzt mit eigenen Arrays zusammen; Reihenfolge und eigene YAML-Inhalte bleiben erhalten. Regressionstests prüfen 100 Erzeugungen mit unveränderter und eingefrorener Konfiguration. Dieser Fix ist kein Nachweis einer Behebung unabhängiger WebRTC- oder Videodecoder-Fehler.
+
+Validierung: 222 Unit-Tests, Typecheck, Lint, Format- und Übersetzungsprüfung sowie Produktions- und HACS-Distributionsprüfung bestanden. Im Chrome-Browser-Harness bleiben bei 360 und 1280 Pixeln über jeweils 100 vollständige Dashboard-Erzeugungen die Ausgabegröße (11.831 Bytes) und die Zahl nativer Bereichskarten (2) konstant; Eingabe und frühere Ausgaben bleiben unverändert. Der Harness verwendet native Karten-Testdoubles und misst keinen echten Videodecoder-Speicher. Live-Installation und Gerätetest stehen aus.

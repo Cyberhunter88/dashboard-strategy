@@ -67,13 +67,16 @@ export function parsedConfigToSections(
 ): LovelaceSectionConfig[] {
   if (!parsed) return [];
   if (Array.isArray(parsed)) {
-    return [{ type: 'grid', cards: parsed as LovelaceCardConfig[] }];
+    return [{ type: 'grid', cards: [...parsed] as LovelaceCardConfig[] }];
   }
   if (Array.isArray(parsed.sections)) {
-    return parsed.sections as LovelaceSectionConfig[];
+    return (parsed.sections as LovelaceSectionConfig[]).map((section) => ({
+      ...section,
+      ...(Array.isArray(section.cards) ? { cards: [...section.cards] } : {}),
+    }));
   }
   if (Array.isArray(parsed.cards)) {
-    return [parsed as LovelaceSectionConfig];
+    return [{ ...parsed, cards: [...parsed.cards] } as LovelaceSectionConfig];
   }
   return [{ type: 'grid', cards: [parsed as LovelaceCardConfig] }];
 }
