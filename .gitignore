@@ -7,3 +7,29 @@ dist/dashboard-strategy.js.map
 .codacy/
 .superpowers/
 .worktrees/
+
+# Local credentials and machine configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.key
+*.secret
+credentials.json
+secrets.yaml
+secrets.yml
+*.local.json
+*.local.yaml
+*.local.yml
+.vscode/
+.codex-remote-attachments/
+.codex-ha-admin-*
+
+# Local build and test output (release dist/ remains tracked)
+coverage/
+playwright-report/
+test-results/
+*.log
+*.tsbuildinfo

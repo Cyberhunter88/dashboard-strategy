@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+if [ "${1:-}" != origin ]; then
+  echo "Pre-push secret check: only the verified origin remote is supported." >&2
+  exit 1
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+node scripts/check-secrets.mjs --outgoing
