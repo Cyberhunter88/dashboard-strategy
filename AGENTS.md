@@ -107,7 +107,9 @@ Important behavior:
 
 ## Development workflow
 
-Before editing, check `git status --short --branch`. Preserve unrelated user changes, especially dirty `dist/` output; never reset or restore files you did not create.
+At the start of every session, read `STATUS.md`, this file, and any more specific `AGENTS.md`; check `git status --short --branch` before editing. Keep `STATUS.md` current when work changes the development state, open tasks, decisions, or next steps. Record only public, project-level facts there. Preserve unrelated user changes, especially dirty `dist/` output; never reset or restore files you did not create.
+
+Use the same Node.js/npm and Git commands in VS Code and the local Codex CLI on Windows or CachyOS. Run scripts from the repository root; use `node`/`npm` without OS-specific path separators or shell syntax in shared instructions. Do not commit local editor settings, machine-specific paths, credentials, Home Assistant configuration, or private notes. Keep line endings and generated `dist/` behavior consistent with `.editorconfig` and existing build scripts.
 
 Useful checks:
 
@@ -129,7 +131,9 @@ For source changes, run typecheck and lint; run tests/build when practical. User
 
 ## Version, Git, and release rules
 
-Do not commit directly to `main`; use a feature branch. Before push/PR/release, verify the intended repository and remotes explicitly (`origin` is the fork; do not rely on an accidental GitHub CLI context).
+Do not commit directly to `main`; use a dedicated feature branch and integrate through a PR. Respect existing branches and unrelated changes. Stage only intended paths and inspect `git diff --cached` before committing. Run relevant tests before a push; for source changes use the checks above. Never push without explicit user authorization. Before push/PR/release, verify the intended repository and remotes explicitly (`origin` is the fork; do not rely on an accidental GitHub CLI context). Never rewrite published history without explicit approval.
+
+This is a public repository. Never commit secrets, tokens, private entity IDs, local configuration, or confidential infrastructure details, including in examples, logs, `AGENTS.md`, and `STATUS.md`. Before each push, run `node scripts/check-secrets.mjs --outgoing` and review its result together with any available shared Codex Git secret scanner. The repository pre-push hook runs the portable check automatically; install it as documented in `docs/development-workflow.md`. Do not silently bypass a failed or missing security check. Investigate and remove findings before pushing; if a finding already exists in published history, report it without printing its value and get approval before any history rewrite.
 
 Version surfaces must stay aligned:
 
