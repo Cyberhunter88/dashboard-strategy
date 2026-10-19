@@ -1,12 +1,12 @@
 # Project status
 
-Updated: 2026-10-18
+Updated: 2026-10-19
 
 ## Current development state
 
 - Dashboard Strategy development version: 1.33.3. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
 - The project uses TypeScript, Webpack, Vitest, browser checks, and GitHub Actions CI. Production `dist/` assets are tracked for HACS.
-- Workflow setup is being prepared on `chore/cross-platform-workflow`; no push or PR has been performed for it.
+- Cross-platform workflow documentation is being updated on `codex/cross-platform-development`; no commit, push, or PR has been performed for it.
 
 ## Open tasks
 
@@ -23,5 +23,5 @@ Updated: 2026-10-18
 
 ## Next steps
 
-1. Finish the secret audit and quality checks for this workflow change.
-2. Review the changes, then push and open a PR only after authorization.
+1. Finish the documentation and hook checks for this workflow change.
+2. Review the changes, then commit and push only after authorization.
