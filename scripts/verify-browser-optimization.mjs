@@ -28,11 +28,19 @@ const server = http.createServer((request, response) => {
   }
   if (url.pathname === '/resource-test/home') {
     const base = url.searchParams.get('base');
+    const viaImport = url.searchParams.has('via-import');
     if (!['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/'].includes(base)) {
       response.writeHead(400); response.end(); return;
     }
     response.setHeader('Content-Type', 'text/html');
-    response.end(`<!doctype html><html><body><script type="module" src="${base}dashboard-strategy.js"></script></body></html>`);
+    response.end(viaImport
+      ? `<!doctype html><html><body><script src="/hacsfiles/lovelace-card-mod/card-mod.js"></script><script type="module">import('${base}dashboard-strategy.js')</script></body></html>`
+      : `<!doctype html><html><body><script type="module" src="${base}dashboard-strategy.js"></script></body></html>`);
+    return;
+  }
+  if (url.pathname === '/hacsfiles/lovelace-card-mod/card-mod.js') {
+    response.setHeader('Content-Type', 'text/javascript');
+    response.end('window.cardModLoaded = true;');
     return;
   }
   for (const base of ['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/']) {
@@ -58,7 +66,7 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const resourceChecks = [];
-  for (const base of ['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/']) {
+  for (const base of ['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/']) for (const viaImport of [false, true]) {
     const resourcePage = await browser.newPage();
     const resourceErrors = [];
     const failedRequests = [];
@@ -66,7 +74,7 @@ try {
     resourcePage.on('response', (response) => {
       if (response.status() >= 400) failedRequests.push(`${response.status()} ${response.url()}`);
     });
-    await resourcePage.goto(`http://127.0.0.1:${server.address().port}/resource-test/home?base=${encodeURIComponent(base)}`);
+    await resourcePage.goto(`http://127.0.0.1:${server.address().port}/resource-test/home?base=${encodeURIComponent(base)}${viaImport ? '&via-import' : ''}`);
     await resourcePage.waitForFunction(() => customElements.get('ll-strategy-dashboard-strategy'));
     await resourcePage.waitForFunction(() => customElements.get('dashboard-strategy-summary-card'));
     const chunks = await resourcePage.evaluate((prefix) =>
@@ -75,7 +83,7 @@ try {
     );
     if (resourceErrors.length || failedRequests.length || chunks === 0)
       throw new Error(`Resource path ${base} failed: ${[...resourceErrors, ...failedRequests, `chunks=${chunks}`].join('; ')}`);
-    resourceChecks.push({ base, chunks });
+    resourceChecks.push({ base, viaImport, chunks });
     await resourcePage.close();
   }
   await page.goto(`http://127.0.0.1:${server.address().port}/synthetic-dashboard/home`);
