@@ -507,7 +507,7 @@ describe('buildCctvSections', () => {
     expect(sections[0].cards?.[0].type).toBe('markdown');
   });
 
-  it('appends LLM Vision timelines only when show_camera_events is on', async () => {
+  it('preserves legacy CCTV timelines while honoring an explicit camera-events choice', async () => {
     const spec = reolinkSpec();
     spec.entities?.push({ entity_id: 'calendar.llm_vision_timeline', platform: 'llmvision' });
     const hass = makeHass(spec);
@@ -522,6 +522,20 @@ describe('buildCctvSections', () => {
 
     const withFlag = await buildCctvSections(hass, { show_camera_events: true });
     expect(findCards(withFlag[withFlag.length - 1].cards, 'custom:llmvision-card')).toHaveLength(3);
+
+    const legacy = await buildCctvSections(hass, { cctv_show_activity: true });
+    expect(findCards(legacy[legacy.length - 1].cards, 'custom:llmvision-card')).toHaveLength(3);
+
+    const explicitlyDisabled = await buildCctvSections(hass, {
+      cctv_show_activity: true,
+      show_camera_events: false,
+    });
+    expect(
+      findCards(
+        explicitlyDisabled.flatMap((section) => section.cards ?? []),
+        'custom:llmvision-card'
+      )
+    ).toHaveLength(0);
   });
 });
 

@@ -26,6 +26,25 @@ const server = http.createServer((request, response) => {
     response.end('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:8px;font-family:sans-serif}#content{min-width:0;max-width:100%}#content>*{display:block;margin-bottom:12px}ha-card{display:block}button:focus-visible,[role=link]:focus-visible{outline:2px solid blue}</style></head><body><main id="content"></main><script src="/assets/harness.js"></script></body></html>');
     return;
   }
+  if (url.pathname === '/resource-test/home') {
+    const base = url.searchParams.get('base');
+    if (!['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/'].includes(base)) {
+      response.writeHead(400); response.end(); return;
+    }
+    response.setHeader('Content-Type', 'text/html');
+    response.end(`<!doctype html><html><body><script type="module" src="${base}dashboard-strategy.js"></script></body></html>`);
+    return;
+  }
+  for (const base of ['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/']) {
+    if (url.pathname.startsWith(base)) {
+      const name = path.basename(url.pathname);
+      const resource = path.join(root, 'dist', name);
+      if (!fs.existsSync(resource)) { response.writeHead(404); response.end(); return; }
+      response.setHeader('Content-Type', 'text/javascript');
+      response.end(fs.readFileSync(resource));
+      return;
+    }
+  }
   const name = path.basename(url.pathname);
   if (!url.pathname.startsWith('/assets/') || !fs.existsSync(path.join(output, name))) { response.writeHead(404); response.end(); return; }
   response.setHeader('Content-Type', 'text/javascript');
@@ -38,6 +57,27 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  const resourceChecks = [];
+  for (const base of ['/hacsfiles/dashboard-strategy/', '/local/dashboard-strategy/']) {
+    const resourcePage = await browser.newPage();
+    const resourceErrors = [];
+    const failedRequests = [];
+    resourcePage.on('pageerror', (error) => resourceErrors.push(error.message));
+    resourcePage.on('response', (response) => {
+      if (response.status() >= 400) failedRequests.push(`${response.status()} ${response.url()}`);
+    });
+    await resourcePage.goto(`http://127.0.0.1:${server.address().port}/resource-test/home?base=${encodeURIComponent(base)}`);
+    await resourcePage.waitForFunction(() => customElements.get('ll-strategy-dashboard-strategy'));
+    await resourcePage.waitForFunction(() => customElements.get('dashboard-strategy-summary-card'));
+    const chunks = await resourcePage.evaluate((prefix) =>
+      performance.getEntriesByType('resource').filter((entry) => entry.name.includes(prefix) && entry.name.includes('.js?')).length,
+      base
+    );
+    if (resourceErrors.length || failedRequests.length || chunks === 0)
+      throw new Error(`Resource path ${base} failed: ${[...resourceErrors, ...failedRequests, `chunks=${chunks}`].join('; ')}`);
+    resourceChecks.push({ base, chunks });
+    await resourcePage.close();
+  }
   await page.goto(`http://127.0.0.1:${server.address().port}/synthetic-dashboard/home`);
   await page.waitForFunction(() => window.optimization);
   const benchmark = await page.evaluate(() => window.optimization.benchmark());
@@ -62,7 +102,7 @@ try {
     await page.screenshot({ path: path.join(output, `layout-${width}-${sidebar}.png`), fullPage: false });
   }
   if (errors.length) throw new Error(errors.join('\n'));
-  const report = { root, benchmark, checks, memoryGrowth, layouts, screenshots: output };
+  const report = { root, resourceChecks, benchmark, checks, memoryGrowth, layouts, screenshots: output };
   if (process.env.OPTIMIZATION_REPORT) fs.writeFileSync(process.env.OPTIMIZATION_REPORT, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report, null, 2));
 } finally {

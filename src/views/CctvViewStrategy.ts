@@ -688,7 +688,9 @@ export async function buildCctvSections(
   // Opt-in even when LLM Vision is present: the llmvision-card re-fetches
   // its events API on every hass update (no debounce) — three timelines
   // multiply that into a request storm on busy systems.
-  if (dashboardConfig.show_camera_events === true || dashboardConfig.cctv_show_activity === true) {
+  // Preserve the legacy combined option unless a user explicitly chooses the
+  // independent LLM Vision setting.
+  if (dashboardConfig.show_camera_events ?? dashboardConfig.cctv_show_activity ?? false) {
     const eventsSection = buildLlmVisionSection(hass);
     if (eventsSection) sections.push(eventsSection);
   }

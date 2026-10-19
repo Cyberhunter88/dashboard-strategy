@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.33.3`. Unit tests live beside source modules;
+Current development version: `1.34.0`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -55,7 +55,7 @@ src/
 |-- editor/                     # StrategyEditor, panels, YAML/config helpers
 |-- loaders/                    # bounded eager runtime chunk entry points
 |-- sections/                   # overview, areas, weather/energy, custom, plants, agenda, todos, persons, vacuums, maintenance
-|-- translations/              # de/en/ru strings; English is the fallback
+|-- translations/              # de/en/hu/pl/ru strings; English is the fallback
 |-- types/                      # Home Assistant, Lovelace, registry, strategy types
 |-- utils/                      # filtering, ordering, localization, tiles, badges, maintenance
 `-- views/                      # overview, utility, room, CCTV, and maintenance strategies

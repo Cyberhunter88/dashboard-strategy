@@ -393,7 +393,7 @@
     "show_cctv_view": "Experimentelle CCTV-Ansicht anzeigen",
     "show_cctv_view_desc": "Erzeugt eine optionale Kameraansicht, gruppiert nach Bereichen.",
     "cctv_show_activity": "CCTV-Aktivitätsverlauf anzeigen",
-    "cctv_show_activity_desc": "Zeigt Bewegungs-, Anwesenheits- und Klingelereignisse der letzten zwölf Stunden.",
+    "cctv_show_activity_desc": "Zeigt Bewegungs-, Anwesenheits- und Klingelereignisse der letzten zwölf Stunden. LLM-Vision-Timelines lassen sich darunter separat einstellen.",
     "show_maintenance_view": "Wartungsansicht anzeigen",
     "show_maintenance_view_desc": "Zeigt ausstehende Updates, nicht verfügbare Entitäten und Wartungstipps.",
     "section_advanced": "Erweitert",

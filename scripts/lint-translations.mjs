@@ -19,11 +19,17 @@ async function load(locale) {
   return flatten(parsed);
 }
 
-const [de, en] = await Promise.all([load('de'), load('en')]);
+const locales = ['de', 'en', 'hu', 'pl', 'ru'];
+const translations = new Map(await Promise.all(locales.map(async (locale) => [locale, await load(locale)])));
+const de = translations.get('de');
+const en = translations.get('en');
 const errors = [];
 for (const key of en.keys()) if (!de.has(key)) errors.push(`Missing in de.json: ${key}`);
 for (const key of de.keys()) if (!en.has(key)) errors.push(`Missing in en.json: ${key}`);
-for (const [locale, entries] of [['de', de], ['en', en]]) {
+for (const [locale, entries] of translations) {
+  if (locale === 'hu' || locale === 'pl') {
+    for (const key of en.keys()) if (!entries.has(key)) errors.push(`Missing in ${locale}.json: ${key}`);
+  }
   for (const [key, value] of entries) {
     if (typeof value !== 'string' || value.trim() === '') errors.push(`Empty or non-string value in ${locale}.json: ${key}`);
   }
@@ -51,4 +57,4 @@ if (errors.length > 0) {
   for (const error of errors) console.error(error);
   process.exit(1);
 }
-console.log(`Translations synchronized: ${en.size} keys in de/en`);
+console.log(`Translations checked: ${en.size} keys in de/en/hu/pl; ru uses English fallback for missing keys`);

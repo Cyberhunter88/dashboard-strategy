@@ -488,6 +488,26 @@ export const strategyEditorStyles = [
       font-size: 14px;
       font-weight: 500;
     }
+    .stack-move-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--primary-text-color);
+      cursor: pointer;
+    }
+    .stack-move-button:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -2px;
+    }
+    .stack-move-button:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
     .section-order-item .section-hidden-tag {
       font-size: 12px;
       color: var(--secondary-text-color);

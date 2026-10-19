@@ -8,7 +8,7 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.33.3**
+Aktueller Entwicklungsstand: **1.34.0**
 
 Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RELEASE.md) dokumentiert.
 
@@ -44,7 +44,7 @@ Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RE
 - **Custom Views** — Eigene Dashboard-Views via YAML oder Live-Referenz auf Views anderer Dashboards
 - **Globales Design** — Theme und natives Hintergrundbild für alle Views
 - **Reaktive Updates** — Echtzeit-Aktualisierung via LitElement Custom Cards
-- **Mehrsprachig** — Deutsch, Englisch und Russisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
+- **Mehrsprachig** — Deutsch, Englisch, Ungarisch, Polnisch und Russisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
 - **Performance-optimiert** — Code-Split Bundles, Registry-Caching, Tile-Card-Pooling
 
 ## Installation
@@ -68,20 +68,18 @@ Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RE
 <details>
 <summary>Manuelle Installationsschritte</summary>
 
-> Die Produktionsdateien verwenden den von HACS bereitgestellten `/hacsfiles/`-Pfad auch für nachgeladene Chunks. Diese manuelle Variante setzt deshalb voraus, dass die HACS-Integration in Home Assistant installiert ist.
-
-1. Kopiere **alle** Dateien aus `dist/` nach `/config/www/community/dashboard-strategy/`. Die Unterordner und Dateinamen müssen unverändert bleiben, weil die Strategy ihre Code-Split-Chunks unter `/hacsfiles/dashboard-strategy/` nachlädt.
+1. Kopiere **alle** Dateien aus `dist/` nach `/config/www/dashboard-strategy/`. Die Unterordner und Dateinamen müssen unverändert bleiben; nachgeladene Chunks liegen neben der Hauptdatei.
 2. Füge in `configuration.yaml` hinzu:
 
 ```yaml
 lovelace:
   mode: storage
   resources:
-    - url: /hacsfiles/dashboard-strategy/dashboard-strategy.js
+    - url: /local/dashboard-strategy/dashboard-strategy.js
       type: module
 ```
 
-3. Starte Home Assistant neu
+3. Lade Home Assistant neu. Bei einem Update kann zusätzlich ein harter Browser-Reload nötig sein.
 
 </details>
 

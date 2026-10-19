@@ -8,10 +8,12 @@
 
 import * as de from '../translations/de.json';
 import * as en from '../translations/en.json';
+import * as hu from '../translations/hu.json';
+import * as pl from '../translations/pl.json';
 import * as ru from '../translations/ru.json';
 import type { HomeAssistant } from '../types/homeassistant';
 
-const languages: Record<string, unknown> = { de, en, ru };
+const languages: Record<string, unknown> = { de, en, hu, pl, ru };
 const DEFAULT_LANG = 'en';
 
 function getTranslatedString(key: string, lang: string): string | undefined {
@@ -29,7 +31,7 @@ let _localize: ((key: string) => string) | undefined;
  * Must be called once before localize() is used (typically in Registry.initialize).
  */
 export function setupLocalize(hass?: HomeAssistant): void {
-  const lang = hass?.locale.language ?? hass?.language ?? DEFAULT_LANG;
+  const lang = (hass?.locale.language || hass?.language || DEFAULT_LANG).toLowerCase().split(/[-_]/)[0];
   _localize = (key: string) => getTranslatedString(key, lang) ?? getTranslatedString(key, DEFAULT_LANG) ?? key;
 }
 
