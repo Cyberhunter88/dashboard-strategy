@@ -12,9 +12,30 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.34.0'; // synchronized from package.json
+const STRATEGY_VERSION = '1.34.1'; // synchronized from package.json
 
+declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
+
+// HA can import this resource while an unrelated card is the last script in
+// the document. Find this entry's URL instead of relying on Webpack's 'auto'
+// public path, which would request chunks from that other card's directory.
+const entryName = 'dashboard-strategy.js';
+const entryUrls = [
+  document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '',
+  ...Array.from(performance.getEntriesByType('resource'), (entry) => entry.name).reverse(),
+  ...Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]'), (script) => script.src).reverse(),
+];
+for (const candidate of entryUrls) {
+  if (!candidate) continue;
+  const url = new URL(candidate, document.baseURI);
+  if (url.origin === location.origin && url.pathname.endsWith(`/${entryName}`)) {
+    // Webpack consumes this assignment while generating async chunk requests.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    __webpack_public_path__ = url.href.slice(0, url.href.lastIndexOf('/') + 1);
+    break;
+  }
+}
 
 // Home Assistant serves HACS files with a long-lived cache policy. The entry
 // resource has HACS' `hacstag` cache buster, but Webpack's lazy chunks did not.
