@@ -85,6 +85,7 @@ import { editorPanelMeta, WEATHER_START_BLOCK_META } from './editor-panel-regist
 import { strategyEditorStyles } from './editor-styles';
 import { renderDesignSection } from './panels/DesignPanel';
 import { renderViewsPanel } from './panels/ViewsPanel';
+import { moveVisibleStack, presentStackKeys, renderRoomStackOrderPanel } from './panels/RoomStackOrderPanel';
 import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
 import { type WeatherStartFloorOption } from './panels/WeatherStartPanel';
 import { loadExpandedPanels, renderCollapsiblePanel } from './panels/panel-shell';
@@ -1224,112 +1225,26 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  private static _stackMeta = new Map<StackKey, { icon: string; labelKey: string }>([
-    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'stacks.energy' }],
-    ['cameras', { icon: 'mdi:cctv', labelKey: 'stacks.cameras' }],
-    ['lights', { icon: 'mdi:lightbulb', labelKey: 'stacks.lights' }],
-    ['locks', { icon: 'mdi:lock', labelKey: 'stacks.locks' }],
-    ['climate', { icon: 'mdi:thermostat', labelKey: 'stacks.climate' }],
-    ['covers', { icon: 'mdi:window-shutter', labelKey: 'stacks.covers' }],
-    ['covers_window', { icon: 'mdi:window-open-variant', labelKey: 'stacks.covers_window' }],
-    ['media', { icon: 'mdi:speaker', labelKey: 'stacks.media' }],
-    ['scenes', { icon: 'mdi:palette', labelKey: 'stacks.scenes' }],
-    ['switches', { icon: 'mdi:toggle-switch', labelKey: 'stacks.switches' }],
-    ['misc', { icon: 'mdi:light-switch', labelKey: 'stacks.misc' }],
-    ['room_pins', { icon: 'mdi:pin', labelKey: 'stacks.room_pins' }],
-  ]);
-
-  private _presentStackKeys(data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>): Set<StackKey> {
-    const g = data.groupedEntities;
-    const present = new Set<StackKey>();
-    const has = (key: string): boolean => (g[key]?.length ?? 0) > 0;
-
-    if (has('lights')) present.add('lights');
-    if (has('locks')) present.add('locks');
-    if (has('climate') || has('fan')) present.add('climate');
-    if (has('covers') || has('covers_curtain')) present.add('covers');
-    if (has('covers_window')) present.add('covers_window');
-    if (has('media_player')) present.add('media');
-    if (has('scenes') || has('automations') || has('scripts')) present.add('scenes');
-    if (has('switches') && this._config.show_switches_section_in_rooms === true) present.add('switches');
-    if (has('vacuum') || (has('switches') && this._config.show_switches_section_in_rooms !== true)) {
-      present.add('misc');
-    }
-    if (has('energy')) present.add('energy');
-
-    // These stacks are not reliably represented in the editor's area cache.
-    if (this._config.show_cameras_in_rooms !== false) present.add('cameras');
-    present.add('room_pins');
-
-    return present;
-  }
-
   private _renderStackOrderPanel(
     areaId: string,
     data: NonNullable<ReturnType<typeof this._areaEntitiesCache.get>>
   ): TemplateResult {
-    const order = this._getStacksOrder(areaId);
-    const present = this._presentStackKeys(data);
-    const visibleOrder = order.filter((key) => present.has(key));
-    const inactiveOrder = order.filter((key) => !present.has(key));
-
-    return html`
-      <div class="entity-group" data-group="stack_order">
-        <div class="entity-group-header">
-          <ha-icon icon="mdi:sort"></ha-icon>
-          <span class="group-name">${localize('editor.stack_order')}</span>
-        </div>
-        <div class="entity-list">
-          <div class="description" style="margin-left: 0; margin-bottom: 8px;">
-            ${localize('editor.stack_order_desc')}
-          </div>
-          <div class="section-order-list" data-area-id=${areaId}>
-            ${visibleOrder.map((key) => {
-              const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
-              if (!meta) return nothing;
-              return html`
-                <div
-                  class="section-order-item"
-                  data-area-id=${areaId}
-                  data-stack-key=${key}
-                  draggable="true"
-                  @dragstart=${this._handleStackDragStart}
-                  @dragend=${this._handleStackDragEnd}
-                  @dragover=${this._handleStackDragOver}
-                  @dragleave=${this._handleStackDragLeave}
-                  @drop=${this._handleStackDrop}
-                >
-                  <span class="drag-handle" draggable="true">&#x2630;</span>
-                  <ha-icon class="section-icon" icon=${meta.icon}></ha-icon>
-                  <span class="section-label">${localize(meta.labelKey)}</span>
-                </div>
-              `;
-            })}
-          </div>
-          ${inactiveOrder.length > 0
-            ? html`
-                <div class="section-order-compact">
-                  <div class="compact-title">${localize('editor.stack_order_inactive')}</div>
-                  <div class="compact-chip-list">
-                    ${inactiveOrder.map((key) => {
-                      const meta = Simon42DashboardStrategyEditor._stackMeta.get(key);
-                      if (!meta) return nothing;
-                      return html`
-                        <span class="compact-chip">
-                          <ha-icon icon=${meta.icon}></ha-icon>
-                          ${localize(meta.labelKey)}
-                        </span>
-                      `;
-                    })}
-                  </div>
-                </div>
-              `
-            : nothing}
-        </div>
-      </div>
-    `;
+    return renderRoomStackOrderPanel({
+      areaId,
+      order: this._getStacksOrder(areaId),
+      visible: presentStackKeys(data.groupedEntities, this._config),
+      onMove: (key, direction) => {
+        const order = this._getStacksOrder(areaId);
+        const moved = moveVisibleStack(order, presentStackKeys(data.groupedEntities, this._config), key, direction);
+        if (moved !== order) this._updateStacksOrder(areaId, moved);
+      },
+      onDragStart: this._handleStackDragStart,
+      onDragEnd: this._handleStackDragEnd,
+      onDragOver: this._handleStackDragOver,
+      onDragLeave: this._handleStackDragLeave,
+      onDrop: this._handleStackDrop,
+    });
   }
-
   private _handleStackDragStart = (ev: DragEvent): void => {
     const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
     if (!dragHandle) {
@@ -2414,6 +2329,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     const showRoomViews = this._config.show_room_views === true;
     const showCctvView = this._config.show_cctv_view === true;
     const cctvShowActivity = this._config.cctv_show_activity === true;
+    const showCameraEvents = this._config.show_camera_events ?? cctvShowActivity;
     const showCamerasInSecurity = this._config.show_cameras_in_security === true;
     const showMaintenanceView = this._config.show_maintenance_view !== false;
     const showMaintenanceActivity = this._config.show_maintenance_activity !== false;
@@ -2424,12 +2340,21 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       showRoomViews,
       showCctvView,
       cctvShowActivity,
+      showCameraEvents,
       showCamerasInSecurity,
       showMaintenanceView,
       showMaintenanceActivity,
       showVideoTips,
       checkbox: (id, label, checked, change) => this._renderCheckbox(id, label, checked, change),
-      change: (key, checked, defaultValue = false) => this._toggleChanged(key, checked, defaultValue),
+      change: (key, checked, defaultValue = false) => {
+        if (key === 'show_camera_events') {
+          this._setCctvOptions({ show_camera_events: checked });
+        } else if (key === 'cctv_show_activity' && this._config.show_camera_events === undefined) {
+          this._setCctvOptions({ cctv_show_activity: checked, show_camera_events: false });
+        } else {
+          this._toggleChanged(key, checked, defaultValue);
+        }
+      },
     })}${renderRoomVisibilityPanel(this)}${renderUserVisibilityPanel(this)}`;
   }
 
@@ -3187,6 +3112,13 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
     this._config = newConfig;
     this._fireConfigChanged(newConfig);
+  }
+
+  private _setCctvOptions(values: Pick<Simon42StrategyConfig, 'cctv_show_activity' | 'show_camera_events'>): void {
+    if (!this._hass) return;
+    const updated = { ...this._config, ...values };
+    this._config = updated;
+    this._fireConfigChanged(updated);
   }
 
   private _searchCardVariantChanged(value: string): void {

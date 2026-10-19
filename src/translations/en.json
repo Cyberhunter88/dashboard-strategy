@@ -393,7 +393,7 @@
     "show_cctv_view": "Show experimental CCTV view",
     "show_cctv_view_desc": "Creates an optional camera view grouped by area.",
     "cctv_show_activity": "Show CCTV activity history",
-    "cctv_show_activity_desc": "Shows motion, occupancy, and doorbell activity for the last twelve hours.",
+    "cctv_show_activity_desc": "Shows motion, occupancy, and doorbell activity for the last twelve hours. LLM Vision timelines can be configured separately below.",
     "show_maintenance_view": "Show maintenance view",
     "show_maintenance_view_desc": "Shows pending updates, unavailable entities, and maintenance tips.",
     "section_advanced": "Advanced",

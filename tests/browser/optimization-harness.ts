@@ -327,9 +327,10 @@ async function layout(sidebar: boolean) {
   const editor = await strategy().getConfigElement() as TestCard;
   editor.setConfig(config); editor.hass = hass; content.appendChild(editor);
   content.prepend(editor);
-  (editor as any)._expandedPanels = new Set(['overview', 'summaries', 'section-order', 'diagnostics', 'area-options', 'custom-content']);
+  (editor as any)._expandedPanels = new Set(['overview', 'summaries', 'section-order', 'diagnostics', 'areas', 'area-options', 'custom-content']);
   (editor as any)._expandedAreas = new Set(['room_0']);
   (editor as any)._diagnosticsChecked = true;
+  await (editor as any)._loadAreaEntities('room_0');
   await settle(summary); await settle(batteries); await settle(editor);
   assert(document.documentElement.scrollWidth <= innerWidth + 1, 'Horizontal page overflow');
   return { width: innerWidth, sidebar, contentWidth: content.clientWidth };
@@ -374,12 +375,30 @@ async function checkEditor() {
   await settle(editor);
   assert(events.at(-1)?.custom_cards.at(-1).parsed_config.content === 'Browser card', 'Picker save failed');
   assert(!editor._cardPickerOpen, 'Picker did not close');
+  editor._config = { ...editor._config, cctv_show_activity: true };
+  editor._expandedPanels.add('views');
+  editor.requestUpdate(); await settle(editor);
+  const cameraEvents = editor.shadowRoot.querySelector('#show-camera-events') as HTMLInputElement;
+  assert(cameraEvents?.checked, 'Legacy CCTV config did not show enabled LLM timelines');
+  cameraEvents.click(); await settle(editor);
+  assert(events.at(-1)?.show_camera_events === false && events.at(-1)?.cctv_show_activity === true,
+    'Independent LLM toggle did not preserve native activity');
+  editor._expandedPanels.add('areas');
+  editor._expandedAreas.add('room_0');
+  await editor._loadAreaEntities('room_0'); editor.requestUpdate(); await settle(editor);
+  const stackList = editor.shadowRoot.querySelector('[data-group="stack_order"]');
+  const moveDown = stackList?.querySelector('.stack-move-button:not(:disabled)') as HTMLButtonElement;
+  assert(moveDown, `Room stack keyboard control missing (stack=${Boolean(stackList)}, buttons=${stackList?.querySelectorAll('button').length ?? 0})`);
+  const beforeOrder = editor._getStacksOrder('room_0').join(',');
+  moveDown.focus(); moveDown.click(); await settle(editor);
+  assert(editor._getStacksOrder('room_0').join(',') !== beforeOrder, 'Room stack button did not change order');
+  assert(events.at(-1)?.areas_options?.room_0?.stacks_order, 'Room stack button did not save order');
   editor.remove();
   const reopened = await strategy().getConfigElement() as any;
   reopened.setConfig(custom); reopened.hass = hass; content.appendChild(reopened); await settle(reopened);
   assert(JSON.stringify([...reopened._expandedPanels]) === JSON.stringify(expanded), 'Expansion persistence failed');
   reopened.remove();
-  return ['editor startup', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save'];
+  return ['editor startup', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save', 'legacy CCTV toggle', 'room stack keyboard control'];
 }
 
 (window as any).optimization = { checkLazyAreaCard, checkMemoryGrowth, benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };

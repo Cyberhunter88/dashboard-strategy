@@ -6,6 +6,7 @@ export interface ViewsPanelOptions {
   showRoomViews: boolean;
   showCctvView: boolean;
   cctvShowActivity: boolean;
+  showCameraEvents: boolean;
   showCamerasInSecurity: boolean;
   showMaintenanceActivity: boolean;
   showVideoTips: boolean;
@@ -25,6 +26,7 @@ export function renderViewsPanel(options: ViewsPanelOptions): TemplateResult {
     ${row('show-room-views', 'show_room_views', options.showRoomViews)}
     ${row('show-cctv-view', 'show_cctv_view', options.showCctvView)}
     ${row('cctv-show-activity', 'cctv_show_activity', options.cctvShowActivity)}
+    ${row('show-camera-events', 'show_camera_events', options.showCameraEvents)}
     ${row('show-cameras-in-security', 'show_cameras_in_security', options.showCamerasInSecurity)}
     ${row('show-maintenance-view', 'show_maintenance_view', options.showMaintenanceView)}
     ${row('show-maintenance-activity', 'show_maintenance_activity', options.showMaintenanceActivity, true)}

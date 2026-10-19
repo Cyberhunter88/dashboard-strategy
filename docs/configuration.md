@@ -196,8 +196,8 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `camera_renderer` | `"native"` \| `"webrtc"` | `"native"` | Renderer für Kameras in Raum-Views; `webrtc` benötigt `custom:webrtc-camera` |
 | `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc` |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
-| `cctv_show_activity` | boolean | `false` | LLM-Vision-Ereignisverläufe in der CCTV-Ansicht |
-| `show_camera_events` | boolean | `false` | Kompatibilitätsoption für `cctv_show_activity` |
+| `cctv_show_activity` | boolean | `false` | Nativer 12-Stunden-Aktivitätsverlauf in der CCTV-Ansicht; bei älteren Konfigurationen ohne `show_camera_events` bleiben zusätzlich LLM-Vision-Timelines aktiv |
+| `show_camera_events` | boolean | Übernimmt bei fehlendem Wert `cctv_show_activity` | LLM-Vision-Timelines unabhängig vom nativen Verlauf aktivieren oder ausdrücklich deaktivieren |
 | `show_cameras_in_security` | boolean | `false` | Kameras zusätzlich in der Sicherheitsansicht anzeigen |
 | `hidden_cameras` | string[] | `[]` | Kameras aus CCTV- und Sicherheitsansicht ausblenden; Raumansichten bleiben unberührt |
 | `pollen_entities` | string[] | `[]` | Pollen-Sensoren im Wetterabschnitt |
@@ -211,7 +211,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `areas_display.nav_items` | string[] | `[]` | Einzelne Bereiche unabhängig von `show_room_views` in der Navigation anzeigen |
 | `areas_options` | object | `{}` | Entity-Filterung pro Bereich |
 | `areas_options.*.display_type` | `"compact"` \| `"picture"` | globaler Wert | Darstellung einer einzelnen Bereichskarte überschreiben |
-| `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View |
+| `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View; im Editor per Drag & Drop oder mit den Auf-/Ab-Schaltflächen bedienbar |
 | `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln oder Sections pro Raum |
 | `areas_options.*.view_override` | object | - | Vollständige YAML-View, die die automatisch erzeugte Bereichsansicht ersetzt |
 | `room_pin_entities` | string[] | `[]` | Raum-Pin Entitäten |

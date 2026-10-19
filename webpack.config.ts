@@ -11,8 +11,8 @@ const config: webpack.Configuration = {
     filename: 'dashboard-strategy.js',
     chunkFilename: 'dashboard-strategy-[name].[contenthash:8].js',
     path: path.resolve(import.meta.dirname, 'dist'),
-    // publicPath must match the HA resource URL path for async chunk loading
-    publicPath: '/hacsfiles/dashboard-strategy/',
+    // Load chunks beside the entry resource, whether served by HACS or /local/.
+    publicPath: 'auto',
   },
   resolve: {
     extensions: ['.ts', '.js'],
