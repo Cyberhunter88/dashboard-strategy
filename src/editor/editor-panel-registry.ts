@@ -17,7 +17,10 @@ export type EditorPanelKey =
   | 'customContent';
 
 export const EDITOR_NAV_GROUPS: readonly { labelKey: string; panels: readonly EditorPanelKey[] }[] = [
-  { labelKey: 'editor.section_overview', panels: ['overview', 'summaries', 'favorites', 'appearance', 'details', 'sectionOrder'] },
+  {
+    labelKey: 'editor.section_overview',
+    panels: ['overview', 'summaries', 'favorites', 'appearance', 'details', 'sectionOrder'],
+  },
   { labelKey: 'editor.section_areas_rooms', panels: ['areas', 'areaOptions', 'roomPins', 'views'] },
   { labelKey: 'editor.section_advanced', panels: ['advanced', 'customContent'] },
 ];

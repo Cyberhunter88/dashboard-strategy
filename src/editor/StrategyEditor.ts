@@ -81,7 +81,12 @@ import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../ut
 import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
 import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
 import { dispatchStrategyConfigChanged } from './editor-host';
-import { editorPanelMeta, EDITOR_NAV_GROUPS, WEATHER_START_BLOCK_META, type EditorPanelKey } from './editor-panel-registry';
+import {
+  editorPanelMeta,
+  EDITOR_NAV_GROUPS,
+  WEATHER_START_BLOCK_META,
+  type EditorPanelKey,
+} from './editor-panel-registry';
 import { strategyEditorStyles } from './editor-styles';
 import { renderDesignSection } from './panels/DesignPanel';
 import { renderViewsPanel } from './panels/ViewsPanel';
@@ -481,11 +486,10 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       >
         <option value="">${localize('editor.panel_navigation')}</option>
         ${EDITOR_NAV_GROUPS.map(
-          (group) => html`<optgroup label=${localize(group.labelKey)}>
-            ${group.panels.map(
-              (key) => html`<option value=${key}>${editorPanelMeta(key).label}</option>`
-            )}
-          </optgroup>`
+          (group) =>
+            html`<optgroup label=${localize(group.labelKey)}>
+              ${group.panels.map((key) => html`<option value=${key}>${editorPanelMeta(key).label}</option>`)}
+            </optgroup>`
         )}
       </select>
     </nav>`;

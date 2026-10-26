@@ -94,10 +94,7 @@ describe('overview default presentation', () => {
 
   it('hides completed items only on generated to-do cards when configured', async () => {
     const hass = makeHass({ entities: [{ entity_id: 'todo.tasks', state: '0' }] });
-    const regular = await overviewStrategy.generate(
-      { dashboardConfig: { show_todos_section: true } },
-      hass
-    );
+    const regular = await overviewStrategy.generate({ dashboardConfig: { show_todos_section: true } }, hass);
     expect(findCard(regular, (card) => card.type === 'todo-list')?.hide_completed).toBeUndefined();
 
     Registry.resetForTesting();

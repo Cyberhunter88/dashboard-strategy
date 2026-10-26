@@ -427,7 +427,11 @@ class Simon42SummaryCard extends LitElement {
 
     return html`
       <ha-card
-        class=${[this._config.compact ? 'compact' : '', this._config.slim ? 'slim' : '', this._config.alignment === 'center' ? 'center' : '']
+        class=${[
+          this._config.compact ? 'compact' : '',
+          this._config.slim ? 'slim' : '',
+          this._config.alignment === 'center' ? 'center' : '',
+        ]
           .filter(Boolean)
           .join(' ')}
         role="link"

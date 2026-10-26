@@ -1309,8 +1309,8 @@
       >
         <option value="">${(0,Ue.k)("editor.panel_navigation")}</option>
         ${ct.map(e=>Be.qy`<optgroup label=${(0,Ue.k)(e.labelKey)}>
-            ${e.panels.map(e=>Be.qy`<option value=${e}>${lt(e).label}</option>`)}
-          </optgroup>`)}
+              ${e.panels.map(e=>Be.qy`<option value=${e}>${lt(e).label}</option>`)}
+            </optgroup>`)}
       </select>
     </nav>`}async _jumpToPanel(e){const t=lt(e);!function(e,t){e._expandedPanels.has(t)||(e._expandedPanels.add(t),bt(e._expandedPanels),e.requestUpdate())}(this,t.key),await this.updateComplete;const i=this.shadowRoot?.querySelector(`[data-panel-key="${t.key}"] .panel-header`);i?.scrollIntoView({block:"start",behavior:"smooth"}),i?.focus({preventScroll:!0})}async _openDiagnosticLocation(e){const t=lt(e.startsWith("areas_")?"areaOptions":e.startsWith("room_pin")?"roomPins":e.startsWith("weather_start")?"sectionOrder":e.startsWith("custom_")?"customContent":e.includes("favorite")?"favorites":"overview");this._expandedPanels.add(t.key);const i=e.startsWith("areas_options.")?e.split(".")[1]:void 0;i&&(this._expandedAreas=new Set([...this._expandedAreas,i]),this._areaEntitiesCache.has(i)||this._loadAreaEntities(i)),this.requestUpdate(),await this.updateComplete;const r=[...this.shadowRoot?.querySelectorAll(".panel-header")??[]].find(e=>e.textContent?.includes(t.label)),a=i?[...this.shadowRoot?.querySelectorAll(".area-item")??[]].find(e=>e.dataset.areaId===i):void 0;(a??r)?.scrollIntoView({block:"start",behavior:"smooth"}),i&&e.includes("view_override")&&a?.querySelector("textarea")?.focus()}_renderDiagnostics(){const e=this._diagnosticsChecked&&this._hass?this._diagnostics.inspect(this._config,this._hass):[];return Be.qy`
       <p>${(0,Ue.k)("editor.diagnostics_help")}</p>

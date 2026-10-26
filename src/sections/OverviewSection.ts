@@ -329,7 +329,12 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
     cards.push(...(searchSection?.cards?.slice(1) || []));
   }
 
-  appendSummaryCards(cards, config, config.compact_overview_summaries === true, config.compact_overview_summaries === true);
+  appendSummaryCards(
+    cards,
+    config,
+    config.compact_overview_summaries === true,
+    config.compact_overview_summaries === true
+  );
 
   // Favorites section
   const favoriteEntities = (config.favorite_entities || []).filter((entityId) => hass.states[entityId] !== undefined);
