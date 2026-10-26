@@ -74,6 +74,7 @@ jobs:
 
       - name: Verify release assets
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG"
 
@@ -87,5 +88,6 @@ jobs:
       - name: Verify published release
         if: inputs.publish == true
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: node scripts/verify-release-assets.mjs --tag "$RELEASE_TAG" --require-published
