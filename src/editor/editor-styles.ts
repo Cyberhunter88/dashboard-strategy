@@ -43,6 +43,31 @@ export const strategyEditorStyles = [
       font-size: var(--mdc-typography-body1-font-size, 14px);
       color: var(--primary-text-color);
     }
+    .panel-navigation {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: var(--ha-card-border-radius, 12px);
+      background: var(--card-background-color, #fff);
+    }
+    .panel-navigation label {
+      font-weight: 500;
+    }
+    .panel-navigation select {
+      min-width: 0;
+      max-width: 100%;
+      flex: 1 1 220px;
+      padding: 7px 9px;
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      font: inherit;
+    }
     .section {
       margin-bottom: 16px;
       background: var(--card-background-color, #fff);

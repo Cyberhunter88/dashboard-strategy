@@ -131,6 +131,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_battery_summary` | boolean | `true` | Batterie-Zusammenfassung |
 | `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
 | `summaries_columns` | 2 \| 4 | `2` | Spalten-Layout der Zusammenfassungen |
+| `compact_overview_summaries` | boolean | `false` | Zusammenfassungskarten im Standard-Startlayout zusätzlich verschlanken; eigene Layouts behalten ihre Größe |
 | `hide_mobile_app_batteries` | boolean | `false` | Mobile-App-Batterien ausblenden |
 | `hide_battery_notes_entities` | boolean | `false` | Battery-Notes-Helfer in Batterie-Ansicht und -Zusammenfassung ausblenden |
 | `battery_critical_threshold` | number | `20` | Schwellwert für kritische Batterien (%) |
@@ -162,6 +163,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `agenda_calendar_entities` | string[] | Auto | Kalender-Entitäten für die Agenda-Section |
 | `show_todos_section` | boolean | `false` | Todo-Section auf der Übersicht |
 | `todos_entities` | string[] | Auto | Todo-Entitäten für die Todo-Section |
+| `hide_completed_todos` | boolean | `false` | Erledigte Einträge in automatisch erzeugten To-do-Karten ausblenden |
 | `show_persons_section` | boolean | `false` | Personen-Section auf der Übersicht |
 | `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |

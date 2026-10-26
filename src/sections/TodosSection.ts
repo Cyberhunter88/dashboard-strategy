@@ -7,7 +7,8 @@ export function createTodosSection(
   hass: HomeAssistant,
   enabled: boolean,
   todoEntities?: string[],
-  hideHeading = false
+  hideHeading = false,
+  hideCompleted = false
 ): LovelaceSectionConfig | null {
   if (!enabled) return null;
 
@@ -33,6 +34,7 @@ export function createTodosSection(
     cards.push({
       type: 'todo-list',
       entity: entityId,
+      ...(hideCompleted ? { hide_completed: true } : {}),
     });
   }
 

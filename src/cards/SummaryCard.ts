@@ -27,6 +27,7 @@ interface SummaryCardConfig {
   unavailable_batteries_bucket?: 'critical' | 'good';
   hide_unavailable_entities?: boolean;
   compact?: boolean;
+  slim?: boolean;
   alignment?: 'start' | 'center';
 }
 
@@ -133,6 +134,23 @@ class Simon42SummaryCard extends LitElement {
     ha-card.compact .name {
       font-size: 13px;
       line-height: 18px;
+    }
+    ha-card.slim {
+      min-height: 42px;
+      padding: 5px 10px;
+      gap: 8px;
+    }
+    ha-card.slim .icon-wrap {
+      flex-basis: 26px;
+      width: 26px;
+      height: 26px;
+    }
+    ha-card.slim .icon {
+      --mdc-icon-size: 20px;
+    }
+    ha-card.slim .name {
+      font-size: 12px;
+      line-height: 16px;
     }
     ha-card.center {
       justify-content: center;
@@ -409,7 +427,7 @@ class Simon42SummaryCard extends LitElement {
 
     return html`
       <ha-card
-        class=${[this._config.compact ? 'compact' : '', this._config.alignment === 'center' ? 'center' : '']
+        class=${[this._config.compact ? 'compact' : '', this._config.slim ? 'slim' : '', this._config.alignment === 'center' ? 'center' : '']
           .filter(Boolean)
           .join(' ')}
         role="link"

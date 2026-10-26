@@ -316,6 +316,7 @@ export interface Simon42StrategyConfig {
   agenda_calendar_entities?: string[];
   show_todos_section?: boolean; // default: false
   todos_entities?: string[];
+  hide_completed_todos?: boolean; // default: false
   show_persons_section?: boolean; // default: false
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
@@ -341,6 +342,7 @@ export interface Simon42StrategyConfig {
   weather_start_layout_items?: WeatherStartLayoutItem[];
   summaries_columns?: 2 | 4; // default: 2
   dense_section_placement?: boolean; // default: false
+  compact_overview_summaries?: boolean; // default: false; standard overview only
   overview_max_columns?: 1 | 2 | 3 | 4; // default: 3
   overview_area_card_columns?: 4 | 6 | 'full'; // default: 'full'
   weather_start_weather_mode?: 'full' | 'compact_hourly'; // default: compact_hourly unless a custom order/layout is configured

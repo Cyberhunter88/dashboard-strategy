@@ -346,6 +346,27 @@ async function checkEditor() {
   await settle(editor);
   const events: any[] = [];
   editor.addEventListener('config-changed', (event: CustomEvent) => events.push(event.detail.config));
+  const jump = editor.shadowRoot.querySelector('#panel-navigation-select') as HTMLSelectElement;
+  assert(jump, 'Editor panel navigation is missing');
+  jump.value = 'details';
+  jump.dispatchEvent(new Event('change', { bubbles: true }));
+  await settle(editor);
+  assert(editor._expandedPanels.has('details'), 'Panel navigation did not expand its target');
+  assert(editor.shadowRoot.querySelector('[data-panel-key="details"] .panel-header') ===
+    editor.shadowRoot.activeElement, 'Panel navigation did not focus its target');
+  assert(events.length === 0, 'Panel navigation changed configuration');
+  jump.value = 'summaries';
+  jump.dispatchEvent(new Event('change', { bubbles: true }));
+  await settle(editor);
+  (editor.shadowRoot.querySelector('#compact-overview-summaries') as HTMLInputElement).click();
+  await settle(editor);
+  assert(events.at(-1)?.compact_overview_summaries === true, 'Compact overview option did not save');
+  jump.value = 'advanced';
+  jump.dispatchEvent(new Event('change', { bubbles: true }));
+  await settle(editor);
+  (editor.shadowRoot.querySelector('#hide-completed-todos') as HTMLInputElement).click();
+  await settle(editor);
+  assert(events.at(-1)?.hide_completed_todos === true, 'Completed to-do option did not save');
   const panel = editor.shadowRoot.querySelector('.panel-header') as HTMLButtonElement;
   panel.click(); await settle(editor);
   const expanded = [...editor._expandedPanels];
@@ -398,7 +419,7 @@ async function checkEditor() {
   reopened.setConfig(custom); reopened.hass = hass; content.appendChild(reopened); await settle(reopened);
   assert(JSON.stringify([...reopened._expandedPanels]) === JSON.stringify(expanded), 'Expansion persistence failed');
   reopened.remove();
-  return ['editor startup', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save', 'legacy CCTV toggle', 'room stack keyboard control'];
+  return ['editor startup', 'panel navigation', 'overview options save', 'config-changed preserves unknown fields', 'YAML roundtrip/error/recovery', 'panel persistence', 'card picker save', 'legacy CCTV toggle', 'room stack keyboard control'];
 }
 
 (window as any).optimization = { checkLazyAreaCard, checkMemoryGrowth, benchmark, checkCards, checkCamera, checkAsyncCards, checkEditor, layout };
