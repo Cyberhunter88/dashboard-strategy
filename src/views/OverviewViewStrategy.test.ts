@@ -57,6 +57,54 @@ function findCard(view: LovelaceViewConfig, predicate: (card: LovelaceCardConfig
 }
 
 describe('overview default presentation', () => {
+  it('slims summary cards only when opted in on the default layout', async () => {
+    const defaultView = await overviewStrategy.generate({ dashboardConfig: {} }, makeOverviewHass());
+    const defaultSummary = (defaultView.sections || [])
+      .flatMap((section) => section.cards || [])
+      .find((card) => card.type === 'horizontal-stack')?.cards?.[0];
+    expect(defaultSummary).toMatchObject({ compact: true });
+    expect(defaultSummary?.slim).toBeUndefined();
+
+    Registry.resetForTesting();
+    const slimView = await overviewStrategy.generate(
+      { dashboardConfig: { compact_overview_summaries: true } },
+      makeOverviewHass()
+    );
+    const slimSummary = (slimView.sections || [])
+      .flatMap((section) => section.cards || [])
+      .find((card) => card.type === 'horizontal-stack')?.cards?.[0];
+    expect(slimSummary).toMatchObject({ compact: true, slim: true });
+
+    Registry.resetForTesting();
+    const customView = await overviewStrategy.generate(
+      {
+        dashboardConfig: {
+          compact_overview_summaries: true,
+          weather_start_layout_items: [{ id: 'summaries', type: 'summaries', summary_size: 'normal' }],
+        },
+      },
+      makeOverviewHass()
+    );
+    const customSummary = (customView.sections || [])
+      .flatMap((section) => section.cards || [])
+      .find((card) => card.type === 'horizontal-stack')?.cards?.[0];
+    expect(customSummary?.slim).toBeUndefined();
+    expect(customSummary?.compact).toBeUndefined();
+  });
+
+  it('hides completed items only on generated to-do cards when configured', async () => {
+    const hass = makeHass({ entities: [{ entity_id: 'todo.tasks', state: '0' }] });
+    const regular = await overviewStrategy.generate({ dashboardConfig: { show_todos_section: true } }, hass);
+    expect(findCard(regular, (card) => card.type === 'todo-list')?.hide_completed).toBeUndefined();
+
+    Registry.resetForTesting();
+    const filtered = await overviewStrategy.generate(
+      { dashboardConfig: { show_todos_section: true, hide_completed_todos: true } },
+      hass
+    );
+    expect(findCard(filtered, (card) => card.type === 'todo-list')).toMatchObject({ hide_completed: true });
+  });
+
   it('puts controls, compact summaries, and rooms before compact clock and weather', async () => {
     const view = await overviewStrategy.generate(
       {

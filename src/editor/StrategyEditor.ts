@@ -81,14 +81,19 @@ import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../ut
 import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
 import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
 import { dispatchStrategyConfigChanged } from './editor-host';
-import { editorPanelMeta, WEATHER_START_BLOCK_META } from './editor-panel-registry';
+import {
+  editorPanelMeta,
+  EDITOR_NAV_GROUPS,
+  WEATHER_START_BLOCK_META,
+  type EditorPanelKey,
+} from './editor-panel-registry';
 import { strategyEditorStyles } from './editor-styles';
 import { renderDesignSection } from './panels/DesignPanel';
 import { renderViewsPanel } from './panels/ViewsPanel';
 import { moveVisibleStack, presentStackKeys, renderRoomStackOrderPanel } from './panels/RoomStackOrderPanel';
 import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
 import { type WeatherStartFloorOption } from './panels/WeatherStartPanel';
-import { loadExpandedPanels, renderCollapsiblePanel } from './panels/panel-shell';
+import { loadExpandedPanels, openPanel, renderCollapsiblePanel } from './panels/panel-shell';
 
 // -- Supporting types for the editor ------------------------------------
 
@@ -429,6 +434,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
+        ${this._renderPanelNavigation()}
         ${renderCollapsiblePanel(
           this,
           { key: 'diagnostics', icon: 'mdi:clipboard-check-outline', label: localize('editor.diagnostics_title') },
@@ -465,6 +471,38 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   // ====================================================================
 
   // -- Section order panel -----------------------------------------------
+
+  private _renderPanelNavigation(): TemplateResult {
+    return html`<nav class="panel-navigation" aria-label=${localize('editor.panel_navigation')}>
+      <label for="panel-navigation-select">${localize('editor.panel_navigation')}</label>
+      <select
+        id="panel-navigation-select"
+        @change=${(event: Event) => {
+          const select = event.target as HTMLSelectElement;
+          const key = select.value as EditorPanelKey;
+          select.value = '';
+          if (key) void this._jumpToPanel(key);
+        }}
+      >
+        <option value="">${localize('editor.panel_navigation')}</option>
+        ${EDITOR_NAV_GROUPS.map(
+          (group) =>
+            html`<optgroup label=${localize(group.labelKey)}>
+              ${group.panels.map((key) => html`<option value=${key}>${editorPanelMeta(key).label}</option>`)}
+            </optgroup>`
+        )}
+      </select>
+    </nav>`;
+  }
+
+  private async _jumpToPanel(key: EditorPanelKey): Promise<void> {
+    const panel = editorPanelMeta(key);
+    openPanel(this, panel.key);
+    await this.updateComplete;
+    const header = this.shadowRoot?.querySelector<HTMLElement>(`[data-panel-key="${panel.key}"] .panel-header`);
+    header?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    header?.focus({ preventScroll: true });
+  }
 
   private async _openDiagnosticLocation(path: string): Promise<void> {
     const key = path.startsWith('areas_')
@@ -561,6 +599,13 @@ export class Simon42DashboardStrategyEditor extends LitElement {
           (checked) => this._toggleChanged('dense_section_placement', checked, false)
         )}
         <div class="description">${localize('editor.dense_section_placement_desc')}</div>
+        ${this._renderCheckbox(
+          'hide-completed-todos',
+          localize('editor.hide_completed_todos'),
+          this._config.hide_completed_todos === true,
+          (checked) => this._toggleChanged('hide_completed_todos', checked, false)
+        )}
+        <div class="description">${localize('editor.hide_completed_todos_desc')}</div>
       </div>
     `;
   }
@@ -1450,6 +1495,13 @@ export class Simon42DashboardStrategyEditor extends LitElement {
           this._config.show_battery_summary !== false,
           (checked) => this._toggleChanged('show_battery_summary', checked, true)
         )}
+        ${this._renderCheckbox(
+          'compact-overview-summaries',
+          localize('editor.compact_overview_summaries'),
+          this._config.compact_overview_summaries === true,
+          (checked) => this._toggleChanged('compact_overview_summaries', checked, false)
+        )}
+        <div class="description">${localize('editor.compact_overview_summaries_desc')}</div>
       </div>
     `;
   }

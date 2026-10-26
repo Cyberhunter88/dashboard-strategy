@@ -23,7 +23,7 @@ export interface OverviewSectionParams {
   hass: HomeAssistant;
 }
 
-export function createSummaryCards(config: Simon42StrategyConfig, compact = false): LovelaceCardConfig[] {
+export function createSummaryCards(config: Simon42StrategyConfig, compact = false, slim = false): LovelaceCardConfig[] {
   const showCoversSummary = config.show_covers_summary !== false;
   const showLightSummary = config.show_light_summary !== false;
   const showSecuritySummary = config.show_security_summary !== false;
@@ -31,7 +31,7 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
   const showClimateSummary = config.show_climate_summary === true;
 
   const summaryCards: LovelaceCardConfig[] = [];
-  const compactConfig = compact ? { compact: true } : {};
+  const compactConfig = compact ? { compact: true, ...(slim ? { slim: true } : {}) } : {};
 
   if (showLightSummary) {
     summaryCards.push({
@@ -95,8 +95,13 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
   return summaryCards;
 }
 
-export function appendSummaryCards(cards: LovelaceCardConfig[], config: Simon42StrategyConfig, compact = false): void {
-  const summaryCards = createSummaryCards(config, compact);
+export function appendSummaryCards(
+  cards: LovelaceCardConfig[],
+  config: Simon42StrategyConfig,
+  compact = false,
+  slim = false
+): void {
+  const summaryCards = createSummaryCards(config, compact, slim);
   if (summaryCards.length === 0) return;
   const hidden = new Set(config.hidden_section_headings || []);
   const summaryRules = summaryCards.map((card) => getViewVisibleUsers(config, String(card.summary_type)));
@@ -135,9 +140,13 @@ export function appendSummaryCards(cards: LovelaceCardConfig[], config: Simon42S
   }
 }
 
-export function createSummariesSection(config: Simon42StrategyConfig, compact = false): LovelaceSectionConfig | null {
+export function createSummariesSection(
+  config: Simon42StrategyConfig,
+  compact = false,
+  slim = false
+): LovelaceSectionConfig | null {
   const cards: LovelaceCardConfig[] = [];
-  appendSummaryCards(cards, config, compact);
+  appendSummaryCards(cards, config, compact, slim);
   return cards.length > 0 ? { type: 'grid', cards } : null;
 }
 
@@ -149,9 +158,10 @@ export function createSummariesSection(config: Simon42StrategyConfig, compact = 
  */
 export function createWeatherStartSummariesSection(
   config: Simon42StrategyConfig,
-  size: 'mini' | 'normal' = 'mini'
+  size: 'mini' | 'normal' = 'mini',
+  slim = false
 ): LovelaceSectionConfig | null {
-  return createSummariesSection(config, size === 'mini');
+  return createSummariesSection(config, size === 'mini', slim);
 }
 
 export function createFavoritesSection(
@@ -319,7 +329,12 @@ export function createOverviewSection(data: OverviewSectionParams): LovelaceSect
     cards.push(...(searchSection?.cards?.slice(1) || []));
   }
 
-  appendSummaryCards(cards, config);
+  appendSummaryCards(
+    cards,
+    config,
+    config.compact_overview_summaries === true,
+    config.compact_overview_summaries === true
+  );
 
   // Favorites section
   const favoriteEntities = (config.favorite_entities || []).filter((entityId) => hass.states[entityId] !== undefined);

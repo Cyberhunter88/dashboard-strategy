@@ -8,7 +8,7 @@
 
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.34.0**
+Aktueller Entwicklungsstand: **1.35.0**
 
 Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RELEASE.md) dokumentiert.
 
@@ -22,6 +22,7 @@ Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RE
 - **Automatische Raum-Erkennung** — Nutzt Home Assistant Areas, Devices & Floors
 - **Spezialisierte Views** — Lichter, Rollos, Sicherheit, Batterien, Klima — jeweils mit Status-Gruppierung
 - **Zusammenfassungskarten** — Einzeln ein-/ausschaltbar für Lichter, Rollos, Sicherheit, Batterien und Klima
+- **Schlanke Startseite** — Zusammenfassungen im Standardlayout optional noch kompakter; erledigte To-dos in erzeugten Karten ausblendbar
 - **Etagen-Gruppierung** — Bereiche, Lichter und Rollos optional nach Etagen gliedern
 - **Bereichs-Gruppierung** — Lichter, Rollos und Batterien nach Bereichen; Lichter/Rollos optional als Etage → Bereich → Entitäten
 - **Favoriten** — Beliebige Entitäten als Kacheln auf der Übersicht anpinnen

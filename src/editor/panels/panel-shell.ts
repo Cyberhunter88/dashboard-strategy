@@ -42,6 +42,13 @@ function togglePanel(host: CollapsiblePanelHost, key: string): void {
   host.requestUpdate();
 }
 
+export function openPanel(host: CollapsiblePanelHost, key: string): void {
+  if (host._expandedPanels.has(key)) return;
+  host._expandedPanels.add(key);
+  persistExpandedPanels(host._expandedPanels);
+  host.requestUpdate();
+}
+
 export function renderCollapsiblePanel(
   host: CollapsiblePanelHost,
   meta: PanelMeta,
@@ -49,7 +56,7 @@ export function renderCollapsiblePanel(
 ): TemplateResult {
   const expanded = host._expandedPanels.has(meta.key);
   return html`
-    <div class="section panel${expanded ? '' : ' collapsed'}">
+    <div class="section panel${expanded ? '' : ' collapsed'}" data-panel-key=${meta.key}>
       <button
         type="button"
         class="panel-header"

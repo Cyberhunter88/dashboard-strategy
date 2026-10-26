@@ -487,7 +487,8 @@ function createWeatherStartSectionsFromItems(
             hass,
             dashboardConfig.show_todos_section === true,
             dashboardConfig.todos_entities,
-            (dashboardConfig.hidden_section_headings || []).includes('todos')
+            (dashboardConfig.hidden_section_headings || []).includes('todos'),
+            dashboardConfig.hide_completed_todos === true
           );
         break;
       case 'persons':
@@ -605,7 +606,15 @@ function createWeatherStartSections(
 
   blockMap.set(
     'summaries',
-    withBlockOverride('summaries', createWeatherStartSummariesSection(dashboardConfig), blocksConfig)
+    withBlockOverride(
+      'summaries',
+      createWeatherStartSummariesSection(
+        dashboardConfig,
+        'mini',
+        compactDefaultPresentation && dashboardConfig.compact_overview_summaries === true
+      ),
+      blocksConfig
+    )
   );
 
   blockMap.set('light_favorites', createLightFavoritesSection(hass, dashboardConfig));
@@ -979,7 +988,8 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           hass,
           dashboardConfig.show_todos_section === true,
           dashboardConfig.todos_entities,
-          hiddenHeadings.has('todos')
+          hiddenHeadings.has('todos'),
+          dashboardConfig.hide_completed_todos === true
         )
       ),
       persons: decorateBlock(

@@ -16,13 +16,22 @@ export type EditorPanelKey =
   | 'sectionOrder'
   | 'customContent';
 
+export const EDITOR_NAV_GROUPS: readonly { labelKey: string; panels: readonly EditorPanelKey[] }[] = [
+  {
+    labelKey: 'editor.section_overview',
+    panels: ['overview', 'summaries', 'favorites', 'appearance', 'details', 'sectionOrder'],
+  },
+  { labelKey: 'editor.section_areas_rooms', panels: ['areas', 'areaOptions', 'roomPins', 'views'] },
+  { labelKey: 'editor.section_advanced', panels: ['advanced', 'customContent'] },
+];
+
 const PANEL_DEFINITIONS: Record<EditorPanelKey, { key: string; icon: string; labelKey: string }> = {
   overview: { key: 'overview', icon: 'mdi:view-dashboard-outline', labelKey: 'editor.section_overview' },
   summaries: { key: 'summaries', icon: 'mdi:counter', labelKey: 'editor.section_summaries' },
   favorites: { key: 'favorites', icon: 'mdi:star-outline', labelKey: 'editor.section_favorites' },
   areas: { key: 'areas', icon: 'mdi:floor-plan', labelKey: 'editor.section_areas_rooms' },
-  appearance: { key: 'appearance', icon: 'mdi:palette-outline', labelKey: 'editor.section_overview' },
-  details: { key: 'details', icon: 'mdi:tune-variant', labelKey: 'editor.section_summaries' },
+  appearance: { key: 'appearance', icon: 'mdi:palette-outline', labelKey: 'editor.section_overview_details' },
+  details: { key: 'details', icon: 'mdi:tune-variant', labelKey: 'editor.section_summary_details' },
   areaOptions: { key: 'area-options', icon: 'mdi:home-cog-outline', labelKey: 'editor.section_areas' },
   roomPins: { key: 'room-pins', icon: 'mdi:pin-outline', labelKey: 'editor.section_room_pins' },
   views: { key: 'views', icon: 'mdi:tab', labelKey: 'editor.section_views' },
