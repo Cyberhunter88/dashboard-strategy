@@ -4,8 +4,8 @@ interface ParsedEditorYaml {
   _yaml_error?: string;
 }
 function getYamlErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message.split('\n')[0] : 'UngÃ¼ltiges YAML';
-  return message || 'UngÃ¼ltiges YAML';
+  const message = error instanceof Error ? error.message.split('\n')[0] : 'Ungültiges YAML';
+  return message || 'Ungültiges YAML';
 }
 export function parseEditorYamlConfig(yamlString: string, invalidMessage: string): ParsedEditorYaml {
   if (!yamlString.trim()) return { parsed_config: undefined };
