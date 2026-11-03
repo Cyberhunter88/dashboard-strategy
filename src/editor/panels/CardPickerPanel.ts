@@ -76,7 +76,7 @@ export function renderCardEditor(host: PanelHost): TemplateResult {
             @click=${() => {
               host._cardPickerStep = 'type';
               const visualHost = host.shadowRoot?.querySelector('.card-editor-visual-host') as HTMLElement | null;
-              if (visualHost) visualHost.innerHTML = '';
+              visualHost?.replaceChildren();
               host._cardPickerHasVisualEditor = false;
             }}
             title="Zurück"
@@ -130,7 +130,7 @@ export function closeCardPicker(host: PanelHost): void {
   host._cardPickerCallback = null;
   host._cardPickerConfig = null;
   const visualHost = host.shadowRoot?.querySelector('.card-editor-visual-host') as HTMLElement | null;
-  if (visualHost) visualHost.innerHTML = '';
+  visualHost?.replaceChildren();
 }
 export function selectCardType(host: PanelHost, type: string): void {
   host._cardPickerSelectedType = type;

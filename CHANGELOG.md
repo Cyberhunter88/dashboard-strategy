@@ -2,9 +2,34 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.29.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.35.2...HEAD).
 
-## 1.33.0 (unreleased)
+## 1.35.2
+
+- Complete the Russian translation (140 previously missing keys) and make the translation lint cover `ru`.
+
+## 1.35.1
+
+- Update vulnerable development dependencies within the supported ranges and correct the YAML editor fallback message.
+- Authenticate release asset verification in the manual release-build workflow.
+
+## 1.35.0
+
+- Add an opt-in slim summary layout for the default overview, optional hiding of completed to-dos, and direct navigation to editor panels.
+
+## 1.34.1
+
+- Fix async chunk loading when Home Assistant imports the entry while an unrelated card is the last script on the page; browser tests cover HACS and `/local/` resources.
+
+## 1.34.0
+
+- Clarify CCTV options, add keyboard room-stack ordering, Hungarian and Polish translations, and manual `/local/` chunk loading.
+
+## 1.33.2
+
+- Prevent unbounded card growth in the weather layout and wait for native area registration to avoid cold-start memory spikes.
+
+## 1.33.0
 
 - Reuse registry indexes and pooled native cards across dashboard generation and state updates; refresh relevant attributes, language and area metadata.
 - Extend the existing editor diagnostics with cached YAML analysis, entity status classification, configuration paths and grouped layout/navigation hints.
