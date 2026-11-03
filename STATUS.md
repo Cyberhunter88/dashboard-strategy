@@ -4,7 +4,8 @@ Updated: 2026-11-03
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.35.2. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Dashboard Strategy development version: 1.36.0. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.36.0 loads non-English translations as on-demand chunks (core chunk about 383 KB to 160 KB), completes the Russian translation, clears the `npm audit` findings through a `minimatch` override, extracts the custom views editor panel, and adds DOM tests for group cards. Validation in Home Assistant is still pending.
 - Version 1.35.1 updates vulnerable development dependencies within the existing supported ranges and corrects a YAML editor fallback message. The repository-wide security review remains in progress.
 - The project uses TypeScript, Webpack, Vitest, browser checks, and GitHub Actions CI. Production `dist/` assets are tracked for HACS.
 - Version 1.34.0 combines CCTV option clarity with legacy behavior, keyboard room-stack ordering, Hungarian and Polish translations, and manual `/local/` chunk loading; its pull request is merged.
