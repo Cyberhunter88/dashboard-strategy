@@ -27,7 +27,7 @@ const errors = [];
 for (const key of en.keys()) if (!de.has(key)) errors.push(`Missing in de.json: ${key}`);
 for (const key of de.keys()) if (!en.has(key)) errors.push(`Missing in en.json: ${key}`);
 for (const [locale, entries] of translations) {
-  if (locale === 'hu' || locale === 'pl') {
+  if (locale !== 'en' && locale !== 'de') {
     for (const key of en.keys()) if (!entries.has(key)) errors.push(`Missing in ${locale}.json: ${key}`);
   }
   for (const [key, value] of entries) {
@@ -57,4 +57,4 @@ if (errors.length > 0) {
   for (const error of errors) console.error(error);
   process.exit(1);
 }
-console.log(`Translations checked: ${en.size} keys in de/en/hu/pl; ru uses English fallback for missing keys`);
+console.log(`Translations checked: ${en.size} keys in de/en/hu/pl/ru`);

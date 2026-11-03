@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.35.1...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.35.2...HEAD).
+
+## 1.35.2
+
+- Complete the Russian translation (140 previously missing keys) and make the translation lint cover `ru`.
 
 ## 1.35.1
 

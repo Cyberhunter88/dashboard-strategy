@@ -19,7 +19,11 @@ describe('locale selection', () => {
   it('falls back to English for unknown locales and missing keys', () => {
     setLanguage('fr-FR');
     expect(localize('views.lights')).toBe('Lights');
-    setLanguage('ru-RU');
     expect(localize('views.cctv')).toBe('CCTV');
+  });
+
+  it('uses the Russian translation, including the CCTV view label', () => {
+    setLanguage('ru-RU');
+    expect(localize('views.cctv')).toBe('Видеонаблюдение');
   });
 });
