@@ -182,7 +182,7 @@ class Simon42CoversGroupCard extends LitElement {
     return Registry.getVisibleEntityIdsForDomain('cover').filter((id) => {
       const state = hass.states[id];
       if (!state) return false;
-      const deviceClass = (state.attributes as any)?.device_class as string | undefined;
+      const deviceClass = state.attributes?.device_class as string | undefined;
       // Covers without device_class only match the main group (multiple classes), not specialized groups like awnings/windows
       if (!deviceClass) return this._deviceClasses.length > 1;
       return this._deviceClasses.includes(deviceClass);
@@ -283,7 +283,7 @@ class Simon42CoversGroupCard extends LitElement {
       const state = this.hass.states[id];
       if (!state) continue;
 
-      const position = (state.attributes as any)?.current_position;
+      const position = state.attributes?.current_position;
       if (isCoverRelevantForGroup(state.state, position, groupType, showPartiallyOpen)) relevant.push(id);
     }
 
@@ -377,7 +377,7 @@ class Simon42CoversGroupCard extends LitElement {
     return createEntityRenderKey(covers, (id) => {
       const state = this.hass?.states[id];
       if (!state) return null;
-      const position = (state.attributes as any)?.current_position;
+      const position = state.attributes?.current_position;
       return [
         state.state,
         typeof position === 'number' ? position : null,
@@ -488,7 +488,7 @@ class Simon42CoversGroupCard extends LitElement {
 
     if (covers.length === 0) {
       const headingSlot = this.shadowRoot?.getElementById('heading');
-      if (headingSlot) headingSlot.innerHTML = '';
+      headingSlot?.replaceChildren();
       for (const card of this._floorHeadingCards.values()) {
         if (card.parentNode) card.parentNode.removeChild(card);
       }
@@ -496,7 +496,7 @@ class Simon42CoversGroupCard extends LitElement {
       for (const card of this._areaHeadingCards.values()) card.remove();
       this._areaHeadingCards.clear();
       const grid = this.shadowRoot?.getElementById('grid');
-      if (grid) grid.innerHTML = '';
+      grid?.replaceChildren();
       this._headingCard = null;
       this._tileCards.clear();
       this._lastCoversList = '';
