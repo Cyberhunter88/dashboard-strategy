@@ -84,6 +84,13 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+/** Home Assistant card/editor elements whose properties are set from outside. */
+interface ConfigurableElement extends HTMLElement {
+  hass?: HomeAssistant;
+  value?: unknown;
+  setConfig?(config: unknown): void;
+}
+
 class DashboardStrategyEditableCard extends LitElement {
   static properties = {
     _editMode: { state: true },
@@ -207,10 +214,10 @@ class DashboardStrategyEditableCard extends LitElement {
   `;
 
   private _hass?: HomeAssistant;
-  private _child?: HTMLElement;
+  private _child?: ConfigurableElement;
   private _childConfig?: LovelaceCardConfig;
   private _childRenderToken = 0;
-  private _editorElement?: HTMLElement;
+  private _editorElement?: ConfigurableElement;
 
   _editMode = editMode;
   _editorOpen = false;
@@ -238,8 +245,8 @@ class DashboardStrategyEditableCard extends LitElement {
 
   set hass(hass: HomeAssistant) {
     this._hass = hass;
-    if (this._child) (this._child as any).hass = hass;
-    if (this._editorElement) (this._editorElement as any).hass = hass;
+    if (this._child) this._child.hass = hass;
+    if (this._editorElement) this._editorElement.hass = hass;
   }
 
   override connectedCallback(): void {
@@ -280,27 +287,25 @@ class DashboardStrategyEditableCard extends LitElement {
     try {
       const helpers = await (window as EditableWindow).loadCardHelpers?.();
       if (token !== this._childRenderToken || !this.isConnected) return;
-      const child = helpers?.createCardElement
-        ? helpers.createCardElement(config)
-        : document.createElement((config.type || '').replace(/^custom:/, ''));
+      const child = (
+        helpers?.createCardElement
+          ? helpers.createCardElement(config)
+          : document.createElement((config.type || '').replace(/^custom:/, ''))
+      ) as ConfigurableElement;
 
-      if (!helpers?.createCardElement && 'setConfig' in child) {
-        (child as any).setConfig(config);
-      }
-      if (this._hass) (child as any).hass = this._hass;
+      if (!helpers?.createCardElement) child.setConfig?.(config);
+      if (this._hass) child.hass = this._hass;
       host.replaceChildren(child);
       this._child = child;
     } catch (error) {
       if (token !== this._childRenderToken || !this.isConnected) return;
-      const fallback = document.createElement('hui-error-card');
-      if ('setConfig' in fallback) {
-        (fallback as any).setConfig({
-          type: 'error',
-          error: error instanceof Error ? error.message : 'Card konnte nicht geladen werden',
-          origConfig: this.card,
-        });
-      }
-      if (this._hass) (fallback as any).hass = this._hass;
+      const fallback = document.createElement('hui-error-card') as ConfigurableElement;
+      fallback.setConfig?.({
+        type: 'error',
+        error: error instanceof Error ? error.message : 'Card konnte nicht geladen werden',
+        origConfig: this.card,
+      });
+      if (this._hass) fallback.hass = this._hass;
       host.replaceChildren(fallback);
       this._child = fallback;
     }
@@ -325,10 +330,10 @@ class DashboardStrategyEditableCard extends LitElement {
     if (!host || !customElements.get('hui-card-element-editor')) return;
 
     try {
-      const editor = document.createElement('hui-card-element-editor');
-      (editor as any).hass = this._hass;
-      (editor as any).value = this.card;
-      if ('setConfig' in editor) (editor as any).setConfig(this.card);
+      const editor = document.createElement('hui-card-element-editor') as ConfigurableElement;
+      editor.hass = this._hass;
+      editor.value = this.card;
+      editor.setConfig?.(this.card);
       editor.addEventListener('config-changed', (event: Event) => {
         const config = (event as CustomEvent).detail?.config;
         if (!config || typeof config !== 'object') return;

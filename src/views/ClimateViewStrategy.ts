@@ -3,6 +3,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import type { LovelaceViewConfig, LovelaceSectionConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
@@ -10,7 +11,7 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewClimateStrategy extends HTMLElement {
-  static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
+  static async generate(config: { config?: Simon42StrategyConfig }, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     // Ensure Registry is initialized (idempotent — no-op if already done)
     const strategyConfig = config.config || {};
     if (!Registry.isCurrent(hass, strategyConfig)) {

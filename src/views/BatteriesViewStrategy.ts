@@ -4,11 +4,12 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceViewConfig } from '../types/lovelace';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewBatteriesStrategy extends HTMLElement {
-  static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
+  static async generate(config: { config?: Simon42StrategyConfig }, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     // Ensure Registry is initialized (idempotent — no-op if already done)
     const strategyConfig = config.config || {};
     if (!Registry.isCurrent(hass, strategyConfig)) {
