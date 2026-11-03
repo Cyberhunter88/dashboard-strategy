@@ -42,5 +42,8 @@
     "vitest": "^4.1.9",
     "webpack": "^5.105.4",
     "webpack-cli": "^7.0.2"
+  },
+  "overrides": {
+    "minimatch": ">=11.0.1"
   }
 }
