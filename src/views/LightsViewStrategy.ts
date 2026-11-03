@@ -3,10 +3,15 @@
 // ====================================================================
 
 import type { LovelaceViewConfig } from '../types/lovelace';
+import type { HomeAssistant } from '../types/homeassistant';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import { createSectionsView } from '../utils/view-builder';
 
 class Simon42ViewLightsStrategy extends HTMLElement {
-  static async generate(config: any, _hass: any): Promise<LovelaceViewConfig> {
+  static async generate(
+    config: { config?: Simon42StrategyConfig; dashboardConfig?: Simon42StrategyConfig; entities?: string[] },
+    _hass: HomeAssistant
+  ): Promise<LovelaceViewConfig> {
     const dashboardConfig = config.dashboardConfig || config.config || {};
     const groupByFloors = dashboardConfig.group_lights_by_floors === true;
     const groupByAreas = dashboardConfig.group_lights_by_areas === true;

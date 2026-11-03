@@ -3,7 +3,7 @@ import { Registry } from './Registry';
 import type { HomeAssistant } from './types/homeassistant';
 import type { DeviceRegistryEntry, EntityRegistryEntry, FloorRegistryEntry } from './types/registries';
 import type { Simon42StrategyConfig } from './types/strategy';
-import { localize } from './utils/localize';
+import { loadLanguage, localize } from './utils/localize';
 
 function entity(entityId: string, overrides: Partial<EntityRegistryEntry> = {}): EntityRegistryEntry {
   return {
@@ -101,7 +101,7 @@ describe('Registry', () => {
     expect(Registry.getVisibleEntityIdsForDomain('light')).toEqual(['light.visible']);
   });
 
-  it('reuses maps when registry and config references are unchanged', () => {
+  it('reuses maps when registry and config references are unchanged', async () => {
     const hass = hassWith([entity('light.visible')]);
     const config = {} as Simon42StrategyConfig;
     Registry.initialize(hass, config);
@@ -113,6 +113,7 @@ describe('Registry', () => {
       language: 'de',
       locale: { ...hass.locale, language: 'de' as const },
     };
+    await loadLanguage(stateOnlyUpdate);
     Registry.initialize(stateOnlyUpdate, config);
 
     expect(Registry.isCurrent(stateOnlyUpdate, config)).toBe(true);

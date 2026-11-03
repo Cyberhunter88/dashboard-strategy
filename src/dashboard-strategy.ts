@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.35.2'; // synchronized from package.json
+const STRATEGY_VERSION = '1.36.0'; // synchronized from package.json
 
 declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
@@ -92,6 +92,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     const {
       Registry,
       getVisibleAreasFromHass,
+      loadLanguage,
       localize,
       normalizeAreasDisplay,
       withUnavailableEntitiesHidden,
@@ -103,6 +104,10 @@ class Simon42DashboardStrategy extends HTMLElement {
       resolveAutomaticFeatures,
     } = runtime;
     t('imports done');
+
+    // Non-English translations are separate chunks; load before views are resolved.
+    await loadLanguage(hass);
+    t('language ready');
 
     const getStrategy = (tag: string): StrategyGenerator => {
       const strategy = customElements.get(tag) as (CustomElementConstructor & Partial<StrategyGenerator>) | undefined;

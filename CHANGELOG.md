@@ -2,9 +2,14 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.35.2...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.36.0...HEAD).
 
-## 1.35.2
+## 1.36.0
+
+- Load non-English translations (`de`, `hu`, `pl`, `ru`) as on-demand chunks. English stays bundled as the fallback; the core chunk shrinks from about 383 KB to 160 KB. `generate()` waits for the active language, and cards and the editor refresh if a language arrives late.
+- Complete the Russian translation (140 previously missing keys) and make the translation lint cover `ru`.
+- Resolve all `npm audit` findings with a `minimatch` override and update development dependencies.
+- Extract the custom views editor panel from `StrategyEditor`, replace remaining `any` casts in cards and view strategies, and add DOM tests for lights and covers group cards and the custom views panel.
 
 - Complete the Russian translation (140 previously missing keys) and make the translation lint cover `ru`.
 

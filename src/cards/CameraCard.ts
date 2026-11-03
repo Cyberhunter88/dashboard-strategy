@@ -4,7 +4,7 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig } from '../types/lovelace';
-import { localize, setupLocalize } from '../utils/localize';
+import { localize, onLanguageLoaded, setupLocalize } from '../utils/localize';
 
 interface CameraCardConfig extends LovelaceCardConfig {
   entity: string;
@@ -65,7 +65,10 @@ class DashboardStrategyCameraCard extends HTMLElement {
     this._ensureCard();
   }
 
+  private _unsubscribeLanguage?: () => void;
+
   connectedCallback(): void {
+    this._unsubscribeLanguage = onLanguageLoaded(() => this._updateStreamButton());
     this.style.display = 'block';
     this.style.position = 'relative';
     this._configureVisibility();
@@ -73,6 +76,8 @@ class DashboardStrategyCameraCard extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this._unsubscribeLanguage?.();
+    this._unsubscribeLanguage = undefined;
     // Invalidate card-helper work that may still be awaiting custom elements.
     this._renderToken++;
     this._pending = false;

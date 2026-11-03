@@ -13,12 +13,13 @@
 |-------|-------|--------|
 | main | ~8 KB | Entry Point, Versions-/Chunk-Logik, Custom-Element-Registrierung |
 | lit | ~16 KB | Lit Framework (shared) |
-| core | ~358 KB | Registry, Utils, fünf Übersetzungen, Sections, Overview und Custom Cards |
+| core | ~160 KB | Registry, Utils, englische Übersetzung (Fallback), Sections, Overview und Custom Cards |
+| lang-de / -hu / -pl / -ru | ~45–72 KB je Sprache | Übersetzung der aktiven Sprache, wird bei Bedarf geladen |
 | views | ~41 KB | Lichter, Rollos, Sicherheit, Batterien, Klima, CCTV, Wartung und Raum-Details |
-| editor | ~254 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
+| editor | ~258 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
 | nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
 
-Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.34.0; Webpack-Hashes und Größen ändern sich bei neuen Builds. Der Core-Chunk ist durch die vollständigen ungarischen und polnischen Übersetzungen gewachsen. Der sofort geladene Entry-Chunk bleibt klein.
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.36.0; Webpack-Hashes und Größen ändern sich bei neuen Builds. Englisch bleibt im Core als Fallback; die anderen Sprachen sind eigene Chunks. `generate()` lädt die Sprache vor dem Auflösen der Views (`loadLanguage`), Karten und Editor aktualisieren sich bei verspätetem Laden über `onLanguageLoaded`. Der sofort geladene Entry-Chunk bleibt klein.
 
 ### Performance-Design
 

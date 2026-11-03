@@ -9,7 +9,7 @@ import '../views/OverviewViewStrategy';
 
 export { Registry } from '../Registry';
 export { getVisibleAreasFromHass, normalizeAreasDisplay } from '../utils/name-utils';
-export { localize } from '../utils/localize';
+export { loadLanguage, localize } from '../utils/localize';
 export { withUnavailableEntitiesHidden } from '../utils/availability-utils';
 export { applyViewVisibility } from '../utils/view-visibility';
 export { insertCustomViews, resolveCustomViews } from '../utils/custom-view-ref';
