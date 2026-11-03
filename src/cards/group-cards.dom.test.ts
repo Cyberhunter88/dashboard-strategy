@@ -63,7 +63,8 @@ it('reuses the pooled light tile for unrelated state updates and removes it when
   await settle(card);
   expect(card.shadowRoot?.querySelector('hui-tile-card')).toBe(tile);
 
-  const { 'light.lamp': _removed, ...states } = hass.states;
+  const states = { ...hass.states };
+  delete states['light.lamp'];
   card.hass = { ...hass, states };
   await settle(card);
   expect(card.shadowRoot?.querySelector('hui-tile-card')).toBeNull();
