@@ -23,6 +23,7 @@ import {
   renderBadgeGroup,
   updateAreaViewOverride,
 } from './panels/RoomOptionsPanel';
+import { renderCustomViewsPanel, type RefDashboardOption } from './panels/CustomViewsPanel';
 import {
   parseWeatherStartItemYaml,
   renderWeatherLayout,
@@ -76,7 +77,6 @@ import { getEffectiveDeviceAreaId } from '../utils/device-utils';
 import { loadLanguage, localize, onLanguageLoaded } from '../utils/localize';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
-import { isUtilityViewEnabled } from '../utils/summary-view-utils';
 import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../utils/weather-start-defaults';
 import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
 import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
@@ -107,12 +107,6 @@ interface EntitySelectOption {
   name: string;
   area_id?: string | null;
   device_area_id?: string | null;
-}
-
-interface RefDashboardOption {
-  url_path: string;
-  title: string;
-  views: Array<{ path?: string; title?: string; icon?: string; index: number }>;
 }
 
 declare global {
@@ -2439,7 +2433,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         <div class="custom-content-grid">
           ${isWeatherStart ? nothing : this._renderCustomCardsSection(true)}
           ${isWeatherStart ? nothing : this._renderCustomSectionsSection(true)} ${this._renderCustomBadgesSection(true)}
-          ${this._renderCustomViewsSection(true)}
+          ${renderCustomViewsPanel(this._customViewsHost, true)}
         </div>
       </div>
     `;
@@ -2555,46 +2549,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private _renderCustomViewsSection(nested = false): TemplateResult {
-    const customViews = this._config.custom_views || [];
-
-    return html`
-      <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div
-          class=${nested ? 'subsection-title' : 'section-title'}
-          style="display: flex; align-items: center; gap: 8px;"
-        >
-          ${localize('editor.section_custom_views')}
-          <a
-            href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-View-hinzufugen.gif"
-            target="_blank"
-            rel="noopener"
-            style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
-            title=${localize('editor.video_tutorial')}
-            >&#x1F3AC;</a
-          >
-        </div>
-
-        <div id="custom-views-list">
-          ${customViews.length === 0
-            ? html`<div class="empty-state">${localize('editor.no_custom_views')}</div>`
-            : customViews.map((view, index) => this._renderCustomViewItem(view, index))}
-        </div>
-
-        <div class="custom-item-row" style="margin-top: 8px;">
-          <button class="btn-primary" @click=${this._addCustomView}>
-            ${localize('editor.add_custom_view')} <ha-icon icon="mdi:code-braces"></ha-icon>
-          </button>
-          <button class="btn-primary" @click=${this._addCustomRefView}>
-            ${localize('editor.add_custom_view_ref')} <ha-icon icon="mdi:link-variant"></ha-icon>
-          </button>
-        </div>
-        <div class="description">${localize('editor.custom_views_help')}</div>
-        <div class="description">${localize('editor.custom_views_ref_help')}</div>
-      </div>
-    `;
-  }
-
   // ====================================================================
   // ITEM RENDERERS
   // ====================================================================
@@ -2618,170 +2572,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         <label for=${id} class=${disabled ? 'disabled-label' : ''}>${label}</label>
       </div>
     `;
-  }
-
-  private _renderCustomViewItem(view: CustomView, index: number): TemplateResult {
-    const isReference = view.ref_dashboard !== undefined;
-    const validationMsg = view._yaml_error
-      ? html`<span style="color: var(--error-color);">&#x274C; ${view._yaml_error}</span>`
-      : view.yaml
-        ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
-        : nothing;
-
-    return html`
-      <div class="custom-item" data-index=${index}>
-        <div class="custom-item-header">
-          <strong>${view.title || localize('editor.new_view')}</strong>
-          <button class="btn-remove" @click=${() => this._removeCustomView(index)}>&#x2715;</button>
-        </div>
-        <div class="custom-item-fields">
-          <div class="custom-item-row">
-            <input
-              type="text"
-              .value=${view.title || ''}
-              placeholder=${localize('editor.title_placeholder')}
-              style="flex: 2;"
-              @change=${(e: Event) => this._updateCustomViewField(index, 'title', (e.target as HTMLInputElement).value)}
-            />
-            <input
-              type="text"
-              .value=${view.path || ''}
-              placeholder=${localize('editor.path_placeholder')}
-              style="flex: 2;"
-              @change=${(e: Event) => this._updateCustomViewField(index, 'path', (e.target as HTMLInputElement).value)}
-            />
-            <input
-              type="text"
-              .value=${view.icon || ''}
-              placeholder="mdi:star"
-              style="flex: 1;"
-              @change=${(e: Event) => this._updateCustomViewField(index, 'icon', (e.target as HTMLInputElement).value)}
-            />
-          </div>
-          ${this._renderCustomViewPosition(view, index)}
-          ${isReference
-            ? this._renderCustomViewRefFields(view, index)
-            : html`<textarea
-                  rows="8"
-                  placeholder=${localize('editor.yaml_placeholder')}
-                  .value=${view.yaml || ''}
-                  style="width: 100%;"
-                  @change=${(e: Event) => this._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}
-                ></textarea>
-                <div class="custom-item-validation">${validationMsg}</div>`}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderCustomViewPosition(view: CustomView, index: number): TemplateResult {
-    const options = this._getGeneratedViewOptions(index);
-    const orphaned = !!view.after_view && !options.some(([path]) => path === view.after_view);
-    return html`
-      <div class="custom-item-row">
-        <select
-          style="flex: 1;"
-          @change=${(event: Event) => this._updateCustomViewAfterView(index, (event.target as HTMLSelectElement).value)}
-        >
-          <option value="" ?selected=${!view.after_view}>${localize('editor.custom_view_position_end')}</option>
-          ${orphaned
-            ? html`<option value=${view.after_view || ''} selected>
-                &#x26A0; ${localize('editor.custom_view_position_after')} ${view.after_view}
-              </option>`
-            : nothing}
-          ${options.map(
-            ([path, title]) => html`
-              <option value=${path} ?selected=${view.after_view === path}>
-                ${localize('editor.custom_view_position_after')} ${title}
-              </option>
-            `
-          )}
-        </select>
-      </div>
-    `;
-  }
-
-  private _getGeneratedViewOptions(excludeCustomViewIndex: number): Array<[string, string]> {
-    if (!this._hass) return [];
-    const options: Array<[string, string]> = [['home', localize('views.overview')]];
-    const add = (enabled: boolean, path: string, titleKey: string): void => {
-      if (enabled) options.push([path, localize(titleKey)]);
-    };
-
-    add(isUtilityViewEnabled(this._config, 'lights'), 'lights', 'views.lights');
-    add(isUtilityViewEnabled(this._config, 'covers'), 'covers', 'views.covers');
-    add(isUtilityViewEnabled(this._config, 'security'), 'security', 'views.security');
-    add(isUtilityViewEnabled(this._config, 'batteries'), 'batteries', 'views.batteries');
-    add(isUtilityViewEnabled(this._config, 'climate'), 'climate', 'views.climate');
-    add(this._config.show_cctv_view === true, 'cctv', 'views.cctv');
-    add(this._config.show_maintenance_view !== false, 'maintenance', 'views.maintenance');
-
-    const hiddenAreas = new Set(this._config.areas_display?.hidden || []);
-    for (const area of this._getSortedAreas()) {
-      if (hiddenAreas.has(area.area_id)) continue;
-      const rule = this._config.room_visibility?.[area.area_id];
-      if (rule?.entity && this._hass.states[rule.entity]?.state !== rule.state) continue;
-      options.push([area.area_id, area.name]);
-    }
-
-    for (const [customIndex, customView] of (this._config.custom_views || []).entries()) {
-      if (customIndex === excludeCustomViewIndex) continue;
-      const complete = customView.parsed_config || (customView.ref_dashboard && customView.ref_view);
-      if (complete && customView.path && customView.title) options.push([customView.path, customView.title]);
-    }
-    return options;
-  }
-
-  private _renderCustomViewRefFields(view: CustomView, index: number): TemplateResult {
-    if (this._refDashboards === null) {
-      void this._loadRefDashboards();
-      return html`<div class="description">${localize('editor.ref_loading')}</div>`;
-    }
-    if (this._refDashboards.length === 0) {
-      return html`<div class="custom-item-validation" style="color: var(--error-color);">
-        ${localize('editor.ref_no_dashboards')}
-      </div>`;
-    }
-    const selected = this._refDashboards.find((dashboard) => dashboard.url_path === view.ref_dashboard);
-    const orphaned = !!view.ref_dashboard && !selected;
-    return html` <div class="custom-item-row">
-        <select
-          style="flex: 1;"
-          @change=${(e: Event) => this._refDashboardChanged(index, (e.target as HTMLSelectElement).value)}
-        >
-          <option value="" ?selected=${!view.ref_dashboard} disabled>${localize('editor.ref_select_dashboard')}</option>
-          ${orphaned
-            ? html`<option value=${view.ref_dashboard || ''} selected>${view.ref_dashboard}</option>`
-            : nothing}
-          ${this._refDashboards.map(
-            (dashboard) =>
-              html` <option value=${dashboard.url_path} ?selected=${dashboard.url_path === view.ref_dashboard}>
-                ${dashboard.title}
-              </option>`
-          )}
-        </select>
-        <select
-          style="flex: 1;"
-          ?disabled=${!selected}
-          @change=${(e: Event) => this._refViewChanged(index, (e.target as HTMLSelectElement).value)}
-        >
-          <option value="" ?selected=${!view.ref_view} disabled>${localize('editor.ref_select_view')}</option>
-          ${(selected?.views || []).map((sourceView) => {
-            const value = sourceView.path ?? String(sourceView.index);
-            const label = `${sourceView.title || `${localize('editor.ref_view_untitled')} ${sourceView.index + 1}`}${
-              sourceView.path ? ` (${sourceView.path})` : ''
-            }`;
-            return html`<option value=${value} ?selected=${value === view.ref_view}>${label}</option>`;
-          })}
-        </select>
-      </div>
-      <div class="custom-item-validation">
-        ${orphaned
-          ? html`<span style="color: var(--error-color);">${localize('editor.ref_dashboard_missing')}</span>`
-          : view.ref_dashboard && view.ref_view
-            ? html`<span style="color: var(--success-color, green);">${localize('editor.ref_valid')}</span>`
-            : localize('editor.ref_incomplete')}
-      </div>`;
   }
 
   private _renderCustomCardItem(card: CustomCard, index: number): TemplateResult {
@@ -4800,6 +4590,36 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       _updateAreaCustomCardYaml: this._updateAreaCustomCardYaml.bind(this),
       _updateAreaViewOverride: this._updateAreaViewOverride.bind(this),
       _fireConfigChanged: this._fireConfigChanged.bind(this),
+    };
+  }
+
+  /** Typed panel facade for the custom views panel; state and config events stay in this host. */
+  private readonly _customViewsHost = this.createCustomViewsHost();
+
+  createCustomViewsHost() {
+    // Live facade getters intentionally refer to the owning LitElement.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const editor = this;
+    return {
+      get _config() {
+        return editor._config;
+      },
+      get _hass() {
+        return editor._hass;
+      },
+      get _refDashboards() {
+        return editor._refDashboards;
+      },
+      _getSortedAreas: editor._getSortedAreas.bind(editor),
+      _addCustomView: editor._addCustomView.bind(editor),
+      _addCustomRefView: editor._addCustomRefView,
+      _loadRefDashboards: editor._loadRefDashboards.bind(editor),
+      _refDashboardChanged: editor._refDashboardChanged.bind(editor),
+      _refViewChanged: editor._refViewChanged.bind(editor),
+      _removeCustomView: editor._removeCustomView.bind(editor),
+      _updateCustomViewField: editor._updateCustomViewField.bind(editor),
+      _updateCustomViewAfterView: editor._updateCustomViewAfterView.bind(editor),
+      _updateCustomViewYaml: editor._updateCustomViewYaml.bind(editor),
     };
   }
 
