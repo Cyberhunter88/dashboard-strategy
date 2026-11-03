@@ -6,7 +6,7 @@ import { LitElement, html, css, type PropertyValues } from 'lit';
 import type { HomeAssistant, HassEntity } from '../types/homeassistant';
 import { Registry } from '../Registry';
 import { trackHassUpdate, debugLog, timeStart, timeEnd } from '../utils/debug';
-import { localize, setupLocalize } from '../utils/localize';
+import { localize, onLanguageLoaded, setupLocalize } from '../utils/localize';
 import { getBatteryEntities, SECURITY_EXCLUDED_PLATFORMS } from '../utils/entity-filter';
 import type { SummaryType } from '../types/strategy';
 import { isEntityCurrentlyAvailable } from '../utils/availability-utils';
@@ -52,6 +52,22 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 class Simon42SummaryCard extends LitElement {
+  private _unsubscribeLanguage?: () => void;
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    // Translations other than English load on demand; refresh once they arrive.
+    this._unsubscribeLanguage = onLanguageLoaded(() => {
+      this.requestUpdate();
+    });
+  }
+
+  override disconnectedCallback(): void {
+    this._unsubscribeLanguage?.();
+    this._unsubscribeLanguage = undefined;
+    super.disconnectedCallback();
+  }
+
   static properties = {
     hass: { attribute: false },
     _count: { state: true },

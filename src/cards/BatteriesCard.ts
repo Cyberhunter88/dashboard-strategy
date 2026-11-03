@@ -7,7 +7,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
-import { localize, setupLocalize } from '../utils/localize';
+import { localize, onLanguageLoaded, setupLocalize } from '../utils/localize';
 import { getBatteryEntities } from '../utils/entity-filter';
 import { getBatteryStatus, type BatteryStatus } from '../utils/battery-utils';
 import { getEntityDisplayName } from '../utils/name-utils';
@@ -52,6 +52,23 @@ const STATUS_COLOR: Record<BatteryStatus, string> = {
 };
 
 class DashboardStrategyBatteriesCard extends LitElement {
+  private _unsubscribeLanguage?: () => void;
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    // Translations other than English load on demand; refresh once they arrive.
+    this._unsubscribeLanguage = onLanguageLoaded(() => {
+      this._lastLayoutKey = '';
+      this.requestUpdate();
+    });
+  }
+
+  override disconnectedCallback(): void {
+    this._unsubscribeLanguage?.();
+    this._unsubscribeLanguage = undefined;
+    super.disconnectedCallback();
+  }
+
   static properties = {
     hass: { attribute: false },
   };

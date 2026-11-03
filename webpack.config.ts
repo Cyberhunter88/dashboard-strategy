@@ -44,7 +44,7 @@ const config: webpack.Configuration = {
           priority: 20,
         },
         core: {
-          test: /[\\/]src[\\/](?:Registry|utils|translations|sections|cards|views[\\/]OverviewViewStrategy)/,
+          test: /[\\/]src[\\/](?:Registry|utils|translations[\\/]en\.json|sections|cards|views[\\/]OverviewViewStrategy)/,
           name: 'core',
           chunks: 'async',
           enforce: true,

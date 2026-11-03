@@ -180,6 +180,11 @@ async function checkCards() {
   assert(actions === 2, 'Summary keyboard navigation missing');
   summary.hass = { ...hass, language: 'de', locale: { ...hass.locale, language: 'de' } };
   await settle(summary);
+  // The German translation loads on demand; the card refreshes once the chunk arrives.
+  for (let attempt = 0; attempt < 50 && !summary.shadowRoot!.textContent?.includes('Lichter'); attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await settle(summary);
+  }
   assert(summary.shadowRoot!.textContent?.includes('Lichter'), 'Summary language did not update');
   const area = card('dashboard-strategy-area-card', { area: 'room_0', navigation_path: '/synthetic-dashboard/room_0' }, hass);
   await settle();

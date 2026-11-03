@@ -92,6 +92,7 @@ class Simon42DashboardStrategy extends HTMLElement {
     const {
       Registry,
       getVisibleAreasFromHass,
+      loadLanguage,
       localize,
       normalizeAreasDisplay,
       withUnavailableEntitiesHidden,
@@ -103,6 +104,10 @@ class Simon42DashboardStrategy extends HTMLElement {
       resolveAutomaticFeatures,
     } = runtime;
     t('imports done');
+
+    // Non-English translations are separate chunks; load before views are resolved.
+    await loadLanguage(hass);
+    t('language ready');
 
     const getStrategy = (tag: string): StrategyGenerator => {
       const strategy = customElements.get(tag) as (CustomElementConstructor & Partial<StrategyGenerator>) | undefined;

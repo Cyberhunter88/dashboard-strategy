@@ -73,7 +73,7 @@ import {
 } from '../utils/area-entity-utils';
 import { isDefaultShowName } from '../utils/badge-utils';
 import { getEffectiveDeviceAreaId } from '../utils/device-utils';
-import { localize } from '../utils/localize';
+import { loadLanguage, localize, onLanguageLoaded } from '../utils/localize';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
 import { isUtilityViewEnabled } from '../utils/summary-view-utils';
@@ -217,15 +217,25 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Lifecycle --------------------------------------------------------
 
+  private _unsubscribeLanguage?: () => void;
+
   override connectedCallback(): void {
     super.connectedCallback();
     timeStart('editor-open');
     this._openingMeasured = false;
+    this._unsubscribeLanguage = onLanguageLoaded(() => this.requestUpdate());
+  }
+
+  override disconnectedCallback(): void {
+    this._unsubscribeLanguage?.();
+    this._unsubscribeLanguage = undefined;
+    super.disconnectedCallback();
   }
 
   set hass(hass: HomeAssistant) {
     const oldHass = this._hass;
     this._hass = hass;
+    if (!oldHass || oldHass.language !== hass.language || oldHass.locale !== hass.locale) void loadLanguage(hass);
     if (
       oldHass &&
       (oldHass.entities !== hass.entities ||

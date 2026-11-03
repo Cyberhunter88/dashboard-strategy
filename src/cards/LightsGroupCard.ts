@@ -7,7 +7,7 @@ import type { HomeAssistant, HassEntity } from '../types/homeassistant';
 import type { AreaRegistryEntry } from '../types/registries';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
-import { localize, setupLocalize } from '../utils/localize';
+import { localize, onLanguageLoaded, setupLocalize } from '../utils/localize';
 import { stripAreaName, sortLights } from '../utils/name-utils';
 import { groupEntityIdsByAreas } from '../utils/area-group-utils';
 import { isRoomNavigationAvailable } from '../utils/room-visibility';
@@ -57,6 +57,23 @@ interface LightHierarchyNode {
 }
 
 class Simon42LightsGroupCard extends LitElement {
+  private _unsubscribeLanguage?: () => void;
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    // Translations other than English load on demand; refresh once they arrive.
+    this._unsubscribeLanguage = onLanguageLoaded(() => {
+      this._lastLightsList = '';
+      this.requestUpdate();
+    });
+  }
+
+  override disconnectedCallback(): void {
+    this._unsubscribeLanguage?.();
+    this._unsubscribeLanguage = undefined;
+    super.disconnectedCallback();
+  }
+
   static properties = {
     hass: { attribute: false },
   };
