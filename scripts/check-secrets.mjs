@@ -25,7 +25,7 @@ const skipped = [];
 const media = [];
 
 function scan(label, data, path = label) {
-  if (/^assets\/.+\.(?:gif|png|mp4)$/i.test(path)) {
+  if (/^assets\/.+\.(?:gif|png|mp4|webp)$/i.test(path)) {
     media.push(label);
     return;
   }
@@ -70,7 +70,7 @@ try {
       const name = nameParts.join(' ') || oid.slice(0, 12);
       if (seen.has(oid)) continue;
       seen.add(oid);
-      if (/^assets\/.+\.(?:gif|png|mp4)$/i.test(name)) { media.push(name); continue; }
+      if (/^assets\/.+\.(?:gif|png|mp4|webp)$/i.test(name)) { media.push(name); continue; }
       objects.push({ oid, name });
     }
     const metadata = git(['cat-file', '--batch-check'], { input: objects.map(({ oid }) => oid).join('\n') + '\n' }).trim().split(/\r?\n/);
