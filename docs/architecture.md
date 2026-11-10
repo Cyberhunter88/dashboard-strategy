@@ -19,7 +19,7 @@
 | editor | ~258 KB | Konfigurations-UI und YAML-Parser (nur bei Bedarf geladen) |
 | nummerierte Chunks | ~1–2 KB je Chunk | Kleine dynamische Hilfsmodule |
 
-Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.36.0; Webpack-Hashes und Größen ändern sich bei neuen Builds. Englisch bleibt im Core als Fallback; die anderen Sprachen sind eigene Chunks. `generate()` lädt die Sprache vor dem Auflösen der Views (`loadLanguage`), Karten und Editor aktualisieren sich bei verspätetem Laden über `onLanguageLoaded`. Der sofort geladene Entry-Chunk bleibt klein.
+Die Größen sind unkomprimierte Richtwerte des Builds von Version 1.37.0; Webpack-Hashes und Größen ändern sich bei neuen Builds. Englisch bleibt im Core als Fallback; die anderen Sprachen sind eigene Chunks. `generate()` lädt die Sprache vor dem Auflösen der Views (`loadLanguage`), Karten und Editor aktualisieren sich bei verspätetem Laden über `onLanguageLoaded`. Der sofort geladene Entry-Chunk bleibt klein.
 
 ### Performance-Design
 
