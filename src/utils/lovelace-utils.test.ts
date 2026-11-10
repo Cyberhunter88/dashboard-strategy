@@ -1,31 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hideFirstHeadingCard, parsedConfigToSections, withSectionVisibility } from './lovelace-utils';
-
-describe('hideFirstHeadingCard', () => {
-  it('removes the first heading card from a section', () => {
-    const section = {
-      type: 'grid',
-      cards: [
-        { type: 'heading', heading: 'Overview' },
-        { type: 'tile', entity: 'light.kitchen' },
-      ],
-    };
-
-    expect(hideFirstHeadingCard(section as any)).toEqual({
-      type: 'grid',
-      cards: [{ type: 'tile', entity: 'light.kitchen' }],
-    });
-  });
-
-  it('keeps sections without a leading heading unchanged', () => {
-    const section = {
-      type: 'grid',
-      cards: [{ type: 'tile', entity: 'light.kitchen' }],
-    };
-
-    expect(hideFirstHeadingCard(section as any)).toEqual(section);
-  });
-});
+import { parsedConfigToSections, withSectionVisibility } from './lovelace-utils';
 
 describe('withSectionVisibility', () => {
   it('adds a state visibility rule when both entity and state are present', () => {

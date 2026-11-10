@@ -16,7 +16,7 @@ content: "Willkommen zuhause!"
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Eigene-Karten-hinzufugen.gif" alt="Eigene Karten hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Eigene-Karten-hinzufugen.webp" alt="Eigene Karten hinzufügen" width="800" />
 </p>
 
 #### Eigene Abschnitte
@@ -41,7 +41,7 @@ entity: sun.sun
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-Badges-hinzufugen.gif" alt="Eigene Badges hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-Badges-hinzufugen.webp" alt="Eigene Badges hinzufügen" width="800" />
 </p>
 
 #### Custom Views
@@ -80,7 +80,7 @@ sections:
 Leeres oder ungültiges YAML verwendet weiterhin die automatisch erzeugte Bereichsansicht.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-View-hinzufugen.gif" alt="Custom View hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Custom-View-hinzufugen.webp" alt="Custom View hinzufügen" width="800" />
 </p>
 
 Alternativ kann der Editor eine View eines anderen, speicherbasierten Dashboards referenzieren. Die Quell-View wird bei jedem Generieren live über Home Assistants `lovelace/config`-API geladen; Änderungen an der Quelle werden dadurch ohne Kopieren übernommen. Strategy-Dashboards sind ausgeschlossen. Fehlt später das Dashboard oder die View, bleibt das Dashboard nutzbar und zeigt in der betroffenen View eine Fehlerkarte. Die Sichtbarkeit der Referenz richtet sich nach diesem Dashboard, nicht nach dem Quell-Dashboard.

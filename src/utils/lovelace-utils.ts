@@ -81,16 +81,6 @@ export function parsedConfigToSections(
   return [{ type: 'grid', cards: [parsed as LovelaceCardConfig] }];
 }
 
-export function hideFirstHeadingCard(section: LovelaceSectionConfig): LovelaceSectionConfig {
-  if (!Array.isArray(section.cards) || section.cards.length === 0) return section;
-  const [firstCard, ...rest] = section.cards;
-  if (firstCard?.type !== 'heading') return section;
-  return {
-    ...section,
-    cards: rest,
-  };
-}
-
 export function withSectionVisibility(
   section: LovelaceSectionConfig,
   rule?: { entity?: string; state?: string }

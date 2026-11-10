@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.37.0`. Unit tests live beside source modules;
+Current development version: `1.37.1`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -127,7 +127,11 @@ npm audit
 git diff --check
 ```
 
-For source changes, run typecheck and lint; run tests/build when practical. User-facing behavior should also be validated against the live Home Assistant instance before publishing when that integration is available. Production builds update tracked `dist/` artifacts and must be included when the bundle changes.
+For source changes, run typecheck and lint; run tests/build when practical. User-facing behavior should also be validated against the live Home Assistant instance before publishing when that integration is available. Production builds update tracked `dist/` artifacts and must be included when the bundle changes. Development builds (`npm run build-dev`, `npm run watch`) write to the ignored `dist-dev/` folder and must never target `dist/`.
+
+Documentation recordings under `assets/` are WebP files referenced from `README.MD` and `docs/`. Add new media as WebP at no more than 800 px width and keep its extension covered by the media pattern in `scripts/check-secrets.mjs`.
+
+`CLAUDE.md` only imports this file; keep all agent instructions here.
 
 ## Version, Git, and release rules
 

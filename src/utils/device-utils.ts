@@ -9,7 +9,3 @@ export function getEffectiveDeviceAreaId(device: DeviceRegistryEntry | undefined
   const parentId = device.parent_device_id;
   return parentId ? (lookup(parentId)?.area_id ?? null) : null;
 }
-
-export function deviceLookupFromRecord(devices: Record<string, DeviceRegistryEntry>): DeviceLookup {
-  return (deviceId) => Reflect.get(devices, deviceId) as DeviceRegistryEntry | undefined;
-}

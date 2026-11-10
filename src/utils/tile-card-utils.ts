@@ -6,7 +6,7 @@
 // ====================================================================
 
 import type { HomeAssistant, HassEntity } from '../types/homeassistant';
-import type { LovelaceCardConfig, LovelaceTileCardConfig, LovelaceTileCardFeatureConfig } from '../types/lovelace';
+import type { LovelaceTileCardConfig, LovelaceTileCardFeatureConfig } from '../types/lovelace';
 
 const LIGHT_BRIGHTNESS_MODES = ['brightness', 'color_temp', 'hs', 'xy', 'rgb', 'rgbw', 'rgbww', 'white'];
 const LEGACY_FAN_SET_SPEED = 1;
@@ -139,12 +139,4 @@ export function buildAdaptiveTileCardConfig(
   }
 
   return card;
-}
-
-export function buildAdaptiveTileCards(
-  hass: HomeAssistant,
-  entityIds: string[],
-  options: AdaptiveTileCardOptions = {}
-): LovelaceCardConfig[] {
-  return entityIds.map((entityId) => buildAdaptiveTileCardConfig(hass, entityId, options));
 }

@@ -91,7 +91,7 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
 **Bereiche & Etagen einrichten** — Lege in Home Assistant unter **Einstellungen → Bereiche & Zonen** deine Räume an und weise sie optional Etagen zu. Geräte müssen einem Bereich zugeordnet sein, damit sie im Dashboard erscheinen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Etagen-und-Bereiche.gif" alt="Etagen und Bereiche in Home Assistant einrichten" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Etagen-und-Bereiche.webp" alt="Etagen und Bereiche in Home Assistant einrichten" width="800" />
 </p>
 
 **Geräte zuweisen** — Weise deine Geräte (Lampen, Sensoren, Rollos etc.) in den HA-Einstellungen einem Bereich zu. Die Strategy erkennt automatisch, welche Entitäten in welchem Raum sind.
@@ -103,13 +103,13 @@ Die Strategy generiert das Dashboard automatisch aus deiner Home Assistant Konfi
 - **Entität nicht sichtbar schalten** (empfohlen) — Setze eine Entität in den HA-Einstellungen auf **"Nicht sichtbar"**. Diese Entitäten werden von allen auto-generierten Strategies ausgeblendet — nicht nur von dieser, sondern auch von HA's eigenen Strategies. Das ist der sauberste Weg, um Entitäten aus automatischen Dashboards zu entfernen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Entitaet-auf-nicht-sichtbar-stellen-via-entity-config.gif" alt="Entität auf nicht sichtbar stellen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Entitaet-auf-nicht-sichtbar-stellen-via-entity-config.webp" alt="Entität auf nicht sichtbar stellen" width="800" />
 </p>
 
 - **Label `no_dboard`** — Erstelle in Home Assistant unter **Einstellungen → Labels** ein Label `no_dboard` und weise es Entitäten zu. Die Entität wird aus dieser Dashboard Strategy global ausgeblendet, bleibt aber in anderen (manuellen) Dashboards sichtbar. Die Upstream-Schreibweise `no-dboard` wird ebenfalls akzeptiert.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/no-dboard-label.png" alt="Label no_dboard in Home Assistant erstellen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/no-dboard-label.webp" alt="Label no_dboard in Home Assistant erstellen" width="800" />
 </p>
 
 - **Im Strategy-Editor ausblenden** — Über das Konfigurationsmenü der Strategy können einzelne Entitäten pro Bereich und Domain individuell ein- und ausgeblendet werden. Das betrifft nur diese eine Strategy-Ansicht.
@@ -119,7 +119,7 @@ Mehr zur Filterung findest du im Abschnitt [Entity-Filterung](docs/configuration
 ## Dashboard erstellen
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/simon42-Strategy-Download-DashboardAnlegen-StrategyCodeEinfugen.gif" alt="Dashboard erstellen — Schritt für Schritt" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/simon42-Strategy-Download-DashboardAnlegen-StrategyCodeEinfugen.webp" alt="Dashboard erstellen — Schritt für Schritt" width="800" />
 </p>
 
 1. **Einstellungen** → **Dashboards** → **Dashboard hinzufügen**
@@ -162,13 +162,13 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Zusammenfassungen** — Kacheln die den Status aller Lichter, Rollos, Sicherheits-Entitäten, Batterien und Klimageräte zusammenfassen. Jede Zusammenfassung kann einzeln ein- oder ausgeschaltet werden. Das Layout ist als 2-Spalten-Grid (Standard) oder 4-Spalten-Reihe konfigurierbar. Für Rollos kann optional eine **Teiloffen-Gruppe** aktiviert werden, die Rollos mit Position zwischen 1-99% separat anzeigt — inkl. Live-Übergängen während des Fahrens.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Klima-Zusammenfassung.gif" alt="Klima-Zusammenfassung aktivieren" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Klima-Zusammenfassung.webp" alt="Klima-Zusammenfassung aktivieren" width="800" />
 </p>
 
 **Batterie-Optionen** — Mobile-App-Batterien und Battery-Notes-Helfer können ausgeblendet werden. Die Schwellwerte für die Statusgruppen (Kritisch / Niedrig / Gut) sind frei einstellbar. Optional kann der Bereichsname in Batterie-Kacheln angezeigt oder jede Statusgruppe nach Bereichen mit abschließendem „Ohne Bereich“-Block gegliedert werden. Bei aktiver Gruppierung entfällt das redundante Bereichspräfix auf den Kacheln. Nicht erreichbare Sensoren lassen sich wahlweise der guten oder kritischen Gruppe zuordnen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.gif" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Batterie-Schwellwerte-und-MobileAppBatt.webp" alt="Batterie-Schwellwerte und Mobile-App-Batterien" width="800" />
 </p>
 
 **Wetter-Startseite** — Die Übersicht verwendet immer das frei anordenbare Wetter-Startlayout. Uhr, Datum, Zusammenfassungen, Favoriten, Alarm, Hausmodus, Suche, Wetter, Energie, Pflanzen, Agenda, Aufgaben, Personen, Staubsauger, Wartung, Bereiche, Etagen und eigene Inhalte lassen sich per Drag & Drop anordnen. Optionale Blöcke erscheinen nur, wenn sie aktiviert sind und passende Daten besitzen; einzelne Blöcke können weiterhin mit eigenem Lovelace-YAML überschrieben werden.
@@ -184,7 +184,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Favoriten** — Beliebige Entitäten, die als Kacheln unter den Zusammenfassungen erscheinen. Im Editor per Dropdown hinzufügen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Favoriten-entity-hinzufügen.gif" alt="Favoriten hinzufügen" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Favoriten-entity-hinzufugen.webp" alt="Favoriten hinzufügen" width="800" />
 </p>
 
 ### Bereiche & Räume
@@ -192,13 +192,13 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Etagen-Gruppierung** — Bereiche können nach Etagen gegliedert werden. Jede Etage bekommt eine eigene Section mit Überschrift.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Bereiche-nach-Etagen-Gliedern.gif" alt="Bereiche nach Etagen gliedern" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Bereiche-nach-Etagen-Gliedern.webp" alt="Bereiche nach Etagen gliedern" width="800" />
 </p>
 
 **Alert-Icons** — Optional können Alert-Icons auf den Bereichskarten angezeigt werden. Wenn aktiviert, zeigen die Karten ein oranges Icon, sobald ein relevanter Binärsensor im Bereich aktiv ist (z.B. Bewegung, Feuchtigkeit, Rauch, Wärme).
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Alert-Icons-Area-Card-Aktivieren.gif" alt="Alert-Icons auf Bereichskarten aktivieren" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Alert-Icons-Area-Card-Aktivieren.webp" alt="Alert-Icons auf Bereichskarten aktivieren" width="800" />
 </p>
 
 **Schlösser in Räumen** — Optional können Schlösser (z.B. Nuki) in den Raum-Views angezeigt werden. Unabhängig davon erscheinen sie immer in der Sicherheits-Übersicht.
@@ -206,7 +206,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Bereichssortierung** — Wahlweise die Reihenfolge aus Home Assistant verwenden oder im Editor per Drag & Drop festlegen.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Home-Assistant-Bereichs-Sortierung-verwenden.gif" alt="HA-Bereichssortierung verwenden" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Home-Assistant-Bereichs-Sortierung-verwenden.webp" alt="HA-Bereichssortierung verwenden" width="800" />
 </p>
 
 **Bereichs-Verwaltung** — Bereiche ein-/ausblenden, Reihenfolge anpassen, Entitäten pro Bereich und Domain filtern — alles im Editor.
@@ -248,7 +248,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 **Versteckte Bereiche in Security/CCTV** — Auf der Übersicht ausgeblendete Bereiche bleiben aus Sicherheitsgründen standardmäßig in Security und CCTV sichtbar. Ihre Überschriften verlinken nicht auf eine nicht vorhandene Raumansicht. `hide_hidden_areas_in_security: true` aktiviert die Filterung ausdrücklich.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.gif" alt="Lichter nach Etagen gliedern" width="800" />
+  <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/Lichter-nach-Etagen-Gliedern.webp" alt="Lichter nach Etagen gliedern" width="800" />
 </p>
 
 Die [Konfigurationsreferenz](docs/configuration.md) beschreibt eigene Karten, Abschnitte, Views, Entity-Filterung und alle YAML-Optionen.
