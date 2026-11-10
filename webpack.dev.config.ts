@@ -8,7 +8,8 @@ const config: webpack.Configuration = {
   output: {
     clean: true,
     filename: 'dashboard-strategy.js',
-    path: path.resolve(__dirname, 'dist'),
+    // Separate folder: dist/ holds the tracked HACS release artifacts.
+    path: path.resolve(import.meta.dirname, 'dist-dev'),
   },
   resolve: {
     extensions: ['.ts', '.js'],

@@ -10,16 +10,6 @@ Registry-Indizes werden bei unveränderten Registerdaten und Bereichsfiltern wie
 
 Summary- und Raumlinks berücksichtigen erzeugte Ziele. `show_summary_views: false` blendet weiterhin nur Tabs aus. Summary- und Bereichskarten unterstützen Enter/Leertaste und lassen eingebettete Steuerelemente bedienbar. Unter 480 Pixeln stehen Editorfelder untereinander; Beschriftungen und Diagnosepfade umbrechen. Eigene YAML-Sections und Raum-Overrides werden bewahrt. Es gibt keine allgemeine Entfernung vermeintlich leerer YAML-Abschnitte, die absichtliche Layouts beschädigt.
 
-## Review und übernommene Arbeit
-
-1. Ausgangslage: synthetische Fixture, Performance-Test und Browser-Harness.
-2. Diagnose/Editor: `src/editor/`, Übersetzungen und Dokumentation.
-3. Verarbeitung/Karten: Registry, Pooling, Updatekriterien, Debugmessungen und Links.
-4. Darstellung/Kamera: mobile Felder, Tastaturbedienung und native Pause.
-5. Lieferung: Version 1.33.0, kompatible Dependency-Patches und neu gebautes `dist/`.
-
-Vorherige uncommittete Änderungen von `codex/editor-diagnostics-v132` wurden vorab als binärer Git-Patch und separate neue Diagnosedateien lokal gesichert. Diese Vorarbeit ist inzwischen durch PR #77 in `main` enthalten; ihr Quellcode stimmt mit dem gesicherten Ausgangsstand überein. Für die Lieferung basiert der Optimierungsbranch auf diesem aktuellen `main`, ohne Arbeitsdateien zu überschreiben. Der lokal gespeicherte `optimization-only.patch` dokumentiert den Implementierungsstand gegenüber dem rekonstruierten Ausgangscode. Lieferung erfolgt per Commit, Branch-Push und Pull Request; Merge, Release und Deployment sind nicht Bestandteil dieser Arbeit. Beim Rücknehmen die Vorarbeit erhalten; kein pauschales `git reset` oder `git restore` des Arbeitsverzeichnisses verwenden.
-
 ## Optionale Kamera-Pause
 
 ```yaml
@@ -38,7 +28,7 @@ Optional lassen sich Wetterlayouts auf benötigte Standardblöcke reduzieren, US
 
 Die Fixture verwendet 500, 2.000 und 5.000 erzeugte Entitäten plus vier feste Testentitäten, 24 Bereiche, drei Etagen, Wetter-YAML, USV, Kameraaktionen, Raum-Override und ausgeblendeten Bereich. Keine persönlichen IDs, Adressen oder Live-Konfigurationskopien sind enthalten.
 
-Ausgangscode und Optimierung wurden mit derselben Fixture, demselben Harness, Chrome unter Windows und denselben installierten Dependencies verglichen. Pro Größe: zehn Aufwärmrunden und 21 Messrunden; drei Vorher-/Nachher-Paare nacheinander. Tabellenwerte sind der Median der drei Laufmediane in Millisekunden. `dashboard` misst `generate()` mit zurückgesetzter Registry einschließlich aller Views. `registry` misst separat den kalten Aufbau. Editoröffnung misst den zunächst eingeklappten Editor. Alle Laufmediane stehen in [dashboard-optimization-benchmark.json](dashboard-optimization-benchmark.json).
+Ausgangscode und Optimierung wurden mit derselben Fixture, demselben Harness, Chrome unter Windows und denselben installierten Dependencies verglichen. Pro Größe: zehn Aufwärmrunden und 21 Messrunden; drei Vorher-/Nachher-Paare nacheinander. Tabellenwerte sind der Median der drei Laufmediane in Millisekunden. `dashboard` misst `generate()` mit zurückgesetzter Registry einschließlich aller Views. `registry` misst separat den kalten Aufbau. Editoröffnung misst den zunächst eingeklappten Editor.
 
 | Entitäten | Dashboard vorher | Dashboard danach | Veränderung | Registry vorher/nachher | Editor vorher/nachher |
 | --- | ---: | ---: | ---: | ---: | ---: |

@@ -13,21 +13,12 @@ After changing `package.json.version`, synchronize the derived project version f
 
 ```text
 npm run version:sync
-npm run verify:version
+npm run version:check
 ```
 
 Commit `package.json` together with the synchronized lockfile and
 runtime version files. The release tag is generated automatically as
 `v<version>`.
-
-## Continuous integration
-
-`.github/workflows/ci.yml` runs for pull requests targeting `main`, pushes or
-merges to `main`, and manual `workflow_dispatch` runs. It installs dependencies,
-checks formatting and runs the complete quality, test, build,
-production-artifact, and HACS-distribution checks. Formatting is mandatory.
-A separate required browser job installs Chromium through Playwright and checks
-editor behavior and responsive rendering with simulated Home Assistant components.
 
 ## Automated release
 
@@ -35,6 +26,9 @@ Normal feature and fix pull requests use Conventional Commit prefixes such as
 `feat:` and `fix:`. CI runs on pull requests, pushes to `main`, and manual
 dispatches. It checks the version source, typecheck, lint, translations, tests,
 the production build, all code-split assets, and the HACS distribution.
+Formatting is mandatory. A separate required browser job installs Chromium
+through Playwright and checks editor behavior and responsive rendering with
+simulated Home Assistant components.
 
 When a change to `package.json.version` reaches `main`, the version-driven release
 workflow performs this sequence:

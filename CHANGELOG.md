@@ -2,7 +2,13 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.37.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.37.1...HEAD).
+
+## 1.37.1
+
+- Repository cleanup without behavior changes: remove unused helper exports, the unused changelog-generator templates and Codacy configuration, and the `ts-node` development dependency.
+- Convert the documentation recordings from GIF/PNG to WebP (about 29 MB to about 11 MB).
+- `npm run build-dev` and `npm run watch` now write to the ignored `dist-dev/` folder instead of clearing the tracked `dist/` release artifacts.
 
 ## 1.37.0
 
@@ -14,8 +20,6 @@ A list of unreleased changes can be found [here](https://github.com/Cyberhunter8
 - Complete the Russian translation (140 previously missing keys) and make the translation lint cover `ru`.
 - Resolve all `npm audit` findings with a `minimatch` override and update development dependencies.
 - Extract the custom views editor panel from `StrategyEditor`, replace remaining `any` casts in cards and view strategies, and add DOM tests for lights and covers group cards and the custom views panel.
-
-- Complete the Russian translation (140 previously missing keys) and make the translation lint cover `ru`.
 
 ## 1.35.1
 

@@ -1,12 +1,6 @@
-PERFORMANCE-AUDIT.md
-Session-Summary.md
 node_modules/
-.idea/
 dist/dashboard-strategy.js.map
 .DS_Store
-.codacy/
-.superpowers/
-.worktrees/
 
 # Local credentials and machine configuration
 .env
@@ -29,6 +23,7 @@ secrets.yml
 
 # Local build and test output (release dist/ remains tracked)
 coverage/
+dist-dev/
 playwright-report/
 test-results/
 *.log

@@ -5,9 +5,8 @@
 // module-level RegExp caches, and regex-escaping for area names.
 // ====================================================================
 
-import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
-import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
+import type { AreaRegistryEntry } from '../types/registries';
 import { DEFAULT_STACKS_ORDER, type StackKey, type AreasDisplay, type LightsSortBy } from '../types/strategy';
 import { mergeConfiguredOrder } from './order-utils';
 
@@ -238,17 +237,6 @@ export function normalizeAreasDisplay(
     ...(order ? { order } : {}),
     ...(navItems ? { nav_items: navItems } : {}),
   };
-}
-
-/**
- * Checks whether an entity should be excluded from the dashboard based on
- * its registry flags: hidden, entity_category, labels, and config.
- *
- * Delegates to Registry.isEntityExcludedWithStateCategory() which covers
- * all exclusion criteria including state attribute fallback.
- */
-export function isEntityHiddenOrDisabled(entity: EntityRegistryEntry, _hass: HomeAssistant): boolean {
-  return Registry.isEntityExcludedWithStateCategory(entity.entity_id);
 }
 
 /**

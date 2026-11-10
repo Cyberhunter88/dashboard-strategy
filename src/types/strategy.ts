@@ -42,40 +42,6 @@ export type HeadingKey =
   | 'vacuums'
   | 'maintenance';
 
-export const ALL_HEADING_KEYS: HeadingKey[] = [
-  'overview',
-  'summaries',
-  'favorites',
-  'light_favorites',
-  'custom_cards',
-  'custom_sections',
-  'areas',
-  'areas_other',
-  'weather',
-  'energy',
-  'plants',
-  'agenda',
-  'todos',
-  'persons',
-  'vacuums',
-  'maintenance',
-];
-
-export const DEFAULT_SECTIONS_ORDER: SectionKey[] = [
-  'overview',
-  'custom_cards',
-  'custom_sections',
-  'areas',
-  'weather',
-  'energy',
-  'plants',
-  'agenda',
-  'todos',
-  'persons',
-  'vacuums',
-  'maintenance',
-];
-
 export type LightsSortBy = 'last_changed' | 'name';
 export type PersonBadgeLayout = 'minimal' | 'with_state' | 'with_state_and_time';
 export type WeatherPresentation = 'forecast_daily' | 'forecast_hourly' | 'forecast_twice_daily' | 'tile' | 'none';
