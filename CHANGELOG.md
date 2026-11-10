@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.36.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.37.0...HEAD).
+
+## 1.37.0
+
+- Adapt to the Home Assistant 2026.11 naming model ("device name + entity name"): room cards now also strip a leading device name from entity names (after the area name), keeping the full name when nothing meaningful would remain. Older Home Assistant versions are unaffected.
 
 ## 1.36.0
 

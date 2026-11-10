@@ -86,3 +86,8 @@ Ein Browser-Regressionsfall mit verzögerter Custom-Element-Registrierung scheit
 HA-Referenz: [create-element-base.ts](https://github.com/home-assistant/frontend/blob/20260826.7/src/panels/lovelace/create-element/create-element-base.ts), insbesondere `_lazyCreate()` und `customElements.whenDefined()`.
 
 Validierung 1.33.3: `npm run verify:release` bestanden (222 Unit-Tests, Typecheck, Lint, Format, Übersetzungen, Build, Version und Distribution); `npm run test:browser` mit installiertem Chrome bestanden, einschließlich Kaltstart und 100 Wiederholungen bei 360/1280 Pixeln.
+
+## Home Assistant 2026.11
+
+- Names: Home Assistant 2026.11 shows unnamed cards as "device name + entity name". Room cards of this strategy strip the area and the device name prefix automatically. Rename the device or entity, or set a card `name`, to shorten other names.
+- Marketplace: HACS is replaced by the built-in Marketplace (Settings > Marketplace). Installed projects migrate automatically and the resource path `/hacsfiles/dashboard-strategy/` stays valid.

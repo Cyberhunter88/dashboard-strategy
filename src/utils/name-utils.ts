@@ -67,6 +67,21 @@ function getFriendlyName(entityId: string, hass: HomeAssistant): string | null {
   return (state.attributes?.friendly_name as string | undefined) ?? entityId.split('.')[1].replace(/_/g, ' ');
 }
 
+/**
+ * Home Assistant 2026.11 composes names as "device name + entity name".
+ * Removes a leading device name so room cards stay short; keeps the full
+ * name if nothing meaningful would remain.
+ */
+function stripDeviceName(name: string, entityId: string, hass: HomeAssistant): string {
+  const deviceId = hass.entities?.[entityId]?.device_id;
+  const device = deviceId ? hass.devices?.[deviceId] : undefined;
+  const deviceName = (device?.name_by_user || device?.name || '').trim();
+  if (!deviceName || name.length <= deviceName.length) return name;
+  if (!name.toLowerCase().startsWith(`${deviceName.toLowerCase()} `)) return name;
+  const rest = name.slice(deviceName.length).trim();
+  return rest.length > 0 ? rest : name;
+}
+
 export function getEntityDisplayName(entityId: string, hass: HomeAssistant): string {
   return getFriendlyName(entityId, hass) ?? entityId;
 }
@@ -99,7 +114,7 @@ export function stripAreaName(entityId: string, area: AreaRegistryEntry, hass: H
   if (!name) return entityId;
 
   const areaName = area.name;
-  if (!areaName) return name;
+  if (!areaName) return stripDeviceName(name, entityId, hass);
 
   // Build and cache RegExps for this area name (compiled once, reused)
   if (!_areaRegExpCache.has(areaName)) {
@@ -117,10 +132,10 @@ export function stripAreaName(entityId: string, area: AreaRegistryEntry, hass: H
 
   // Only use cleaned name if something meaningful remains
   if (cleanName.length > 0 && cleanName.toLowerCase() !== areaName.toLowerCase()) {
-    return cleanName;
+    return stripDeviceName(cleanName, entityId, hass);
   }
 
-  return name;
+  return stripDeviceName(name, entityId, hass);
 }
 
 /**
