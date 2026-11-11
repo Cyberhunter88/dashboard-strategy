@@ -11,7 +11,8 @@
     "climate": "Klimat",
     "cctv": "Kamery",
     "maintenance": "Konserwacja",
-    "cameras": "Kamery"
+    "cameras": "Kamery",
+    "energy": "Energia"
   },
   "sections": {
     "overview": "Przegląd",
@@ -33,7 +34,10 @@
     "todos": "Do zrobienia",
     "persons": "Osoby",
     "vacuums": "Odkurzacze i kosiarki",
-    "maintenance": "Oczekujące aktualizacje"
+    "maintenance": "Oczekujące aktualizacje",
+    "quick_actions": "Szybkie akcje",
+    "media": "Teraz odtwarzane",
+    "activity": "Ostatnia aktywność"
   },
   "stacks": {
     "ups": "UPS",
@@ -71,7 +75,10 @@
     "climate_off": "Wszystkie termostaty wyłączone",
     "maintenance_pending_one": "otwarte zadanie konserwacyjne",
     "maintenance_pending_many": "otwarte zadania konserwacyjne",
-    "maintenance_ok": "Brak wymaganych prac konserwacyjnych"
+    "maintenance_ok": "Brak wymaganych prac konserwacyjnych",
+    "windows_open_one": "okno otwarte",
+    "windows_open_many": "okna otwarte",
+    "windows_closed": "Wszystkie okna zamknięte"
   },
   "lights": {
     "on": "Włączone światła",
@@ -140,7 +147,8 @@
     "heating": "Ogrzewanie",
     "cooling": "Chłodzenie",
     "idle": "Bezczynny",
-    "off": "Wyłączony"
+    "off": "Wyłączony",
+    "air_quality": "Alerty jakości powietrza"
   },
   "room": {
     "cameras": "Kamery",
@@ -236,7 +244,7 @@
     "show_sun_badge": "Pokaż plakietkę słońca (wschód/zachód)",
     "show_sun_badge_desc": "Dodaje małą plakietkę do nagłówka przeglądu, która pokazuje, czy słońce jest nad horyzontem, i po dotknięciu prowadzi do czasu następnego wschodu lub zachodu. Automatycznie ukrywana, jeśli HA nie ma encji sun.sun (wbudowana integracja Słońce jest domyślnie włączona w większości instalacji).",
     "show_updates_badge": "Pokaż plakietkę liczby oczekujących aktualizacji",
-    "show_updates_badge_desc": "Dodaje małą pomarańczową plakietkę do nagłówka przeglądu z liczbą encji update.* w stanie \"on\" (oczekujące aktualizacje). Dotknięcie otwiera Ustawienia → Aktualizacje. Automatycznie ukrywana, gdy nie ma oczekujących aktualizacji. Nie wymaga dodatkowej integracji — domena update.* jest natywna dla HA.",
+    "show_updates_badge_desc": "Dodaje małą pomarańczową plakietkę do nagłówka przeglądu z liczbą encji update.* w stanie \"on\" (oczekujące aktualizacje). Dotknięcie otwiera widok konserwacji, a gdy jest wyłączony — Ustawienia → Aktualizacje. Automatycznie ukrywana, gdy nie ma oczekujących aktualizacji. Nie wymaga dodatkowej integracji — domena update.* jest natywna dla HA.",
     "section_summaries": "Podsumowania",
     "panel_navigation": "Przejdź do panelu ustawień",
     "compact_overview_summaries": "Kompaktowe podsumowania na zwykłym przeglądzie",
@@ -627,7 +635,30 @@
     "camera_pause_when_hidden": "Wstrzymaj ręcznie uruchomiony obraz na żywo, gdy jest ukryty",
     "camera_pause_when_hidden_desc": "Opcja dla natywnych kamer z przełącznikiem obrazu na żywo: wstrzymuje obraz poza ekranem lub na ukrytej karcie i wznawia go po powrocie. Własne karty WebRTC pozostają bez zmian.",
     "diagnostics_navigation_target": "Względny cel nawigacji nie jest tworzony przez tę konfigurację",
-    "camera_renderer": "Sposób wyświetlania kamery"
+    "camera_renderer": "Sposób wyświetlania kamery",
+    "section_overview_sections": "Sekcje przeglądu",
+    "overview_sections_desc": "Wybierz, które automatycznie generowane sekcje mają być widoczne w przeglądzie. Sekcja pozostaje ukryta, dopóki nie ma pasujących encji.",
+    "overview_sections_hint": "Położenie sekcji ustawisz w części „Kolejność sekcji”.",
+    "header_badges": "Plakietki w nagłówku",
+    "overview_blocks": "Bloki przeglądu",
+    "lights_options": "Widok świateł",
+    "covers_options": "Widok rolet",
+    "climate_options": "Widok klimatu",
+    "battery_options": "Widok baterii",
+    "show_windows_summary": "Pokaż podsumowanie otwartych okien",
+    "show_windows_summary_desc": "Zlicza otwarte czujniki okien i okna z napędem niezależnie od podsumowania bezpieczeństwa, na przykład na potrzeby wietrzenia i ogrzewania. Otwiera widok bezpieczeństwa, jeśli jest dostępny.",
+    "show_climate_air_quality": "Pokaż alerty wilgotności i CO₂",
+    "show_climate_air_quality_desc": "Dodaje do widoku klimatu sekcję z czujnikami wilgotności i CO₂, dopóki przekraczają progi. Sekcja ukrywa się, gdy wszystko jest w porządku.",
+    "climate_humidity_threshold": "Wilgotność powyżej",
+    "climate_co2_threshold": "CO₂ powyżej",
+    "show_energy_view": "Pokaż widok energii",
+    "show_energy_view_desc": "Dodaje widok z największymi bieżącymi odbiornikami oraz czujnikami mocy, energii, wody i gazu w każdym pomieszczeniu.",
+    "show_media_section": "Pokaż aktywne odtwarzacze",
+    "show_activity_section": "Pokaż ostatnią aktywność",
+    "quick_actions": "Szybkie akcje",
+    "no_quick_actions": "Nie dodano szybkich akcji",
+    "quick_actions_desc": "Sceny, skrypty, przyciski i automatyzacje uruchamiają się jednym dotknięciem, pozostałe encje są przełączane. Pasek pojawia się w przeglądzie po dodaniu pierwszej encji.",
+    "remove_entity": "Usuń encję"
   },
   "custom_views": {
     "ref_error_title": "Nie udało się załadować widoku referencyjnego",
@@ -658,7 +689,10 @@
     "maintenance": "Konserwacja",
     "areas": "Obszary",
     "custom_cards": "Własne karty",
-    "custom_sections": "Własne sekcje"
+    "custom_sections": "Własne sekcje",
+    "quick_actions": "Szybkie akcje",
+    "media": "Teraz odtwarzane",
+    "activity": "Ostatnia aktywność"
   },
   "cctv": {
     "no_cameras": "Nie znaleziono kamer. Kamery pojawią się tutaj automatycznie po skonfigurowaniu ich w Home Assistant.",
@@ -696,6 +730,11 @@
     "video_tips": "Porady eksperta",
     "video_tip_watch": "Obejrzyj",
     "video_tip_dismiss": "Obejrzane — nie pokazuj ponownie",
-    "activity": "Aktywność"
+    "activity": "Aktywność",
+    "video_tip_generic": "Sprawdzaj aktualizacje pojedynczo i przed aktualizacją oprogramowania układowego wykonaj kopię zapasową."
+  },
+  "energy_view": {
+    "top_consumers": "Największe bieżące zużycie",
+    "empty": "Nie znaleziono czujników energii. Czujniki mocy, energii, wody i gazu pojawią się tutaj automatycznie po przypisaniu do obszaru."
   }
 }

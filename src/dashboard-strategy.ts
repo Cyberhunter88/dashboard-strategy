@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.37.1'; // synchronized from package.json
+const STRATEGY_VERSION = '1.38.0'; // synchronized from package.json
 
 declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
@@ -184,6 +184,13 @@ class Simon42DashboardStrategy extends HTMLElement {
         resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-climate').generate({ config }, hass),
       },
       {
+        enabled: config.show_energy_view === true,
+        title: localize('views.energy'),
+        path: 'energy',
+        icon: 'mdi:lightning-bolt',
+        resolve: () => getStrategy('ll-strategy-dashboard-strategy-view-energy').generate({ config }, hass),
+      },
+      {
         enabled: showCctvView,
         title: localize('views.cctv'),
         path: 'cctv',
@@ -290,8 +297,7 @@ if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashbo
     type: 'custom:dashboard-strategy',
     strategyType: 'dashboard',
     name: 'Dashboard Strategy',
-    description:
-      'Automatisch generiertes Dashboard aus Bereichen, Geraeten und Entitaeten mit Zusammenfassungen und Raum-Ansichten.',
+    description: 'Automatically generated dashboard from areas, devices and entities with summaries and room views.',
     documentationURL: 'https://github.com/Cyberhunter88/dashboard-strategy',
   });
 }

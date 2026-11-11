@@ -29,6 +29,8 @@ interface SummaryCardConfig {
   compact?: boolean;
   slim?: boolean;
   alignment?: 'start' | 'center';
+  /** Overrides the default target view; an empty string disables navigation. */
+  navigation_path?: string;
 }
 
 interface DisplayConfig {
@@ -43,11 +45,22 @@ const COVER_DEVICE_CLASSES = new Set(['awning', 'blind', 'curtain', 'shade', 'sh
 const SECURITY_COVER_CLASSES = new Set(['door', 'garage', 'gate', 'window']);
 const SECURITY_BINARY_SENSOR_CLASSES = new Set(['door', 'window', 'garage_door', 'opening', 'smoke', 'gas']);
 
+/** Domains whose state metadata decides which entities a summary counts. */
+const SUMMARY_CANDIDATE_DOMAINS: Record<SummaryType, readonly string[]> = {
+  lights: ['light'],
+  covers: ['cover'],
+  security: ['lock', 'cover', 'binary_sensor'],
+  batteries: ['sensor', 'binary_sensor'],
+  climate: ['climate'],
+  windows: ['binary_sensor', 'cover'],
+};
+
 const COLOR_MAP: Record<string, string> = {
   orange: 'var(--orange-color, #ff9800)',
   purple: 'var(--purple-color, #9c27b0)',
   yellow: 'var(--yellow-color, #ffc107)',
   red: 'var(--red-color, #f44336)',
+  blue: 'var(--blue-color, #2196f3)',
   grey: 'var(--disabled-color, #bdbdbd)',
 };
 
@@ -77,6 +90,8 @@ class Simon42SummaryCard extends LitElement {
   private _count = 0;
   private _config!: SummaryCardConfig;
   private _relevantEntityIds: Set<string> | null = null;
+  /** Membership result of the current update cycle (computed once in shouldUpdate). */
+  private _pendingMembershipChanged: boolean | null = null;
 
   static styles = css`
     :host {
@@ -184,11 +199,13 @@ class Simon42SummaryCard extends LitElement {
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
+    this._pendingMembershipChanged = null;
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     if (hasHassPresentationChanged(oldHass, this.hass)) return true;
-    if (haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())) return true;
+    this._pendingMembershipChanged = this._hasMembershipChanged(oldHass, this.hass);
+    if (this._pendingMembershipChanged) return true;
     if (!oldHass || oldHass.entities !== this.hass.entities) return true;
     if (!this._relevantEntityIds) return true;
     return haveEntityStatesChanged(oldHass, this.hass, this._relevantEntityIds);
@@ -201,8 +218,10 @@ class Simon42SummaryCard extends LitElement {
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     setupLocalize(this.hass);
 
-    const membershipChanged = haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates());
-    if (hasHassPresentationChanged(oldHass, this.hass) || membershipChanged) {
+    const presentationChanged = hasHassPresentationChanged(oldHass, this.hass);
+    const membershipChanged = this._pendingMembershipChanged ?? this._hasMembershipChanged(oldHass, this.hass);
+    this._pendingMembershipChanged = null;
+    if (presentationChanged || membershipChanged) {
       if (Registry.initialized) Registry.initialize(this.hass, Registry.config);
       this._relevantEntityIds = null;
       debugLog(`summary-${this._config.summary_type}: cache invalidated (registry changed)`);
@@ -211,7 +230,7 @@ class Simon42SummaryCard extends LitElement {
     this._getRelevantEntities();
     if (
       oldHass &&
-      !hasHassPresentationChanged(oldHass, this.hass) &&
+      !presentationChanged &&
       !membershipChanged &&
       this._relevantEntityIds &&
       !haveEntityStatesChanged(oldHass, this.hass, this._relevantEntityIds)
@@ -229,16 +248,13 @@ class Simon42SummaryCard extends LitElement {
     return !Registry.isEntityExcludedWithStateCategory(id);
   }
 
-  private _getCandidates(): string[] {
-    const domains = {
-      lights: ['light'],
-      covers: ['cover'],
-      security: ['lock', 'cover', 'binary_sensor'],
-      batteries: ['sensor', 'binary_sensor'],
-      climate: ['climate'],
-    };
-    return (domains[this._config.summary_type] ?? []).flatMap((domain) =>
-      Registry.getVisibleCandidateIdsForDomain(domain)
+  /** Checks the Registry's candidate lists in place; no per-update array copies. */
+  private _hasMembershipChanged(oldHass: HomeAssistant | undefined, hass: HomeAssistant): boolean {
+    const domains = SUMMARY_CANDIDATE_DOMAINS[this._config.summary_type] ?? [];
+    return haveEntityMembershipChanged(
+      oldHass,
+      hass,
+      ...domains.map((domain) => Registry.getVisibleCandidateIdsForDomain(domain))
     );
   }
 
@@ -312,6 +328,20 @@ class Simon42SummaryCard extends LitElement {
         );
         break;
 
+      case 'windows':
+        // Window contacts and motorized windows only; doors stay in the security summary.
+        result = [
+          ...Registry.getVisibleEntityIdsForDomain('binary_sensor'),
+          ...Registry.getVisibleEntityIdsForDomain('cover'),
+        ].filter((id) => {
+          const state = hass.states[id];
+          if (!state || !this._isEntityRelevant(id, state)) return false;
+          const platform = Registry.getEntity(id)?.platform;
+          if (platform && SECURITY_EXCLUDED_PLATFORMS.has(platform)) return false;
+          return state.attributes?.device_class === 'window';
+        });
+        break;
+
       default:
         result = [];
     }
@@ -361,6 +391,14 @@ class Simon42SummaryCard extends LitElement {
 
       case 'climate':
         return countActiveClimateEntities(hass, this._relevantEntityIds, this._config);
+
+      case 'windows':
+        for (const id of this._relevantEntityIds) {
+          if (!isEntityCurrentlyAvailable(hass, id, this._config)) continue;
+          const state = hass.states[id]?.state;
+          if (id.startsWith('cover.') ? state === 'open' || state === 'opening' : state === 'on') count++;
+        }
+        return count;
 
       default:
         return 0;
@@ -414,12 +452,22 @@ class Simon42SummaryCard extends LitElement {
           color: hasItems ? 'orange' : 'grey',
           path: 'climate',
         };
+      case 'windows':
+        return {
+          icon: hasItems ? 'mdi:window-open-variant' : 'mdi:window-closed-variant',
+          name: hasItems
+            ? `${count} ${count === 1 ? localize('summary.windows_open_one') : localize('summary.windows_open_many')}`
+            : localize('summary.windows_closed'),
+          color: hasItems ? 'blue' : 'grey',
+          path: 'security',
+        };
     }
   }
 
   private _handleClick(): void {
     if (!this.hass) return;
-    const displayConfig = this._getDisplayConfig();
+    const navigationPath = this._config.navigation_path ?? this._getDisplayConfig().path;
+    if (!navigationPath) return;
     this.dispatchEvent(
       new CustomEvent('hass-action', {
         bubbles: true,
@@ -428,7 +476,7 @@ class Simon42SummaryCard extends LitElement {
           config: {
             tap_action: {
               action: 'navigate',
-              navigation_path: displayConfig.path,
+              navigation_path: navigationPath,
             },
           },
           action: 'tap',

@@ -10,6 +10,7 @@ describe('weather-start defaults', () => {
       'summaries',
       'favorites',
       'light_favorites',
+      'quick_actions',
       'areas',
       'clock',
       'date',
@@ -26,6 +27,8 @@ describe('weather-start defaults', () => {
       'persons',
       'vacuums',
       'maintenance',
+      'media',
+      'activity',
       'custom_cards',
       'custom_sections',
     ]);

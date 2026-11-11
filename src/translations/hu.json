@@ -11,7 +11,8 @@
     "climate": "Klíma",
     "cctv": "Kamerák",
     "maintenance": "Karbantartás",
-    "cameras": "Kamerák"
+    "cameras": "Kamerák",
+    "energy": "Energia"
   },
   "sections": {
     "overview": "Áttekintés",
@@ -33,7 +34,10 @@
     "todos": "Teendők",
     "persons": "Személyek",
     "vacuums": "Porszívók és fűnyírók",
-    "maintenance": "Függőben lévő frissítések"
+    "maintenance": "Függőben lévő frissítések",
+    "quick_actions": "Gyorsműveletek",
+    "media": "Most szól",
+    "activity": "Legutóbbi aktivitás"
   },
   "stacks": {
     "ups": "UPS",
@@ -71,7 +75,10 @@
     "climate_off": "Minden termosztát kikapcsolva",
     "maintenance_pending_one": "karbantartási feladat várakozik",
     "maintenance_pending_many": "karbantartási feladat várakozik",
-    "maintenance_ok": "Nincs esedékes karbantartás"
+    "maintenance_ok": "Nincs esedékes karbantartás",
+    "windows_open_one": "ablak nyitva",
+    "windows_open_many": "ablak nyitva",
+    "windows_closed": "Minden ablak zárva"
   },
   "lights": {
     "on": "Bekapcsolt lámpák",
@@ -140,7 +147,8 @@
     "heating": "Fűtés",
     "cooling": "Hűtés",
     "idle": "Készenlétben",
-    "off": "Kikapcsolva"
+    "off": "Kikapcsolva",
+    "air_quality": "Levegőminőségi figyelmeztetések"
   },
   "room": {
     "cameras": "Kamerák",
@@ -236,7 +244,7 @@
     "show_sun_badge": "Napjelvény megjelenítése (napkelte/napnyugta)",
     "show_sun_badge_desc": "Egy kis jelvényt ad az áttekintés fejlécéhez, amely jelzi, hogy a nap a horizont felett van-e; koppintásra megmutatja a következő napkelte vagy napnyugta időpontját. Automatikusan elrejtőzik, ha a HA-rendszeredben nincs sun.sun entitás (a beépített Nap integráció a legtöbb telepítésben alapértelmezetten engedélyezett).",
     "show_updates_badge": "Függőben lévő frissítések számát jelző jelvény megjelenítése",
-    "show_updates_badge_desc": "Egy kis narancssárga jelvényt ad az áttekintés fejlécéhez, amely az „on” állapotú (függőben lévő) update.* entitások számát mutatja. Koppintásra megnyitja a Beállítások → Frissítések oldalt. Automatikusan elrejtőzik, ha nincs függőben lévő frissítés. Nem igényel külön integrációt: az update.* tartomány a HA része.",
+    "show_updates_badge_desc": "Egy kis narancssárga jelvényt ad az áttekintés fejlécéhez, amely az „on” állapotú (függőben lévő) update.* entitások számát mutatja. Koppintásra megnyitja a karbantartási nézetet, vagy ha az nincs engedélyezve, a Beállítások → Frissítések oldalt. Automatikusan elrejtőzik, ha nincs függőben lévő frissítés. Nem igényel külön integrációt: az update.* tartomány a HA része.",
     "section_summaries": "Összegzések",
     "panel_navigation": "Ugrás a beállítási panelhez",
     "compact_overview_summaries": "Kompakt összegzések a normál áttekintésben",
@@ -627,7 +635,30 @@
     "camera_pause_when_hidden": "Kézzel indított élőkép szüneteltetése, ha nem látható",
     "camera_pause_when_hidden_desc": "Opcionális a natív, élőkép-kapcsolós kamerákhoz: szünetelteti a streamet a látómezőn kívül vagy rejtett böngészőlapnál, majd visszatéréskor folytatja. Az egyéni WebRTC-kártyák változatlanok.",
     "diagnostics_navigation_target": "A relatív navigációs cél nem jön létre ebben a konfigurációban",
-    "camera_renderer": "Kamera megjelenítője"
+    "camera_renderer": "Kamera megjelenítője",
+    "section_overview_sections": "Áttekintés szakaszai",
+    "overview_sections_desc": "Válaszd ki, mely automatikusan létrehozott szakaszok jelenjenek meg az áttekintésen. Egy szakasz rejtve marad, amíg nincs hozzá illő entitás.",
+    "overview_sections_hint": "A szakaszok helyét a „Szakaszok sorrendje” részben állíthatod be.",
+    "header_badges": "Fejléc jelvényei",
+    "overview_blocks": "Áttekintés blokkjai",
+    "lights_options": "Világítás nézet",
+    "covers_options": "Árnyékolók nézet",
+    "climate_options": "Klíma nézet",
+    "battery_options": "Akkumulátor nézet",
+    "show_windows_summary": "Nyitott ablakok összesítése",
+    "show_windows_summary_desc": "A nyitott ablakérzékelőket és motoros ablakokat a biztonsági összesítéstől külön számolja, például szellőztetéshez és fűtéshez. Megnyitja a biztonsági nézetet, ha az elérhető.",
+    "show_climate_air_quality": "Páratartalom- és CO₂-figyelmeztetések megjelenítése",
+    "show_climate_air_quality_desc": "A klíma nézetet kiegészíti egy szakasszal, amely a küszöbérték feletti páratartalom- és CO₂-érzékelőket mutatja. A szakasz eltűnik, ha minden rendben van.",
+    "climate_humidity_threshold": "Páratartalom e fölött",
+    "climate_co2_threshold": "CO₂ e fölött",
+    "show_energy_view": "Energia nézet megjelenítése",
+    "show_energy_view_desc": "Hozzáad egy nézetet a legnagyobb pillanatnyi fogyasztókkal, valamint az egyes helyiségek teljesítmény-, energia-, víz- és gázérzékelőivel.",
+    "show_media_section": "Aktív médialejátszók megjelenítése",
+    "show_activity_section": "Legutóbbi aktivitás megjelenítése",
+    "quick_actions": "Gyorsműveletek",
+    "no_quick_actions": "Nincs gyorsművelet hozzáadva",
+    "quick_actions_desc": "A jelenetek, szkriptek, gombok és automatizmusok egy koppintással futnak, a többi entitás átkapcsol. A sáv megjelenik az áttekintésen, amint egy entitást hozzáadtál.",
+    "remove_entity": "Entitás eltávolítása"
   },
   "custom_views": {
     "ref_error_title": "Nem sikerült betölteni a hivatkozott nézetet",
@@ -658,7 +689,10 @@
     "maintenance": "Karbantartás",
     "areas": "Területek",
     "custom_cards": "Egyéni kártyák",
-    "custom_sections": "Egyéni szakaszok"
+    "custom_sections": "Egyéni szakaszok",
+    "quick_actions": "Gyorsműveletek",
+    "media": "Most szól",
+    "activity": "Legutóbbi aktivitás"
   },
   "cctv": {
     "no_cameras": "Nem található kamera. A kamerák automatikusan megjelennek itt, miután beállítottad őket a Home Assistantban.",
@@ -696,6 +730,11 @@
     "video_tips": "Szakértői tippek",
     "video_tip_watch": "Megtekintés",
     "video_tip_dismiss": "Láttam — ne jelenjen meg újra",
-    "activity": "Tevékenység"
+    "activity": "Tevékenység",
+    "video_tip_generic": "Ellenőrizd a frissítéseket egyenként, és firmware-frissítés előtt készíts biztonsági mentést."
+  },
+  "energy_view": {
+    "top_consumers": "Legnagyobb pillanatnyi fogyasztók",
+    "empty": "Nem található energiaérzékelő. A teljesítmény-, energia-, víz- és gázérzékelők automatikusan megjelennek itt, amint egy területhez vannak rendelve."
   }
 }

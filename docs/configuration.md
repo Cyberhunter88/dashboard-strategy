@@ -119,7 +119,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_unavailable_alert_badge` | boolean | `false` | Badge mit Anzahl nicht verfügbarer sichtbarer Entitäten im Header |
 | `show_now_playing_badge` | boolean | `false` | Badge für den ersten gerade spielenden Media-Player im Header |
 | `show_sun_badge` | boolean | `false` | Sonnenauf-/untergangs-Badge im Header |
-| `show_updates_badge` | boolean | `false` | Badge mit Anzahl sichtbarer Update-Entitäten mit ausstehenden Updates |
+| `show_updates_badge` | boolean | `false` | Badge mit Anzahl sichtbarer Update-Entitäten mit ausstehenden Updates; öffnet die Wartungsansicht, sofern aktiv, sonst Einstellungen → Updates |
 | `show_light_summary` | boolean | `true` | Lichter-Zusammenfassung |
 | `show_light_view` | boolean | `false` | Lichter-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_covers_summary` | boolean | `true` | Rollo-Zusammenfassung |
@@ -128,6 +128,11 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_security_view` | boolean | `false` | Sicherheits-Unterseite auch ohne Zusammenfassung erzeugen |
 | `show_climate_summary` | boolean | `false` | Klima-Zusammenfassung |
 | `show_climate_view` | boolean | `false` | Klima-Unterseite auch ohne Zusammenfassung erzeugen |
+| `show_climate_air_quality` | boolean | `false` | Abschnitt in der Klima-Ansicht mit Luftfeuchte- und CO₂-Sensoren, solange sie über den Schwellwerten liegen; blendet sich live aus |
+| `climate_humidity_threshold` | number | `65` | Schwellwert der relativen Luftfeuchte in % |
+| `climate_co2_threshold` | number | `1200` | Schwellwert für CO₂ in ppm |
+| `show_windows_summary` | boolean | `false` | Zusammenfassung offener Fenster (Fensterkontakte und motorisierte Fenster), getrennt von Sicherheit |
+| `show_energy_view` | boolean | `false` | Energie-Unterseite (`/energy`) mit den größten aktuellen Verbrauchern und den Energiesensoren je Raum |
 | `show_battery_summary` | boolean | `true` | Batterie-Zusammenfassung |
 | `show_battery_view` | boolean | `false` | Batterie-Unterseite auch ohne Batterie-Zusammenfassung erzeugen |
 | `summaries_columns` | 2 \| 4 | `2` | Spalten-Layout der Zusammenfassungen |
@@ -149,7 +154,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `power_badge_entity` | string | — | Zusätzliche Entity als Power-Badge im Header |
 | `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
 | `dense_section_placement` | boolean | `false` | Generierte Sections-Views dicht platzieren, um Raster-Lücken aufzufüllen |
-| `hidden_section_headings` | string[] | `[]` | Erzeugte Überschriften für Overview-, Summary-, Favoriten-, Bereichs-, Wetter- und Energie-Abschnitte ausblenden |
+| `hidden_section_headings` | string[] | `[]` | Erzeugte Überschriften der Übersichtsabschnitte ausblenden (z. B. `summaries`, `favorites`, `quick_actions`, `media`, `activity`) |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
 | `light_favorite_entities` | string[] | `[]` | Eigener Schnellzugriffsabschnitt für ausgewählte Lichter |
 | `favorites_show_state` | boolean | `false` | Status auf Favoriten-Kacheln anzeigen |
@@ -167,6 +172,9 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_persons_section` | boolean | `false` | Personen-Section auf der Übersicht |
 | `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
+| `show_media_section` | boolean | `false` | Media-Section mit allen aktiven Playern (Wiedergabe, Pause, Pufferung); blendet sich live aus, wenn nichts läuft |
+| `show_activity_section` | boolean | `false` | Aktivitäts-Section mit den letzten Bewegungs-, Tür-, Fenster- und Schloss-Ereignissen (benötigt die Logbuch-Integration; Label `no_seclog` schließt Entitäten aus) |
+| `quick_action_entities` | string[] | `[]` | Schnellaktionen: Szenen, Skripte, Taster und Automationen laufen per Tipp, alle anderen Entitäten werden umgeschaltet |
 | `show_maintenance_view` | boolean | Auto | Eigene Wartungsansicht bei verwertbaren Wartungsdaten anzeigen; `false` deaktiviert sie |
 | `show_maintenance_activity` | boolean | `true` | 24-Stunden-Aktivitätsverlauf in der Wartungsansicht |
 | `show_video_tips` | boolean | `true` | Passende statische Video-Tipps in der Wartungsansicht |

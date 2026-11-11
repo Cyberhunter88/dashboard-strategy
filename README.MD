@@ -21,7 +21,10 @@ Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RE
 - **Grafischer Konfigurator** — Keine YAML-Kenntnisse erforderlich, Drag & Drop für Bereiche
 - **Automatische Raum-Erkennung** — Nutzt Home Assistant Areas, Devices & Floors
 - **Spezialisierte Views** — Lichter, Rollos, Sicherheit, Batterien, Klima — jeweils mit Status-Gruppierung
-- **Zusammenfassungskarten** — Einzeln ein-/ausschaltbar für Lichter, Rollos, Sicherheit, Batterien und Klima
+- **Zusammenfassungskarten** — Einzeln ein-/ausschaltbar für Lichter, Rollos, Sicherheit, Batterien, Klima und offene Fenster
+- **Neue Übersichtsabschnitte** — Schnellaktionen (Szenen, Skripte, Taster), aktive Media-Player und letzte Aktivität, alle opt-in
+- **Energie-Ansicht** — Größte aktuelle Verbraucher und Energiesensoren je Raum (`show_energy_view`)
+- **Klima-Warnungen** — Luftfeuchte und CO₂ mit einstellbaren Schwellwerten, live ein- und ausgeblendet (`show_climate_air_quality`)
 - **Schlanke Startseite** — Zusammenfassungen im Standardlayout optional noch kompakter; erledigte To-dos in erzeugten Karten ausblendbar
 - **Etagen-Gruppierung** — Bereiche, Lichter und Rollos optional nach Etagen gliedern
 - **Bereichs-Gruppierung** — Lichter, Rollos und Batterien nach Bereichen; Lichter/Rollos optional als Etage → Bereich → Entitäten

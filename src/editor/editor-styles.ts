@@ -1263,6 +1263,33 @@ export const strategyEditorStyles = [
     .advanced-toggle[aria-expanded='true'] ha-icon:last-child {
       transform: rotate(180deg);
     }
+    /* -- Option panels (labelled selects, grouped options) ------------- */
+    .form-row > .form-label {
+      margin-right: 8px;
+      min-width: 120px;
+    }
+    .form-row > .form-control {
+      flex: 1;
+      min-width: 0;
+    }
+    .description.description-intro {
+      margin-left: 0;
+    }
+    .form-row .row-icon {
+      --mdc-icon-size: 18px;
+      margin-right: 6px;
+      color: var(--secondary-text-color);
+      vertical-align: middle;
+    }
+    .description + .subsection-title,
+    .form-row + .subsection-title,
+    ha-textfield + .subsection-title {
+      margin-top: 18px;
+    }
+    .description + .option-group-title,
+    .form-row + .option-group-title {
+      margin-top: 14px;
+    }
     .advanced-content {
       margin-top: 16px;
       padding-left: 12px;

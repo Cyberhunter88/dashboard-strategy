@@ -75,23 +75,35 @@ export function hasHassPresentationChanged(oldHass: HomeAssistant | undefined, h
   );
 }
 
-/** State metadata can change group membership even for an entity not yet rendered. */
+/**
+ * State metadata can change group membership even for an entity not yet rendered.
+ *
+ * Runs on every hass update for every reactive card, so it accepts several id
+ * lists (no concatenated copy per update) and skips untouched state objects:
+ * Home Assistant replaces the state object whenever anything about it changes.
+ */
 export function haveEntityMembershipChanged(
   oldHass: HomeAssistant | undefined,
   hass: HomeAssistant,
-  ids: Iterable<string>
+  ...idLists: Iterable<string>[]
 ): boolean {
   if (!oldHass) return true;
-  if (oldHass.states === hass.states) return false;
-  for (const id of ids) {
-    const before = oldHass.states[id];
-    const after = hass.states[id];
-    if (
-      !!before !== !!after ||
-      before?.attributes.device_class !== after?.attributes.device_class ||
-      before?.attributes.unit_of_measurement !== after?.attributes.unit_of_measurement
-    )
-      return true;
+  const oldStates = oldHass.states;
+  const states = hass.states;
+  if (oldStates === states) return false;
+  for (const ids of idLists) {
+    for (const id of ids) {
+      const before = oldStates[id];
+      const after = states[id];
+      if (before === after) continue;
+      if (
+        !before ||
+        !after ||
+        before.attributes.device_class !== after.attributes.device_class ||
+        before.attributes.unit_of_measurement !== after.attributes.unit_of_measurement
+      )
+        return true;
+    }
   }
   return false;
 }

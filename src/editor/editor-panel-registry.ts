@@ -14,12 +14,13 @@ export type EditorPanelKey =
   | 'views'
   | 'advanced'
   | 'sectionOrder'
+  | 'overviewSections'
   | 'customContent';
 
 export const EDITOR_NAV_GROUPS: readonly { labelKey: string; panels: readonly EditorPanelKey[] }[] = [
   {
     labelKey: 'editor.section_overview',
-    panels: ['overview', 'summaries', 'favorites', 'appearance', 'details', 'sectionOrder'],
+    panels: ['overview', 'summaries', 'overviewSections', 'favorites', 'appearance', 'details', 'sectionOrder'],
   },
   { labelKey: 'editor.section_areas_rooms', panels: ['areas', 'areaOptions', 'roomPins', 'views'] },
   { labelKey: 'editor.section_advanced', panels: ['advanced', 'customContent'] },
@@ -37,6 +38,11 @@ const PANEL_DEFINITIONS: Record<EditorPanelKey, { key: string; icon: string; lab
   views: { key: 'views', icon: 'mdi:tab', labelKey: 'editor.section_views' },
   advanced: { key: 'advanced-options', icon: 'mdi:cog-outline', labelKey: 'editor.section_advanced_options' },
   sectionOrder: { key: 'section-order', icon: 'mdi:sort', labelKey: 'editor.section_order' },
+  overviewSections: {
+    key: 'overview-sections',
+    icon: 'mdi:view-grid-outline',
+    labelKey: 'editor.section_overview_sections',
+  },
   customContent: {
     key: 'custom-content',
     icon: 'mdi:view-grid-plus-outline',
@@ -70,6 +76,9 @@ export const WEATHER_START_BLOCK_META: Readonly<Record<WeatherStartKey, { icon: 
   persons: { icon: 'mdi:account-group', labelKey: 'weather_start_blocks.persons' },
   vacuums: { icon: 'mdi:robot-vacuum', labelKey: 'weather_start_blocks.vacuums' },
   maintenance: { icon: 'mdi:wrench-clock', labelKey: 'weather_start_blocks.maintenance' },
+  quick_actions: { icon: 'mdi:gesture-tap-button', labelKey: 'weather_start_blocks.quick_actions' },
+  media: { icon: 'mdi:play-circle-outline', labelKey: 'weather_start_blocks.media' },
+  activity: { icon: 'mdi:history', labelKey: 'weather_start_blocks.activity' },
   areas: { icon: 'mdi:floor-plan', labelKey: 'weather_start_blocks.areas' },
   custom_cards: { icon: 'mdi:cards', labelKey: 'weather_start_blocks.custom_cards' },
   custom_sections: { icon: 'mdi:view-grid-plus-outline', labelKey: 'weather_start_blocks.custom_sections' },
