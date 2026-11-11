@@ -49,5 +49,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - name: Install Chromium
+        timeout-minutes: 5
+        run: npx playwright install chromium
+      # The system packages come from the Ubuntu mirrors. A runner-side DNS or
+      # mirror outage must fail fast and retry instead of consuming the whole
+      # job timeout, so each attempt is bounded and runs as root so that the
+      # timeout can terminate the package manager as well.
+      - name: Install Chromium system dependencies
+        timeout-minutes: 9
+        run: |
+          for attempt in 1 2 3; do
+            if sudo env "PATH=$PATH" timeout --kill-after=10 150 \
+              node node_modules/playwright/cli.js install-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::Installing Chromium system dependencies failed (attempt ${attempt} of 3)."
+            sleep 15
+          done
+          echo "::error::Chromium system dependencies could not be installed after 3 attempts."
+          exit 1
+      - name: Run browser regressions
+        run: npm run test:browser
