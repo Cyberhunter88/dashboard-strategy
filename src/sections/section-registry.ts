@@ -67,6 +67,19 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     labelKey: 'sections.maintenance',
     toggle: { flag: 'show_maintenance_section', defaultOn: false },
   },
+  { key: 'quick_actions', icon: 'mdi:gesture-tap-button', labelKey: 'sections.quick_actions' },
+  {
+    key: 'media',
+    icon: 'mdi:play-circle-outline',
+    labelKey: 'sections.media',
+    toggle: { flag: 'show_media_section', defaultOn: false },
+  },
+  {
+    key: 'activity',
+    icon: 'mdi:history',
+    labelKey: 'sections.activity',
+    toggle: { flag: 'show_activity_section', defaultOn: false },
+  },
 ];
 
 export const SECTION_META_BY_KEY: ReadonlyMap<SectionKey, SectionMeta> = new Map(

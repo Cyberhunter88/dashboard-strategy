@@ -2,7 +2,26 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.37.1...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.38.0...HEAD).
+
+## 1.38.0
+
+- New overview sections, all opt-in and placeable in the section order: **Quick actions** (`quick_action_entities`: scenes, scripts, buttons and automations run on tap, other entities toggle), **Now playing** (`show_media_section`: every active media player, hidden live while idle) and **Recent activity** (`show_activity_section`: latest motion, door, window and lock events via the logbook; the `no_seclog` label excludes entities). Enabling one adds it to an existing free layout automatically.
+- New **windows summary** (`show_windows_summary`) that counts open window contacts and motorized windows separately from the security summary.
+- New **energy view** (`show_energy_view`, path `energy`) with the highest current consumers and the power, energy, water and gas sensors of each room. The view strategy `ll-strategy-dashboard-strategy-view-energy` is additive.
+- Climate view: optional **humidity and CO₂ alerts** (`show_climate_air_quality`, `climate_humidity_threshold`, `climate_co2_threshold`) evaluated live by Lovelace conditions, and the target temperature is shown next to the current one.
+- The updates badge opens the maintenance view when it is enabled, otherwise Settings → Updates as before.
+- Video tips now show their title with a watch link and a working "seen" button (stored per browser) in all five languages; the card no longer uses `innerHTML`.
+- Editor: the overview, summary, favorites and room pin panels moved out of `StrategyEditor` into focused panel modules (the editor host shrinks from about 4,800 to about 3,600 lines). Sections and their switches are generated from the section registry, a new "Overview sections" panel exposes every section switch, section headings, the power badge entity and the agenda/todo entity lists, and the favorites, room pin and quick action lists share one component.
+- German translations use proper umlauts instead of ASCII transliterations; the dashboard picker description is English.
+- `.gitattributes` now enforces LF for TypeScript, JSON and workflow files so `npm run format:check` also passes on Windows checkouts.
+
+## 1.37.2
+
+- Entities of child devices without their own area now resolve to the parent device's area everywhere. Lights and battery area grouping, the security and CCTV views, and room pins previously ignored the parent and showed such entities as unassigned, while room views already placed them correctly.
+- Reduce per-update work in the reactive cards: summary and battery cards no longer copy the full sensor candidate lists on every Home Assistant state update, the membership check skips unchanged state objects and runs once per update cycle, and repeated localization setup is skipped while the language is unchanged.
+- The video tip card renders only when the language changes instead of rebuilding its content on every state update.
+- Translation lookups return the key instead of an object when the key names a translation group, and the battery sort order is stable for non-numeric states.
 
 ## 1.37.1
 

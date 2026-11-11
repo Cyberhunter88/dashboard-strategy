@@ -15,6 +15,7 @@ import {
   buildCameraSection,
   buildCctvSections,
   buildLlmVisionSection,
+  cameraBlockAreaId,
   resolveRecordingsPath,
   getReolinkCamItems,
   resetReolinkMediaCacheForTesting,
@@ -572,5 +573,30 @@ describe('buildLlmVisionSection', () => {
       })
     ).toEqual([['person'], ['animal'], ['vehicle']]);
     expect(timelines[0].language).toBe('de');
+  });
+});
+
+describe('cameraBlockAreaId', () => {
+  it('prefers the entity area and falls back to the parent-aware device area', () => {
+    const hass = makeHass({
+      entities: [
+        { entity_id: 'camera.child', device_id: 'child' },
+        { entity_id: 'camera.own_area', device_id: 'child', area_id: 'garden' },
+      ],
+      devices: [
+        { id: 'parent', area_id: 'garage' },
+        { id: 'child', parent_device_id: 'parent' },
+      ],
+      areas: [
+        { area_id: 'garage', name: 'Garage' },
+        { area_id: 'garden', name: 'Garden' },
+      ],
+    });
+    Registry.resetForTesting();
+    Registry.initialize(hass, {});
+
+    expect(cameraBlockAreaId({ cameraId: 'camera.child', deviceId: 'child', isReolink: false })).toBe('garage');
+    expect(cameraBlockAreaId({ cameraId: 'camera.own_area', deviceId: 'child', isReolink: false })).toBe('garden');
+    expect(cameraBlockAreaId({ cameraId: 'camera.child', deviceId: null, isReolink: false })).toBeNull();
   });
 });

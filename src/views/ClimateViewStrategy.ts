@@ -9,6 +9,7 @@ import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { createSectionsView } from '../utils/view-builder';
+import { buildAirQualitySection } from './ClimateAirQuality';
 
 class Simon42ViewClimateStrategy extends HTMLElement {
   static async generate(config: { config?: Simon42StrategyConfig }, hass: HomeAssistant): Promise<LovelaceViewConfig> {
@@ -44,6 +45,8 @@ class Simon42ViewClimateStrategy extends HTMLElement {
     }
 
     const sections: LovelaceSectionConfig[] = [];
+    const airQuality = buildAirQualitySection(hass, strategyConfig);
+    if (airQuality) sections.push(airQuality);
 
     const buildSection = (entities: string[], heading: string, icon: string): void => {
       if (entities.length === 0) return;
@@ -59,7 +62,8 @@ class Simon42ViewClimateStrategy extends HTMLElement {
           ...entities.map((e) =>
             buildAdaptiveTileCardConfig(hass, e, {
               vertical: false,
-              state_content: ['hvac_action', 'current_temperature'],
+              // Current next to target temperature makes the gap visible at a glance.
+              state_content: ['hvac_action', 'current_temperature', 'temperature'],
             })
           ),
         ],

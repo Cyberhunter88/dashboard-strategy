@@ -32,11 +32,13 @@ function resolveLanguage(hass?: HomeAssistant): string {
 }
 
 function getTranslatedString(key: string, lang: string): string | undefined {
-  try {
-    return key.split('.').reduce((o, i) => (o as Record<string, unknown>)[i], languages[lang]) as string;
-  } catch {
-    return undefined;
+  let node: unknown = languages[lang];
+  for (const part of key.split('.')) {
+    if (node === null || typeof node !== 'object') return undefined;
+    node = (node as Record<string, unknown>)[part];
   }
+  // A key that only names a group (e.g. 'views') is not a translation.
+  return typeof node === 'string' ? node : undefined;
 }
 
 function ensureLanguageLoaded(lang: string): Promise<void> {
@@ -65,6 +67,8 @@ let _localize: ((key: string) => string) | undefined;
  */
 export function setupLocalize(hass?: HomeAssistant): void {
   const lang = resolveLanguage(hass);
+  // Cards call this on every hass update; nothing to do while the language is unchanged and loaded.
+  if (_localize && lang === currentLang && (languages[lang] || !languageLoaders[lang])) return;
   currentLang = lang;
   void ensureLanguageLoaded(lang);
   _localize = (key: string) => getTranslatedString(key, lang) ?? getTranslatedString(key, DEFAULT_LANG) ?? key;

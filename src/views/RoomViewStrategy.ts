@@ -882,11 +882,8 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const entity = Registry.getEntity(entityId);
       if (!entity) return false;
       if (entity.area_id === area.area_id) return true;
-      if (entity.device_id) {
-        const device = Registry.getDevice(entity.device_id);
-        if (device?.area_id === area.area_id) return true;
-      }
-      return false;
+      // Parent-aware device area, consistent with the Registry area index.
+      return !!entity.device_id && Registry.getDeviceAreaId(entity.device_id) === area.area_id;
     });
 
     if (pinsForArea.length > 0) {

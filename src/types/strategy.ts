@@ -22,7 +22,10 @@ export type SectionKey =
   | 'todos'
   | 'persons'
   | 'vacuums'
-  | 'maintenance';
+  | 'maintenance'
+  | 'quick_actions'
+  | 'media'
+  | 'activity';
 
 export type HeadingKey =
   | 'overview'
@@ -40,7 +43,10 @@ export type HeadingKey =
   | 'todos'
   | 'persons'
   | 'vacuums'
-  | 'maintenance';
+  | 'maintenance'
+  | 'quick_actions'
+  | 'media'
+  | 'activity';
 
 export type LightsSortBy = 'last_changed' | 'name';
 export type PersonBadgeLayout = 'minimal' | 'with_state' | 'with_state_and_time';
@@ -76,6 +82,9 @@ export type WeatherStartKey =
   | 'persons'
   | 'vacuums'
   | 'maintenance'
+  | 'quick_actions'
+  | 'media'
+  | 'activity'
   | 'areas'
   | 'custom_cards'
   | 'custom_sections';
@@ -86,6 +95,7 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'summaries',
   'favorites',
   'light_favorites',
+  'quick_actions',
   'areas',
   'clock',
   'date',
@@ -102,6 +112,8 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'persons',
   'vacuums',
   'maintenance',
+  'media',
+  'activity',
   'custom_cards',
   'custom_sections',
 ];
@@ -250,6 +262,11 @@ export interface Simon42StrategyConfig {
   group_batteries_by_areas?: boolean; // default: false
   show_climate_summary?: boolean; // default: false
   show_climate_view?: boolean; // default: false; keeps the view when the summary is hidden
+  show_climate_air_quality?: boolean; // default: false; humidity/CO2 alerts in the climate view
+  climate_humidity_threshold?: number; // default: 65 (%)
+  climate_co2_threshold?: number; // default: 1200 (ppm)
+  show_windows_summary?: boolean; // default: false; open windows, separate from security
+  show_energy_view?: boolean; // default: false
   hide_mobile_app_batteries?: boolean; // default: false
   hide_battery_notes_entities?: boolean; // default: false
   battery_critical_threshold?: number; // default: 20
@@ -286,6 +303,9 @@ export interface Simon42StrategyConfig {
   show_persons_section?: boolean; // default: false
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
+  show_media_section?: boolean; // default: false; active media players
+  show_activity_section?: boolean; // default: false; recent motion/door/window activity (needs logbook)
+  quick_action_entities?: string[]; // scenes, scripts, buttons and other one-tap entities
   show_maintenance_view?: boolean; // default: auto when maintenance data exists
   show_maintenance_activity?: boolean; // default: true
   show_video_tips?: boolean; // default: true
@@ -565,7 +585,7 @@ export interface PersonData {
 
 // -- Summary Types (used by summary cards) ----------------------------
 
-export type SummaryType = 'lights' | 'covers' | 'security' | 'batteries' | 'climate';
+export type SummaryType = 'lights' | 'covers' | 'security' | 'batteries' | 'climate' | 'windows';
 
 // -- Resolved Area (internal, enriched area for rendering) ------------
 

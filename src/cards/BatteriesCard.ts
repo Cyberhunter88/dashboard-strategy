@@ -79,6 +79,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
   private _renderedGroups: BatteryGroups = this._emptyGroups();
   private _renderedAreaGroups: BatteryAreaGroups = this._emptyAreaGroups();
   private _lastLayoutKey = '';
+  /** Membership result of the current update cycle (computed once in shouldUpdate). */
+  private _pendingMembershipChanged: boolean | null = null;
   private _tileCards = new Map<string, LovelaceCardElement>();
   private _tileStatuses = new Map<string, BatteryStatus>();
   private _headingCards = new Map<BatteryStatus, LovelaceCardElement>();
@@ -127,11 +129,13 @@ class DashboardStrategyBatteriesCard extends LitElement {
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
+    this._pendingMembershipChanged = null;
     if (!changedProps.has('hass') || !this.hass) return true;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     if (hasHassPresentationChanged(oldHass, this.hass)) return true;
-    if (haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())) return true;
+    this._pendingMembershipChanged = this._hasMembershipChanged(oldHass, this.hass);
+    if (this._pendingMembershipChanged) return true;
     if (!oldHass || oldHass.entities !== this.hass.entities || oldHass.devices !== this.hass.devices) return true;
     if (this._config.group_batteries_by_areas === true && oldHass.areas !== this.hass.areas) return true;
     if (!this._sourceIds) return true;
@@ -147,10 +151,9 @@ class DashboardStrategyBatteriesCard extends LitElement {
     if (oldHass && this._config.group_batteries_by_areas === true && oldHass.areas !== this.hass.areas) {
       this._lastLayoutKey = '';
     }
-    if (
-      hasHassPresentationChanged(oldHass, this.hass) ||
-      haveEntityMembershipChanged(oldHass, this.hass, this._getCandidates())
-    ) {
+    const membershipChanged = this._pendingMembershipChanged ?? this._hasMembershipChanged(oldHass, this.hass);
+    this._pendingMembershipChanged = null;
+    if (hasHassPresentationChanged(oldHass, this.hass) || membershipChanged) {
       Registry.initialize(this.hass, this._config);
       this._sourceIds = null;
       this._lastLayoutKey = '';
@@ -276,11 +279,14 @@ class DashboardStrategyBatteriesCard extends LitElement {
     return { critical: [], low: [], good: [] };
   }
 
-  private _getCandidates(): string[] {
-    return [
-      ...Registry.getVisibleCandidateIdsForDomain('sensor'),
-      ...Registry.getVisibleCandidateIdsForDomain('binary_sensor'),
-    ];
+  /** Checks the Registry's candidate lists in place; no per-update array copies. */
+  private _hasMembershipChanged(oldHass: HomeAssistant | undefined, hass: HomeAssistant): boolean {
+    return haveEntityMembershipChanged(
+      oldHass,
+      hass,
+      Registry.getVisibleCandidateIdsForDomain('sensor'),
+      Registry.getVisibleCandidateIdsForDomain('binary_sensor')
+    );
   }
 
   private _emptyAreaGroups(): BatteryAreaGroups {
@@ -294,7 +300,8 @@ class DashboardStrategyBatteriesCard extends LitElement {
   private _getAreaIdForEntity(entityId: string): string | null {
     const entity = Registry.getEntity(entityId);
     if (entity?.area_id) return entity.area_id;
-    return entity?.device_id ? (Registry.getDevice(entity.device_id)?.area_id ?? null) : null;
+    // Child devices inherit the area of their parent (same as room views).
+    return entity?.device_id ? Registry.getDeviceAreaId(entity.device_id) : null;
   }
 
   private _groupBatteriesByAreas(groups: BatteryGroups): BatteryAreaGroups {
@@ -324,7 +331,9 @@ class DashboardStrategyBatteriesCard extends LitElement {
     const sortByLevel = (a: string, b: string): number => {
       const valueA = parseFloat(this.hass!.states[a]?.state);
       const valueB = parseFloat(this.hass!.states[b]?.state);
-      if (Number.isNaN(valueA)) return -1;
+      // Non-numeric states (binary sensors, unavailable) first; keep the
+      // comparator consistent when both sides are non-numeric.
+      if (Number.isNaN(valueA)) return Number.isNaN(valueB) ? 0 : -1;
       if (Number.isNaN(valueB)) return 1;
       return valueA - valueB;
     };

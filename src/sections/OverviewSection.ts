@@ -15,6 +15,7 @@ import { createHeadingCard, renderParsedCustomCards } from '../utils/lovelace-ut
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { buildCompleteCustomSection } from './CustomSections';
 import { getViewVisibleUsers, unionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
+import { isUtilityViewEnabled } from '../utils/summary-view-utils';
 
 export interface OverviewSectionParams {
   someSensorId: string | null;
@@ -83,6 +84,18 @@ export function createSummaryCards(config: Simon42StrategyConfig, compact = fals
       summary_type: 'climate',
       areas_options: config.areas_options || {},
       hide_unavailable_entities: config.hide_unavailable_entities,
+      ...compactConfig,
+    });
+  }
+
+  if (config.show_windows_summary === true) {
+    summaryCards.push({
+      type: 'custom:dashboard-strategy-summary-card',
+      summary_type: 'windows',
+      areas_options: config.areas_options || {},
+      hide_unavailable_entities: config.hide_unavailable_entities,
+      // Windows are listed in the security view; without it the tile is informational.
+      navigation_path: isUtilityViewEnabled(config, 'security') ? 'security' : '',
       ...compactConfig,
     });
   }

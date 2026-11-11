@@ -10,6 +10,7 @@ export interface ViewsPanelOptions {
   showCamerasInSecurity: boolean;
   showMaintenanceActivity: boolean;
   showVideoTips: boolean;
+  showEnergyView: boolean;
   showMaintenanceView: boolean;
   checkbox: (id: string, label: string, checked: boolean, change: (checked: boolean) => void) => TemplateResult;
   change: (key: string, checked: boolean, defaultValue?: boolean) => void;
@@ -24,6 +25,7 @@ export function renderViewsPanel(options: ViewsPanelOptions): TemplateResult {
     <div class="section-title">${localize('editor.section_views')}</div>
     ${row('show-summary-views', 'show_summary_views', options.showSummaryViews)}
     ${row('show-room-views', 'show_room_views', options.showRoomViews)}
+    ${row('show-energy-view', 'show_energy_view', options.showEnergyView)}
     ${row('show-cctv-view', 'show_cctv_view', options.showCctvView)}
     ${row('cctv-show-activity', 'cctv_show_activity', options.cctvShowActivity)}
     ${row('show-camera-events', 'show_camera_events', options.showCameraEvents)}

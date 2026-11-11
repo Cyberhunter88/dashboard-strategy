@@ -47,6 +47,9 @@ import { createTodosSection } from '../sections/TodosSection';
 import { createPersonsSection } from '../sections/PersonsSection';
 import { createVacuumsSection } from '../sections/VacuumsSection';
 import { createMaintenanceSection } from '../sections/MaintenanceSection';
+import { createQuickActionsSection } from '../sections/QuickActionsSection';
+import { createMediaSection } from '../sections/MediaSection';
+import { createActivitySection } from '../sections/ActivitySection';
 import { getSectionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
@@ -54,7 +57,11 @@ import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { mergeConfiguredOrder } from '../utils/order-utils';
 import { resolveAutomaticFeatures } from '../utils/feature-availability';
 import { attachCustomCardsToSection } from '../utils/custom-card-section-utils';
-import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../utils/weather-start-defaults';
+import {
+  getWeatherStartWeatherMode,
+  usesDefaultWeatherStartLayout,
+  withEnabledOptionalBlocks,
+} from '../utils/weather-start-defaults';
 import {
   parsedConfigToSections,
   renderParsedCustomCardAsSection,
@@ -299,7 +306,12 @@ function createWeatherStartSectionsFromItems(
   const compactDefaultPresentation = usesDefaultWeatherStartLayout(dashboardConfig);
   const weatherStartMode = getWeatherStartWeatherMode(dashboardConfig);
   const areasById = new Map(visibleAreas.map((area) => [area.area_id, area]));
-  const normalizedItems = normalizeWeatherStartLayoutItemsForRender(items, visibleAreas, dashboardConfig, hass);
+  const normalizedItems = normalizeWeatherStartLayoutItemsForRender(
+    withEnabledOptionalBlocks(items, dashboardConfig),
+    visibleAreas,
+    dashboardConfig,
+    hass
+  );
   const sections: LovelaceSectionConfig[] = [];
   const areaCardContext = createAreaCardBuildContext();
 
@@ -517,6 +529,12 @@ function createWeatherStartSectionsFromItems(
             dashboardConfig.show_maintenance_section === true,
             (dashboardConfig.hidden_section_headings || []).includes('maintenance')
           );
+        break;
+      case 'quick_actions':
+      case 'media':
+      case 'activity':
+        // Built once in generate() so section visibility and assigned custom cards apply.
+        section = additionalBlocks[item.type] ?? null;
         break;
       case 'area': {
         const area = item.area_id ? areasById.get(item.area_id) : undefined;
@@ -895,7 +913,11 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           icon: 'mdi:update',
           color: 'orange',
           show_state: false,
-          tap_action: { action: 'navigate', navigation_path: '/config/updates' },
+          // Prefer the maintenance view of this dashboard; it lists the same updates in context.
+          tap_action: {
+            action: 'navigate',
+            navigation_path: dashboardConfig.show_maintenance_view === true ? 'maintenance' : '/config/updates',
+          },
         });
       }
     }
@@ -1007,6 +1029,18 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
           dashboardConfig.show_maintenance_section === true,
           hiddenHeadings.has('maintenance')
         )
+      ),
+      quick_actions: decorateBlock(
+        'quick_actions',
+        createQuickActionsSection(hass, dashboardConfig, hiddenHeadings.has('quick_actions'))
+      ),
+      media: decorateBlock(
+        'media',
+        createMediaSection(hass, dashboardConfig.show_media_section === true, hiddenHeadings.has('media'))
+      ),
+      activity: decorateBlock(
+        'activity',
+        createActivitySection(hass, dashboardConfig.show_activity_section === true, hiddenHeadings.has('activity'))
       ),
     };
 

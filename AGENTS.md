@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.37.1`. Unit tests live beside source modules;
+Current development version: `1.38.0`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -13,7 +13,7 @@ Do not rename or remove these identifiers:
 
 - config type: `custom:dashboard-strategy`
 - strategy: `ll-strategy-dashboard-strategy`
-- views: `ll-strategy-dashboard-strategy-view-{overview,lights,covers,security,batteries,climate,room,cctv,maintenance}`
+- views: `ll-strategy-dashboard-strategy-view-{overview,lights,covers,security,batteries,climate,room,cctv,maintenance,energy}`
 - cards: `dashboard-strategy-{summary,lights-group,covers-group,batteries,area,camera,editable,video-tip}-card`
 - editor: `dashboard-strategy-editor`
 - HACS file: `dashboard-strategy.js`
@@ -58,7 +58,7 @@ src/
 |-- translations/              # de/en/hu/pl/ru strings; English is the fallback
 |-- types/                      # Home Assistant, Lovelace, registry, strategy types
 |-- utils/                      # filtering, ordering, localization, tiles, badges, maintenance
-`-- views/                      # overview, utility, room, CCTV, and maintenance strategies
+`-- views/                      # overview, utility, room, CCTV, maintenance, and energy strategies
 ```
 
 ## Configuration and feature notes
@@ -89,9 +89,17 @@ Important behavior:
 - `camera_renderer: webrtc` requires the external `custom:webrtc-camera` card. `camera_webrtc_streams` is keyed by camera entity id and can contain a URL or card options. Keep the native renderer as the dependency-free default.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
 - The editor is the main complexity hotspot: preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting.
-- Weather layout, room options, and the card picker have focused panel modules.
-  Keep configuration and expansion state in the editor host; use its stable typed
-  facades for panel actions. Simple option metadata lives in `src/utils/option-metadata.ts`.
+- Weather layout, room options, the card picker, overview, summaries, and the favorites/room pin/quick action
+  lists have focused panel modules under `src/editor/panels/`. Keep configuration and expansion state in the editor
+  host; use its stable typed facades for panel actions (`OptionPanelHost` for plain option panels, with the shared
+  `toggleRow` helper). Simple option metadata lives in `src/utils/option-metadata.ts`.
+- Overview sections are driven by `src/sections/section-registry.ts`: a new toggle-backed section needs its registry
+  entry, a `SectionKey`/`WeatherStartKey`/`HeadingKey`, the default order, the editor block meta, translations in all
+  five languages, and a builder wired into `OverviewViewStrategy`. Sections that react to live state (media, air
+  quality alerts) use Lovelace visibility conditions; the strategy only regenerates on registry changes, so never
+  decide "is playing"/"above threshold" at generation time.
+- Child devices inherit the parent device's area: resolve areas with `Registry.getDeviceAreaId()`, never with
+  `device.area_id`.
 - Project documentation lives in this repository under `docs/`. There is no
   external Second Brain dependency; do not look for or create the retired Homelab vault.
 

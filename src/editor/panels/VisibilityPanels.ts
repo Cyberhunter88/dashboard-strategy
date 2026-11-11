@@ -72,6 +72,7 @@ export function renderUserVisibilityPanel(host: StrategyEditorHost): TemplateRes
     ...(isUtilityViewEnabled(host._config, 'climate')
       ? [['climate', localize('views.climate')] as [string, string]]
       : []),
+    ...(host._config.show_energy_view === true ? [['energy', localize('views.energy')] as [string, string]] : []),
     ...(host._config.show_cctv_view === true ? [['cctv', localize('views.cctv')] as [string, string]] : []),
     ...(host._config.show_maintenance_view === true
       ? [['maintenance', localize('views.maintenance')] as [string, string]]

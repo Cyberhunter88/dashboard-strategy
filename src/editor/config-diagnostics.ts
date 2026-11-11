@@ -32,6 +32,7 @@ const ENTITY_FIELDS = new Set([
   'entities',
   'camera_image',
   'room_pin_entities',
+  'quick_action_entities',
   'favorites',
   'light_favorites',
   'additional',

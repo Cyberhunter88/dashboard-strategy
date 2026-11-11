@@ -1,10 +1,12 @@
 # Project status
 
-Updated: 2026-11-10
+Updated: 2026-11-11
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.37.1. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Dashboard Strategy development version: 1.38.0. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.38.0 adds the quick actions, media and activity overview sections, the windows summary, the energy view, climate humidity/CO2 alerts and a working video tip dismissal, and moves the overview, summary, favorites and room pin editor panels out of `StrategyEditor.ts` (about 3,600 lines left). Validation in Home Assistant is still pending.
+- Version 1.37.2 is a bugfix and runtime optimization release: parent-aware device areas are used consistently (lights/battery grouping, security, CCTV, room pins), reactive cards do less work per state update, and the video tip card no longer re-renders on every update. Validation in Home Assistant is still pending.
 - Version 1.37.1 is a repository cleanup without behavior changes: unused helper exports, changelog-generator templates, the Codacy configuration, and `ts-node` are removed; documentation media is WebP; development builds write to `dist-dev/`.
 - Version 1.37.0 adapts room card names to the Home Assistant 2026.11 naming model (device-name prefix stripping). Validation in Home Assistant is still pending.
 - Version 1.36.0 loads non-English translations as on-demand chunks, completes the Russian translation, and extracts the custom views editor panel. Validation in Home Assistant is still pending.
@@ -12,9 +14,9 @@ Updated: 2026-11-10
 
 ## Open tasks
 
-- Split further panels out of `src/editor/StrategyEditor.ts` (about 4,800 lines; the editor chunk is the largest bundle).
+- Split further panels out of `src/editor/StrategyEditor.ts` (about 3,600 lines; remaining candidates: area options, custom content, weather-start layout helpers, and the drag/drop handlers).
 - Audit translation keys for unused entries; many keys are composed dynamically, so a plain text search is not sufficient.
-- Decide whether the unwired inline-editor helper (`src/utils/inline-editor.ts`) and `dismissTip` (`src/utils/video-tips.ts`) should be reconnected or removed. Nothing imports them, but they belong to documented features.
+- Decide whether the unwired inline-editor helper (`src/utils/inline-editor.ts`) and `src/cards/EditableCard.ts` should be reconnected or removed. Nothing imports them, but the card name `dashboard-strategy-editable-card` is part of the public contract, so removal needs a deliberate decision.
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.
 - Resolve the historical credential finding through private coordination; do not rewrite any published branch without explicit approval.
 - Review the seven historical binary or oversized objects that the text scanner could not inspect.
@@ -28,5 +30,5 @@ Updated: 2026-11-10
 
 ## Next steps
 
-1. Validate versions 1.36.0 to 1.37.1 in Home Assistant before publishing.
-2. Open the pull request for 1.37.0 and 1.37.1 and wait for CI and HACS validation.
+1. Validate versions 1.36.0 to 1.38.0 in Home Assistant before publishing.
+2. Open the pull request for branch `codex/runtime-optimizations` (1.37.2 and 1.38.0) and wait for CI and HACS validation.

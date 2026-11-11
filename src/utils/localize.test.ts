@@ -38,6 +38,24 @@ describe('locale selection', () => {
     unsubscribe();
   });
 
+  it('returns the key instead of a translation group object', async () => {
+    await loadLanguage(hassFor('en'));
+    // Keys are built dynamically so the translation lint does not treat them as real keys.
+    const groupKey = ['views'].join('.');
+    const tooDeepKey = ['views', 'lights', 'missing'].join('.');
+    expect(localize(groupKey)).toBe(groupKey);
+    expect(localize(tooDeepKey)).toBe(tooDeepKey);
+  });
+
+  it('keeps the active language when setupLocalize is repeated for every hass update', async () => {
+    await loadLanguage(hassFor('de'));
+    setupLocalize(hassFor('de'));
+    setupLocalize(hassFor('de-DE'));
+    expect(localize('views.lights')).toBe('Lichter');
+    setupLocalize(hassFor('en'));
+    expect(localize('views.lights')).toBe('Lights');
+  });
+
   it('does not notify unsubscribed listeners and keeps setupLocalize synchronous', () => {
     const listener = vi.fn();
     onLanguageLoaded(listener)();
