@@ -170,6 +170,10 @@ export interface CameraWebrtcStreamConfig {
   ui?: boolean;
   server?: string;
   style?: string;
+  /** Share of the card (0-1) that must be visible before the stream runs. */
+  intersection?: number;
+  /** Keep the stream running when the card is hidden or the tab is in the background. */
+  background?: boolean;
 }
 
 export type CameraWebrtcStreamsConfig = Record<string, string | CameraWebrtcStreamConfig>;

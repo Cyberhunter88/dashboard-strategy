@@ -97,6 +97,23 @@ Entitäten können auf mehreren Ebenen gefiltert werden:
 | Entity Registry | Automatisch | Hidden/Disabled Entities werden ignoriert |
 | Entity Category | Automatisch | Config/Diagnostic Entities werden ignoriert |
 
+### Flüssige Live-Streams (WebRTC, z. B. cctv-viewer)
+
+Der native Renderer zeigt bei Schnappschuss-Kameras (HA-Entities ohne Stream-Unterstützung) nur Einzelbilder und ruckelt daher, besonders bei 4K. Für flüssige Wiedergabe `custom:webrtc-camera` installieren und pro Kamera eine Stream-Adresse hinterlegen. Beispiel mit der RTSP-Freigabe des [cctv-viewers](https://github.com/Cyberhunter88/cctv-viewer):
+
+```yaml
+strategy:
+  type: custom:dashboard-strategy
+  camera_renderer: webrtc
+  camera_webrtc_streams:
+    camera.garten:
+      url: rtsp://<benutzer>:<passwort>@<viewer-host>:8554/live/<kamera-id>/wide/fast
+```
+
+- Das Profil `wide/fast` ist der H.264-Nebenstream ohne Transcodierung und läuft in allen Browsern flüssig. `wide/high` (4K) ist oft H.265 und nur in manchen Browsern abspielbar.
+- Zugangsdaten gehören nur in die eigene Home-Assistant-Konfiguration, nicht in öffentliche Repositories.
+- In der Kamera selbst ein Keyframe-Intervall von etwa einer Sekunde einstellen, das verkürzt Startzeit und Wiederverbinden.
+
 ### Alle Optionen (Referenz)
 
 Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht mehr ausgewertete Layoutfelder sowie der intern vom Karteneditor verwaltete `inline_editor`-Block sind bewusst nicht als einstellbare Optionen aufgeführt.
@@ -204,7 +221,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
 | `show_cameras_in_rooms` | boolean | `true` | Kameras in Raum-Views ausblenden, ohne Security/CCTV zu beeinflussen |
 | `camera_renderer` | `"native"` \| `"webrtc"` | `"native"` | Renderer für Kameras in Raum-Views; `webrtc` benötigt `custom:webrtc-camera` |
-| `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc`. Die CCTV-Ansicht ignoriert `camera_renderer`, `camera_live_toggle` und `camera_webrtc_streams` bewusst (Ladezeit) |
+| `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc`. Standardmäßig setzt die Karte `mode: webrtc,mse`, `media: video`, `muted: true`, `intersection: 0.5` und `background: false` (Stream läuft nur bei sichtbarer Karte); jede dieser Optionen lässt sich pro Kamera überschreiben. Die CCTV-Ansicht ignoriert `camera_renderer`, `camera_live_toggle` und `camera_webrtc_streams` bewusst (Ladezeit) |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
 | `cctv_show_activity` | boolean | `false` | Nativer 12-Stunden-Aktivitätsverlauf in der CCTV-Ansicht; bei älteren Konfigurationen ohne `show_camera_events` bleiben zusätzlich LLM-Vision-Timelines aktiv |
 | `show_camera_events` | boolean | Übernimmt bei fehlendem Wert `cctv_show_activity` | LLM-Vision-Timelines unabhängig vom nativen Verlauf aktivieren oder ausdrücklich deaktivieren |

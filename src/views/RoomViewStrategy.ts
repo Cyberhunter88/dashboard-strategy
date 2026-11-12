@@ -54,7 +54,20 @@ interface UpsDeviceRender {
   sensorIds: string[];
 }
 
-function buildWebrtcCameraCard(
+/**
+ * Defaults for smooth live playback: prefer WebRTC with an MSE fallback (no slow HLS),
+ * start muted (required for autoplay), and only stream while the card is at least half visible
+ * and the tab is in the foreground. Per-camera options in `camera_webrtc_streams` override them.
+ */
+const WEBRTC_CARD_DEFAULTS = {
+  mode: 'webrtc,mse',
+  media: 'video',
+  muted: true,
+  intersection: 0.5,
+  background: false,
+} as const;
+
+export function buildWebrtcCameraCard(
   cameraId: string,
   name: string,
   streams: CameraWebrtcStreamsConfig | undefined
@@ -63,6 +76,7 @@ function buildWebrtcCameraCard(
   const card: LovelaceCardConfig = {
     type: 'custom:webrtc-camera',
     title: name,
+    ...WEBRTC_CARD_DEFAULTS,
   };
 
   if (typeof mapping === 'string' && mapping.trim()) {
