@@ -20,7 +20,7 @@ On computer B, check its working tree before changing branches. Run `git fetch o
 
 For source changes, run `npm run verify:quality`, `npm run build`, `npm run verify:production`, and `npm run test:browser` when a browser is available. Run `git diff --check`; use `npm audit` for dependency work. A documentation-only change needs documentation and hook checks but does not require rebuilding `dist/`. On PowerShell, substitute `npm.cmd` for `npm` if script execution blocks npm. A functional change needs the appropriate version bump and rebuilt tracked distribution as described in `AGENTS.md`.
 
-Open a pull request targeting `main` after the authorized push. Wait for CI and HACS validation, then merge through GitHub review. After the merge, on each computer check for local changes, run `git switch main`, `git fetch origin`, and `git pull --ff-only`. Start the next task with a fresh `codex/<topic>` branch. No branch deletion is required for this workflow.
+Open a pull request targeting `main` after the authorized push. Wait for CI and HACS validation, then merge through GitHub review. Merging does not create a release: when the intended pull requests are on `main`, start Actions > Version Release > Run workflow on `main` manually. After the merge, on each computer check for local changes, run `git switch main`, `git fetch origin`, and `git pull --ff-only`. Start the next task with a fresh `codex/<topic>` branch. No branch deletion is required for this workflow.
 
 ## GitHub repository rules to configure manually
 
