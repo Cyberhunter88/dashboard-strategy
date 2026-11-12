@@ -68,6 +68,62 @@ export const strategyEditorStyles = [
       color: var(--primary-text-color);
       font: inherit;
     }
+    .option-search {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: var(--ha-card-border-radius, 12px);
+      background: var(--card-background-color, #fff);
+    }
+    .option-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      font: inherit;
+    }
+    .option-search-results {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+      list-style: none;
+    }
+    .option-search-result {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .option-search-result:disabled {
+      opacity: 0.7;
+      cursor: default;
+    }
+    .option-search-result:hover:not(:disabled),
+    .option-search-result:focus-visible {
+      border-color: var(--primary-color);
+    }
+    .option-search-meta {
+      color: var(--secondary-text-color);
+      font-size: 0.85em;
+    }
     .section {
       margin-bottom: 16px;
       background: var(--card-background-color, #fff);

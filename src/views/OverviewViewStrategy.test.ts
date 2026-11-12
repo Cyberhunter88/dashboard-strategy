@@ -194,6 +194,43 @@ describe('overview default presentation', () => {
     expect(findCard(view, (card) => card.type === 'weather-forecast' && card.forecast_type === 'hourly')).toBeDefined();
   });
 
+  it('renames built-in weather and alarm headings from the layout item title', async () => {
+    const headingsOf = (view: LovelaceViewConfig): unknown[] =>
+      (view.sections || [])
+        .flatMap((section) => section.cards || [])
+        .filter((card) => card.type === 'heading')
+        .map((card) => card.heading);
+    const generate = (items: Simon42StrategyConfig['weather_start_layout_items']) =>
+      overviewStrategy.generate(
+        { dashboardConfig: { weather_entity: 'weather.home', weather_start_layout_items: items } },
+        makeOverviewHass()
+      );
+
+    const defaultHeadings = headingsOf(
+      await generate([
+        { id: 'weather', type: 'weather_current' },
+        { id: 'daily', type: 'weather_daily' },
+      ])
+    );
+    expect(defaultHeadings).not.toContain('Outside');
+
+    Registry.resetForTesting();
+    const renamed = headingsOf(
+      await generate([
+        { id: 'weather', type: 'weather_current', title: '  Outside  ' },
+        { id: 'daily', type: 'weather_daily' },
+      ])
+    );
+    expect(renamed).toContain('Outside');
+    expect(renamed).toHaveLength(defaultHeadings.length);
+    expect(renamed[1]).toBe(defaultHeadings[1]);
+
+    Registry.resetForTesting();
+    expect(headingsOf(await generate([{ id: 'weather', type: 'weather_current', title: '   ' }]))).toEqual(
+      defaultHeadings.slice(0, 1)
+    );
+  });
+
   it('keeps free layouts and YAML block overrides in control', async () => {
     const customLayoutView = await overviewStrategy.generate(
       {

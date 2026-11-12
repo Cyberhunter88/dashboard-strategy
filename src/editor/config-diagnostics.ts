@@ -4,6 +4,8 @@ import { trackOperation } from '../utils/debug';
 import { getConfiguredNavigationPaths } from '../utils/summary-view-utils';
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { getOptionMetadata } from '../utils/option-metadata';
+import { hasNormalUnknownState } from '../utils/availability-utils';
+import { getGroupedClimateMembers, getRegistryExclusionReason } from '../utils/entity-exclusion';
 
 export interface EntityReference {
   entityId: string;
@@ -156,17 +158,31 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
     )
       hints.push({ code: 'layout_reference', severity: 'info', path: `weather_start_layout_items[${index}]` });
   }
+  // Badge lists are local to the room header and never hide an entity dashboard-wide.
+  const isDashboardWideExclusion = (ref: EntityReference): boolean =>
+    ref.purpose === 'exclusion' && !ref.path.includes('groups_options.badges');
+  const configExcluded = new Set(analysis.references.filter(isDashboardWideExclusion).map((ref) => ref.entityId));
+  let groupedClimateMembers: Set<string> | undefined;
+  const climateMembersFor = (entityId: string): Set<string> | undefined => {
+    if (!entityId.startsWith('climate.') || analysis.config.hide_grouped_climate_members === false) return undefined;
+    return (groupedClimateMembers ??= getGroupedClimateMembers(hass, configExcluded));
+  };
   return [
     ...hints,
     ...analysis.references.flatMap((ref): ConfigIssue[] => {
+      if (
+        isDashboardWideExclusion(ref) &&
+        getRegistryExclusionReason(hass, ref.entityId, climateMembersFor(ref.entityId))
+      ) {
+        return [{ code: 'redundant_exclusion', severity: 'info', path: ref.path, entityId: ref.entityId }];
+      }
       const registry = hass.entities[ref.entityId];
       const state = hass.states[ref.entityId];
       let status: EntityStatus | undefined;
       if (registry?.disabled_by) status = 'disabled';
       else if (!state) status = registry ? 'no_state' : 'missing';
       else if (state.state === 'unavailable') status = 'unavailable';
-      else if (state.state === 'unknown' && !/^(button|input_button|event|scene)\./.test(ref.entityId))
-        status = 'unknown';
+      else if (state.state === 'unknown' && !hasNormalUnknownState(ref.entityId)) status = 'unknown';
       if (!status || (ref.purpose === 'exclusion' && status !== 'missing')) return [];
       return [
         {

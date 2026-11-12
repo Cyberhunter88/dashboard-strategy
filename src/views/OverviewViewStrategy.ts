@@ -53,6 +53,7 @@ import { createActivitySection } from '../sections/ActivitySection';
 import { getSectionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 import { createOverviewView } from '../utils/view-builder';
 import { localize } from '../utils/localize';
+import { supportsCustomHeading, withCustomHeading } from '../utils/section-heading';
 import { timeStart, timeEnd, debugLog } from '../utils/debug';
 import { mergeConfiguredOrder } from '../utils/order-utils';
 import { resolveAutomaticFeatures } from '../utils/feature-availability';
@@ -572,6 +573,7 @@ function createWeatherStartSectionsFromItems(
         section = null;
     }
 
+    if (supportsCustomHeading(item.type)) section = withCustomHeading(section, item.title);
     const visibleSection = applyUserVisibility(item.type, section);
     appendSection(visibleSection, visibleSection?.visibility ? false : item.stack_with_previous);
   }

@@ -183,7 +183,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `section_visible_users` | object | `{}` | Sichtbare Benutzer pro Übersichtsabschnitt; leeres Array blendet den Abschnitt für alle aus |
 | `room_visibility` | object | `{}` | Raum-View und Navigation an einen Entity-Zustand binden |
 | `weather_start_order` | string[] | Hausmodus, Alarm, Status, Favoriten, Räume, Uhr/Datum, Wetter und weitere Bereiche | Reihenfolge der Blöcke in der Wetter-Startseite; eigene Reihenfolgen bleiben maßgeblich |
-| `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite |
+| `weather_start_layout_items` | object[] | `[]` | Freie Layout-Elemente für die Wetter-Startseite; `title` ersetzt bei `weather_current`, `weather_hourly`, `weather_daily`, `weather_details` und `alarm` die eingebaute Überschrift |
 | `weather_start_blocks_config` | object | `{}` | YAML-Overrides für Wetter-Startseiten-Blöcke |
 | `group_by_floors` | boolean | `false` | Bereiche nach Etagen gliedern |
 | `area_display_type` | `"compact"` \| `"picture"` | `"compact"` | Standarddarstellung der Bereichskarten; Bildmodus fällt ohne Bereichsfoto auf kompakt zurück |
@@ -204,7 +204,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
 | `show_cameras_in_rooms` | boolean | `true` | Kameras in Raum-Views ausblenden, ohne Security/CCTV zu beeinflussen |
 | `camera_renderer` | `"native"` \| `"webrtc"` | `"native"` | Renderer für Kameras in Raum-Views; `webrtc` benötigt `custom:webrtc-camera` |
-| `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc` |
+| `camera_webrtc_streams` | object | `{}` | WebRTC-URL oder Kartenoptionen pro Kamera-Entity-ID; nur bei `camera_renderer: webrtc`. Die CCTV-Ansicht ignoriert `camera_renderer`, `camera_live_toggle` und `camera_webrtc_streams` bewusst (Ladezeit) |
 | `show_cctv_view` | boolean | `false` | Experimentelle CCTV-Ansicht nach Bereichen |
 | `cctv_show_activity` | boolean | `false` | Nativer 12-Stunden-Aktivitätsverlauf in der CCTV-Ansicht; bei älteren Konfigurationen ohne `show_camera_events` bleiben zusätzlich LLM-Vision-Timelines aktiv |
 | `show_camera_events` | boolean | Übernimmt bei fehlendem Wert `cctv_show_activity` | LLM-Vision-Timelines unabhängig vom nativen Verlauf aktivieren oder ausdrücklich deaktivieren |

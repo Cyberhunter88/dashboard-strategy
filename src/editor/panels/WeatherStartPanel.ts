@@ -3,6 +3,7 @@ import { html, nothing, type TemplateResult } from 'lit';
 import type { AreaRegistryEntry } from '../../types/registries';
 import type { CustomCard, CustomSection, WeatherStartLayoutItem } from '../../types/strategy';
 import { localize } from '../../utils/localize';
+import { supportsCustomHeading } from '../../utils/section-heading';
 
 export interface WeatherStartFloorOption {
   floor_id: string | null;
@@ -41,6 +42,7 @@ export interface WeatherStartPanelOptions {
   onRemove: (itemId: string) => void;
   onSummarySizeChanged: (itemId: string, size: 'mini' | 'normal') => void;
   onStackChanged: (itemId: string, checked: boolean) => void;
+  onTitleChanged: (itemId: string, title: string) => void;
   onYamlChanged: (itemId: string, value: string) => void;
   onResetYaml: (itemId: string) => void;
   onAddCard: () => void;
@@ -156,6 +158,21 @@ export function renderWeatherStartOrderPanel(options: WeatherStartPanelOptions):
                                     ${localize('editor.weather_start_summary_size_normal')}
                                   </option>
                                 </select>
+                              </label>
+                            `
+                          : nothing}
+                        ${!customCard && !customSection && supportsCustomHeading(item.type)
+                          ? html`
+                              <label class="form-row" style="margin: 0 0 8px 0;">
+                                <span style="min-width: 120px;">${localize('editor.weather_start_block_title')}</span>
+                                <input
+                                  type="text"
+                                  style="flex:1;"
+                                  .value=${item.title || ''}
+                                  placeholder=${localize('editor.weather_start_block_title_placeholder')}
+                                  @change=${(event: Event) =>
+                                    options.onTitleChanged(item.id, (event.target as HTMLInputElement).value)}
+                                />
                               </label>
                             `
                           : nothing}

@@ -284,6 +284,30 @@ export const OPTION_METADATA = {
     labelKey: 'editor.hide_grouped_climate_members',
     values: [true, false],
   },
+  show_windows_summary: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.show_windows_summary',
+    values: [true, false],
+  },
+  compact_overview_summaries: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.compact_overview_summaries',
+    values: [true, false],
+  },
+  show_climate_air_quality: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.show_climate_air_quality',
+    values: [true, false],
+  },
+  hide_completed_todos: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.hide_completed_todos',
+    values: [true, false],
+  },
   show_window_contacts_in_rooms: {
     kind: 'boolean',
     defaultValue: false,

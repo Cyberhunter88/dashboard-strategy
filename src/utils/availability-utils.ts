@@ -40,9 +40,13 @@ export function shouldHideUnavailableEntities(
   return config?.hide_unavailable_entities === true;
 }
 
+/** True for domains where `unknown` is a normal resting state (button, scene, siren, ...). */
+export function hasNormalUnknownState(entityId: string | undefined): boolean {
+  return UNKNOWN_IS_NORMAL_DOMAINS.has(entityId?.split('.')[0] ?? '');
+}
+
 function hiddenStatesFor(entityId: string | undefined): readonly string[] {
-  const domain = entityId?.split('.')[0] ?? '';
-  return UNKNOWN_IS_NORMAL_DOMAINS.has(domain) ? ['unavailable'] : HIDDEN_AVAILABILITY_STATES;
+  return hasNormalUnknownState(entityId) ? ['unavailable'] : HIDDEN_AVAILABILITY_STATES;
 }
 
 /**
