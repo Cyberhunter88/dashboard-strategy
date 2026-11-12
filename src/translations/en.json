@@ -546,6 +546,8 @@
     "weather_start_summary_size_mini": "Small",
     "weather_start_summary_size_normal": "Normal",
     "weather_start_stack_with_previous": "Show below previous block in the same column",
+    "weather_start_block_title": "Heading",
+    "weather_start_block_title_placeholder": "Default heading",
     "remove": "Remove",
     "weather_start_block_reset": "Reset to default",
     "weather_sensors_icon": "Icon",

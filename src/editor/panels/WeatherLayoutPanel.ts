@@ -209,6 +209,7 @@ export function renderWeatherLayout(host: PanelHost): TemplateResult {
     onRemove: (itemId) => host._removeWeatherStartItem(itemId),
     onSummarySizeChanged: (itemId, size) => host._weatherStartSummarySizeChanged(itemId, size),
     onStackChanged: (itemId, checked) => host._toggleWeatherStartItemStack(itemId, checked),
+    onTitleChanged: (itemId, title) => host._weatherStartTitleChanged(itemId, title),
     onYamlChanged: (itemId, value) => host._updateWeatherStartItemYaml(itemId, value),
     onResetYaml: (itemId) => host._resetWeatherStartItemYaml(itemId),
     onAddCard: host._openCardPickerForWeatherStartCard,

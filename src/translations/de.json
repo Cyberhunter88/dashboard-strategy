@@ -546,6 +546,8 @@
     "weather_start_summary_size_mini": "Klein",
     "weather_start_summary_size_normal": "Normal",
     "weather_start_stack_with_previous": "Unter vorherigem Block in derselben Spalte anzeigen",
+    "weather_start_block_title": "Überschrift",
+    "weather_start_block_title_placeholder": "Standardüberschrift",
     "remove": "Entfernen",
     "weather_start_block_reset": "Auf Standard zurücksetzen",
     "weather_sensors_icon": "Icon",

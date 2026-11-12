@@ -675,6 +675,8 @@
     "weather_start_summary_size_mini": "Маленький",
     "weather_start_summary_size_normal": "Обычный",
     "weather_start_stack_with_previous": "Показывать под предыдущим блоком в том же столбце",
+    "weather_start_block_title": "Заголовок",
+    "weather_start_block_title_placeholder": "Заголовок по умолчанию",
     "remove": "Удалить",
     "weather_start_block_reset": "Сбросить по умолчанию",
     "section_overview_sections": "Разделы обзора",

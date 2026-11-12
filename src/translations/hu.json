@@ -546,6 +546,8 @@
     "weather_start_summary_size_mini": "Kicsi",
     "weather_start_summary_size_normal": "Normál",
     "weather_start_stack_with_previous": "Megjelenítés az előző blokk alatt, ugyanabban az oszlopban",
+    "weather_start_block_title": "Fejléc",
+    "weather_start_block_title_placeholder": "Alapértelmezett fejléc",
     "remove": "Eltávolítás",
     "weather_start_block_reset": "Alapértelmezett visszaállítása",
     "weather_sensors_icon": "Ikon",

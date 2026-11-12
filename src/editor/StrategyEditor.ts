@@ -1001,6 +1001,18 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     this._saveWeatherStartLayoutItems(items);
   }
 
+  private _weatherStartTitleChanged(itemId: string, title: string): void {
+    const trimmed = title.trim();
+    const items = this._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      const updated = { ...item };
+      if (trimmed) updated.title = trimmed;
+      else delete updated.title;
+      return updated;
+    });
+    this._saveWeatherStartLayoutItems(items);
+  }
+
   private _weatherStartSummarySizeChanged(itemId: string, size: 'mini' | 'normal'): void {
     const items = this._getWeatherStartLayoutItems().map((item) => {
       if (item.id !== itemId) return item;
@@ -3406,6 +3418,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       _updateSectionCardYaml: this._updateSectionCardYaml.bind(this),
       _updateWeatherStartItemYaml: this._updateWeatherStartItemYaml.bind(this),
       _weatherStartSummarySizeChanged: this._weatherStartSummarySizeChanged.bind(this),
+      _weatherStartTitleChanged: this._weatherStartTitleChanged.bind(this),
       _parseWeatherStartItemYaml: this._parseWeatherStartItemYaml.bind(this),
       requestUpdate: this.requestUpdate.bind(this),
       _saveWeatherStartLayoutItems: this._saveWeatherStartLayoutItems.bind(this),

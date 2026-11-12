@@ -546,6 +546,8 @@
     "weather_start_summary_size_mini": "Mały",
     "weather_start_summary_size_normal": "Normalny",
     "weather_start_stack_with_previous": "Pokaż pod poprzednim blokiem w tej samej kolumnie",
+    "weather_start_block_title": "Nagłówek",
+    "weather_start_block_title_placeholder": "Domyślny nagłówek",
     "remove": "Usuń",
     "weather_start_block_reset": "Przywróć domyślne",
     "weather_sensors_icon": "Ikona",
