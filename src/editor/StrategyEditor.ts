@@ -85,6 +85,7 @@ import {
   WEATHER_START_BLOCK_META,
   type EditorPanelKey,
 } from './editor-panel-registry';
+import { searchOptions } from './option-search';
 import { strategyEditorStyles } from './editor-styles';
 import { renderFavoritesSection, renderRoomPinsSection } from './panels/EntityListPanel';
 import {
@@ -123,6 +124,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     _cardPickerOpen: { state: true },
     _cardPickerStep: { state: true },
     _cardPickerSearch: { state: true },
+    _optionSearch: { state: true },
+    _showChangedOnly: { state: true },
     _cardPickerSelectedType: { state: true },
     _cardPickerYaml: { state: true },
     _cardPickerHasVisualEditor: { state: true },
@@ -141,6 +144,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   private readonly _entityListState: EntityListState = { search: {}, draggedId: null };
   _expandedPanels = loadExpandedPanels();
   private _diagnosticsChecked = false;
+  private _optionSearch = '';
+  private _showChangedOnly = false;
   private readonly _diagnostics = new ConfigDiagnostics();
   private _openingMeasured = false;
   // Cache for loaded area entities (avoid re-fetching on every render)
@@ -377,7 +382,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        ${this._renderPanelNavigation()}
+        ${this._renderPanelNavigation()} ${this._renderOptionSearch()}
         ${renderCollapsiblePanel(
           this,
           { key: 'diagnostics', icon: 'mdi:clipboard-check-outline', label: localize('editor.diagnostics_title') },
@@ -437,6 +442,59 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         )}
       </select>
     </nav>`;
+  }
+
+  private _renderOptionSearch(): TemplateResult {
+    const query = this._optionSearch.trim();
+    const active = query !== '' || this._showChangedOnly;
+    const results = active ? searchOptions(this._config, query, this._showChangedOnly) : [];
+    return html`<section class="option-search" aria-label=${localize('editor.search_options')}>
+      <input
+        type="search"
+        class="option-search-input"
+        .value=${this._optionSearch}
+        placeholder=${localize('editor.search_options_placeholder')}
+        aria-label=${localize('editor.search_options')}
+        @input=${(event: Event) => {
+          this._optionSearch = (event.target as HTMLInputElement).value;
+        }}
+      />
+      ${this._renderCheckbox(
+        'option-search-changed',
+        localize('editor.show_changed_only'),
+        this._showChangedOnly,
+        (checked) => {
+          this._showChangedOnly = checked;
+        }
+      )}
+      <div role="status" aria-live="polite">
+        ${active && !results.length
+          ? html`<p class="description">${localize(query ? 'editor.no_results' : 'editor.no_changed_options')}</p>`
+          : nothing}
+      </div>
+      ${results.length
+        ? html`<ul class="option-search-results">
+            ${results.map(
+              (result) =>
+                html`<li>
+                  <button
+                    type="button"
+                    class="option-search-result"
+                    ?disabled=${!result.panel}
+                    @click=${() => {
+                      if (result.panel) void this._jumpToPanel(result.panel);
+                    }}
+                  >
+                    <span>${result.label}</span>
+                    <span class="option-search-meta"
+                      >${result.panelLabel || localize('editor.search_yaml_only')} · <code>${result.key}</code></span
+                    >
+                  </button>
+                </li>`
+            )}
+          </ul>`
+        : nothing}
+    </section>`;
   }
 
   private async _jumpToPanel(key: EditorPanelKey): Promise<void> {
