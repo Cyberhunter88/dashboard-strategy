@@ -279,6 +279,7 @@ export interface Simon42StrategyConfig {
   show_vacuums_section_in_rooms?: boolean; // default: false
   show_switches_section_in_rooms?: boolean; // default: false
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
+  hide_grouped_climate_members?: boolean; // default: true — hide thermostats controlled by Better Thermostat or climate groups
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
   show_cover_controls_in_rooms?: boolean; // default: false in this fork (conservative opt-in)
   show_cameras_in_rooms?: boolean; // default: true

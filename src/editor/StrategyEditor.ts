@@ -1312,6 +1312,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     const showCoverControlsInRooms = this._config.show_cover_controls_in_rooms === true;
     const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
     const showUpsInRooms = this._config.show_ups_in_rooms !== false;
+    const hideGroupedClimateMembers = this._config.hide_grouped_climate_members !== false;
     const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
     const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
     const useDefaultAreaSort = this._config.use_default_area_sort === true;
@@ -1453,6 +1454,14 @@ export class Simon42DashboardStrategyEditor extends LitElement {
               (checked) => this._toggleChanged('show_ups_in_rooms', checked, true)
             )}
             <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
+
+            ${this._renderCheckbox(
+              'hide-grouped-climate-members',
+              localize('editor.hide_grouped_climate_members'),
+              hideGroupedClimateMembers,
+              (checked) => this._toggleChanged('hide_grouped_climate_members', checked, true)
+            )}
+            <div class="description">${localize('editor.hide_grouped_climate_members_desc')}</div>
 
             ${this._renderCheckbox(
               'show-window-contacts-in-rooms',

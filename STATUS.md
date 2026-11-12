@@ -1,10 +1,11 @@
 # Project status
 
-Updated: 2026-11-11
+Updated: 2026-11-12
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.38.0. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Dashboard Strategy development version: 1.39.0. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.39.0 adds the `hide_grouped_climate_members` option (default on): thermostats that Better Thermostat or a climate group already controls are hidden so the same radiator is not shown twice, while the controlling entity stays visible. With `hide_unavailable_entities`, `unknown` is now treated as a normal state for button, scene, event, input_button, and siren entities (only `unavailable` hides them), and six unused editor translation keys are removed. Validation in Home Assistant is still pending.
 - Version 1.38.0 adds the quick actions, media and activity overview sections, the windows summary, the energy view, climate humidity/CO2 alerts and a working video tip dismissal, and moves the overview, summary, favorites and room pin editor panels out of `StrategyEditor.ts` (about 3,600 lines left). Validation in Home Assistant is still pending.
 - Version 1.37.2 is a bugfix and runtime optimization release: parent-aware device areas are used consistently (lights/battery grouping, security, CCTV, room pins), reactive cards do less work per state update, and the video tip card no longer re-renders on every update. Validation in Home Assistant is still pending.
 - Version 1.37.1 is a repository cleanup without behavior changes: unused helper exports, changelog-generator templates, the Codacy configuration, and `ts-node` are removed; documentation media is WebP; development builds write to `dist-dev/`.

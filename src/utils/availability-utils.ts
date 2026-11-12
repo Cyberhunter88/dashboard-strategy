@@ -15,6 +15,9 @@ import type {
 import type { Simon42StrategyConfig } from '../types/strategy';
 
 const HIDDEN_AVAILABILITY_STATES = ['unavailable', 'unknown'] as const;
+// These domains report `unknown` as their normal state (never pressed, never
+// activated, no state reported), so only `unavailable` means "offline" for them.
+const UNKNOWN_IS_NORMAL_DOMAINS = new Set(['button', 'event', 'input_button', 'scene', 'siren']);
 const HALF_WIDTH_TILE_DOMAINS = new Set([
   'automation',
   'binary_sensor',
@@ -37,12 +40,21 @@ export function shouldHideUnavailableEntities(
   return config?.hide_unavailable_entities === true;
 }
 
-export function isUnavailableState(state: string | undefined): boolean {
-  return state === 'unavailable' || state === 'unknown';
+function hiddenStatesFor(entityId: string | undefined): readonly string[] {
+  const domain = entityId?.split('.')[0] ?? '';
+  return UNKNOWN_IS_NORMAL_DOMAINS.has(domain) ? ['unavailable'] : HIDDEN_AVAILABILITY_STATES;
+}
+
+/**
+ * True when the state means the entity is offline. Pass the entity id to treat
+ * `unknown` as a normal state for domains such as button, scene, or siren.
+ */
+export function isUnavailableState(state: string | undefined, entityId?: string): boolean {
+  return state !== undefined && hiddenStatesFor(entityId).includes(state);
 }
 
 function availabilityVisibility(entity: string): LovelaceCondition[] {
-  return HIDDEN_AVAILABILITY_STATES.map((state) => ({
+  return hiddenStatesFor(entity).map((state) => ({
     condition: 'state',
     entity,
     state_not: state,
@@ -53,7 +65,7 @@ function availabilityCondition(entity: string): LovelaceCondition {
   return {
     condition: 'state',
     entity,
-    state_not: [...HIDDEN_AVAILABILITY_STATES],
+    state_not: [...hiddenStatesFor(entity)],
   };
 }
 
@@ -246,5 +258,5 @@ export function isEntityCurrentlyAvailable(
   config?: Pick<Simon42StrategyConfig, 'hide_unavailable_entities'>
 ): boolean {
   const state = hass?.states[entityId]?.state;
-  return !shouldHideUnavailableEntities(config) || !isUnavailableState(state);
+  return !shouldHideUnavailableEntities(config) || !isUnavailableState(state, entityId);
 }

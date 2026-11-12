@@ -278,6 +278,12 @@ export const OPTION_METADATA = {
     labelKey: 'editor.show_ups_in_rooms',
     values: [true, false],
   },
+  hide_grouped_climate_members: {
+    kind: 'boolean',
+    defaultValue: true,
+    labelKey: 'editor.hide_grouped_climate_members',
+    values: [true, false],
+  },
   show_window_contacts_in_rooms: {
     kind: 'boolean',
     defaultValue: false,

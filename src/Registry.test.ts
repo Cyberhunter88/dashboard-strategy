@@ -217,3 +217,43 @@ describe('Registry', () => {
     expect(Registry.getDeviceAreaId('child')).toBe('living_room');
   });
 });
+
+describe('Registry grouped climate members', () => {
+  function climateHass(wrapperOverrides: Partial<EntityRegistryEntry> = {}): HomeAssistant {
+    const hass = hassWith([
+      entity('climate.office_heating', { platform: 'better_thermostat', ...wrapperOverrides }),
+      entity('climate.office_trv', { platform: 'matter' }),
+      entity('climate.standalone', { platform: 'matter' }),
+    ]);
+    hass.states['climate.office_heating'].attributes = {
+      batteries: JSON.stringify({ 'climate.office_trv': { battery: null } }),
+    };
+    return hass;
+  }
+
+  it('hides thermostats controlled by a visible wrapper', () => {
+    Registry.initialize(climateHass(), {});
+    expect(Registry.isEntityExcluded('climate.office_trv')).toBe(true);
+    expect(Registry.isEntityExcluded('climate.office_heating')).toBe(false);
+    expect(Registry.getVisibleEntityIdsForDomain('climate')).toEqual(['climate.office_heating', 'climate.standalone']);
+  });
+
+  it('keeps members visible when the option is disabled', () => {
+    Registry.initialize(climateHass(), { hide_grouped_climate_members: false });
+    expect(Registry.isEntityExcluded('climate.office_trv')).toBe(false);
+  });
+
+  it('keeps members visible when the wrapper itself is excluded', () => {
+    Registry.initialize(climateHass({ labels: ['no_dboard'] }), {});
+    expect(Registry.isEntityExcluded('climate.office_trv')).toBe(false);
+  });
+
+  it('rebuilds when only the option changes', () => {
+    const hass = climateHass();
+    const config: Simon42StrategyConfig = {};
+    Registry.initialize(hass, config);
+    expect(Registry.isEntityExcluded('climate.office_trv')).toBe(true);
+    Registry.initialize(hass, { ...config, hide_grouped_climate_members: false });
+    expect(Registry.isEntityExcluded('climate.office_trv')).toBe(false);
+  });
+});

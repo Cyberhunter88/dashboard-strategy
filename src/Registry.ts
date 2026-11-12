@@ -22,6 +22,7 @@ import type { Simon42StrategyConfig } from './types/strategy';
 import { timeStart, timeEnd, debugLog } from './utils/debug';
 import { setupLocalize } from './utils/localize';
 import { getEffectiveDeviceAreaId } from './utils/device-utils';
+import { getClimateGroupMembers } from './utils/climate-group-utils';
 
 /**
  * Static singleton registry that holds all HA registry data and provides
@@ -85,6 +86,9 @@ class Registry {
   /** Entities hidden via areas_options.*.groups_options.*.hidden in config */
   private static _hiddenFromConfig: Set<string>;
 
+  /** Physical thermostats controlled by a visible wrapper climate entity */
+  private static _groupedClimateMembers: Set<string> = new Set();
+
   /** Initialization flag */
   private static _initialized: boolean = false;
 
@@ -110,7 +114,9 @@ class Registry {
       hass.areas === Registry._hass?.areas &&
       hass.devices === Registry._hass?.devices &&
       hass.floors === Registry._hass?.floors &&
-      (config === Registry._config || config.areas_options === Registry._config?.areas_options)
+      (config === Registry._config ||
+        (config.areas_options === Registry._config?.areas_options &&
+          config.hide_grouped_climate_members === Registry._config?.hide_grouped_climate_members))
     ) {
       const languageChanged =
         hass.locale?.language !== Registry._hass.locale?.language || hass.language !== Registry._hass.language;
@@ -170,12 +176,14 @@ class Registry {
    * - Config-hidden (areas_options)
    * - hidden (by user/integration)
    * - entity_category config/diagnostic
+   * - climate members controlled by a visible wrapper (Better Thermostat, climate groups)
    *
    * Note: disabled entities are already excluded from hass.entities.
    */
   private static _isEntityVisible(entity: EntityRegistryEntry): boolean {
     if (Registry._excludeSet.has(entity.entity_id)) return false;
     if (Registry._hiddenFromConfig.has(entity.entity_id)) return false;
+    if (Registry._groupedClimateMembers.has(entity.entity_id)) return false;
     if (isEntityRegistryHidden(entity)) return false;
     if (entity.entity_category === 'config' || entity.entity_category === 'diagnostic') return false;
     return true;
@@ -303,6 +311,27 @@ class Registry {
             }
           }
         }
+      }
+    }
+    Registry._buildGroupedClimateMembers();
+  }
+
+  /**
+   * Collect physical thermostats that a wrapper climate entity already controls.
+   * Only wrappers that stay visible hide their members, so excluding a wrapper
+   * via label or registry never removes every control for that radiator.
+   */
+  private static _buildGroupedClimateMembers(): void {
+    Registry._groupedClimateMembers = new Set();
+    if (Registry._config.hide_grouped_climate_members === false) return;
+
+    for (const e of Registry._fetchedEntities) {
+      if (!e.entity_id.startsWith('climate.')) continue;
+      if (Registry._excludeSet.has(e.entity_id) || Registry._hiddenFromConfig.has(e.entity_id)) continue;
+      if (isEntityRegistryHidden(e)) continue;
+      const attributes = Registry._hass.states[e.entity_id]?.attributes;
+      for (const member of getClimateGroupMembers(e.entity_id, e.platform, attributes)) {
+        Registry._groupedClimateMembers.add(member);
       }
     }
   }
@@ -444,12 +473,14 @@ class Registry {
    * 2. areas_options hidden
    * 3. hidden (by user/integration)
    * 4. entity_category "config" or "diagnostic"
+   * 5. climate member controlled by a visible wrapper
    *
    * Note: disabled entities are already excluded from hass.entities.
    */
   static isEntityExcluded(entityId: string): boolean {
     if (Registry._excludeSet.has(entityId)) return true;
     if (Registry._hiddenFromConfig.has(entityId)) return true;
+    if (Registry._groupedClimateMembers.has(entityId)) return true;
 
     const entry = Registry._entityById.get(entityId);
     if (!entry) return false; // Entity not in registry — don't exclude

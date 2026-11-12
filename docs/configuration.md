@@ -152,7 +152,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_energy_distribution_card` | boolean | `true` | Energieverteilungs-Karte in der Energy-Section |
 | `energy_link_dashboard` | boolean | `true` | Energie-Karte mit dem HA-Energie-Dashboard verlinken |
 | `power_badge_entity` | string | — | Zusätzliche Entity als Power-Badge im Header |
-| `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden |
+| `hide_unavailable_entities` | boolean | `false` | Nicht verfügbare Entitäten aus generierten Views ausblenden; bei Buttons, Szenen, Ereignissen und Sirenen gilt nur `unavailable` als offline, `unknown` bleibt dort der Normalzustand |
 | `dense_section_placement` | boolean | `false` | Generierte Sections-Views dicht platzieren, um Raster-Lücken aufzufüllen |
 | `hidden_section_headings` | string[] | `[]` | Erzeugte Überschriften der Übersichtsabschnitte ausblenden (z. B. `summaries`, `favorites`, `quick_actions`, `media`, `activity`) |
 | `favorite_entities` | string[] | `[]` | Favoriten-Entitäten auf der Übersicht |
@@ -213,6 +213,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `pollen_entities` | string[] | `[]` | Pollen-Sensoren im Wetterabschnitt |
 | `show_energy_in_rooms` | boolean | `true` | Energie-Block mit Leistungs-, Energie-, Wasser- und Gas-Sensoren in Raum-Views |
 | `show_ups_in_rooms` | boolean | `true` | UPS/USV-Gruppen in Raum-Views anzeigen |
+| `hide_grouped_climate_members` | boolean | `true` | Thermostate ausblenden, die Better Thermostat oder eine Klimagruppe bereits steuert; die steuernde Entität bleibt sichtbar |
 | `show_window_contacts_in_rooms` | boolean | `false` | Fensterkontakte als Badges in Raum-Views |
 | `show_door_contacts_in_rooms` | boolean | `false` | Türkontakte als Badges in Raum-Views |
 | `use_default_area_sort` | boolean | `false` | HA-Sortierung für Bereiche verwenden |
