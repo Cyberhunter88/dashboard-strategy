@@ -47,3 +47,32 @@ describe('buildWebrtcCameraCard', () => {
     });
   });
 });
+
+describe('hd_url grid/HD split', () => {
+  const streams = { 'camera.door': { url: 'rtsp://x/fast', hd_url: 'rtsp://x/high', mode: 'mse' } };
+  const hassWith = (popup: boolean) => ({ services: popup ? { browser_mod: { popup: {} } } : {} }) as never;
+
+  it('keeps hd_url out of the grid card and uses url', () => {
+    const card = buildWebrtcCameraCard('camera.door', 'Door', streams);
+    expect(card.url).toBe('rtsp://x/fast');
+    expect(card).not.toHaveProperty('hd_url');
+    expect(card.mode).toBe('mse');
+  });
+
+  it('builds a browser_mod popup button with the HD stream', async () => {
+    const { buildWebrtcHdButton } = await import('./RoomViewStrategy');
+    const button = buildWebrtcHdButton('camera.door', 'Door', streams, hassWith(true));
+    const popup = (button?.tap_action as any).browser_mod.data.content;
+    expect(button?.type).toBe('tile');
+    expect(popup).toMatchObject({ type: 'custom:webrtc-camera', url: 'rtsp://x/high', mode: 'mse' });
+    expect(popup).not.toHaveProperty('hd_url');
+  });
+
+  it('omits the button without browser_mod or without hd_url', async () => {
+    const { buildWebrtcHdButton } = await import('./RoomViewStrategy');
+    expect(buildWebrtcHdButton('camera.door', 'Door', streams, hassWith(false))).toBeUndefined();
+    expect(
+      buildWebrtcHdButton('camera.door', 'Door', { 'camera.door': { url: 'rtsp://x' } }, hassWith(true))
+    ).toBeUndefined();
+  });
+});
