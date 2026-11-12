@@ -67,6 +67,10 @@ const WEBRTC_CARD_DEFAULTS = {
   background: false,
 } as const;
 
+function omitKeys<T extends object>(source: T, keys: string[]): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(source).filter(([key]) => !keys.includes(key)));
+}
+
 export function buildWebrtcCameraCard(
   cameraId: string,
   name: string,
@@ -85,7 +89,9 @@ export function buildWebrtcCameraCard(
 
   if (mapping && typeof mapping === 'object' && !Array.isArray(mapping)) {
     const streamConfig = mapping as CameraWebrtcStreamConfig;
-    const { url, entity, ...options } = streamConfig;
+    // `hd_url` belongs to the strategy (grid/HD split), not to the webrtc-camera card.
+    const { url, entity } = streamConfig;
+    const options = omitKeys(streamConfig, ['url', 'entity', 'hd_url']);
     return {
       ...card,
       ...options,
@@ -96,6 +102,51 @@ export function buildWebrtcCameraCard(
   }
 
   return { ...card, entity: cameraId };
+}
+
+/**
+ * Optional "HD" button below a grid stream: the grid keeps the light stream (`url`), a tap opens the
+ * heavy one (`hd_url`, e.g. the 4K main stream) in a browser_mod popup, so only one 4K stream decodes
+ * at a time. Needs the browser_mod integration; without it the button is omitted.
+ */
+export function buildWebrtcHdButton(
+  cameraId: string,
+  name: string,
+  streams: CameraWebrtcStreamsConfig | undefined,
+  hass: HomeAssistant
+): LovelaceCardConfig | undefined {
+  const mapping = streams?.[cameraId];
+  if (!mapping || typeof mapping !== 'object' || Array.isArray(mapping)) return undefined;
+  const hdUrl = (mapping as CameraWebrtcStreamConfig).hd_url;
+  if (typeof hdUrl !== 'string' || !hdUrl.trim()) return undefined;
+  if (!hass.services?.browser_mod?.popup) return undefined;
+
+  const options = omitKeys(mapping as CameraWebrtcStreamConfig, ['url', 'entity', 'hd_url']);
+  return {
+    type: 'tile',
+    entity: cameraId,
+    name: `${name} HD`,
+    icon: 'mdi:fullscreen',
+    vertical: false,
+    tap_action: {
+      action: 'fire-dom-event',
+      browser_mod: {
+        service: 'browser_mod.popup',
+        data: {
+          title: name,
+          size: 'wide',
+          dismissable: true,
+          content: {
+            type: 'custom:webrtc-camera',
+            title: name,
+            ...WEBRTC_CARD_DEFAULTS,
+            ...options,
+            url: hdUrl.trim(),
+          },
+        },
+      },
+    },
+  };
 }
 
 function buildNativeCameraCard(
@@ -539,6 +590,8 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
         if (cameraRenderer === 'webrtc') {
           cameraCards.push(buildWebrtcCameraCard(cameraId, cameraName, cameraWebrtcStreams));
+          const hdButton = buildWebrtcHdButton(cameraId, cameraName, cameraWebrtcStreams, hass);
+          if (hdButton) cameraCards.push(hdButton);
           continue;
         }
 

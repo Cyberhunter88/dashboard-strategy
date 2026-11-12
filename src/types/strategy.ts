@@ -162,6 +162,8 @@ export type CameraRenderer = 'native' | 'webrtc';
 
 export interface CameraWebrtcStreamConfig {
   url?: string;
+  /** Heavy stream (e.g. 4K main stream) opened on demand in a browser_mod popup; `url` stays the light grid stream. */
+  hd_url?: string;
   entity?: string;
   poster?: string;
   mode?: string;
