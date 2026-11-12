@@ -631,6 +631,7 @@
     "camera_pause_when_hidden": "Manuelles Livebild bei Unsichtbarkeit pausieren",
     "camera_pause_when_hidden_desc": "Optional für native Kameras mit Live-Schalter: pausiert außerhalb des sichtbaren Bereichs oder bei verborgenem Browser und setzt manuell gestartetes Livebild bei Rückkehr fort. Eigene WebRTC-Karten bleiben unverändert.",
     "diagnostics_navigation_target": "Relatives Navigationsziel wird mit dieser Konfiguration nicht erzeugt",
+    "diagnostics_redundant_exclusion": "Bereits durch Home-Assistant-Daten ausgeblendet (Label, Kategorie, versteckt oder von einer Gruppe gesteuert) – dieser Listeneintrag ist überflüssig",
     "camera_renderer": "Kamera-Darstellung",
     "section_overview_sections": "Abschnitte der Übersicht",
     "overview_sections_desc": "Lege fest, welche automatisch erzeugten Abschnitte auf der Übersicht erscheinen. Ein Abschnitt bleibt ausgeblendet, solange es keine passenden Entitäten gibt.",

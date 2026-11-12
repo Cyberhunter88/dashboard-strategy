@@ -631,6 +631,7 @@
     "camera_pause_when_hidden": "Wstrzymaj ręcznie uruchomiony obraz na żywo, gdy jest ukryty",
     "camera_pause_when_hidden_desc": "Opcja dla natywnych kamer z przełącznikiem obrazu na żywo: wstrzymuje obraz poza ekranem lub na ukrytej karcie i wznawia go po powrocie. Własne karty WebRTC pozostają bez zmian.",
     "diagnostics_navigation_target": "Względny cel nawigacji nie jest tworzony przez tę konfigurację",
+    "diagnostics_redundant_exclusion": "Już ukryte na podstawie danych Home Assistant (etykieta, kategoria, ukryte lub sterowane przez grupę) – ten wpis na liście jest zbędny",
     "camera_renderer": "Sposób wyświetlania kamery",
     "section_overview_sections": "Sekcje przeglądu",
     "overview_sections_desc": "Wybierz, które automatycznie generowane sekcje mają być widoczne w przeglądzie. Sekcja pozostaje ukryta, dopóki nie ma pasujących encji.",

@@ -631,6 +631,7 @@
     "camera_pause_when_hidden": "Kézzel indított élőkép szüneteltetése, ha nem látható",
     "camera_pause_when_hidden_desc": "Opcionális a natív, élőkép-kapcsolós kamerákhoz: szünetelteti a streamet a látómezőn kívül vagy rejtett böngészőlapnál, majd visszatéréskor folytatja. Az egyéni WebRTC-kártyák változatlanok.",
     "diagnostics_navigation_target": "A relatív navigációs cél nem jön létre ebben a konfigurációban",
+    "diagnostics_redundant_exclusion": "A Home Assistant adatai alapján már el van rejtve (címke, kategória, rejtett vagy csoport által vezérelt) – erre a listabejegyzésre nincs szükség",
     "camera_renderer": "Kamera megjelenítője",
     "section_overview_sections": "Áttekintés szakaszai",
     "overview_sections_desc": "Válaszd ki, mely automatikusan létrehozott szakaszok jelenjenek meg az áttekintésen. Egy szakasz rejtve marad, amíg nincs hozzá illő entitás.",

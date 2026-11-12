@@ -36,6 +36,57 @@ describe('editor diagnostics', () => {
     expect(inspectConfig({ hidden: ['sensor.removed'] }, hass)[0].severity).toBe('info');
   });
 
+  it('flags hidden-list entries that the registry already excludes', () => {
+    const hass = makeHass({
+      entities: [
+        { entity_id: 'switch.config_switch', entity_category: 'config' },
+        { entity_id: 'sensor.labeled', labels: ['no_dboard'] },
+        { entity_id: 'sensor.disabled', disabled_by: 'user' },
+        { entity_id: 'sensor.visible', state: 'unavailable' },
+        {
+          entity_id: 'climate.room_heating',
+          platform: 'better_thermostat',
+          attributes: { batteries: JSON.stringify({ 'climate.trv': { battery: null } }) },
+        },
+        { entity_id: 'climate.trv', platform: 'matter' },
+      ],
+    });
+    const config = {
+      areas_options: {
+        garden: {
+          groups_options: {
+            switches: { hidden: ['switch.config_switch', 'sensor.labeled', 'sensor.disabled', 'sensor.visible'] },
+            climate: { hidden: ['climate.trv'] },
+            badges: { hidden: ['sensor.labeled'] },
+          },
+        },
+      },
+    };
+    const issues = inspectConfig(config, hass);
+    expect(issues.map((issue) => `${issue.code}:${issue.entityId}`)).toEqual([
+      'redundant_exclusion:switch.config_switch',
+      'redundant_exclusion:sensor.labeled',
+      'redundant_exclusion:sensor.disabled',
+      'redundant_exclusion:climate.trv',
+    ]);
+  });
+
+  it('keeps climate members listed when the option is off or the wrapper is hidden by configuration', () => {
+    const hass = makeHass({
+      entities: [
+        {
+          entity_id: 'climate.room_heating',
+          platform: 'better_thermostat',
+          attributes: { batteries: JSON.stringify({ 'climate.trv': { battery: null } }) },
+        },
+        { entity_id: 'climate.trv', platform: 'matter' },
+      ],
+    });
+    const hidden = (ids: string[]) => ({ areas_options: { room: { groups_options: { climate: { hidden: ids } } } } });
+    expect(inspectConfig({ ...hidden(['climate.trv']), hide_grouped_climate_members: false }, hass)).toEqual([]);
+    expect(inspectConfig(hidden(['climate.trv', 'climate.room_heating']), hass)).toEqual([]);
+  });
+
   it('reports optional layout and camera notes without altering YAML or parsing stream names', () => {
     const config = {
       weather_start_layout_items: [{ type: 'house_mode' }, { type: 'custom_card', custom_card_id: 'gone' }],
