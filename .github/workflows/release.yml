@@ -114,8 +114,14 @@ jobs:
         run: |
           node scripts/verify-version-sync.mjs --require-tag --tag "$RELEASE_TAG"
 
-      - name: Validate and build release
-        run: npm run verify:release
+      # Typecheck, lint, formatting, translations, and tests already run in the CI
+      # workflow for this same commit. The release only rebuilds and validates
+      # the production artifacts it publishes.
+      - name: Build and validate production artifacts
+        run: |
+          npm run build
+          node scripts/verify-production-artifacts.mjs
+          node scripts/verify-hacs-distribution.mjs
 
       - name: Create and push annotated tag if missing
         if: steps.existing.outputs.tag_exists == 'false'
