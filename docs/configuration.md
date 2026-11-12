@@ -108,7 +108,10 @@ strategy:
   camera_webrtc_streams:
     camera.garten:
       url: rtsp://<benutzer>:<passwort>@<viewer-host>:8554/live/<kamera-id>/wide/fast
+      hd_url: rtsp://<benutzer>:<passwort>@<viewer-host>:8554/live/<kamera-id>/wide/high
 ```
+
+`url` ist der leichte Stream im Raster. Mit `hd_url` (z. B. der 4K-Hauptstream) erscheint unter der Karte eine Kachel „… HD“, die den schweren Stream erst auf Tipp in einem Popup startet, sodass höchstens ein 4K-Stream gleichzeitig decodiert wird. Das Popup benötigt die Integration [browser_mod](https://github.com/thomasloven/hass-browser_mod); ohne sie entfällt die Kachel.
 
 - Das Profil `wide/fast` ist der H.264-Nebenstream ohne Transcodierung und läuft in allen Browsern flüssig. `wide/high` (4K) ist oft H.265 und nur in manchen Browsern abspielbar.
 - Zugangsdaten gehören nur in die eigene Home-Assistant-Konfiguration, nicht in öffentliche Repositories.
