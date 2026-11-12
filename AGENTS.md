@@ -159,13 +159,16 @@ Version surfaces must stay aligned:
 
 Use `scripts/verify-version-sync.mjs` early for release work, then rebuild `dist`. Patch versions are bugfixes; minor versions are features; beta releases are GitHub pre-releases. A hygiene-only change without a version bump does not need a release/tag.
 
-Normal feature flow: branch from `main`, implement, validate, build, commit source and generated output when applicable, push, open a PR, wait for CI/HACS validation, then merge. After the merge, the release workflow runs only when `package.json.version` changed.
+Normal feature flow: branch from `main`, implement, validate, build, commit source and generated output when applicable, push, open a PR, wait for CI/HACS validation, then merge. Merging never releases by itself; the release is started manually (see below).
 
 For every functional change, determine whether the version change is PATCH,
 MINOR, or MAJOR and update `package.json.version` in the same pull request. Never create
-or push Git tags or GitHub releases manually. After the pull request is merged
-into `main`, the GitHub Actions release workflow creates the corresponding
-`v<version>` tag and GitHub Release automatically.
+or push Git tags or GitHub releases by hand. The release is never created
+automatically on merge, because several pull requests may reach `main` with the
+same version. Once the intended pull requests are merged, run the "Version Release"
+workflow manually (Actions > Version Release > Run workflow, branch `main`); it
+creates the `v<version>` tag and GitHub Release for the current `package.json`
+version and verifies the assets.
 
 CI must run for pull requests targeting `main`, after pushes or merges to
 `main`, and through `workflow_dispatch`. CI performs the project quality,

@@ -15,9 +15,9 @@ const packageVersion = packageJson.version;
 const versionFileVersion = readVersion();
 
 const releaseWorkflow = fs.readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
-const escapedVersionFileName = VERSION_FILE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-if (!new RegExp(`^\\s*-\\s*${escapedVersionFileName}\\s*$`, 'm').test(releaseWorkflow)) {
-  throw new Error(`.github/workflows/release.yml must trigger on ${VERSION_FILE_NAME}`);
+// Several PRs can reach main with the same version, so a release is never started by a merge.
+if (!/^\s*workflow_dispatch:/m.test(releaseWorkflow) || /^\s*(push|pull_request|schedule):/m.test(releaseWorkflow)) {
+  throw new Error('.github/workflows/release.yml must be started manually (workflow_dispatch only)');
 }
 
 const strategySource = fs.readFileSync(new URL('../src/dashboard-strategy.ts', import.meta.url), 'utf8');
