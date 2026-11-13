@@ -6,7 +6,7 @@ A list of unreleased changes can be found [here](https://github.com/Cyberhunter8
 
 ## 1.41.1
 
-- Housekeeping without behavior changes: the unused `EditableCard` and inline-editor helper (never imported, so never part of the bundle) are removed, the maintenance sensor discovery builds each search text once instead of repeating it in filters and the sort comparator, and the lint, TypeScript-ESLint, Playwright and Prettier tooling is updated within its current major version.
+- Housekeeping without behavior changes: the unused `EditableCard` and inline-editor helper (never imported, so never part of the bundle) are removed, the maintenance sensor discovery builds each search text once instead of repeating it in filters and the sort comparator, and the TypeScript-ESLint and Playwright tooling is updated within its current major version (Prettier stays at 3.8.x because 3.10 reformats about 14 existing files).
 - Documentation: the changelog covers 1.39.0 to 1.41.0, the README mentions `hd_url`, and the development workflow explains the Windows test and line-ending pitfalls.
 
 ## 1.41.0

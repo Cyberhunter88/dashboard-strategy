@@ -5,7 +5,7 @@ Updated: 2026-11-13
 ## Current development state
 
 - Dashboard Strategy development version: 1.41.1. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
-- Version 1.41.1 is a housekeeping release without behavior changes: the unused `EditableCard` and inline-editor helper are removed (the name `dashboard-strategy-editable-card` stays reserved), the maintenance sensor discovery builds search texts once, the changelog covers 1.39.0 to 1.41.0, and lint/Playwright/Prettier tooling is updated within its major version. Validation in Home Assistant is still pending.
+- Version 1.41.1 is a housekeeping release without behavior changes: the unused `EditableCard` and inline-editor helper are removed (the name `dashboard-strategy-editable-card` stays reserved), the maintenance sensor discovery builds search texts once, the changelog covers 1.39.0 to 1.41.0, and TypeScript-ESLint/Playwright are updated within their major version. Prettier is deliberately kept at 3.8.3: 3.10 reformats 14 existing files and fails the CI formatting check. Validation in Home Assistant is still pending.
 - Version 1.41.0 adds `hd_url` to `camera_webrtc_streams`: the grid card keeps the light `url` stream and a tile opens the heavy stream (e.g. 4K) in a browser_mod popup on tap. Validation in Home Assistant is still pending.
 - Version 1.40.2 gives the `webrtc` camera renderer smooth-playback defaults (`mode: webrtc,mse`, muted, `intersection: 0.5`, `background: false`, all overridable per camera in `camera_webrtc_streams`) and documents connecting RTSP/go2rtc sources such as cctv-viewer. Validation in Home Assistant is still pending.
 - Version 1.40.1 is a CI-only release: the version release workflow no longer repeats typecheck, lint, and tests that CI already runs on the same commit (it only rebuilds and validates the production artifacts), and it is now started manually only (Actions > Version Release) instead of on every merge that changes `package.json`, since several PRs can land with the same version.
@@ -22,6 +22,7 @@ Updated: 2026-11-13
 
 - Split further panels out of `src/editor/StrategyEditor.ts` (about 3,600 lines; remaining candidates: area options, custom content, weather-start layout helpers, and the drag/drop handlers).
 - Replace the remaining `any`/`@ts-*`/`eslint-disable` spots in `src/` (about 30, mostly `types/lovelace.ts`, `StrategyEditor.ts`, `RoomViewStrategy.ts`) with precise types where possible.
+- Move to Prettier 3.10 in a dedicated formatting-only change (it reformats `StrategyEditor.ts`, the editor panels and the group cards).
 - Evaluate the major updates `js-yaml` 5, `typescript` 7 and `vitest` 5 separately; they are deliberately not part of 1.41.1.
 - Audit translation keys for unused entries; many keys are composed dynamically, so a plain text search is not sufficient.
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.
