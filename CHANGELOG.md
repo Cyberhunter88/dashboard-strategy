@@ -2,7 +2,36 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.38.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.41.1...HEAD).
+
+## 1.41.1
+
+- Housekeeping without behavior changes: the unused `EditableCard` and inline-editor helper (never imported, so never part of the bundle) are removed, the maintenance sensor discovery builds each search text once instead of repeating it in filters and the sort comparator, and the lint, TypeScript-ESLint, Playwright and Prettier tooling is updated within its current major version.
+- Documentation: the changelog covers 1.39.0 to 1.41.0, the README mentions `hd_url`, and the development workflow explains the Windows test and line-ending pitfalls.
+
+## 1.41.0
+
+- `camera_webrtc_streams` accepts `hd_url`: the grid card keeps the light `url` stream and a tile opens the heavy stream (for example 4K) in a `browser_mod` popup on tap, so at most one heavy stream is decoded at a time.
+
+## 1.40.2
+
+- The `webrtc` camera renderer uses smooth-playback defaults (`mode: webrtc,mse`, muted, `intersection: 0.5`, `background: false`), all overridable per camera in `camera_webrtc_streams`. The documentation explains how to connect RTSP/go2rtc sources such as cctv-viewer.
+
+## 1.40.1
+
+- CI only: the version release workflow no longer repeats typecheck, lint, and tests that CI already ran on the same commit, and it is started manually only instead of on every merge that changes `package.json`.
+
+## 1.40.0
+
+- Editor: a search field over all options with a "changed from default" filter.
+- Editor diagnostics: a `redundant_exclusion` hint for hidden-list entries that Home Assistant data already excludes (label, hidden/disabled, config/diagnostic category, or control by a visible Better Thermostat/climate group wrapper).
+- Built-in weather, forecast and alarm blocks in the free weather start layout accept a `title`.
+
+## 1.39.0
+
+- New option `hide_grouped_climate_members` (default on): thermostats that Better Thermostat or a climate group already controls are hidden so the same radiator is not shown twice; the controlling entity stays visible.
+- With `hide_unavailable_entities`, `unknown` is treated as a normal state for button, scene, event, input_button and siren entities; only `unavailable` hides them.
+- Six unused editor translation keys are removed.
 
 ## 1.38.0
 

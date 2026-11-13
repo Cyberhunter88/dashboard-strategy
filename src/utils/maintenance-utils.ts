@@ -74,13 +74,21 @@ function isVisibleUsableSensor(hass: HomeAssistant, entityId: string): boolean {
   return Boolean(state && state.state !== 'unknown' && state.state !== 'unavailable');
 }
 
+/** Visible, usable sensors paired with their search text (built once per entity, not per filter/compare call). */
+function usableSensorsWithText(hass: HomeAssistant): Array<{ entityId: string; text: string }> {
+  const result: Array<{ entityId: string; text: string }> = [];
+  for (const entityId of Registry.getVisibleEntityIdsForDomain('sensor')) {
+    if (isVisibleUsableSensor(hass, entityId)) result.push({ entityId, text: statusSearchText(hass, entityId) });
+  }
+  return result;
+}
+
 /** Automatically discover backup-related sensors without embedding user IDs. */
 export function getBackupEntityIds(hass: HomeAssistant): string[] {
-  return Registry.getVisibleEntityIdsForDomain('sensor')
-    .filter((entityId) => isVisibleUsableSensor(hass, entityId))
-    .filter((entityId) => BACKUP_PATTERN.test(statusSearchText(hass, entityId)))
-    .filter((entityId) => BACKUP_TIME_PATTERN.test(statusSearchText(hass, entityId)))
-    .sort((a, b) => statusSearchText(hass, a).localeCompare(statusSearchText(hass, b)));
+  return usableSensorsWithText(hass)
+    .filter(({ text }) => BACKUP_PATTERN.test(text) && BACKUP_TIME_PATTERN.test(text))
+    .sort((a, b) => a.text.localeCompare(b.text))
+    .map(({ entityId }) => entityId);
 }
 
 /**
@@ -89,15 +97,14 @@ export function getBackupEntityIds(hass: HomeAssistant): string[] {
  * excluded before cards are generated.
  */
 export function getMaintenanceStatusEntityIds(hass: HomeAssistant): string[] {
-  return Registry.getVisibleEntityIdsForDomain('sensor')
-    .filter((entityId) => isVisibleUsableSensor(hass, entityId))
-    .filter((entityId) => {
-      const text = statusSearchText(hass, entityId);
-      return !SENSITIVE_STATUS_PATTERN.test(text) && MAINTENANCE_STATUS_PATTERN.test(text);
-    })
-    .filter((entityId) => !BACKUP_PATTERN.test(statusSearchText(hass, entityId)))
-    .sort((a, b) => statusSearchText(hass, a).localeCompare(statusSearchText(hass, b)))
-    .slice(0, 12);
+  return usableSensorsWithText(hass)
+    .filter(
+      ({ text }) =>
+        !SENSITIVE_STATUS_PATTERN.test(text) && MAINTENANCE_STATUS_PATTERN.test(text) && !BACKUP_PATTERN.test(text)
+    )
+    .sort((a, b) => a.text.localeCompare(b.text))
+    .slice(0, 12)
+    .map(({ entityId }) => entityId);
 }
 
 export function buildMaintenanceScan(hass: HomeAssistant, config: Simon42StrategyConfig): MaintenanceScan {

@@ -21,6 +21,8 @@ Do not rename or remove these identifiers:
 - HACS name: `Dashboard Strategy`
 - dashboard picker metadata: `custom:dashboard-strategy`, title `Dashboard Strategy`, icon `mdi:view-dashboard`
 
+`dashboard-strategy-editable-card` is reserved but currently unused: its implementation was removed in 1.41.1 because nothing imported it, so it was never part of the bundle.
+
 Backwards-compatible YAML aliases are normalized at the entry point. Keep `show_camera_view` as an alias for `show_cctv_view` and `show_maintenance_summary` as an alias for `show_maintenance_view`; explicit fork-native options win.
 
 Existing dashboards use:
