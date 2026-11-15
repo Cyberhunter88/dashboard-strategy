@@ -13,6 +13,8 @@ const stackMeta = new Map<StackKey, { icon: string; labelKey: string }>([
   ['media', { icon: 'mdi:speaker', labelKey: 'stacks.media' }],
   ['scenes', { icon: 'mdi:palette', labelKey: 'stacks.scenes' }],
   ['switches', { icon: 'mdi:toggle-switch', labelKey: 'stacks.switches' }],
+  ['helpers', { icon: 'mdi:tune-variant', labelKey: 'stacks.helpers' }],
+  ['sensors', { icon: 'mdi:motion-sensor', labelKey: 'stacks.sensors' }],
   ['misc', { icon: 'mdi:light-switch', labelKey: 'stacks.misc' }],
   ['room_pins', { icon: 'mdi:pin', labelKey: 'stacks.room_pins' }],
 ]);
@@ -31,7 +33,18 @@ export function presentStackKeys(
   if (has('media_player')) present.add('media');
   if (has('scenes') || has('automations') || has('scripts')) present.add('scenes');
   if (has('switches') && config.show_switches_section_in_rooms === true) present.add('switches');
-  if (has('vacuum') || (has('switches') && config.show_switches_section_in_rooms !== true)) present.add('misc');
+  if (has('helpers') && config.show_helpers_section_in_rooms === true) present.add('helpers');
+  if (has('binary_sensors') && config.show_sensors_section_in_rooms === true) present.add('sensors');
+  // The own vacuum block is also emitted under the 'misc' stack key.
+  if (
+    has('vacuum') ||
+    (has('switches') && config.show_switches_section_in_rooms !== true) ||
+    has('humidifier') ||
+    has('valve') ||
+    has('water_heater')
+  ) {
+    present.add('misc');
+  }
   if (has('energy')) present.add('energy');
   // Camera and pin availability cannot be inferred from this editor cache.
   if (config.show_cameras_in_rooms !== false) present.add('cameras');

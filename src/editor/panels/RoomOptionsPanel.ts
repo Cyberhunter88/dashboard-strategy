@@ -199,6 +199,12 @@ export function renderAreaEntities(
     { key: 'switches', label: localize('editor.domain_switches'), icon: 'mdi:light-switch' },
     { key: 'locks', label: localize('editor.domain_locks'), icon: 'mdi:lock' },
     { key: 'energy', label: localize('stacks.energy'), icon: 'mdi:lightning-bolt' },
+    ...(host._config.show_helpers_section_in_rooms === true
+      ? [{ key: 'helpers', label: localize('stacks.helpers'), icon: 'mdi:tune-variant' }]
+      : []),
+    ...(host._config.show_sensors_section_in_rooms === true
+      ? [{ key: 'binary_sensors', label: localize('stacks.sensors'), icon: 'mdi:motion-sensor' }]
+      : []),
   ];
 
   const hasEntities = domainGroups.some((g) => (groupedEntities[g.key]?.length ?? 0) > 0);

@@ -31,6 +31,7 @@ const HIDEABLE_HEADINGS: readonly HeadingKey[] = [
   'vacuums',
   'maintenance',
   'media',
+  'timers',
   'activity',
   'custom_cards',
   'custom_sections',

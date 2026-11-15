@@ -99,3 +99,49 @@ describe('getEditableAreaEntities', () => {
     expect(getEditableAreaEntities('office', hass, {}).map((entry) => entry.entity_id)).toEqual(['sensor.visible']);
   });
 });
+
+describe('createRoomEntities helper and sensor buckets', () => {
+  it('collects helpers and user-facing controls into the helpers bucket', () => {
+    const ids = [
+      'input_boolean.guest',
+      'input_number.target',
+      'timer.oven',
+      'counter.visits',
+      'select.mode',
+      'button.ring',
+      'siren.alarm',
+      'remote.tv',
+    ];
+    const hass = {
+      states: Object.fromEntries(ids.map((id) => [id, { attributes: {} }])),
+    } as unknown as HomeAssistant;
+
+    const result = createRoomEntities(
+      ids.map((entity_id) => ({ entity_id }) as EntityRegistryEntry),
+      hass,
+      []
+    );
+
+    expect(result.helpers).toEqual(ids);
+    expect(result.switches).toEqual([]);
+  });
+
+  it('collects only supported binary sensor classes and leaves doors/windows out', () => {
+    const hass = {
+      states: {
+        'binary_sensor.motion': { attributes: { device_class: 'motion' } },
+        'binary_sensor.leak': { attributes: { device_class: 'moisture' } },
+        'binary_sensor.door': { attributes: { device_class: 'door' } },
+        'binary_sensor.plain': { attributes: {} },
+      },
+    } as unknown as HomeAssistant;
+
+    const result = createRoomEntities(
+      Object.keys(hass.states).map((entity_id) => ({ entity_id }) as EntityRegistryEntry),
+      hass,
+      []
+    );
+
+    expect(result.binary_sensors).toEqual(['binary_sensor.motion', 'binary_sensor.leak']);
+  });
+});

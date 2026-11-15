@@ -11,7 +11,6 @@
     "climate": "Climate",
     "cctv": "CCTV",
     "maintenance": "Maintenance",
-    "cameras": "Cameras",
     "energy": "Energy"
   },
   "sections": {
@@ -37,6 +36,7 @@
     "maintenance": "Maintenance",
     "quick_actions": "Quick actions",
     "media": "Now playing",
+    "timers": "Active timers",
     "activity": "Recent activity"
   },
   "stacks": {
@@ -52,6 +52,8 @@
     "media": "Media",
     "scenes": "Scenes & Automations",
     "switches": "Switches & Outlets",
+    "helpers": "Helpers & controls",
+    "sensors": "Detectors & sensors",
     "misc": "Switches",
     "automations": "Automations",
     "scripts": "Scripts",
@@ -73,9 +75,6 @@
     "climate_active_one": "thermostat active",
     "climate_active_many": "thermostats active",
     "climate_off": "All thermostats off",
-    "maintenance_pending_one": "maintenance task open",
-    "maintenance_pending_many": "maintenance tasks open",
-    "maintenance_ok": "No maintenance due",
     "windows_open_one": "window open",
     "windows_open_many": "windows open",
     "windows_closed": "All windows closed"
@@ -119,7 +118,6 @@
     "smoke_gas_inactive": "Smoke & Gas Detectors - No Alarm",
     "activity": "Security activity",
     "extra_entities": "Additional security entities",
-    "other": "Other security entities",
     "motorized_windows_open": "Motorized Windows - Open",
     "motorized_windows_closed": "Motorized Windows - Closed",
     "water_leak_active": "Water Leak Sensors - Alarm",
@@ -155,19 +153,15 @@
     "lighting": "Lighting",
     "vacuums": "Vacuums",
     "switches": "Switches & Outlets",
-    "all_on": "All on",
-    "all_off": "All off",
     "locks": "Locks",
     "climate": "Climate",
     "covers": "Blinds & Curtains",
-    "curtains": "Curtains",
     "windows": "Windows, Doors & Gates",
     "media": "Media",
-    "scenes": "Scenes",
     "scenes_automations": "Scenes & Automations",
     "misc": "Switches",
-    "automations": "Automations",
-    "scripts": "Scripts",
+    "helpers": "Helpers & controls",
+    "sensors": "Detectors & sensors",
     "room_pins": "Room Pins",
     "start_camera_stream": "Start live stream",
     "stop_camera_stream": "Stop live stream"
@@ -374,6 +368,10 @@
     "show_vacuums_section_in_rooms_desc": "Shows vacuums and lawn mowers in their own section instead of Misc.",
     "show_switches_section_in_rooms": "Dedicated switches & outlets section",
     "show_switches_section_in_rooms_desc": "Shows switches and smart outlets in their own room section instead of Misc.",
+    "show_helpers_section_in_rooms": "Helpers & controls section",
+    "show_helpers_section_in_rooms_desc": "Shows helpers (input_boolean, input_number, input_select, timer, counter …) and user-facing select, number, button, siren and remote entities assigned to the room in their own section.",
+    "show_sensors_section_in_rooms": "Detectors & sensors section",
+    "show_sensors_section_in_rooms_desc": "Shows motion, presence, leak, smoke, gas and similar binary sensors as tiles with their last change. Room badges stay unchanged.",
     "camera_live_toggle": "Use camera live toggle",
     "camera_live_toggle_desc": "Uses the camera wrapper with a play/stop toggle. Without this option, native Home Assistant camera cards are shown.",
     "show_energy_in_rooms": "Show energy block in room views",
@@ -696,6 +694,7 @@
     "custom_sections": "Custom Sections",
     "quick_actions": "Quick actions",
     "media": "Now playing",
+    "timers": "Active timers",
     "activity": "Recent activity"
   },
   "cctv": {
@@ -717,9 +716,7 @@
     "events_vehicles": "Vehicles"
   },
   "pollen": {
-    "title": "Pollen count today",
-    "tomorrow": "tomorrow",
-    "none": "No significant pollen load today. 🌿"
+    "title": "Pollen"
   },
   "maintenance": {
     "unavailable": "Unavailable",

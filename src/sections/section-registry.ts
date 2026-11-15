@@ -75,6 +75,12 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     toggle: { flag: 'show_media_section', defaultOn: false },
   },
   {
+    key: 'timers',
+    icon: 'mdi:timer-outline',
+    labelKey: 'sections.timers',
+    toggle: { flag: 'show_timers_section', defaultOn: false },
+  },
+  {
     key: 'activity',
     icon: 'mdi:history',
     labelKey: 'sections.activity',

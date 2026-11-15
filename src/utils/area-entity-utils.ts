@@ -7,6 +7,38 @@ import { isBadgeCandidate, isEnergyBlockSensor } from './badge-utils';
 const UPS_DEVICE_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
 const UPS_ID_PATTERN = /load|runtime|time_left|input_voltage|status/;
 
+/** User-facing helper and control domains for the opt-in room helpers block. */
+export const ROOM_HELPER_DOMAINS: ReadonlySet<string> = new Set([
+  'input_boolean',
+  'input_number',
+  'input_select',
+  'input_button',
+  'input_datetime',
+  'input_text',
+  'timer',
+  'counter',
+  'select',
+  'number',
+  'button',
+  'siren',
+  'remote',
+]);
+
+/** Binary sensor classes for the opt-in room sensors block (doors/windows keep their badges). */
+export const ROOM_BINARY_SENSOR_CLASSES: ReadonlySet<string> = new Set([
+  'motion',
+  'occupancy',
+  'presence',
+  'moisture',
+  'smoke',
+  'gas',
+  'carbon_monoxide',
+  'vibration',
+  'tamper',
+  'safety',
+  'problem',
+]);
+
 export interface UpsEntityGroup {
   deviceId: string;
   batteryId: string;
@@ -116,6 +148,8 @@ export function createRoomEntities(
     valve: [],
     water_heater: [],
     switches: [],
+    helpers: [],
+    binary_sensors: [],
     locks: [],
     automations: [],
     scripts: [],
@@ -158,7 +192,10 @@ export function createRoomEntities(
       result.automations.push(entityId);
     } else if (domain === 'script' && options.includeScripts !== false) result.scripts.push(entityId);
     else if (domain === 'camera' && options.includeCameras !== false) result.cameras.push(entityId);
-    else if (isEnergyBlockSensor(domain, deviceClass)) {
+    else if (ROOM_HELPER_DOMAINS.has(domain)) result.helpers.push(entityId);
+    else if (domain === 'binary_sensor' && ROOM_BINARY_SENSOR_CLASSES.has(deviceClass || '')) {
+      result.binary_sensors.push(entityId);
+    } else if (isEnergyBlockSensor(domain, deviceClass)) {
       result.energy.push(entityId);
     }
   }

@@ -25,6 +25,7 @@ export type SectionKey =
   | 'maintenance'
   | 'quick_actions'
   | 'media'
+  | 'timers'
   | 'activity';
 
 export type HeadingKey =
@@ -46,6 +47,7 @@ export type HeadingKey =
   | 'maintenance'
   | 'quick_actions'
   | 'media'
+  | 'timers'
   | 'activity';
 
 export type LightsSortBy = 'last_changed' | 'name';
@@ -84,6 +86,7 @@ export type WeatherStartKey =
   | 'maintenance'
   | 'quick_actions'
   | 'media'
+  | 'timers'
   | 'activity'
   | 'areas'
   | 'custom_cards'
@@ -113,6 +116,7 @@ export const DEFAULT_WEATHER_START_ORDER: WeatherStartKey[] = [
   'vacuums',
   'maintenance',
   'media',
+  'timers',
   'activity',
   'custom_cards',
   'custom_sections',
@@ -195,6 +199,8 @@ export type StackKey =
   | 'media'
   | 'scenes'
   | 'switches'
+  | 'helpers'
+  | 'sensors'
   | 'misc'
   | 'automations'
   | 'scripts'
@@ -212,6 +218,8 @@ export const DEFAULT_STACKS_ORDER: StackKey[] = [
   'media',
   'scenes',
   'switches',
+  'helpers',
+  'sensors',
   'misc',
   'room_pins',
 ];
@@ -284,6 +292,8 @@ export interface Simon42StrategyConfig {
   show_scripts_in_rooms?: boolean; // default: false
   show_vacuums_section_in_rooms?: boolean; // default: false
   show_switches_section_in_rooms?: boolean; // default: false
+  show_helpers_section_in_rooms?: boolean; // default: false; helpers and user-facing controls block
+  show_sensors_section_in_rooms?: boolean; // default: false; motion/presence/leak/smoke tiles
   show_ups_in_rooms?: boolean; // default: true (Opt-out, anders als die übrigen show_*_in_rooms)
   hide_grouped_climate_members?: boolean; // default: true — hide thermostats controlled by Better Thermostat or climate groups
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
@@ -311,6 +321,7 @@ export interface Simon42StrategyConfig {
   show_vacuums_section?: boolean; // default: false
   show_maintenance_section?: boolean; // default: false
   show_media_section?: boolean; // default: false; active media players
+  show_timers_section?: boolean; // default: false; running or paused timers
   show_activity_section?: boolean; // default: false; recent motion/door/window activity (needs logbook)
   quick_action_entities?: string[]; // scenes, scripts, buttons and other one-tap entities
   show_maintenance_view?: boolean; // default: auto when maintenance data exists
@@ -552,6 +563,8 @@ export interface RoomEntities {
   valve: string[];
   water_heater: string[];
   switches: string[];
+  helpers: string[];
+  binary_sensors: string[];
   locks: string[];
   automations: string[];
   scripts: string[];

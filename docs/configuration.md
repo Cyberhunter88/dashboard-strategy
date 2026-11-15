@@ -193,6 +193,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_vacuums_section` | boolean | `false` | Staubsauger-Section auf der Übersicht |
 | `show_maintenance_section` | boolean | `false` | Wartungs-Section auf der Übersicht |
 | `show_media_section` | boolean | `false` | Media-Section mit allen aktiven Playern (Wiedergabe, Pause, Pufferung); blendet sich live aus, wenn nichts läuft |
+| `show_timers_section` | boolean | `false` | Timer-Section mit allen laufenden oder pausierten `timer.*`-Entitäten; blendet sich live aus, wenn kein Timer läuft |
 | `show_activity_section` | boolean | `false` | Aktivitäts-Section mit den letzten Bewegungs-, Tür-, Fenster- und Schloss-Ereignissen (benötigt die Logbuch-Integration; Label `no_seclog` schließt Entitäten aus) |
 | `quick_action_entities` | string[] | `[]` | Schnellaktionen: Szenen, Skripte, Taster und Automationen laufen per Tipp, alle anderen Entitäten werden umgeschaltet |
 | `show_maintenance_view` | boolean | Auto | Eigene Wartungsansicht bei verwertbaren Wartungsdaten anzeigen; `false` deaktiviert sie |
@@ -221,6 +222,8 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `show_scripts_in_rooms` | boolean | `false` | Skripte in Raum-Views |
 | `show_vacuums_section_in_rooms` | boolean | `false` | Staubsauger und Rasenmäher in einem eigenen Raum-Abschnitt anzeigen |
 | `show_switches_section_in_rooms` | boolean | `false` | Schalter und smarte Steckdosen in einem eigenen Raum-Abschnitt anzeigen |
+| `show_helpers_section_in_rooms` | boolean | `false` | Dem Raum zugeordnete Helfer (`input_*`, `timer`, `counter`) und bedienbare `select`-, `number`-, `button`-, `siren`- und `remote`-Entitäten im Raum-Abschnitt „Helfer & Steuerung“ anzeigen |
+| `show_sensors_section_in_rooms` | boolean | `false` | Bewegungs-, Präsenz-, Wasser-, Rauch-, Gas- und ähnliche Binärsensoren im Raum-Abschnitt „Melder & Sensoren“ als Kacheln mit letzter Änderung anzeigen; Tür- und Fensterkontakte bleiben bei ihren Badges |
 | `camera_live_toggle` | boolean | `false` | Kamera-Wrapper mit Start/Stopp-Schalter statt nativer HA-Kamerakarten verwenden |
 | `show_cameras_in_rooms` | boolean | `true` | Kameras in Raum-Views ausblenden, ohne Security/CCTV zu beeinflussen |
 | `camera_renderer` | `"native"` \| `"webrtc"` | `"native"` | Renderer für Kameras in Raum-Views; `webrtc` benötigt `custom:webrtc-camera` |

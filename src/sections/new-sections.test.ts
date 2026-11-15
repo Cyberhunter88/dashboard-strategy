@@ -6,6 +6,7 @@ import { createActivitySection, MAX_ACTIVITY_ENTITIES } from './ActivitySection'
 import { createMediaSection } from './MediaSection';
 import { createSummaryCards } from './OverviewSection';
 import { createQuickActionsSection } from './QuickActionsSection';
+import { createTimersSection } from './TimersSection';
 
 beforeEach(() => Registry.resetForTesting());
 
@@ -56,6 +57,26 @@ describe('media section', () => {
       condition: 'state',
       entity: 'media_player.tv',
     });
+  });
+});
+
+describe('timers section', () => {
+  it('stays opt-in and shows timers only while active or paused', () => {
+    const hass = makeHass({ entities: [{ entity_id: 'timer.oven' }, { entity_id: 'timer.laundry' }] });
+    Registry.initialize(hass, {});
+    expect(createTimersSection(hass, false)).toBeNull();
+    const section = createTimersSection(hass, true);
+    const tiles = section?.cards?.filter((card) => card.type === 'tile') ?? [];
+    expect(tiles.map((card) => card.entity)).toEqual(['timer.oven', 'timer.laundry']);
+    expect(tiles[0].visibility?.[0]).toEqual({ condition: 'state', entity: 'timer.oven', state: ['active', 'paused'] });
+    expect(section?.visibility?.[0]).toMatchObject({ condition: 'or' });
+    expect(createTimersSection(hass, true, true)?.cards?.some((card) => card.type === 'heading')).toBe(false);
+  });
+
+  it('is absent without timers', () => {
+    const hass = makeHass({ entities: [{ entity_id: 'light.lamp' }] });
+    Registry.initialize(hass, {});
+    expect(createTimersSection(hass, true)).toBeNull();
   });
 });
 

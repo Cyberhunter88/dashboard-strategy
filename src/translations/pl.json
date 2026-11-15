@@ -11,7 +11,6 @@
     "climate": "Klimat",
     "cctv": "Kamery",
     "maintenance": "Konserwacja",
-    "cameras": "Kamery",
     "energy": "Energia"
   },
   "sections": {
@@ -37,6 +36,7 @@
     "maintenance": "Oczekujące aktualizacje",
     "quick_actions": "Szybkie akcje",
     "media": "Teraz odtwarzane",
+    "timers": "Aktywne timery",
     "activity": "Ostatnia aktywność"
   },
   "stacks": {
@@ -52,6 +52,8 @@
     "media": "Multimedia",
     "scenes": "Sceny",
     "switches": "Przełączniki i gniazdka",
+    "helpers": "Pomocnicy i sterowanie",
+    "sensors": "Czujniki",
     "misc": "Inne",
     "automations": "Automatyzacje",
     "scripts": "Skrypty",
@@ -73,9 +75,6 @@
     "climate_active_one": "aktywny termostat",
     "climate_active_many": "aktywne termostaty",
     "climate_off": "Wszystkie termostaty wyłączone",
-    "maintenance_pending_one": "otwarte zadanie konserwacyjne",
-    "maintenance_pending_many": "otwarte zadania konserwacyjne",
-    "maintenance_ok": "Brak wymaganych prac konserwacyjnych",
     "windows_open_one": "okno otwarte",
     "windows_open_many": "okna otwarte",
     "windows_closed": "Wszystkie okna zamknięte"
@@ -119,7 +118,6 @@
     "smoke_gas_inactive": "Czujniki dymu, gazu i temperatury — brak alarmu",
     "activity": "Aktywność",
     "extra_entities": "Inteligentne urządzenia i inne",
-    "other": "Inne encje bezpieczeństwa",
     "motorized_windows_open": "Okna z napędem — otwarte",
     "motorized_windows_closed": "Okna z napędem — zamknięte",
     "water_leak_active": "Czujniki zalania — alarm",
@@ -155,19 +153,15 @@
     "lighting": "Oświetlenie",
     "vacuums": "Odkurzacze i kosiarki",
     "switches": "Przełączniki i gniazdka",
-    "all_on": "Włącz wszystkie",
-    "all_off": "Wyłącz wszystkie",
     "locks": "Zamki",
     "climate": "Klimat",
     "covers": "Rolety i osłony",
-    "curtains": "Zasłony",
     "windows": "Okna, drzwi i bramy",
     "media": "Multimedia",
-    "scenes": "Sceny",
     "scenes_automations": "Sceny i automatyzacje",
     "misc": "Inne",
-    "automations": "Automatyzacje",
-    "scripts": "Skrypty",
+    "helpers": "Pomocnicy i sterowanie",
+    "sensors": "Czujniki",
     "room_pins": "Przypięte elementy",
     "start_camera_stream": "Uruchom transmisję na żywo",
     "stop_camera_stream": "Zatrzymaj transmisję na żywo"
@@ -374,6 +368,10 @@
     "show_vacuums_section_in_rooms_desc": "Pokazuje odkurzacze i kosiarki w widokach pomieszczeń pod osobnym nagłówkiem zamiast w sekcji „Inne”.",
     "show_switches_section_in_rooms": "Osobna sekcja dla przełączników i gniazdek",
     "show_switches_section_in_rooms_desc": "Pokazuje przełączniki i inteligentne gniazdka w widokach pomieszczeń pod osobnym nagłówkiem zamiast w sekcji „Inne”.",
+    "show_helpers_section_in_rooms": "Sekcja pomocników i sterowania",
+    "show_helpers_section_in_rooms_desc": "Pokazuje przypisanych do pomieszczenia pomocników (input_boolean, input_number, input_select, timer, counter …) oraz encje select, number, button, siren i remote we własnej sekcji.",
+    "show_sensors_section_in_rooms": "Sekcja czujników",
+    "show_sensors_section_in_rooms_desc": "Pokazuje czujniki binarne ruchu, obecności, zalania, dymu, gazu i podobne jako kafelki z ostatnią zmianą. Odznaki pomieszczenia pozostają bez zmian.",
     "camera_live_toggle": "Transmisja na żywo po naciśnięciu przycisku odtwarzania (nowa karta kamery)",
     "camera_live_toggle_desc": "Kamery w pomieszczeniach zaczynają od obrazu statycznego i uruchamiają transmisję dopiero po dotknięciu przycisku odtwarzania — oszczędza to pasmo, np. na tabletach ściennych. Domyślnie wyłączone: kamery zachowują się jak wcześniej (automatycznie odświeżany podgląd).",
     "show_energy_in_rooms": "Pokaż blok energii w widokach pomieszczeń",
@@ -696,6 +694,7 @@
     "custom_sections": "Własne sekcje",
     "quick_actions": "Szybkie akcje",
     "media": "Teraz odtwarzane",
+    "timers": "Aktywne timery",
     "activity": "Ostatnia aktywność"
   },
   "cctv": {
@@ -717,9 +716,7 @@
     "events_vehicles": "Pojazdy"
   },
   "pollen": {
-    "title": "Dzisiejsze stężenie pyłków",
-    "tomorrow": "jutro",
-    "none": "Dziś brak istotnego stężenia pyłków. 🌿"
+    "title": "Pyłki"
   },
   "maintenance": {
     "unavailable": "Niedostępne",

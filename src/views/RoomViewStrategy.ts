@@ -17,6 +17,8 @@ import type {
   StackKey,
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
+  GroupOptions,
+  Simon42StrategyConfig,
 } from '../types/strategy';
 import { stripAreaName, sortLights, mergeStacksOrder } from '../utils/name-utils';
 import { Registry } from '../Registry';
@@ -256,14 +258,21 @@ function buildAreaCustomCardSection(
   return sections;
 }
 
+interface RoomViewStrategyConfig {
+  area: AreaRegistryEntry;
+  dashboardConfig?: Simon42StrategyConfig;
+  groups_options?: Record<string, GroupOptions>;
+  custom_cards?: AreaCustomCard[];
+}
+
 class Simon42ViewRoomStrategy extends HTMLElement {
-  static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
+  static async generate(config: RoomViewStrategyConfig, hass: HomeAssistant): Promise<LovelaceViewConfig> {
     const area: AreaRegistryEntry = config.area;
     debugLog(`room-generate-${area.area_id}: called at ${performance.now().toFixed(1)}ms after page load`);
     timeStart(`room-generate-${area.area_id}`);
-    const dashboardConfig = config.dashboardConfig || {};
+    const dashboardConfig: Simon42StrategyConfig = config.dashboardConfig || {};
 
-    const groupsOptions: Record<string, any> = config.groups_options || {};
+    const groupsOptions: Record<string, GroupOptions> = config.groups_options || {};
     const customCards: AreaCustomCard[] = config.custom_cards || [];
 
     const sensorEntities: SensorEntities = {
@@ -389,12 +398,14 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       const groupOpts = groupsOptions[groupKey];
       if (!groupOpts) return roomEntities[groupKey];
       let filtered = roomEntities[groupKey];
-      if (groupOpts.hidden?.length > 0) {
-        const hiddenSet = new Set<string>(groupOpts.hidden);
+      const hidden = groupOpts.hidden ?? [];
+      if (hidden.length > 0) {
+        const hiddenSet = new Set<string>(hidden);
         filtered = filtered.filter((e: string) => !hiddenSet.has(e));
       }
-      if (groupOpts.order?.length > 0) {
-        const orderMap = new Map<string, number>(groupOpts.order.map((id: string, i: number) => [id, i]));
+      const order = groupOpts.order ?? [];
+      if (order.length > 0) {
+        const orderMap = new Map<string, number>(order.map((id: string, i: number) => [id, i]));
         filtered.sort((a: string, b: string) => (orderMap.get(a) ?? 9999) - (orderMap.get(b) ?? 9999));
       }
       return filtered;
@@ -643,7 +654,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
               !Registry.isEntityExcluded(id)
           );
 
-          const glanceEntities: any[] = [];
+          const glanceEntities: Array<{ entity: string }> = [];
           if (isReolink) {
             if (spotlight) glanceEntities.push({ entity: spotlight });
             if (motion) glanceEntities.push({ entity: motion });
@@ -893,6 +904,45 @@ class Simon42ViewRoomStrategy extends HTMLElement {
         cards: [
           { type: 'heading', heading: localize('room.switches'), heading_style: 'title', icon: 'mdi:toggle-switch' },
           ...switchCards,
+        ],
+      });
+    }
+
+    // Helpers and user-facing controls (input_*, timer, counter, select,
+    // number, button, siren, remote) are opt-in so existing rooms stay unchanged.
+    if (dashboardConfig.show_helpers_section_in_rooms === true && roomEntities.helpers.length > 0) {
+      pushStack('helpers', {
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('room.helpers'), heading_style: 'title', icon: 'mdi:tune-variant' },
+          ...roomEntities.helpers.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              name: stripAreaName(e, area, hass),
+              vertical: false,
+            })
+          ),
+        ],
+      });
+    }
+
+    // Motion, presence, leak, smoke and similar binary sensors as tiles.
+    // Badges are unaffected; doors and windows keep their own badge options.
+    if (dashboardConfig.show_sensors_section_in_rooms === true && roomEntities.binary_sensors.length > 0) {
+      const sensorIds = [...roomEntities.binary_sensors].sort(
+        (a, b) =>
+          new Date(hass.states[b]?.last_changed ?? 0).getTime() - new Date(hass.states[a]?.last_changed ?? 0).getTime()
+      );
+      pushStack('sensors', {
+        type: 'grid',
+        cards: [
+          { type: 'heading', heading: localize('room.sensors'), heading_style: 'title', icon: 'mdi:motion-sensor' },
+          ...sensorIds.map((e) =>
+            buildAdaptiveTileCardConfig(hass, e, {
+              name: stripAreaName(e, area, hass),
+              vertical: false,
+              state_content: ['state', 'last_changed'],
+            })
+          ),
         ],
       });
     }

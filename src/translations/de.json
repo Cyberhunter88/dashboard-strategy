@@ -11,7 +11,6 @@
     "climate": "Klima",
     "cctv": "CCTV",
     "maintenance": "Wartung",
-    "cameras": "Kameras",
     "energy": "Energie"
   },
   "sections": {
@@ -37,6 +36,7 @@
     "maintenance": "Wartung",
     "quick_actions": "Schnellaktionen",
     "media": "Aktuelle Wiedergabe",
+    "timers": "Aktive Timer",
     "activity": "Zuletzt aktiv"
   },
   "stacks": {
@@ -52,6 +52,8 @@
     "media": "Medien",
     "scenes": "Szenen & Automationen",
     "switches": "Schalter & Steckdosen",
+    "helpers": "Helfer & Steuerung",
+    "sensors": "Melder & Sensoren",
     "misc": "Schalter",
     "automations": "Automationen",
     "scripts": "Skripte",
@@ -73,9 +75,6 @@
     "climate_active_one": "Thermostat aktiv",
     "climate_active_many": "Thermostate aktiv",
     "climate_off": "Alle Thermostate aus",
-    "maintenance_pending_one": "Wartungspunkt offen",
-    "maintenance_pending_many": "Wartungspunkte offen",
-    "maintenance_ok": "Keine Wartung fällig",
     "windows_open_one": "Fenster offen",
     "windows_open_many": "Fenster offen",
     "windows_closed": "Alle Fenster geschlossen"
@@ -119,7 +118,6 @@
     "smoke_gas_inactive": "Rauch- & Gasmelder - Kein Alarm",
     "activity": "Sicherheitsaktivität",
     "extra_entities": "Zusätzliche Sicherheitsentitäten",
-    "other": "Weitere Sicherheitsentitäten",
     "motorized_windows_open": "Motorisierte Fenster - Offen",
     "motorized_windows_closed": "Motorisierte Fenster - Geschlossen",
     "water_leak_active": "Wassersensoren - Alarm",
@@ -155,19 +153,15 @@
     "lighting": "Beleuchtung",
     "vacuums": "Staubsauger",
     "switches": "Schalter & Steckdosen",
-    "all_on": "Alle ein",
-    "all_off": "Alle aus",
     "locks": "Schlösser",
     "climate": "Klima",
     "covers": "Rollos & Vorhänge",
-    "curtains": "Vorhänge",
     "windows": "Fenster, Türen & Tore",
     "media": "Medien",
-    "scenes": "Szenen",
     "scenes_automations": "Szenen & Automationen",
     "misc": "Schalter",
-    "automations": "Automationen",
-    "scripts": "Skripte",
+    "helpers": "Helfer & Steuerung",
+    "sensors": "Melder & Sensoren",
     "room_pins": "Raum-Pins",
     "start_camera_stream": "Live-Stream starten",
     "stop_camera_stream": "Live-Stream stoppen"
@@ -374,6 +368,10 @@
     "show_vacuums_section_in_rooms_desc": "Zeigt Staubsauger und Rasenmäher in einem eigenen Abschnitt statt unter Sonstiges.",
     "show_switches_section_in_rooms": "Schalter & Steckdosen als eigenen Abschnitt",
     "show_switches_section_in_rooms_desc": "Zeigt Schalter und smarte Steckdosen in den Raum-Ansichten unter einer eigenen Überschrift statt unter Sonstiges.",
+    "show_helpers_section_in_rooms": "Bereich Helfer & Steuerung",
+    "show_helpers_section_in_rooms_desc": "Zeigt dem Raum zugeordnete Helfer (input_boolean, input_number, input_select, timer, counter …) sowie bedienbare select-, number-, button-, siren- und remote-Entitäten in einem eigenen Bereich.",
+    "show_sensors_section_in_rooms": "Bereich Melder & Sensoren",
+    "show_sensors_section_in_rooms_desc": "Zeigt Bewegungs-, Präsenz-, Wasser-, Rauch-, Gas- und ähnliche Binärsensoren als Kacheln mit letzter Änderung. Die Raum-Badges bleiben unverändert.",
     "camera_live_toggle": "Kamera-Live-Schalter verwenden",
     "camera_live_toggle_desc": "Verwendet die Kamera-Hülle mit Start/Stopp-Schalter. Ohne diese Option werden native Home-Assistant-Kamerakarten angezeigt.",
     "show_energy_in_rooms": "Energie-Block in Raum-Ansichten anzeigen",
@@ -696,6 +694,7 @@
     "custom_sections": "Eigene Abschnitte",
     "quick_actions": "Schnellaktionen",
     "media": "Aktuelle Wiedergabe",
+    "timers": "Aktive Timer",
     "activity": "Zuletzt aktiv"
   },
   "cctv": {
@@ -717,9 +716,7 @@
     "events_vehicles": "Fahrzeuge"
   },
   "pollen": {
-    "title": "Pollenflug heute",
-    "tomorrow": "morgen",
-    "none": "Keine nennenswerte Belastung heute. 🌿"
+    "title": "Pollen"
   },
   "maintenance": {
     "unavailable": "Nicht verfügbar",
