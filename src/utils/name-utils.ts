@@ -243,13 +243,13 @@ export function normalizeAreasDisplay(
  * Comparator that sorts entity IDs by last_changed timestamp,
  * most recently changed first.
  */
-export function sortByLastChanged(a: string, b: string, hass: HomeAssistant): number {
+function sortByLastChanged(a: string, b: string, hass: HomeAssistant): number {
   const lastA = hass.states[a]?.last_changed ?? '';
   const lastB = hass.states[b]?.last_changed ?? '';
   return lastB > lastA ? 1 : lastB < lastA ? -1 : 0;
 }
 
-export function sortByName(
+function sortByName(
   a: string,
   b: string,
   hass: HomeAssistant,

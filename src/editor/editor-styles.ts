@@ -1,7 +1,7 @@
 import { css } from 'lit';
 
 /** Shared responsive styles for editor panels; the complete host stylesheet follows below. */
-export const extractedPanelStyles = css`
+const extractedPanelStyles = css`
   :host {
     display: block;
   }

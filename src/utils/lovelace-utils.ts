@@ -23,7 +23,7 @@ export function createHeadingCard(heading: string, options: HeadingCardOptions =
   };
 }
 
-export function createGridSection(cards: LovelaceCardConfig[]): LovelaceSectionConfig | null {
+function createGridSection(cards: LovelaceCardConfig[]): LovelaceSectionConfig | null {
   return cards.length > 0 ? { type: 'grid', cards } : null;
 }
 

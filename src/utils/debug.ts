@@ -11,7 +11,7 @@ const recentMeasures: Array<{ name: string; startTime: number; duration: number 
 /** Check if debug mode is active (cached after first check) */
 let _debugActive: boolean | null = null;
 
-export function isDebugActive(): boolean {
+function isDebugActive(): boolean {
   if (_debugActive !== null) return _debugActive;
   try {
     _debugActive = new URLSearchParams(window.location.search).has(DEBUG_PARAM);

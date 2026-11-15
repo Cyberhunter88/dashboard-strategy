@@ -35,7 +35,7 @@ export const BADGE_COLOR_MAP: Record<string, string> = {
 // -- Badge color for a specific entity --------------------------------
 
 /** Get badge color for an entity based on its device_class, with unit fallbacks */
-export function getColorForEntity(entityId: string, hass: HomeAssistant): string {
+function getColorForEntity(entityId: string, hass: HomeAssistant): string {
   const state = hass.states[entityId];
   if (!state) return 'grey';
   const dc = state.attributes?.device_class as string | undefined;

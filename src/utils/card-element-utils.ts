@@ -10,7 +10,7 @@ export interface LovelaceCardElement extends HTMLElement {
   setConfig(config: Record<string, unknown>): void;
 }
 
-export function createHuiCardElement(tagName: string): LovelaceCardElement {
+function createHuiCardElement(tagName: string): LovelaceCardElement {
   trackOperation(`create-${tagName}`);
   return document.createElement(tagName) as LovelaceCardElement;
 }
