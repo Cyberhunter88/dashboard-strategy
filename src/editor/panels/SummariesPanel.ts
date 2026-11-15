@@ -11,10 +11,7 @@ import { DEFAULT_CO2_THRESHOLD, DEFAULT_HUMIDITY_THRESHOLD } from '../../views/C
 import { parseEntityList, toggleRow, type OptionPanelHost } from './option-panel-host';
 
 type NumberOptionKey =
-  | 'battery_critical_threshold'
-  | 'battery_low_threshold'
-  | 'climate_humidity_threshold'
-  | 'climate_co2_threshold';
+  'battery_critical_threshold' | 'battery_low_threshold' | 'climate_humidity_threshold' | 'climate_co2_threshold';
 
 interface NumberRowOptions {
   id: string;
@@ -155,26 +152,28 @@ export function renderSummaryDetailsSection(host: OptionPanelHost): TemplateResu
       <div class="subsection-title">${localize('editor.climate_options')}</div>
       ${config.show_climate_summary === true ? nothing : toggleRow(host, 'show_climate_view')}
       ${toggleRow(host, 'show_climate_air_quality')}
-      ${config.show_climate_air_quality === true
-        ? html`
-            ${numberRow(host, 'climate_humidity_threshold', {
-              id: 'climate-humidity-threshold',
-              label: localize('editor.climate_humidity_threshold'),
-              defaultValue: DEFAULT_HUMIDITY_THRESHOLD,
-              min: 1,
-              max: 100,
-              unit: '%',
-            })}
-            ${numberRow(host, 'climate_co2_threshold', {
-              id: 'climate-co2-threshold',
-              label: localize('editor.climate_co2_threshold'),
-              defaultValue: DEFAULT_CO2_THRESHOLD,
-              min: 400,
-              max: 5000,
-              unit: 'ppm',
-            })}
-          `
-        : nothing}
+      ${
+        config.show_climate_air_quality === true
+          ? html`
+              ${numberRow(host, 'climate_humidity_threshold', {
+                id: 'climate-humidity-threshold',
+                label: localize('editor.climate_humidity_threshold'),
+                defaultValue: DEFAULT_HUMIDITY_THRESHOLD,
+                min: 1,
+                max: 100,
+                unit: '%',
+              })}
+              ${numberRow(host, 'climate_co2_threshold', {
+                id: 'climate-co2-threshold',
+                label: localize('editor.climate_co2_threshold'),
+                defaultValue: DEFAULT_CO2_THRESHOLD,
+                min: 400,
+                max: 5000,
+                unit: 'ppm',
+              })}
+            `
+          : nothing
+      }
 
       <div class="subsection-title">${localize('editor.battery_options')}</div>
       ${toggleRow(host, 'hide_mobile_app_batteries')} ${toggleRow(host, 'hide_battery_notes_entities')}

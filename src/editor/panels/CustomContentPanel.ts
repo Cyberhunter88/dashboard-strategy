@@ -63,13 +63,15 @@ export function renderCustomContentPanel(host: CustomContentPanelHost): Template
       <div class="description" style="margin-left: 0; margin-bottom: 12px;">
         ${localize('editor.section_custom_content_desc')}
       </div>
-      ${isWeatherStart
-        ? html`
-            <div class="empty-state" style="margin-bottom: 12px;">
-              ${localize('editor.custom_content_weather_start_hint')}
-            </div>
-          `
-        : nothing}
+      ${
+        isWeatherStart
+          ? html`
+              <div class="empty-state" style="margin-bottom: 12px;">
+                ${localize('editor.custom_content_weather_start_hint')}
+              </div>
+            `
+          : nothing
+      }
       <div class="custom-content-grid">
         ${isWeatherStart ? nothing : renderCustomCardsSection(host, true)}
         ${isWeatherStart ? nothing : renderCustomSectionsSection(host, true)} ${renderCustomBadgesSection(host, true)}
@@ -118,9 +120,11 @@ export function renderCustomCardsSection(host: CustomContentPanelHost, nested = 
       <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_cards_desc')}</div>
 
       <div id="custom-cards-list">
-        ${customCards.length === 0
-          ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
-          : customCards.map((card, index) => renderCustomCardItem(host, card, index))}
+        ${
+          customCards.length === 0
+            ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
+            : customCards.map((card, index) => renderCustomCardItem(host, card, index))
+        }
       </div>
 
       <button class="btn-primary" style="margin-top: 8px;" @click=${() => host._openCardPickerForCustomCard()}>
@@ -140,9 +144,11 @@ export function renderCustomSectionsSection(host: CustomContentPanelHost, nested
       <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_sections_help')}</div>
 
       <div id="custom-sections-list">
-        ${customSections.length === 0
-          ? html`<div class="empty-state">${localize('editor.no_custom_sections')}</div>`
-          : customSections.map((section, sectionIndex) => renderCustomSectionItem(host, section, sectionIndex))}
+        ${
+          customSections.length === 0
+            ? html`<div class="empty-state">${localize('editor.no_custom_sections')}</div>`
+            : customSections.map((section, sectionIndex) => renderCustomSectionItem(host, section, sectionIndex))
+        }
       </div>
 
       <button class="btn-primary" style="margin-top: 8px;" @click=${() => host._addCustomSection()}>
@@ -170,9 +176,11 @@ export function renderCustomBadgesSection(host: CustomContentPanelHost, nested =
       </div>
 
       <div id="custom-badges-list">
-        ${customBadges.length === 0
-          ? html`<div class="empty-state">${localize('editor.no_custom_badges')}</div>`
-          : customBadges.map((badge, index) => renderCustomBadgeItem(host, badge, index))}
+        ${
+          customBadges.length === 0
+            ? html`<div class="empty-state">${localize('editor.no_custom_badges')}</div>`
+            : customBadges.map((badge, index) => renderCustomBadgeItem(host, badge, index))
+        }
       </div>
 
       <button class="btn-primary" style="margin-top: 8px;" @click=${() => host._addCustomBadge()}>

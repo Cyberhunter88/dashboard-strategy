@@ -90,17 +90,19 @@ export function renderCardEditor(host: PanelHost): TemplateResult {
         </div>
         <div class="card-editor-content">
           <div class="card-editor-visual-host"></div>
-          ${!host._cardPickerHasVisualEditor
-            ? html`
-                <div class="card-editor-yaml-label">YAML-Konfiguration:</div>
-                <textarea
-                  class="card-editor-yaml-area"
-                  .value=${host._cardPickerYaml}
-                  @input=${host._cardPickerYamlChanged}
-                  spellcheck="false"
-                ></textarea>
-              `
-            : nothing}
+          ${
+            !host._cardPickerHasVisualEditor
+              ? html`
+                  <div class="card-editor-yaml-label">YAML-Konfiguration:</div>
+                  <textarea
+                    class="card-editor-yaml-area"
+                    .value=${host._cardPickerYaml}
+                    @input=${host._cardPickerYamlChanged}
+                    spellcheck="false"
+                  ></textarea>
+                `
+              : nothing
+          }
         </div>
         <div class="card-picker-footer">
           <button class="btn-secondary" @click=${host._closeCardPicker}>Abbrechen</button>

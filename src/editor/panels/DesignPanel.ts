@@ -33,46 +33,50 @@ export function renderDesignSection(host: StrategyEditorHost): TemplateResult {
       </select>
     </div>
     <div class="form-row" style="display: block;">
-      ${customElements.get('ha-form')
-        ? html`<ha-form
-            .hass=${host._hass}
-            .data=${{ image: backgroundImage }}
-            .schema=${BG_IMAGE_FORM_SCHEMA}
-            .computeLabel=${() => localize('editor.background_image')}
-            @value-changed=${(event: CustomEvent<{ value: { image?: string | MediaSelectorValue } }>) =>
-              backgroundImageChanged(host, event.detail.value.image)}
-          ></ha-form>`
-        : html`<label>${localize('editor.background_image')}</label>
-            <input
-              type="text"
-              .value=${typeof backgroundImage === 'string' ? backgroundImage : ''}
-              placeholder="/local/background.jpg"
-              @change=${(event: Event) => backgroundImageChanged(host, (event.target as HTMLInputElement).value.trim())}
-            />`}
+      ${
+        customElements.get('ha-form')
+          ? html`<ha-form
+              .hass=${host._hass}
+              .data=${{ image: backgroundImage }}
+              .schema=${BG_IMAGE_FORM_SCHEMA}
+              .computeLabel=${() => localize('editor.background_image')}
+              @value-changed=${(event: CustomEvent<{ value: { image?: string | MediaSelectorValue } }>) =>
+                backgroundImageChanged(host, event.detail.value.image)}
+            ></ha-form>`
+          : html`<label>${localize('editor.background_image')}</label>
+              <input
+                type="text"
+                .value=${typeof backgroundImage === 'string' ? backgroundImage : ''}
+                placeholder="/local/background.jpg"
+                @change=${(event: Event) => backgroundImageChanged(host, (event.target as HTMLInputElement).value.trim())}
+              />`
+      }
       <div class="description">${localize('editor.background_image_desc')}</div>
     </div>
-    ${backgroundImage
-      ? html`<div class="form-row">
-            <label style="margin-right: 8px; min-width: 120px;">${localize('editor.background_opacity')}</label>
-            <input
-              type="range"
-              min="10"
-              max="100"
-              step="5"
-              style="flex: 1;"
-              .value=${String(opacity)}
-              @change=${(event: Event) =>
-                backgroundOptionChanged(host, 'opacity', Number((event.target as HTMLInputElement).value))}
-            />
-            <span>${opacity}%</span>
-          </div>
-          ${host._renderCheckbox(
-            'dashboard-background-fixed',
-            localize('editor.background_fixed'),
-            background.attachment === 'fixed',
-            (checked) => backgroundOptionChanged(host, 'attachment', checked ? 'fixed' : undefined)
-          )}`
-      : nothing}
+    ${
+      backgroundImage
+        ? html`<div class="form-row">
+              <label style="margin-right: 8px; min-width: 120px;">${localize('editor.background_opacity')}</label>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+                style="flex: 1;"
+                .value=${String(opacity)}
+                @change=${(event: Event) =>
+                  backgroundOptionChanged(host, 'opacity', Number((event.target as HTMLInputElement).value))}
+              />
+              <span>${opacity}%</span>
+            </div>
+            ${host._renderCheckbox(
+              'dashboard-background-fixed',
+              localize('editor.background_fixed'),
+              background.attachment === 'fixed',
+              (checked) => backgroundOptionChanged(host, 'attachment', checked ? 'fixed' : undefined)
+            )}`
+        : nothing
+    }
   `;
 }
 

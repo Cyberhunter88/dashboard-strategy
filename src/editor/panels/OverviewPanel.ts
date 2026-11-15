@@ -238,26 +238,30 @@ export function renderOverviewDetailsSection(host: OptionPanelHost): TemplateRes
 
       ${toggleRow(host, 'show_search_card', { description: false, disabled: !searchCardAvailable })}
       <div class="description">
-        ${searchCardAvailable
-          ? localize('editor.show_search_card_desc')
-          : html`<span>&#x26A0;&#xFE0F; ${unsafeHTML(localize('editor.show_search_card_missing'))}</span>`}
+        ${
+          searchCardAvailable
+            ? localize('editor.show_search_card_desc')
+            : html`<span>&#x26A0;&#xFE0F; ${unsafeHTML(localize('editor.show_search_card_missing'))}</span>`
+        }
       </div>
-      ${showSearchCard
-        ? selectRow(
-            'search-card-variant',
-            localize('editor.search_card_variant'),
-            tipVariant ? 'tip' : 'custom',
-            [
-              { value: 'custom', label: localize('editor.search_card_variant_custom') },
-              { value: 'tip', label: localize('editor.search_card_variant_tip') },
-            ],
-            (value) =>
-              host.update((next) => {
-                if (value === 'tip') next.search_card_variant = 'tip';
-                else delete next.search_card_variant;
-              })
-          )
-        : nothing}
+      ${
+        showSearchCard
+          ? selectRow(
+              'search-card-variant',
+              localize('editor.search_card_variant'),
+              tipVariant ? 'tip' : 'custom',
+              [
+                { value: 'custom', label: localize('editor.search_card_variant_custom') },
+                { value: 'tip', label: localize('editor.search_card_variant_tip') },
+              ],
+              (value) =>
+                host.update((next) => {
+                  if (value === 'tip') next.search_card_variant = 'tip';
+                  else delete next.search_card_variant;
+                })
+            )
+          : nothing
+      }
     </div>
   `;
 }
@@ -312,9 +316,11 @@ export function renderOverviewSectionsPanel(host: OptionPanelHost): TemplateResu
       })}
       <div class="description description-intro">${localize('editor.overview_sections_hint')}</div>
 
-      ${host.config.show_agenda_section === true
-        ? entityListField(host, 'agenda_calendar_entities', 'calendar.')
-        : nothing}
+      ${
+        host.config.show_agenda_section === true
+          ? entityListField(host, 'agenda_calendar_entities', 'calendar.')
+          : nothing
+      }
       ${host.config.show_todos_section === true ? entityListField(host, 'todos_entities', 'todo.') : nothing}
 
       <div class="subsection-title">${localize('editor.hidden_section_headings')}</div>

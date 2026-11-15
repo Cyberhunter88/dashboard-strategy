@@ -80,72 +80,76 @@ export function renderWeatherStartCustomSectionEditor(
       />
     </div>
     <div class="description" style="margin: 0 0 8px 0;">${localize('editor.weather_start_section_cards_desc')}</div>
-    ${cards.length === 0
-      ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
-      : cards.map((card, cardIndex) => {
-          const validationMsg = card._yaml_error
-            ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
-            : card.yaml
-              ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
-              : nothing;
-          return html`
-            <div class="custom-item" style="margin-bottom: 8px;">
-              <div class="custom-item-header">
-                <strong
-                  >${host._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong
-                >
-                <button class="btn-remove" @click=${() => host._removeCardFromSection(sectionIndex, cardIndex)}>
-                  &#x2715;
-                </button>
+    ${
+      cards.length === 0
+        ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
+        : cards.map((card, cardIndex) => {
+            const validationMsg = card._yaml_error
+              ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
+              : card.yaml
+                ? html`<span style="color: var(--success-color, green);"
+                    >&#x2705; ${localize('editor.yaml_valid')}</span
+                  >`
+                : nothing;
+            return html`
+              <div class="custom-item" style="margin-bottom: 8px;">
+                <div class="custom-item-header">
+                  <strong
+                    >${host._getCustomCardEditorLabel(card, `${localize('editor.new_card')} ${cardIndex + 1}`)}</strong
+                  >
+                  <button class="btn-remove" @click=${() => host._removeCardFromSection(sectionIndex, cardIndex)}>
+                    &#x2715;
+                  </button>
+                </div>
+                <div class="custom-item-fields">
+                  <label>${localize('editor.card_editor_title_label')}</label>
+                  <input
+                    type="text"
+                    .value=${card.editor_title || ''}
+                    placeholder=${localize('editor.card_editor_title_placeholder')}
+                    @change=${(e: Event) =>
+                      host._updateSectionCardField(
+                        sectionIndex,
+                        cardIndex,
+                        'editor_title',
+                        (e.target as HTMLInputElement).value
+                      )}
+                  />
+                  <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
+                  <label>${localize('editor.card_dashboard_title_label')}</label>
+                  <input
+                    type="text"
+                    .value=${card.title || ''}
+                    placeholder=${localize('editor.card_title_placeholder')}
+                    @change=${(e: Event) =>
+                      host._updateSectionCardField(
+                        sectionIndex,
+                        cardIndex,
+                        'title',
+                        (e.target as HTMLInputElement).value
+                      )}
+                  />
+                  <textarea
+                    rows="5"
+                    placeholder=${localize('editor.yaml_placeholder')}
+                    .value=${card.yaml || ''}
+                    style="width: 100%;"
+                    @change=${(e: Event) =>
+                      host._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}
+                  ></textarea>
+                  <button
+                    class="btn-primary"
+                    style="margin-top: 6px;"
+                    @click=${() => host._openCardEditorForSectionCard(sectionIndex, cardIndex)}
+                  >
+                    ${localize('editor.edit_card_with_ha_editor')}
+                  </button>
+                  <div class="custom-item-validation">${validationMsg}</div>
+                </div>
               </div>
-              <div class="custom-item-fields">
-                <label>${localize('editor.card_editor_title_label')}</label>
-                <input
-                  type="text"
-                  .value=${card.editor_title || ''}
-                  placeholder=${localize('editor.card_editor_title_placeholder')}
-                  @change=${(e: Event) =>
-                    host._updateSectionCardField(
-                      sectionIndex,
-                      cardIndex,
-                      'editor_title',
-                      (e.target as HTMLInputElement).value
-                    )}
-                />
-                <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
-                <label>${localize('editor.card_dashboard_title_label')}</label>
-                <input
-                  type="text"
-                  .value=${card.title || ''}
-                  placeholder=${localize('editor.card_title_placeholder')}
-                  @change=${(e: Event) =>
-                    host._updateSectionCardField(
-                      sectionIndex,
-                      cardIndex,
-                      'title',
-                      (e.target as HTMLInputElement).value
-                    )}
-                />
-                <textarea
-                  rows="5"
-                  placeholder=${localize('editor.yaml_placeholder')}
-                  .value=${card.yaml || ''}
-                  style="width: 100%;"
-                  @change=${(e: Event) =>
-                    host._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}
-                ></textarea>
-                <button
-                  class="btn-primary"
-                  style="margin-top: 6px;"
-                  @click=${() => host._openCardEditorForSectionCard(sectionIndex, cardIndex)}
-                >
-                  ${localize('editor.edit_card_with_ha_editor')}
-                </button>
-                <div class="custom-item-validation">${validationMsg}</div>
-              </div>
-            </div>
-          `;
-        })}
+            `;
+          })
+    }
     <button class="btn-primary" style="margin-top: 4px;" @click=${() => host._openCardPickerForSection(sectionIndex)}>
       ${localize('editor.add_card_to_section')}
     </button>

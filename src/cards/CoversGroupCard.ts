@@ -426,15 +426,17 @@ class Simon42CoversGroupCard extends LitElement {
             return html`
               <div class="floor-section">
                 <div id=${`floor-heading-${floorKey}`}></div>
-                ${this._config.group_by_areas
-                  ? areaGroups.map((areaGroup) => {
-                      const areaKey = this._areaSlotKey(areaGroup.areaId, group.floorId);
-                      return html`<div class="area-section">
-                        <div id=${`area-heading-${areaKey}`}></div>
-                        <div class="cover-grid" id=${`area-grid-${areaKey}`}></div>
-                      </div>`;
-                    })
-                  : html`<div class="cover-grid" id=${`floor-grid-${floorKey}`}></div>`}
+                ${
+                  this._config.group_by_areas
+                    ? areaGroups.map((areaGroup) => {
+                        const areaKey = this._areaSlotKey(areaGroup.areaId, group.floorId);
+                        return html`<div class="area-section">
+                          <div id=${`area-heading-${areaKey}`}></div>
+                          <div class="cover-grid" id=${`area-grid-${areaKey}`}></div>
+                        </div>`;
+                      })
+                    : html`<div class="cover-grid" id=${`floor-grid-${floorKey}`}></div>`
+                }
               </div>
             `;
           })}

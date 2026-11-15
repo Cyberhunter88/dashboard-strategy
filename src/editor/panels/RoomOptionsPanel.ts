@@ -62,15 +62,17 @@ export function renderAreaItems(
             @change=${(e: Event) => host._areaVisibilityChanged(area.area_id, (e.target as HTMLInputElement).checked)}
           />
           <span class="area-name">${area.name}</span>
-          ${host._config.areas_options?.[area.area_id]?.view_override?.yaml
-            ? html`<button
-                type="button"
-                title=${localize('editor.override_active_help')}
-                @click=${() => void host._openDiagnosticLocation(`areas_options.${area.area_id}.view_override`)}
-              >
-                ${localize('editor.override_active')}
-              </button>`
-            : nothing}
+          ${
+            host._config.areas_options?.[area.area_id]?.view_override?.yaml
+              ? html`<button
+                  type="button"
+                  title=${localize('editor.override_active_help')}
+                  @click=${() => void host._openDiagnosticLocation(`areas_options.${area.area_id}.view_override`)}
+                >
+                  ${localize('editor.override_active')}
+                </button>`
+              : nothing
+          }
           ${area.icon ? html`<ha-icon class="area-icon" icon=${area.icon}></ha-icon>` : nothing}
           <button
             class="nav-pin-button ${isPinned ? 'pinned' : ''}"
@@ -91,16 +93,20 @@ export function renderAreaItems(
             <span class="expand-icon">&#x25B6;</span>
           </button>
         </div>
-        ${isExpanded
-          ? html`
-              <div class="area-content" data-area-id=${area.area_id}>
-                ${host._renderAreaDisplayTypeOverride(area)} ${host._renderAreaViewOverride(area.area_id)}
-                ${cachedData
-                  ? host._renderAreaEntities(area.area_id, cachedData)
-                  : html`<div class="loading-placeholder">${localize('editor.loading_entities')}</div>`}
-              </div>
-            `
-          : nothing}
+        ${
+          isExpanded
+            ? html`
+                <div class="area-content" data-area-id=${area.area_id}>
+                  ${host._renderAreaDisplayTypeOverride(area)} ${host._renderAreaViewOverride(area.area_id)}
+                  ${
+                    cachedData
+                      ? host._renderAreaEntities(area.area_id, cachedData)
+                      : html`<div class="loading-placeholder">${localize('editor.loading_entities')}</div>`
+                  }
+                </div>
+              `
+            : nothing
+        }
       </div>
     `;
   });
@@ -141,17 +147,19 @@ export function renderAreaViewOverride(host: PanelHost, areaId: string): Templat
     <div class="custom-item" style="margin-bottom: 0;">
       <div class="custom-item-header">
         <strong>${localize('editor.area_view_override_title')}</strong>
-        ${override?.yaml
-          ? html`
-              <button
-                class="btn-remove"
-                title=${localize('editor.area_view_override_remove')}
-                @click=${() => host._updateAreaViewOverride(areaId, '')}
-              >
-                &#x2715;
-              </button>
-            `
-          : nothing}
+        ${
+          override?.yaml
+            ? html`
+                <button
+                  class="btn-remove"
+                  title=${localize('editor.area_view_override_remove')}
+                  @click=${() => host._updateAreaViewOverride(areaId, '')}
+                >
+                  &#x2715;
+                </button>
+              `
+            : nothing
+        }
       </div>
       <div class="description" style="margin: 0 0 10px 0;">${localize('editor.area_view_override_help')}</div>
       <textarea
@@ -281,51 +289,55 @@ export function renderAreaEntities(
                 <span class="expand-icon-small">&#x25B6;</span>
               </button>
             </div>
-            ${isGroupExpanded
-              ? html`
-                  <div class="entity-list" data-area-id=${areaId} data-group=${group.key}>
-                    ${entities.map((entityId) => {
-                      const stateObj = hass.states[entityId];
-                      const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
-                      const isEntityHidden = hiddenInGroup.includes(entityId);
-                      return html`
-                        <div class="entity-item">
-                          <input
-                            type="checkbox"
-                            class="entity-checkbox"
-                            ?checked=${!isEntityHidden}
-                            @change=${(e: Event) =>
-                              host._entityVisibilityChanged(
-                                areaId,
-                                group.key,
-                                entityId,
-                                (e.target as HTMLInputElement).checked
-                              )}
-                          />
-                          <span class="entity-name">${name}</span>
-                          <span class="entity-id">${entityId}</span>
-                        </div>
-                      `;
-                    })}
-                  </div>
-                `
-              : nothing}
+            ${
+              isGroupExpanded
+                ? html`
+                    <div class="entity-list" data-area-id=${areaId} data-group=${group.key}>
+                      ${entities.map((entityId) => {
+                        const stateObj = hass.states[entityId];
+                        const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                        const isEntityHidden = hiddenInGroup.includes(entityId);
+                        return html`
+                          <div class="entity-item">
+                            <input
+                              type="checkbox"
+                              class="entity-checkbox"
+                              ?checked=${!isEntityHidden}
+                              @change=${(e: Event) =>
+                                host._entityVisibilityChanged(
+                                  areaId,
+                                  group.key,
+                                  entityId,
+                                  (e.target as HTMLInputElement).checked
+                                )}
+                            />
+                            <span class="entity-name">${name}</span>
+                            <span class="entity-id">${entityId}</span>
+                          </div>
+                        `;
+                      })}
+                    </div>
+                  `
+                : nothing
+            }
           </div>
         `;
       })}
-      ${hasBadges
-        ? host._renderBadgeGroup(
-            areaId,
-            badgeCandidates,
-            additionalBadges,
-            availableEntities,
-            hiddenEntities,
-            defaultShowNames,
-            namesVisible,
-            namesHidden,
-            expandedGroups
-          )
-        : nothing}
+      ${
+        hasBadges
+          ? host._renderBadgeGroup(
+              areaId,
+              badgeCandidates,
+              additionalBadges,
+              availableEntities,
+              hiddenEntities,
+              defaultShowNames,
+              namesVisible,
+              namesHidden,
+              expandedGroups
+            )
+          : nothing
+      }
       ${host._renderStackOrderPanel(areaId, data)}
     </div>
     ${customCardsSection}
@@ -399,43 +411,45 @@ export function renderAreaCustomCardItem(
             </option>
           </select>
         </div>
-        ${mode === 'tile'
-          ? html`
-              <div class="custom-card-target">
-                <label>${localize('editor.area_custom_card_entity')}:</label>
-                <select
+        ${
+          mode === 'tile'
+            ? html`
+                <div class="custom-card-target">
+                  <label>${localize('editor.area_custom_card_entity')}:</label>
+                  <select
+                    @change=${(e: Event) =>
+                      host._updateAreaCustomCardField(areaId, index, 'entity', (e.target as HTMLSelectElement).value)}
+                  >
+                    <option value="">${localize('editor.area_custom_card_entity_select')}</option>
+                    ${availableEntities.map(
+                      (e) => html`
+                        <option value=${e.entity_id} ?selected=${card.entity === e.entity_id}>
+                          ${e.name} (${e.entity_id})
+                        </option>
+                      `
+                    )}
+                  </select>
+                </div>
+              `
+            : html`
+                <textarea
+                  rows="6"
+                  placeholder=${localize('editor.yaml_placeholder')}
+                  .value=${card.yaml || ''}
+                  style="width: 100%;"
                   @change=${(e: Event) =>
-                    host._updateAreaCustomCardField(areaId, index, 'entity', (e.target as HTMLSelectElement).value)}
+                    host._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}
+                ></textarea>
+                <button
+                  class="btn-primary"
+                  style="margin-top: 6px;"
+                  @click=${() => host._openCardEditorForAreaCustomCard(areaId, index)}
                 >
-                  <option value="">${localize('editor.area_custom_card_entity_select')}</option>
-                  ${availableEntities.map(
-                    (e) => html`
-                      <option value=${e.entity_id} ?selected=${card.entity === e.entity_id}>
-                        ${e.name} (${e.entity_id})
-                      </option>
-                    `
-                  )}
-                </select>
-              </div>
-            `
-          : html`
-              <textarea
-                rows="6"
-                placeholder=${localize('editor.yaml_placeholder')}
-                .value=${card.yaml || ''}
-                style="width: 100%;"
-                @change=${(e: Event) =>
-                  host._updateAreaCustomCardYaml(areaId, index, (e.target as HTMLTextAreaElement).value)}
-              ></textarea>
-              <button
-                class="btn-primary"
-                style="margin-top: 6px;"
-                @click=${() => host._openCardEditorForAreaCustomCard(areaId, index)}
-              >
-                ${localize('editor.edit_card_with_ha_editor')}
-              </button>
-              <div class="custom-item-validation">${validationMsg}</div>
-            `}
+                  ${localize('editor.edit_card_with_ha_editor')}
+                </button>
+                <div class="custom-item-validation">${validationMsg}</div>
+              `
+        }
       </div>
     </div>
   `;
@@ -455,9 +469,11 @@ export function renderAreaCustomCardsSection(
         <span class="group-name">${localize('editor.area_custom_cards_title')}</span>
       </div>
       <div class="area-custom-cards-help">${localize('editor.area_custom_cards_help')}</div>
-      ${cards.length === 0
-        ? nothing
-        : cards.map((card, index) => host._renderAreaCustomCardItem(areaId, card, index, availableEntities))}
+      ${
+        cards.length === 0
+          ? nothing
+          : cards.map((card, index) => host._renderAreaCustomCardItem(areaId, card, index, availableEntities))
+      }
       <div class="area-custom-card-actions">
         <button class="btn-primary" @click=${() => host._addAreaCustomCard(areaId)}>
           ${localize('editor.area_custom_card_add_yaml')}
@@ -528,94 +544,100 @@ export function renderBadgeGroup(
           <span class="expand-icon-small">&#x25B6;</span>
         </button>
       </div>
-      ${isGroupExpanded
-        ? html`
-            <div class="entity-list" data-area-id=${areaId} data-group="badges">
-              ${badgeCandidates.map((entityId) => {
-                const stateObj = hass.states[entityId];
-                const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
-                const isHidden = hiddenInBadges.includes(entityId);
-                const showName = isNameShown(entityId);
+      ${
+        isGroupExpanded
+          ? html`
+              <div class="entity-list" data-area-id=${areaId} data-group="badges">
+                ${badgeCandidates.map((entityId) => {
+                  const stateObj = hass.states[entityId];
+                  const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                  const isHidden = hiddenInBadges.includes(entityId);
+                  const showName = isNameShown(entityId);
 
-                return html`
-                  <div class="entity-item">
-                    <input
-                      type="checkbox"
-                      class="entity-checkbox"
-                      ?checked=${!isHidden}
-                      @change=${(e: Event) =>
-                        host._entityVisibilityChanged(
-                          areaId,
-                          'badges',
-                          entityId,
-                          (e.target as HTMLInputElement).checked
-                        )}
-                    />
-                    <span class="entity-name">${name}</span>
-                    <input
-                      type="checkbox"
-                      class="badge-name-checkbox"
-                      ?checked=${showName}
-                      title=${localize('editor.badges_show_name')}
-                      @change=${(e: Event) =>
-                        host._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)}
-                    />
-                    <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
-                    <span class="entity-id">${entityId}</span>
-                  </div>
-                `;
-              })}
-              ${additionalBadges.length > 0
-                ? html`
-                    <div class="badge-separator">${localize('editor.badges_additional')}</div>
-                    ${additionalBadges.map((entityId) => {
-                      const stateObj = hass.states[entityId];
-                      const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
-                      const showName = isNameShown(entityId);
+                  return html`
+                    <div class="entity-item">
+                      <input
+                        type="checkbox"
+                        class="entity-checkbox"
+                        ?checked=${!isHidden}
+                        @change=${(e: Event) =>
+                          host._entityVisibilityChanged(
+                            areaId,
+                            'badges',
+                            entityId,
+                            (e.target as HTMLInputElement).checked
+                          )}
+                      />
+                      <span class="entity-name">${name}</span>
+                      <input
+                        type="checkbox"
+                        class="badge-name-checkbox"
+                        ?checked=${showName}
+                        title=${localize('editor.badges_show_name')}
+                        @change=${(e: Event) =>
+                          host._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)}
+                      />
+                      <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
+                      <span class="entity-id">${entityId}</span>
+                    </div>
+                  `;
+                })}
+                ${
+                  additionalBadges.length > 0
+                    ? html`
+                        <div class="badge-separator">${localize('editor.badges_additional')}</div>
+                        ${additionalBadges.map((entityId) => {
+                          const stateObj = hass.states[entityId];
+                          const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                          const showName = isNameShown(entityId);
 
-                      return html`
-                        <div class="entity-item badge-additional-item">
-                          <span class="entity-name">${name}</span>
-                          <input
-                            type="checkbox"
-                            class="badge-name-checkbox"
-                            ?checked=${showName}
-                            title=${localize('editor.badges_show_name')}
-                            @change=${(e: Event) =>
-                              host._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)}
-                          />
-                          <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
-                          <span class="entity-id">${entityId}</span>
-                          <button
-                            class="badge-remove-btn"
-                            title=${localize('editor.badges_remove')}
-                            @click=${() => host._badgeAdditionalChanged(areaId, entityId, false)}
-                          >
-                            &#x2715;
+                          return html`
+                            <div class="entity-item badge-additional-item">
+                              <span class="entity-name">${name}</span>
+                              <input
+                                type="checkbox"
+                                class="badge-name-checkbox"
+                                ?checked=${showName}
+                                title=${localize('editor.badges_show_name')}
+                                @change=${(e: Event) =>
+                                  host._badgeShowNameChanged(areaId, entityId, (e.target as HTMLInputElement).checked)}
+                              />
+                              <span class="badge-name-label">${localize('editor.badges_name_short')}</span>
+                              <span class="entity-id">${entityId}</span>
+                              <button
+                                class="badge-remove-btn"
+                                title=${localize('editor.badges_remove')}
+                                @click=${() => host._badgeAdditionalChanged(areaId, entityId, false)}
+                              >
+                                &#x2715;
+                              </button>
+                            </div>
+                          `;
+                        })}
+                      `
+                    : nothing
+                }
+                ${
+                  availableEntities.length > 0
+                    ? html`
+                        <div class="badge-add-section">
+                          <select class="badge-entity-picker" data-area-id=${areaId}>
+                            <option value="">${localize('editor.badges_select_entity')}</option>
+                            ${availableEntities.map(
+                              (e) => html` <option value=${e.entity_id}>${e.name} (${e.entity_id})</option> `
+                            )}
+                          </select>
+                          <button class="badge-add-button" @click=${(e: Event) => host._addBadgeFromPicker(e, areaId)}>
+                            ${localize('editor.badges_add')}
                           </button>
                         </div>
-                      `;
-                    })}
-                  `
-                : nothing}
-              ${availableEntities.length > 0
-                ? html`
-                    <div class="badge-add-section">
-                      <select class="badge-entity-picker" data-area-id=${areaId}>
-                        <option value="">${localize('editor.badges_select_entity')}</option>
-                        ${availableEntities.map(
-                          (e) => html` <option value=${e.entity_id}>${e.name} (${e.entity_id})</option> `
-                        )}
-                      </select>
-                      <button class="badge-add-button" @click=${(e: Event) => host._addBadgeFromPicker(e, areaId)}>
-                        ${localize('editor.badges_add')}
-                      </button>
-                    </div>
-                  `
-                : nothing}
-            </div>
-          `
-        : nothing}
+                      `
+                    : nothing
+                }
+              </div>
+            `
+          : nothing
+      }
     </div>
   `;
 }

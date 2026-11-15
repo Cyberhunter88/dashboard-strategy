@@ -118,47 +118,52 @@ function renderEntityList(host: OptionPanelHost, options: EntityListOptions): Te
 
   return html`
     <div id=${options.listId} style="margin-bottom: 12px;">
-      ${entities.length === 0
-        ? html`<div class="empty-state">${options.emptyLabel}</div>`
-        : html`
-            <div class="entity-list-container">
-              ${entities.map((entityId) => {
-                const entity = optionsById.get(entityId);
-                const areaId = entity?.area_id || entity?.device_area_id;
-                return html`
-                  <div
-                    class="entity-list-item"
-                    data-entity-id=${entityId}
-                    draggable="true"
-                    @dragstart=${(event: DragEvent) => dragStart(host, event)}
-                    @dragend=${(event: DragEvent) => dragEnd(host, event)}
-                    @dragover=${(event: DragEvent) => dragOver(host, event)}
-                    @dragleave=${(event: DragEvent) =>
-                      (event.currentTarget as HTMLElement).classList.remove('drag-over')}
-                    @drop=${(event: DragEvent) => drop(host, key, event)}
-                  >
-                    <span class="drag-icon">&#x2630;</span>
-                    <span class="item-info">
-                      <span class="item-name">${entity?.name || entityId}</span>
-                      <span class="item-entity-id">${entityId}</span>
-                      ${options.withArea
-                        ? html`<span class="item-area"
-                            >&#x1F4CD; ${areaId ? areaNames.get(areaId) || areaId : localize('editor.no_room')}</span
-                          >`
-                        : nothing}
-                    </span>
-                    <button
-                      class="btn-remove"
-                      aria-label=${localize('editor.remove_entity')}
-                      @click=${() => removeEntity(host, key, entityId)}
+      ${
+        entities.length === 0
+          ? html`<div class="empty-state">${options.emptyLabel}</div>`
+          : html`
+              <div class="entity-list-container">
+                ${entities.map((entityId) => {
+                  const entity = optionsById.get(entityId);
+                  const areaId = entity?.area_id || entity?.device_area_id;
+                  return html`
+                    <div
+                      class="entity-list-item"
+                      data-entity-id=${entityId}
+                      draggable="true"
+                      @dragstart=${(event: DragEvent) => dragStart(host, event)}
+                      @dragend=${(event: DragEvent) => dragEnd(host, event)}
+                      @dragover=${(event: DragEvent) => dragOver(host, event)}
+                      @dragleave=${(event: DragEvent) =>
+                        (event.currentTarget as HTMLElement).classList.remove('drag-over')}
+                      @drop=${(event: DragEvent) => drop(host, key, event)}
                     >
-                      &#x2715;
-                    </button>
-                  </div>
-                `;
-              })}
-            </div>
-          `}
+                      <span class="drag-icon">&#x2630;</span>
+                      <span class="item-info">
+                        <span class="item-name">${entity?.name || entityId}</span>
+                        <span class="item-entity-id">${entityId}</span>
+                        ${
+                          options.withArea
+                            ? html`<span class="item-area"
+                                >&#x1F4CD;
+                                ${areaId ? areaNames.get(areaId) || areaId : localize('editor.no_room')}</span
+                              >`
+                            : nothing
+                        }
+                      </span>
+                      <button
+                        class="btn-remove"
+                        aria-label=${localize('editor.remove_entity')}
+                        @click=${() => removeEntity(host, key, entityId)}
+                      >
+                        &#x2715;
+                      </button>
+                    </div>
+                  `;
+                })}
+              </div>
+            `
+      }
     </div>
 
     <div class="entity-search-picker">
@@ -174,29 +179,33 @@ function renderEntityList(host: OptionPanelHost, options: EntityListOptions): Te
           setTimeout(() => setSearch(host, key, ''), 200);
         }}
       />
-      ${search.length >= 2
-        ? html`
-            <div class="entity-search-results">
-              ${matches.length > 0
-                ? matches.map(
-                    (entity) => html`
-                      <div
-                        class="entity-search-result"
-                        @mousedown=${(event: Event) => {
-                          event.preventDefault();
-                          addEntity(host, key, entity.entity_id);
-                          setSearch(host, key, '');
-                        }}
-                      >
-                        <span class="entity-search-name">${entity.name}</span>
-                        <span class="entity-search-id">${entity.entity_id}</span>
-                      </div>
-                    `
-                  )
-                : html`<div class="entity-search-no-results">${localize('editor.no_results')}</div>`}
-            </div>
-          `
-        : nothing}
+      ${
+        search.length >= 2
+          ? html`
+              <div class="entity-search-results">
+                ${
+                  matches.length > 0
+                    ? matches.map(
+                        (entity) => html`
+                          <div
+                            class="entity-search-result"
+                            @mousedown=${(event: Event) => {
+                              event.preventDefault();
+                              addEntity(host, key, entity.entity_id);
+                              setSearch(host, key, '');
+                            }}
+                          >
+                            <span class="entity-search-name">${entity.name}</span>
+                            <span class="entity-search-id">${entity.entity_id}</span>
+                          </div>
+                        `
+                      )
+                    : html`<div class="entity-search-no-results">${localize('editor.no_results')}</div>`
+                }
+              </div>
+            `
+          : nothing
+      }
     </div>
   `;
 }

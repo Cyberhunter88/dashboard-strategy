@@ -245,8 +245,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       for (const id of this._expandedAreas) void this._loadAreaEntities(id);
     }
     const visualEditor = this.shadowRoot?.querySelector('.card-editor-visual-host') as
-      | (HTMLElement & { hass?: HomeAssistant })
-      | null;
+      (HTMLElement & { hass?: HomeAssistant }) | null;
     if (visualEditor?.firstElementChild)
       (visualEditor.firstElementChild as HTMLElement & { hass?: HomeAssistant }).hass = hass;
     if (hasHassPresentationChanged(oldHass ?? undefined, hass) || this._expandedPanels.has('diagnostics'))
@@ -470,32 +469,36 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         }
       )}
       <div role="status" aria-live="polite">
-        ${active && !results.length
-          ? html`<p class="description">${localize(query ? 'editor.no_results' : 'editor.no_changed_options')}</p>`
-          : nothing}
+        ${
+          active && !results.length
+            ? html`<p class="description">${localize(query ? 'editor.no_results' : 'editor.no_changed_options')}</p>`
+            : nothing
+        }
       </div>
-      ${results.length
-        ? html`<ul class="option-search-results">
-            ${results.map(
-              (result) =>
-                html`<li>
-                  <button
-                    type="button"
-                    class="option-search-result"
-                    ?disabled=${!result.panel}
-                    @click=${() => {
-                      if (result.panel) void this._jumpToPanel(result.panel);
-                    }}
-                  >
-                    <span>${result.label}</span>
-                    <span class="option-search-meta"
-                      >${result.panelLabel || localize('editor.search_yaml_only')} · <code>${result.key}</code></span
+      ${
+        results.length
+          ? html`<ul class="option-search-results">
+              ${results.map(
+                (result) =>
+                  html`<li>
+                    <button
+                      type="button"
+                      class="option-search-result"
+                      ?disabled=${!result.panel}
+                      @click=${() => {
+                        if (result.panel) void this._jumpToPanel(result.panel);
+                      }}
                     >
-                  </button>
-                </li>`
-            )}
-          </ul>`
-        : nothing}
+                      <span>${result.label}</span>
+                      <span class="option-search-meta"
+                        >${result.panelLabel || localize('editor.search_yaml_only')} · <code>${result.key}</code></span
+                      >
+                    </button>
+                  </li>`
+              )}
+            </ul>`
+          : nothing
+      }
     </section>`;
   }
 
@@ -559,17 +562,19 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       </div>
       ${(['error', 'warning', 'info'] as const).map(
         (severity) =>
-          html` ${issues.some((issue) => issue.severity === severity)
-            ? html`<h3>${localize('editor.diagnostics_severity_' + severity)}</h3>`
-            : nothing}
+          html` ${
+            issues.some((issue) => issue.severity === severity)
+              ? html`<h3>${localize('editor.diagnostics_severity_' + severity)}</h3>`
+              : nothing
+          }
           ${issues
             .filter((issue) => issue.severity === severity)
             .map(
               (issue) =>
                 html`<div class="custom-item" style="overflow-wrap:anywhere">
-                  <strong>${localize('editor.diagnostics_' + (issue.status ?? issue.code))}</strong>${issue.entityId
-                    ? html`: ${issue.entityId}`
-                    : nothing}
+                  <strong>${localize('editor.diagnostics_' + (issue.status ?? issue.code))}</strong>${
+                    issue.entityId ? html`: ${issue.entityId}` : nothing
+                  }
                   <div>${issue.path}</div>
                   <button type="button" @click=${() => void this._openDiagnosticLocation(issue.path)}>
                     ${localize('editor.diagnostics_open')}

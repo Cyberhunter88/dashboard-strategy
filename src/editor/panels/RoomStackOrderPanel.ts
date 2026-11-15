@@ -138,21 +138,23 @@ export function renderRoomStackOrderPanel(options: RoomStackOrderPanelOptions): 
             `;
           })}
         </div>
-        ${inactiveOrder.length > 0
-          ? html`<div class="section-order-compact">
-              <div class="compact-title">${localize('editor.stack_order_inactive')}</div>
-              <div class="compact-chip-list">
-                ${inactiveOrder.map((key) => {
-                  const meta = stackMeta.get(key);
-                  return meta
-                    ? html`<span class="compact-chip"
-                        ><ha-icon icon=${meta.icon}></ha-icon>${localize(meta.labelKey)}</span
-                      >`
-                    : nothing;
-                })}
-              </div>
-            </div>`
-          : nothing}
+        ${
+          inactiveOrder.length > 0
+            ? html`<div class="section-order-compact">
+                <div class="compact-title">${localize('editor.stack_order_inactive')}</div>
+                <div class="compact-chip-list">
+                  ${inactiveOrder.map((key) => {
+                    const meta = stackMeta.get(key);
+                    return meta
+                      ? html`<span class="compact-chip"
+                          ><ha-icon icon=${meta.icon}></ha-icon>${localize(meta.labelKey)}</span
+                        >`
+                      : nothing;
+                  })}
+                </div>
+              </div>`
+            : nothing
+        }
       </div>
     </div>
   `;
