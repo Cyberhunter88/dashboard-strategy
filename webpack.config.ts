@@ -32,8 +32,10 @@ const config: webpack.Configuration = {
       // Chunk architecture:
       //   main (entry)  → tiny, registers custom element instantly
       //   lit           → Lit framework, shared by core + views + editor
-      //   core          → Registry, Utils, OverviewViewStrategy, Cards (home screen)
-      //   views         → LightsView, CoversView, SecurityView, BatteriesView, RoomView
+      //   core          → Registry, Utils, Sections, OverviewViewStrategy, overview cards
+      //                   (SummaryCard, AreaNavigationCard)
+      //   views         → non-overview view strategies plus their cards (lights/covers
+      //                   groups, batteries, camera, video tip); loaded eagerly with core
       //   editor        → StrategyEditor + js-yaml (on-demand only)
       cacheGroups: {
         lit: {
@@ -44,14 +46,14 @@ const config: webpack.Configuration = {
           priority: 20,
         },
         core: {
-          test: /[\\/]src[\\/](?:Registry|utils|translations[\\/]en\.json|sections|cards|views[\\/]OverviewViewStrategy)/,
+          test: /[\\/]src[\\/](?:Registry|utils|translations[\\/]en\.json|sections|cards[\\/](?:SummaryCard|AreaNavigationCard)\.ts$|views[\\/]OverviewViewStrategy)/,
           name: 'core',
           chunks: 'async',
           enforce: true,
           priority: 10,
         },
         views: {
-          test: /[\\/]src[\\/]views[\\/](?!OverviewViewStrategy)/,
+          test: /[\\/]src[\\/](?:views[\\/](?!OverviewViewStrategy)|cards[\\/](?!(?:SummaryCard|AreaNavigationCard)\.ts$))/,
           name: 'views',
           chunks: 'async',
           enforce: true,

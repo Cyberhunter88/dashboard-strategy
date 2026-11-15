@@ -1,10 +1,5 @@
 import '../cards/SummaryCard';
-import '../cards/LightsGroupCard';
-import '../cards/CoversGroupCard';
-import '../cards/BatteriesCard';
 import '../cards/AreaNavigationCard';
-import '../cards/CameraCard';
-import '../cards/VideoTipCard';
 import '../views/OverviewViewStrategy';
 
 export { Registry } from '../Registry';
