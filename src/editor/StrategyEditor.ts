@@ -22,7 +22,7 @@ import {
   renderBadgeGroup,
   updateAreaViewOverride,
 } from './panels/RoomOptionsPanel';
-import { renderCustomViewsPanel, type RefDashboardOption } from './panels/CustomViewsPanel';
+import { type RefDashboardOption } from './panels/CustomViewsPanel';
 import {
   parseWeatherStartItemYaml,
   renderWeatherLayout,
@@ -87,6 +87,8 @@ import {
 } from './editor-panel-registry';
 import { searchOptions } from './option-search';
 import { strategyEditorStyles } from './editor-styles';
+import { renderAreaOptionsPanel } from './panels/AreaOptionsPanel';
+import { renderCustomContentPanel, type CustomContentPanelHost } from './panels/CustomContentPanel';
 import { renderFavoritesSection, renderRoomPinsSection } from './panels/EntityListPanel';
 import {
   renderAdvancedOptionsSection,
@@ -625,6 +627,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         return (this._config.quick_action_entities || []).length === 0;
       case 'media':
         return this._config.show_media_section !== true;
+      case 'timers':
+        return this._config.show_timers_section !== true;
       case 'activity':
         return this._config.show_activity_section !== true;
       case 'custom_cards':
@@ -1368,204 +1372,9 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderAreasSection(): TemplateResult {
-    const groupByFloors = this._config.group_by_floors === true;
-    const areaDisplayType = this._config.area_display_type ?? 'compact';
-    const showSwitchesOnAreas = this._config.show_switches_on_areas === true;
-    const showAlertsOnAreas = this._config.show_alerts_on_areas === true;
-    const showLocksInRooms = this._config.show_locks_in_rooms === true;
-    const showAutomationsInRooms = this._config.show_automations_in_rooms === true;
-    const showScriptsInRooms = this._config.show_scripts_in_rooms === true;
-    const showVacuumsSectionInRooms = this._config.show_vacuums_section_in_rooms === true;
-    const showSwitchesSectionInRooms = this._config.show_switches_section_in_rooms === true;
-    const cameraLiveToggle = this._config.camera_live_toggle === true;
-    const showCamerasInRooms = this._config.show_cameras_in_rooms !== false;
-    const showCoverControlsInRooms = this._config.show_cover_controls_in_rooms === true;
-    const showEnergyInRooms = this._config.show_energy_in_rooms !== false;
-    const showUpsInRooms = this._config.show_ups_in_rooms !== false;
-    const hideGroupedClimateMembers = this._config.hide_grouped_climate_members !== false;
-    const showWindowContactsInRooms = this._config.show_window_contacts_in_rooms === true;
-    const showDoorContactsInRooms = this._config.show_door_contacts_in_rooms === true;
-    const useDefaultAreaSort = this._config.use_default_area_sort === true;
-
-    return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.section_areas')}</div>
-
-        <div class="option-groups">
-          <div class="option-group">
-            <div class="option-group-title">
-              <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
-              <span>${localize('editor.area_overview_options')}</span>
-            </div>
-            ${this._renderCheckbox('group-by-floors', localize('editor.group_by_floors'), groupByFloors, (checked) =>
-              this._toggleChanged('group_by_floors', checked, false)
-            )}
-            <div class="description">${localize('editor.group_by_floors_desc')}</div>
-
-            <div class="form-row">
-              <label for="area-display-type">${localize('editor.area_display_type')}</label>
-              <select
-                id="area-display-type"
-                .value=${areaDisplayType}
-                @change=${(event: Event) =>
-                  this._globalAreaDisplayTypeChanged((event.target as HTMLSelectElement).value as AreaDisplayType)}
-              >
-                <option value="compact">${localize('editor.area_display_type_compact')}</option>
-                <option value="picture">${localize('editor.area_display_type_picture')}</option>
-              </select>
-            </div>
-            <div class="description">${localize('editor.area_display_type_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-switches-on-areas',
-              localize('editor.show_switches_on_areas'),
-              showSwitchesOnAreas,
-              (checked) => this._toggleChanged('show_switches_on_areas', checked, false)
-            )}
-            <div class="description">${localize('editor.show_switches_on_areas_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-alerts-on-areas',
-              localize('editor.show_alerts_on_areas'),
-              showAlertsOnAreas,
-              (checked) => this._toggleChanged('show_alerts_on_areas', checked, false)
-            )}
-            <div class="description">${localize('editor.show_alerts_on_areas_desc')}</div>
-          </div>
-
-          <div class="option-group">
-            <div class="option-group-title">
-              <ha-icon icon="mdi:door-open"></ha-icon>
-              <span>${localize('editor.room_view_options')}</span>
-            </div>
-            ${this._renderCheckbox(
-              'show-locks-in-rooms',
-              localize('editor.show_locks_in_rooms'),
-              showLocksInRooms,
-              (checked) => this._toggleChanged('show_locks_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_locks_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-automations-in-rooms',
-              localize('editor.show_automations_in_rooms'),
-              showAutomationsInRooms,
-              (checked) => this._toggleChanged('show_automations_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_automations_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-scripts-in-rooms',
-              localize('editor.show_scripts_in_rooms'),
-              showScriptsInRooms,
-              (checked) => this._toggleChanged('show_scripts_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_scripts_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-vacuums-section-in-rooms',
-              localize('editor.show_vacuums_section_in_rooms'),
-              showVacuumsSectionInRooms,
-              (checked) => this._toggleChanged('show_vacuums_section_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_vacuums_section_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-switches-section-in-rooms',
-              localize('editor.show_switches_section_in_rooms'),
-              showSwitchesSectionInRooms,
-              (checked) => this._toggleChanged('show_switches_section_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_switches_section_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-cover-controls-in-rooms',
-              localize('editor.show_cover_controls_in_rooms'),
-              showCoverControlsInRooms,
-              (checked) => this._toggleChanged('show_cover_controls_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_cover_controls_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-cameras-in-rooms',
-              localize('editor.show_cameras_in_rooms'),
-              showCamerasInRooms,
-              (checked) => this._toggleChanged('show_cameras_in_rooms', checked, true)
-            )}
-            <div class="description">${localize('editor.show_cameras_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'camera-live-toggle',
-              localize('editor.camera_live_toggle'),
-              cameraLiveToggle,
-              (checked) => this._toggleChanged('camera_live_toggle', checked, false)
-            )}
-            <div class="description">${localize('editor.camera_live_toggle_desc')}</div>
-            ${this._renderCheckbox(
-              'camera-pause-when-hidden',
-              localize('editor.camera_pause_when_hidden'),
-              this._config.camera_pause_when_hidden === true,
-              (checked) => this._toggleChanged('camera_pause_when_hidden', checked, false)
-            )}
-            <div class="description">${localize('editor.camera_pause_when_hidden_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-energy-in-rooms',
-              localize('editor.show_energy_in_rooms'),
-              showEnergyInRooms,
-              (checked) => this._toggleChanged('show_energy_in_rooms', checked, true)
-            )}
-            <div class="description">${localize('editor.show_energy_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-ups-in-rooms',
-              localize('editor.show_ups_in_rooms'),
-              showUpsInRooms,
-              (checked) => this._toggleChanged('show_ups_in_rooms', checked, true)
-            )}
-            <div class="description">${localize('editor.show_ups_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'hide-grouped-climate-members',
-              localize('editor.hide_grouped_climate_members'),
-              hideGroupedClimateMembers,
-              (checked) => this._toggleChanged('hide_grouped_climate_members', checked, true)
-            )}
-            <div class="description">${localize('editor.hide_grouped_climate_members_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-window-contacts-in-rooms',
-              localize('editor.show_window_contacts_in_rooms'),
-              showWindowContactsInRooms,
-              (checked) => this._toggleChanged('show_window_contacts_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_window_contacts_in_rooms_desc')}</div>
-
-            ${this._renderCheckbox(
-              'show-door-contacts-in-rooms',
-              localize('editor.show_door_contacts_in_rooms'),
-              showDoorContactsInRooms,
-              (checked) => this._toggleChanged('show_door_contacts_in_rooms', checked, false)
-            )}
-            <div class="description">${localize('editor.show_door_contacts_in_rooms_desc')}</div>
-          </div>
-
-          <div class="option-group">
-            <div class="option-group-title">
-              <ha-icon icon="mdi:sort-alphabetical-ascending"></ha-icon>
-              <span>${localize('editor.area_management_options')}</span>
-            </div>
-            ${this._renderCheckbox(
-              'use-default-area-sort',
-              localize('editor.use_default_area_sort'),
-              useDefaultAreaSort,
-              (checked) => this._toggleChanged('use_default_area_sort', checked, false)
-            )}
-            <div class="description">${localize('editor.use_default_area_sort_desc')}</div>
-          </div>
-        </div>
-      </div>
-    `;
+    return renderAreaOptionsPanel(this._optionPanelHost, (displayType) =>
+      this._globalAreaDisplayTypeChanged(displayType)
+    );
   }
 
   private _renderViewsSection(): TemplateResult {
@@ -1605,138 +1414,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _renderCustomContentSection(): TemplateResult {
-    const isWeatherStart = true;
-
-    return html`
-      <div class="section">
-        <div class="section-title">${localize('editor.section_custom_content')}</div>
-        <div class="description" style="margin-left: 0; margin-bottom: 12px;">
-          ${localize('editor.section_custom_content_desc')}
-        </div>
-        ${isWeatherStart
-          ? html`
-              <div class="empty-state" style="margin-bottom: 12px;">
-                ${localize('editor.custom_content_weather_start_hint')}
-              </div>
-            `
-          : nothing}
-        <div class="custom-content-grid">
-          ${isWeatherStart ? nothing : this._renderCustomCardsSection(true)}
-          ${isWeatherStart ? nothing : this._renderCustomSectionsSection(true)} ${this._renderCustomBadgesSection(true)}
-          ${renderCustomViewsPanel(this._customViewsHost, true)}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderCustomCardsSection(nested = false): TemplateResult {
-    const customCards = this._config.custom_cards || [];
-    const customCardsHeading = this._config.custom_cards_heading || '';
-    const customCardsIcon = this._config.custom_cards_icon || '';
-
-    return html`
-      <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div
-          class=${nested ? 'subsection-title' : 'section-title'}
-          style="display: flex; align-items: center; gap: 8px;"
-        >
-          ${localize('editor.section_custom_cards')}
-          <a
-            href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Eigene-Karten-hinzufugen.gif"
-            target="_blank"
-            rel="noopener"
-            style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
-            title=${localize('editor.video_tutorial')}
-            >&#x1F3AC;</a
-          >
-        </div>
-        <div class="custom-item-row" style="margin-bottom: 12px;">
-          <input
-            type="text"
-            id="custom-cards-heading"
-            .value=${customCardsHeading}
-            placeholder=${localize('editor.custom_cards_heading_placeholder')}
-            style="flex: 2;"
-            @change=${this._customCardsHeadingChanged}
-          />
-          <input
-            type="text"
-            id="custom-cards-icon"
-            .value=${customCardsIcon}
-            placeholder="mdi:cards"
-            style="flex: 1;"
-            @change=${this._customCardsIconChanged}
-          />
-        </div>
-        <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_cards_desc')}</div>
-
-        <div id="custom-cards-list">
-          ${customCards.length === 0
-            ? html`<div class="empty-state">${localize('editor.no_custom_cards')}</div>`
-            : customCards.map((card, index) => this._renderCustomCardItem(card, index))}
-        </div>
-
-        <button class="btn-primary" style="margin-top: 8px;" @click=${this._openCardPickerForCustomCard}>
-          ${localize('editor.add_custom_card')}
-        </button>
-        <div class="description">${localize('editor.custom_cards_help')}</div>
-      </div>
-    `;
-  }
-
-  private _renderCustomSectionsSection(nested = false): TemplateResult {
-    const customSections = this._config.custom_sections || [];
-
-    return html`
-      <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div class=${nested ? 'subsection-title' : 'section-title'}>${localize('editor.section_custom_sections')}</div>
-        <div class="description" style="margin-bottom: 8px;">${localize('editor.custom_sections_help')}</div>
-
-        <div id="custom-sections-list">
-          ${customSections.length === 0
-            ? html`<div class="empty-state">${localize('editor.no_custom_sections')}</div>`
-            : customSections.map((section, sectionIndex) => this._renderCustomSectionItem(section, sectionIndex))}
-        </div>
-
-        <button class="btn-primary" style="margin-top: 8px;" @click=${this._addCustomSection}>
-          ${localize('editor.add_custom_section')}
-        </button>
-      </div>
-    `;
-  }
-
-  private _renderCustomBadgesSection(nested = false): TemplateResult {
-    const customBadges = this._config.custom_badges || [];
-
-    return html`
-      <div class=${nested ? 'editor-subsection' : 'section'}>
-        <div
-          class=${nested ? 'subsection-title' : 'section-title'}
-          style="display: flex; align-items: center; gap: 8px;"
-        >
-          ${localize('editor.section_custom_badges')}
-          <a
-            href="https://github.com/Cyberhunter88/dashboard-strategy/blob/main/assets/Custom-Badges-hinzufugen.gif"
-            target="_blank"
-            rel="noopener"
-            style="color: var(--primary-color); text-decoration: none; font-size: 18px;"
-            title=${localize('editor.video_tutorial')}
-            >&#x1F3AC;</a
-          >
-        </div>
-
-        <div id="custom-badges-list">
-          ${customBadges.length === 0
-            ? html`<div class="empty-state">${localize('editor.no_custom_badges')}</div>`
-            : customBadges.map((badge, index) => this._renderCustomBadgeItem(badge, index))}
-        </div>
-
-        <button class="btn-primary" style="margin-top: 8px;" @click=${this._addCustomBadge}>
-          ${localize('editor.add_custom_badge')}
-        </button>
-        <div class="description">${localize('editor.custom_badges_help')}</div>
-      </div>
-    `;
+    return renderCustomContentPanel(this._customContentHost);
   }
 
   // ====================================================================
@@ -1760,221 +1438,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
           @change=${(e: Event) => onChange((e.target as HTMLInputElement).checked)}
         />
         <label for=${id} class=${disabled ? 'disabled-label' : ''}>${label}</label>
-      </div>
-    `;
-  }
-
-  private _renderCustomCardItem(card: CustomCard, index: number): TemplateResult {
-    const validationMsg = card._yaml_error
-      ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
-      : card.yaml
-        ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
-        : nothing;
-
-    return html`
-      <div class="custom-item" data-index=${index}>
-        <div class="custom-item-header">
-          <strong>${this._getCustomCardEditorLabel(card, localize('editor.new_card'))}</strong>
-          <button class="btn-remove" @click=${() => this._removeCustomCard(index)}>&#x2715;</button>
-        </div>
-        <div class="custom-item-fields">
-          <label>${localize('editor.card_editor_title_label')}</label>
-          <input
-            type="text"
-            .value=${card.editor_title || ''}
-            placeholder=${localize('editor.card_editor_title_placeholder')}
-            @change=${(e: Event) =>
-              this._updateCustomCardField(index, 'editor_title', (e.target as HTMLInputElement).value)}
-          />
-          <div class="description" style="margin: 0 0 4px 0;">${localize('editor.card_editor_title_help')}</div>
-          <label>${localize('editor.card_dashboard_title_label')}</label>
-          <input
-            type="text"
-            .value=${card.title || ''}
-            placeholder=${localize('editor.card_title_placeholder')}
-            @change=${(e: Event) => this._updateCustomCardField(index, 'title', (e.target as HTMLInputElement).value)}
-          />
-          <div class="custom-card-target">
-            <label>${localize('editor.target_section')}:</label>
-            <select
-              @change=${(e: Event) =>
-                this._updateCustomCardField(index, 'target_section', (e.target as HTMLSelectElement).value)}
-            >
-              ${(['custom_cards', 'overview', 'areas', 'weather', 'energy'] as const).map(
-                (key) => html`
-                  <option value=${key} ?selected=${(card.target_section || 'custom_cards') === key}>
-                    ${localize(Simon42DashboardStrategyEditor._sectionMeta.get(key)!.labelKey)}
-                  </option>
-                `
-              )}
-            </select>
-          </div>
-          <textarea
-            rows="6"
-            placeholder=${localize('editor.yaml_placeholder')}
-            .value=${card.yaml || ''}
-            style="width: 100%;"
-            @change=${(e: Event) => this._updateCustomCardYaml(index, (e.target as HTMLTextAreaElement).value)}
-          ></textarea>
-          <button class="btn-primary" style="margin-top: 6px;" @click=${() => this._openCardEditorForCustomCard(index)}>
-            ${localize('editor.edit_card_with_ha_editor')}
-          </button>
-          <div class="custom-item-validation">${validationMsg}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderCustomSectionItem(section: CustomSection, sectionIndex: number): TemplateResult {
-    const cards = section.cards || [];
-    return html`
-      <div class="custom-item" data-index=${sectionIndex} style="margin-bottom: 12px;">
-        <div class="custom-item-header">
-          <strong>${section.title || `${localize('editor.section_custom_sections')} ${sectionIndex + 1}`}</strong>
-          <button class="btn-remove" @click=${() => this._removeCustomSection(sectionIndex)}>&#x2715;</button>
-        </div>
-        <div class="custom-item-fields">
-          <textarea
-            rows="8"
-            placeholder="type: grid&#10;cards:&#10;  - type: tile&#10;    entity: light.example"
-            .value=${section.yaml || ''}
-            style="width: 100%;"
-            @change=${(e: Event) =>
-              this._updateCustomSectionYaml(sectionIndex, (e.target as HTMLTextAreaElement).value)}
-          ></textarea>
-          <div class="custom-item-validation">
-            ${section._yaml_error
-              ? html`<span style="color: var(--error-color);">&#x274C; ${section._yaml_error}</span>`
-              : section.yaml
-                ? html`<span style="color: var(--success-color, green);"
-                    >&#x2705; ${localize('editor.yaml_valid')}</span
-                  >`
-                : nothing}
-          </div>
-          <div class="custom-item-row">
-            <input
-              type="text"
-              .value=${section.title || ''}
-              placeholder=${localize('editor.custom_section_title_placeholder')}
-              style="flex: 2;"
-              @change=${(e: Event) =>
-                this._updateCustomSectionField(sectionIndex, 'title', (e.target as HTMLInputElement).value)}
-            />
-            <input
-              type="text"
-              .value=${section.icon || ''}
-              placeholder=${localize('editor.custom_section_icon_placeholder')}
-              style="flex: 1;"
-              @change=${(e: Event) =>
-                this._updateCustomSectionField(sectionIndex, 'icon', (e.target as HTMLInputElement).value)}
-            />
-          </div>
-          <div style="margin-top: 8px; padding-left: 8px; border-left: 2px solid var(--divider-color, #e0e0e0);">
-            ${cards.map((card, cardIndex) => {
-              const validationMsg = card._yaml_error
-                ? html`<span style="color: var(--error-color);">&#x274C; ${card._yaml_error}</span>`
-                : card.yaml
-                  ? html`<span style="color: var(--success-color, green);"
-                      >&#x2705; ${localize('editor.yaml_valid')}</span
-                    >`
-                  : nothing;
-              return html`
-                <div class="custom-item" data-index=${cardIndex} style="margin-bottom: 8px;">
-                  <div class="custom-item-header">
-                    <strong
-                      >${this._getCustomCardEditorLabel(
-                        card,
-                        `${localize('editor.new_card')} ${cardIndex + 1}`
-                      )}</strong
-                    >
-                    <button class="btn-remove" @click=${() => this._removeCardFromSection(sectionIndex, cardIndex)}>
-                      &#x2715;
-                    </button>
-                  </div>
-                  <div class="custom-item-fields">
-                    <label>${localize('editor.card_editor_title_label')}</label>
-                    <input
-                      type="text"
-                      .value=${card.editor_title || ''}
-                      placeholder=${localize('editor.card_editor_title_placeholder')}
-                      @change=${(e: Event) =>
-                        this._updateSectionCardField(
-                          sectionIndex,
-                          cardIndex,
-                          'editor_title',
-                          (e.target as HTMLInputElement).value
-                        )}
-                    />
-                    <div class="description" style="margin: 0 0 4px 0;">
-                      ${localize('editor.card_editor_title_help')}
-                    </div>
-                    <label>${localize('editor.card_dashboard_title_label')}</label>
-                    <input
-                      type="text"
-                      .value=${card.title || ''}
-                      placeholder=${localize('editor.card_title_placeholder')}
-                      @change=${(e: Event) =>
-                        this._updateSectionCardField(
-                          sectionIndex,
-                          cardIndex,
-                          'title',
-                          (e.target as HTMLInputElement).value
-                        )}
-                    />
-                    <textarea
-                      rows="5"
-                      placeholder=${localize('editor.yaml_placeholder')}
-                      .value=${card.yaml || ''}
-                      style="width: 100%;"
-                      @change=${(e: Event) =>
-                        this._updateSectionCardYaml(sectionIndex, cardIndex, (e.target as HTMLTextAreaElement).value)}
-                    ></textarea>
-                    <button
-                      class="btn-primary"
-                      style="margin-top: 6px;"
-                      @click=${() => this._openCardEditorForSectionCard(sectionIndex, cardIndex)}
-                    >
-                      ${localize('editor.edit_card_with_ha_editor')}
-                    </button>
-                    <div class="custom-item-validation">${validationMsg}</div>
-                  </div>
-                </div>
-              `;
-            })}
-            <button
-              class="btn-primary"
-              style="margin-top: 4px;"
-              @click=${() => this._openCardPickerForSection(sectionIndex)}
-            >
-              ${localize('editor.add_card_to_section')}
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderCustomBadgeItem(badge: CustomBadge, index: number): TemplateResult {
-    const validationMsg = badge._yaml_error
-      ? html`<span style="color: var(--error-color);">&#x274C; ${badge._yaml_error}</span>`
-      : badge.yaml
-        ? html`<span style="color: var(--success-color, green);">&#x2705; ${localize('editor.yaml_valid')}</span>`
-        : nothing;
-
-    return html`
-      <div class="custom-item" data-index=${index}>
-        <div class="custom-item-header">
-          <strong>Badge ${index + 1}</strong>
-          <button class="btn-remove" @click=${() => this._removeCustomBadge(index)}>&#x2715;</button>
-        </div>
-        <textarea
-          rows="4"
-          placeholder="type: entity&#10;entity: sun.sun"
-          .value=${badge.yaml || ''}
-          style="width: 100%;"
-          @change=${(e: Event) => this._updateCustomBadgeYaml(index, (e.target as HTMLTextAreaElement).value)}
-        ></textarea>
-        <div class="custom-item-validation">${validationMsg}</div>
       </div>
     `;
   }
@@ -3560,6 +3023,42 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       _updateCustomViewField: editor._updateCustomViewField.bind(editor),
       _updateCustomViewAfterView: editor._updateCustomViewAfterView.bind(editor),
       _updateCustomViewYaml: editor._updateCustomViewYaml.bind(editor),
+    };
+  }
+
+  /** Typed panel facade for the custom content panel; state and config events stay in this host. */
+  private readonly _customContentHost = this.createCustomContentHost();
+
+  createCustomContentHost(): CustomContentPanelHost {
+    // Live facade getters intentionally refer to the owning LitElement.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const editor = this;
+    return {
+      get _config() {
+        return editor._config;
+      },
+      customViewsHost: this._customViewsHost,
+      _sectionLabelKey: (key) => Simon42DashboardStrategyEditor._sectionMeta.get(key)!.labelKey,
+      _getCustomCardEditorLabel: this._getCustomCardEditorLabel.bind(this),
+      _customCardsHeadingChanged: this._customCardsHeadingChanged.bind(this),
+      _customCardsIconChanged: this._customCardsIconChanged.bind(this),
+      _openCardPickerForCustomCard: () => editor._openCardPickerForCustomCard(),
+      _removeCustomCard: this._removeCustomCard.bind(this),
+      _updateCustomCardField: this._updateCustomCardField.bind(this),
+      _updateCustomCardYaml: this._updateCustomCardYaml.bind(this),
+      _openCardEditorForCustomCard: this._openCardEditorForCustomCard.bind(this),
+      _addCustomSection: this._addCustomSection.bind(this),
+      _removeCustomSection: this._removeCustomSection.bind(this),
+      _updateCustomSectionYaml: this._updateCustomSectionYaml.bind(this),
+      _updateCustomSectionField: this._updateCustomSectionField.bind(this),
+      _removeCardFromSection: this._removeCardFromSection.bind(this),
+      _updateSectionCardField: this._updateSectionCardField.bind(this),
+      _updateSectionCardYaml: this._updateSectionCardYaml.bind(this),
+      _openCardEditorForSectionCard: this._openCardEditorForSectionCard.bind(this),
+      _openCardPickerForSection: this._openCardPickerForSection.bind(this),
+      _addCustomBadge: this._addCustomBadge.bind(this),
+      _removeCustomBadge: this._removeCustomBadge.bind(this),
+      _updateCustomBadgeYaml: this._updateCustomBadgeYaml.bind(this),
     };
   }
 
