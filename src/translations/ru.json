@@ -9,7 +9,6 @@
     "security": "Безопасность",
     "batteries": "Батарейки",
     "climate": "Климат",
-    "cameras": "Камеры",
     "maintenance": "Обслуживание",
     "cctv": "Видеонаблюдение",
     "energy": "Энергия"
@@ -37,6 +36,7 @@
     "weather_next_days": "Ближайшие дни",
     "quick_actions": "Быстрые действия",
     "media": "Сейчас играет",
+    "timers": "Активные таймеры",
     "activity": "Недавняя активность"
   },
   "stacks": {
@@ -53,6 +53,8 @@
     "scenes": "Сцены",
     "vacuums": "Пылесосы и газонокосилки",
     "switches": "Выключатели и розетки",
+    "helpers": "Помощники и управление",
+    "sensors": "Датчики",
     "misc": "Прочее",
     "automations": "Автоматизации",
     "scripts": "Скрипты",
@@ -73,9 +75,6 @@
     "climate_active_one": "Термостат активен",
     "climate_active_many": "Термостаты активны",
     "climate_off": "Все термостаты выключены",
-    "maintenance_pending_one": "задача обслуживания",
-    "maintenance_pending_many": "задач обслуживания",
-    "maintenance_ok": "Обслуживание не требуется",
     "windows_open_one": "окно открыто",
     "windows_open_many": "окон открыто",
     "windows_closed": "Все окна закрыты"
@@ -129,8 +128,7 @@
     "areas": "Области",
     "other_areas": "Прочие области",
     "activity": "Активность",
-    "devices": "Устройства",
-    "other": "Прочие устройства безопасности"
+    "devices": "Устройства"
   },
   "batteries": {
     "critical": "Критический заряд",
@@ -169,9 +167,7 @@
     "events_vehicles": "Транспорт"
   },
   "pollen": {
-    "title": "Пыльца сегодня",
-    "tomorrow": "завтра",
-    "none": "Сегодня без существенной нагрузки. 🌿"
+    "title": "Пыльца"
   },
   "maintenance": {
     "unavailable": "Недоступно",
@@ -192,20 +188,16 @@
   "room": {
     "cameras": "Камеры",
     "lighting": "Освещение",
-    "all_on": "Включить всё",
-    "all_off": "Выключить всё",
     "locks": "Замки",
     "climate": "Климат",
     "covers": "Роллеты и жалюзи",
-    "curtains": "Шторы",
     "windows": "Окна, двери и ворота",
     "media": "Медиа",
-    "scenes": "Сцены",
     "vacuums": "Пылесосы и газонокосилки",
     "switches": "Выключатели и розетки",
     "misc": "Прочее",
-    "automations": "Автоматизации",
-    "scripts": "Скрипты",
+    "helpers": "Помощники и управление",
+    "sensors": "Датчики",
     "room_pins": "Закреплённые элементы",
     "scenes_automations": "Сцены и автоматизации",
     "start_camera_stream": "Запустить прямую трансляцию",
@@ -407,6 +399,10 @@
     "show_vacuums_section_in_rooms_desc": "Показывает пылесосы и газонокосилки в комнатах под отдельным заголовком вместо «Прочее».",
     "show_switches_section_in_rooms": "Отдельный раздел для выключателей и розеток",
     "show_switches_section_in_rooms_desc": "Показывает выключатели и умные розетки в комнатах под отдельным заголовком вместо «Прочее».",
+    "show_helpers_section_in_rooms": "Раздел помощников и управления",
+    "show_helpers_section_in_rooms_desc": "Показывает назначенные комнате помощники (input_boolean, input_number, input_select, timer, counter …) и управляемые сущности select, number, button, siren и remote в отдельном разделе.",
+    "show_sensors_section_in_rooms": "Раздел датчиков",
+    "show_sensors_section_in_rooms_desc": "Показывает бинарные датчики движения, присутствия, протечки, дыма, газа и подобные в виде плиток с последним изменением. Значки комнаты не меняются.",
     "show_automations_in_rooms": "Показывать автоматизации в комнатах",
     "show_automations_in_rooms_desc": "Показывает автоматизации, связанные с зоной, в соответствующих комнатах.",
     "show_scripts_in_rooms": "Показывать скрипты в комнатах",
@@ -735,6 +731,7 @@
     "custom_sections": "Пользовательские разделы",
     "quick_actions": "Быстрые действия",
     "media": "Сейчас играет",
+    "timers": "Активные таймеры",
     "activity": "Недавняя активность"
   },
   "energy_view": {

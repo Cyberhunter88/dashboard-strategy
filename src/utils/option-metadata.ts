@@ -248,6 +248,18 @@ export const OPTION_METADATA = {
     labelKey: 'editor.show_switches_section_in_rooms',
     values: [true, false],
   },
+  show_helpers_section_in_rooms: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.show_helpers_section_in_rooms',
+    values: [true, false],
+  },
+  show_sensors_section_in_rooms: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.show_sensors_section_in_rooms',
+    values: [true, false],
+  },
   show_cover_controls_in_rooms: {
     kind: 'boolean',
     defaultValue: false,

@@ -1,6 +1,6 @@
 {
   "name": "dashboard-strategy",
-  "version": "1.41.1",
+  "version": "1.42.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -35,7 +35,7 @@
     "happy-dom": "^21.0.4",
     "home-assistant-js-websocket": "^9.6.0",
     "playwright": "^1.63.0",
-    "prettier": "^3.8.3",
+    "prettier": "^3.10.1",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "vitest": "^4.1.9",

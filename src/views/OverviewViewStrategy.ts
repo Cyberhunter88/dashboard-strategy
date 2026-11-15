@@ -49,6 +49,7 @@ import { createVacuumsSection } from '../sections/VacuumsSection';
 import { createMaintenanceSection } from '../sections/MaintenanceSection';
 import { createQuickActionsSection } from '../sections/QuickActionsSection';
 import { createMediaSection } from '../sections/MediaSection';
+import { createTimersSection } from '../sections/TimersSection';
 import { createActivitySection } from '../sections/ActivitySection';
 import { getSectionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 import { createOverviewView } from '../utils/view-builder';
@@ -533,6 +534,7 @@ function createWeatherStartSectionsFromItems(
         break;
       case 'quick_actions':
       case 'media':
+      case 'timers':
       case 'activity':
         // Built once in generate() so section visibility and assigned custom cards apply.
         section = additionalBlocks[item.type] ?? null;
@@ -1039,6 +1041,10 @@ class Simon42ViewOverviewStrategy extends HTMLElement {
       media: decorateBlock(
         'media',
         createMediaSection(hass, dashboardConfig.show_media_section === true, hiddenHeadings.has('media'))
+      ),
+      timers: decorateBlock(
+        'timers',
+        createTimersSection(hass, dashboardConfig.show_timers_section === true, hiddenHeadings.has('timers'))
       ),
       activity: decorateBlock(
         'activity',

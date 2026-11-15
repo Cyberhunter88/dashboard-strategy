@@ -46,9 +46,11 @@ export function renderCustomViewsPanel(host: CustomViewsPanelHost, nested = fals
       </div>
 
       <div id="custom-views-list">
-        ${customViews.length === 0
-          ? html`<div class="empty-state">${localize('editor.no_custom_views')}</div>`
-          : customViews.map((view, index) => renderCustomViewItem(host, view, index))}
+        ${
+          customViews.length === 0
+            ? html`<div class="empty-state">${localize('editor.no_custom_views')}</div>`
+            : customViews.map((view, index) => renderCustomViewItem(host, view, index))
+        }
       </div>
 
       <div class="custom-item-row" style="margin-top: 8px;">
@@ -104,16 +106,18 @@ function renderCustomViewItem(host: CustomViewsPanelHost, view: CustomView, inde
           />
         </div>
         ${renderCustomViewPosition(host, view, index)}
-        ${isReference
-          ? renderCustomViewRefFields(host, view, index)
-          : html`<textarea
-                rows="8"
-                placeholder=${localize('editor.yaml_placeholder')}
-                .value=${view.yaml || ''}
-                style="width: 100%;"
-                @change=${(e: Event) => host._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}
-              ></textarea>
-              <div class="custom-item-validation">${validationMsg}</div>`}
+        ${
+          isReference
+            ? renderCustomViewRefFields(host, view, index)
+            : html`<textarea
+                  rows="8"
+                  placeholder=${localize('editor.yaml_placeholder')}
+                  .value=${view.yaml || ''}
+                  style="width: 100%;"
+                  @change=${(e: Event) => host._updateCustomViewYaml(index, (e.target as HTMLTextAreaElement).value)}
+                ></textarea>
+                <div class="custom-item-validation">${validationMsg}</div>`
+        }
       </div>
     </div>
   `;
@@ -129,11 +133,13 @@ function renderCustomViewPosition(host: CustomViewsPanelHost, view: CustomView, 
         @change=${(event: Event) => host._updateCustomViewAfterView(index, (event.target as HTMLSelectElement).value)}
       >
         <option value="" ?selected=${!view.after_view}>${localize('editor.custom_view_position_end')}</option>
-        ${orphaned
-          ? html`<option value=${view.after_view || ''} selected>
-              &#x26A0; ${localize('editor.custom_view_position_after')} ${view.after_view}
-            </option>`
-          : nothing}
+        ${
+          orphaned
+            ? html`<option value=${view.after_view || ''} selected>
+                &#x26A0; ${localize('editor.custom_view_position_after')} ${view.after_view}
+              </option>`
+            : nothing
+        }
         ${options.map(
           ([path, title]) => html`
             <option value=${path} ?selected=${view.after_view === path}>
@@ -219,10 +225,12 @@ function renderCustomViewRefFields(host: CustomViewsPanelHost, view: CustomView,
       </select>
     </div>
     <div class="custom-item-validation">
-      ${orphaned
-        ? html`<span style="color: var(--error-color);">${localize('editor.ref_dashboard_missing')}</span>`
-        : view.ref_dashboard && view.ref_view
-          ? html`<span style="color: var(--success-color, green);">${localize('editor.ref_valid')}</span>`
-          : localize('editor.ref_incomplete')}
+      ${
+        orphaned
+          ? html`<span style="color: var(--error-color);">${localize('editor.ref_dashboard_missing')}</span>`
+          : view.ref_dashboard && view.ref_view
+            ? html`<span style="color: var(--success-color, green);">${localize('editor.ref_valid')}</span>`
+            : localize('editor.ref_incomplete')
+      }
     </div>`;
 }

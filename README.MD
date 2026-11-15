@@ -216,7 +216,7 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Raum-Pins** — Spezielle Entitäten die in ihren zugeordneten Räumen ganz oben erscheinen. Ideal für Entitäten die nicht automatisch erkannt werden (z.B. Wetterstationen).
 
-**Raum-Abschnitte sortieren** — Die Reihenfolge der automatischen Raum-Abschnitte (USV, Energie, Kameras, Lichter, Schlösser, Klima, Rollos, Medien, Szenen, Sonstiges, Raum-Pins) kann pro Bereich angepasst werden.
+**Raum-Abschnitte sortieren** — Die Reihenfolge der automatischen Raum-Abschnitte (USV, Energie, Kameras, Lichter, Schlösser, Klima, Rollos, Medien, Szenen, Schalter, Helfer & Steuerung, Melder & Sensoren, Sonstiges, Raum-Pins) kann pro Bereich angepasst werden.
 
 **Energie-Block in Räumen** — Die Energie-Sensoren eines Bereichs lassen sich als eigener Raum-Block ein- oder ausblenden (`show_energy_in_rooms`). Standardmäßig bleibt das bisherige Verhalten erhalten.
 
@@ -232,7 +232,19 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Rollo-Sammelsteuerung** — Optional zeigt `show_cover_controls_in_rooms` Öffnen-, Stopp- und Schließen-Buttons an Rollo-/Vorhang-Überschriften. Pro Aktion werden nur unterstützte Entitäten angesprochen; Fenster, Türen, Tore und Garagen bleiben ausgeschlossen.
 
-**Rollo-Sammelsteuerung** — Optional zeigt `show_cover_controls_in_rooms` Öffnen-, Stopp- und Schließen-Buttons an Rollo-/Vorhang-Überschriften. Pro Aktion werden nur unterstützte Entitäten angesprochen; Fenster, Türen, Tore und Garagen bleiben ausgeschlossen.
+**Helfer & Steuerung in Räumen** — `show_helpers_section_in_rooms: true` zeigt dem Bereich zugeordnete Helfer (`input_boolean`, `input_number`, `input_select`, `input_button`, `input_datetime`, `input_text`, `timer`, `counter`) und bedienbare `select`-, `number`-, `button`-, `siren`- und `remote`-Entitäten in einem eigenen Raum-Abschnitt. Konfigurations- und Diagnose-Entitäten bleiben ausgeschlossen. Standardmäßig aus.
+
+**Melder & Sensoren in Räumen** — `show_sensors_section_in_rooms: true` zeigt Bewegungs-, Präsenz-, Wasser-, Rauch-, Gas-, CO-, Vibrations-, Sabotage- und Problem-Binärsensoren als Kacheln mit letzter Änderung. Die Raum-Badges bleiben unverändert; Tür- und Fensterkontakte bleiben bei `show_window_contacts_in_rooms`/`show_door_contacts_in_rooms`. Standardmäßig aus.
+
+**Aktive Timer** — `show_timers_section: true` ergänzt die Übersicht um einen Abschnitt mit allen laufenden oder pausierten Timern. Er blendet sich live aus, sobald kein Timer läuft, und lässt sich wie die anderen Abschnitte frei platzieren.
+
+```yaml
+strategy:
+  type: custom:dashboard-strategy
+  show_helpers_section_in_rooms: true
+  show_sensors_section_in_rooms: true
+  show_timers_section: true
+```
 
 **Automationen & Skripte** — Optional können dem Bereich zugeordnete Automationen und Skripte in den Raum-Views angezeigt werden. Beide Optionen sind separat aktivierbar und standardmäßig aus.
 

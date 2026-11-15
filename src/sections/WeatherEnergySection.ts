@@ -96,7 +96,7 @@ export function createWeatherSection(
   const sensorRow = buildWeatherSensorRow(weatherSensors);
   if (sensorRow) cards.push(sensorRow);
   const pollen = pollenEntities.filter((entity) => ENTITY_ID_RE.test(entity));
-  if (pollen.length > 0) cards.push({ type: 'entities', title: 'Pollen', entities: pollen });
+  if (pollen.length > 0) cards.push({ type: 'entities', title: localize('pollen.title'), entities: pollen });
 
   const card = buildPresentationCard(weatherEntity, resolvedPresentation);
   if (card) cards.push(card);

@@ -186,15 +186,17 @@ class DashboardStrategyBatteriesCard extends LitElement {
           (status) => html`
             <section class="group">
               <div id=${`heading-${status}`}></div>
-              ${this._config.group_batteries_by_areas === true
-                ? this._renderedAreaGroups[status].map((group) => {
-                    const key = this._areaKey(status, group.areaId);
-                    return html`<div class="area-group">
-                      <div id=${`area-heading-${key}`}></div>
-                      <div class="tiles" id=${`tiles-${key}`}></div>
-                    </div>`;
-                  })
-                : html`<div class="tiles" id=${`tiles-${status}`}></div>`}
+              ${
+                this._config.group_batteries_by_areas === true
+                  ? this._renderedAreaGroups[status].map((group) => {
+                      const key = this._areaKey(status, group.areaId);
+                      return html`<div class="area-group">
+                        <div id=${`area-heading-${key}`}></div>
+                        <div class="tiles" id=${`tiles-${key}`}></div>
+                      </div>`;
+                    })
+                  : html`<div class="tiles" id=${`tiles-${status}`}></div>`
+              }
             </section>
           `
         )}

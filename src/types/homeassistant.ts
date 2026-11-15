@@ -37,13 +37,6 @@ export interface FrontendLocaleData {
   time_zone: 'local' | 'server';
 }
 
-export interface ServiceCallRequest {
-  domain: string;
-  service: string;
-  serviceData?: Record<string, any>;
-  target?: HassServiceTarget;
-}
-
 export interface ServiceCallResponse {
   context: { id: string; parent_id?: string; user_id?: string | null };
   response?: any;

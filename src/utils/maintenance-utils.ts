@@ -53,7 +53,7 @@ export interface MaintenanceScan {
  * firmware = config), and HA's own updates card ignores the category
  * too — filtering them out silently drops real pending updates.
  */
-export function collectUpdateIds(): string[] {
+function collectUpdateIds(): string[] {
   return Registry.getEntityIdsForDomain('update').filter(function isDashboardRelevant(id) {
     if (Registry.isExcludedByLabel(id)) return false;
     if (Registry.isHiddenByConfig(id)) return false;
@@ -157,7 +157,7 @@ function groupUnavailable(hass: HomeAssistant, entityIds: string[]): boolean {
  * Single pass with early exit per device — cheap enough for the
  * reactive summary card (runs on every relevant hass update).
  */
-export function countUnavailable(hass: HomeAssistant, scan: MaintenanceScan): number {
+function countUnavailable(hass: HomeAssistant, scan: MaintenanceScan): number {
   let count = 0;
   for (const group of scan.deviceGroups) {
     if (groupUnavailable(hass, group)) count++;

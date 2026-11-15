@@ -78,6 +78,7 @@ export const WEATHER_START_BLOCK_META: Readonly<Record<WeatherStartKey, { icon: 
   maintenance: { icon: 'mdi:wrench-clock', labelKey: 'weather_start_blocks.maintenance' },
   quick_actions: { icon: 'mdi:gesture-tap-button', labelKey: 'weather_start_blocks.quick_actions' },
   media: { icon: 'mdi:play-circle-outline', labelKey: 'weather_start_blocks.media' },
+  timers: { icon: 'mdi:timer-outline', labelKey: 'weather_start_blocks.timers' },
   activity: { icon: 'mdi:history', labelKey: 'weather_start_blocks.activity' },
   areas: { icon: 'mdi:floor-plan', labelKey: 'weather_start_blocks.areas' },
   custom_cards: { icon: 'mdi:cards', labelKey: 'weather_start_blocks.custom_cards' },

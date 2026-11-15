@@ -11,7 +11,6 @@
     "climate": "Klíma",
     "cctv": "Kamerák",
     "maintenance": "Karbantartás",
-    "cameras": "Kamerák",
     "energy": "Energia"
   },
   "sections": {
@@ -37,6 +36,7 @@
     "maintenance": "Függőben lévő frissítések",
     "quick_actions": "Gyorsműveletek",
     "media": "Most szól",
+    "timers": "Aktív időzítők",
     "activity": "Legutóbbi aktivitás"
   },
   "stacks": {
@@ -52,6 +52,8 @@
     "media": "Média",
     "scenes": "Jelenetek",
     "switches": "Kapcsolók és aljzatok",
+    "helpers": "Segédek és vezérlők",
+    "sensors": "Érzékelők",
     "misc": "Egyéb",
     "automations": "Automatizálások",
     "scripts": "Szkriptek",
@@ -73,9 +75,6 @@
     "climate_active_one": "termosztát aktív",
     "climate_active_many": "termosztát aktív",
     "climate_off": "Minden termosztát kikapcsolva",
-    "maintenance_pending_one": "karbantartási feladat várakozik",
-    "maintenance_pending_many": "karbantartási feladat várakozik",
-    "maintenance_ok": "Nincs esedékes karbantartás",
     "windows_open_one": "ablak nyitva",
     "windows_open_many": "ablak nyitva",
     "windows_closed": "Minden ablak zárva"
@@ -119,7 +118,6 @@
     "smoke_gas_inactive": "Füst-, gáz- és hőérzékelők – nincs riasztás",
     "activity": "Tevékenység",
     "extra_entities": "Okoskészülékek és egyebek",
-    "other": "Egyéb biztonsági entitások",
     "motorized_windows_open": "Motoros ablakok – nyitva",
     "motorized_windows_closed": "Motoros ablakok – csukva",
     "water_leak_active": "Vízszivárgás-érzékelők – riasztás",
@@ -155,19 +153,15 @@
     "lighting": "Világítás",
     "vacuums": "Porszívók és fűnyírók",
     "switches": "Kapcsolók és aljzatok",
-    "all_on": "Összes bekapcsolása",
-    "all_off": "Összes kikapcsolása",
     "locks": "Zárak",
     "climate": "Klíma",
     "covers": "Árnyékolók",
-    "curtains": "Függönyök",
     "windows": "Ablakok, ajtók és kapuk",
     "media": "Média",
-    "scenes": "Jelenetek",
     "scenes_automations": "Jelenetek és automatizálások",
     "misc": "Egyéb",
-    "automations": "Automatizálások",
-    "scripts": "Szkriptek",
+    "helpers": "Segédek és vezérlők",
+    "sensors": "Érzékelők",
     "room_pins": "Helyiség kiemelt elemei",
     "start_camera_stream": "Élő közvetítés indítása",
     "stop_camera_stream": "Élő közvetítés leállítása"
@@ -374,6 +368,10 @@
     "show_vacuums_section_in_rooms_desc": "A porszívókat és robotfűnyírókat saját címsor alatt jeleníti meg a helyiségnézetekben az „Egyéb” helyett.",
     "show_switches_section_in_rooms": "Külön szakasz a kapcsolóknak és aljzatoknak",
     "show_switches_section_in_rooms_desc": "A kapcsolókat és okoskonnektorokat saját címsor alatt jeleníti meg a helyiségnézetekben az „Egyéb” helyett.",
+    "show_helpers_section_in_rooms": "Segédek és vezérlők szakasz",
+    "show_helpers_section_in_rooms_desc": "A helyiséghez rendelt segédeket (input_boolean, input_number, input_select, timer, counter …) és a kezelhető select, number, button, siren és remote entitásokat saját szakaszban jeleníti meg.",
+    "show_sensors_section_in_rooms": "Érzékelők szakasz",
+    "show_sensors_section_in_rooms_desc": "A mozgás-, jelenlét-, szivárgás-, füst-, gáz- és hasonló bináris érzékelőket csempeként jeleníti meg az utolsó változással. A helyiség jelvényei változatlanok maradnak.",
     "camera_live_toggle": "Élőkép a lejátszás gombbal (új kamerakártya)",
     "camera_live_toggle_desc": "A helyiség kamerái kezdetben állóképet mutatnak, és csak a lejátszás gomb megérintése után kezdenek közvetíteni — ez sávszélességet takarít meg, például fali táblagépeken. Alapértelmezés szerint kikapcsolva: a kamerák a korábbi módon működnek (automatikusan frissülő előnézet).",
     "show_energy_in_rooms": "Energiablokk megjelenítése a helyiségnézetekben",
@@ -696,6 +694,7 @@
     "custom_sections": "Egyéni szakaszok",
     "quick_actions": "Gyorsműveletek",
     "media": "Most szól",
+    "timers": "Aktív időzítők",
     "activity": "Legutóbbi aktivitás"
   },
   "cctv": {
@@ -717,9 +716,7 @@
     "events_vehicles": "Járművek"
   },
   "pollen": {
-    "title": "Mai pollenterhelés",
-    "tomorrow": "holnap",
-    "none": "Ma nincs jelentős pollenterhelés. 🌿"
+    "title": "Pollen"
   },
   "maintenance": {
     "unavailable": "Nem érhető el",

@@ -2,7 +2,17 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.41.1...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.42.0...HEAD).
+
+## 1.42.0
+
+- New opt-in room block **Helpers & controls** (`show_helpers_section_in_rooms`): helpers (`input_boolean`, `input_number`, `input_select`, `input_button`, `input_datetime`, `input_text`, `timer`, `counter`) and user-facing `select`, `number`, `button`, `siren` and `remote` entities assigned to a room were previously not shown in its room view at all.
+- New opt-in room block **Detectors & sensors** (`show_sensors_section_in_rooms`): motion, occupancy, presence, moisture, smoke, gas, carbon monoxide, vibration, tamper, safety and problem binary sensors as tiles with their last change. Room badges are unchanged.
+- New opt-in overview section **Active timers** (`show_timers_section`): every running or paused timer, hidden live while no timer runs; it is added to an existing free layout automatically when enabled.
+- Fix: the room section order editor now lists the Misc block for rooms that only contain humidifiers, valves or water heaters.
+- The pollen card title is translated (it was hardcoded in English).
+- Performance: the lights/covers group, batteries, camera and video tip cards moved from the eager `core` chunk to the `views` chunk (core about 172 KB → 129 KB raw, 39 KB → 32 KB brotli); both chunks still load before `generate()` resolves.
+- Maintenance: the area options and custom content editor panels moved out of `StrategyEditor.ts` (about 3,700 → 3,200 lines), helpers used only inside their module are no longer exported, fewer `any` types in the Lovelace and room view types, 13 unused translation keys removed, and a new `scripts/find-unused-translations.mjs` audit tool.
 
 ## 1.41.1
 

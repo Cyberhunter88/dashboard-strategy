@@ -67,6 +67,8 @@ describe('mergeStacksOrder', () => {
       'media',
       'scenes',
       'switches',
+      'helpers',
+      'sensors',
       'room_pins',
     ]);
   });

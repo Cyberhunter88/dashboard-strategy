@@ -1,11 +1,12 @@
 # Project status
 
-Updated: 2026-11-13
+Updated: 2026-11-15
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.41.1. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
-- Version 1.41.1 is a housekeeping release without behavior changes: the unused `EditableCard` and inline-editor helper are removed (the name `dashboard-strategy-editable-card` stays reserved), the maintenance sensor discovery builds search texts once, the changelog covers 1.39.0 to 1.41.0, and TypeScript-ESLint/Playwright are updated within their major version. Prettier is deliberately kept at 3.8.3: 3.10 reformats 14 existing files and fails the CI formatting check. Validation in Home Assistant is still pending.
+- Dashboard Strategy development version: 1.42.0. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.42.0 adds three opt-in features: the room blocks `show_helpers_section_in_rooms` (helpers and user-facing select/number/button/siren/remote entities, previously missing from room views) and `show_sensors_section_in_rooms` (motion/presence/leak/smoke binary sensors as tiles), and the overview section `show_timers_section` (running or paused timers via visibility conditions). It also fixes the Misc entry in the stack order editor for humidifier/valve/water heater rooms, translates the pollen card title, moves view-only cards from the `core` chunk to `views` (core about 172 KB to 129 KB), extracts the area options and custom content editor panels (`StrategyEditor.ts` about 3,200 lines), narrows exports and Lovelace types, removes 13 unused translation keys, adds `scripts/find-unused-translations.mjs`, and moves to Prettier 3.10. Validation in Home Assistant is still pending.
+- Version 1.41.1 is a housekeeping release without behavior changes: the unused `EditableCard` and inline-editor helper are removed (the name `dashboard-strategy-editable-card` stays reserved), the maintenance sensor discovery builds search texts once, the changelog covers 1.39.0 to 1.41.0, and TypeScript-ESLint/Playwright are updated within their major version. Validation in Home Assistant is still pending.
 - Version 1.41.0 adds `hd_url` to `camera_webrtc_streams`: the grid card keeps the light `url` stream and a tile opens the heavy stream (e.g. 4K) in a browser_mod popup on tap. Validation in Home Assistant is still pending.
 - Version 1.40.2 gives the `webrtc` camera renderer smooth-playback defaults (`mode: webrtc,mse`, muted, `intersection: 0.5`, `background: false`, all overridable per camera in `camera_webrtc_streams`) and documents connecting RTSP/go2rtc sources such as cctv-viewer. Validation in Home Assistant is still pending.
 - Version 1.40.1 is a CI-only release: the version release workflow no longer repeats typecheck, lint, and tests that CI already runs on the same commit (it only rebuilds and validates the production artifacts), and it is now started manually only (Actions > Version Release) instead of on every merge that changes `package.json`, since several PRs can land with the same version.
@@ -20,11 +21,10 @@ Updated: 2026-11-13
 
 ## Open tasks
 
-- Split further panels out of `src/editor/StrategyEditor.ts` (about 3,600 lines; remaining candidates: area options, custom content, weather-start layout helpers, and the drag/drop handlers).
-- Replace the remaining `any`/`@ts-*`/`eslint-disable` spots in `src/` (about 30, mostly `types/lovelace.ts`, `StrategyEditor.ts`, `RoomViewStrategy.ts`) with precise types where possible.
-- Move to Prettier 3.10 in a dedicated formatting-only change (it reformats `StrategyEditor.ts`, the editor panels and the group cards).
-- Evaluate the major updates `js-yaml` 5, `typescript` 7 and `vitest` 5 separately; they are deliberately not part of 1.41.1.
-- Audit translation keys for unused entries; many keys are composed dynamically, so a plain text search is not sufficient.
+- Split further panels out of `src/editor/StrategyEditor.ts` (about 3,200 lines; remaining candidates: weather-start layout helpers and the drag/drop handlers). `CustomContentPanel.ts` still contains the custom cards/sections list renderers that are disabled by a hard-coded `isWeatherStart = true`; decide whether to remove them.
+- Replace the remaining `any`/`@ts-*`/`eslint-disable` spots in `src/` (about 25, mostly `StrategyEditor.ts`, `editor-styles.ts`, and the `LovelaceCardConfig` index signature, whose change to `unknown` touches many call sites and tests).
+- Evaluate the major updates `js-yaml` 5, `typescript` 7 and `vitest` 5 separately; they are deliberately not part of 1.42.0.
+- Review the about 60 `editor.*` and four `stacks.*` keys that `node scripts/find-unused-translations.mjs` reports as possibly unused; delete them one at a time after checking the running editor.
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.
 - Resolve the historical credential finding through private coordination; do not rewrite any published branch without explicit approval.
 - Review the seven historical binary or oversized objects that the text scanner could not inspect.
@@ -38,5 +38,5 @@ Updated: 2026-11-13
 
 ## Next steps
 
-1. Validate versions 1.36.0 to 1.41.1 in Home Assistant before publishing.
-2. Open the pull request for branch `codex/housekeeping-1.41.1` after authorization, wait for CI and HACS validation, then run the manual Version Release workflow.
+1. Validate versions 1.36.0 to 1.42.0 in Home Assistant before publishing.
+2. Open the pull request for branch `codex/release-1.42.0` after authorization, wait for CI and HACS validation, then run the manual Version Release workflow.

@@ -9,7 +9,7 @@
 
 export interface LovelaceStrategyConfig {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // -- Cards ------------------------------------------------------------
@@ -23,7 +23,7 @@ export interface LovelaceCardConfig {
 
 export interface LovelaceTileCardFeatureBase {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface LightBrightnessTileFeature extends LovelaceTileCardFeatureBase {
@@ -117,9 +117,9 @@ export interface LovelaceBadgeConfig {
   type?: string;
   entity?: string;
   color?: string;
-  tap_action?: Record<string, any>;
+  tap_action?: Record<string, unknown>;
   visibility?: LovelaceCondition[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // -- Sections ---------------------------------------------------------
@@ -131,7 +131,7 @@ export interface LovelaceSectionConfig {
   column_span?: number;
   row_span?: number;
   visibility?: LovelaceCondition[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // -- Views ------------------------------------------------------------
@@ -182,7 +182,7 @@ export interface LovelaceGridOptions {
 
 export interface LovelaceCondition {
   condition: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface LovelaceViewHeaderConfig {

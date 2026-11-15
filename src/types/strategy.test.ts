@@ -28,6 +28,7 @@ describe('weather-start defaults', () => {
       'vacuums',
       'maintenance',
       'media',
+      'timers',
       'activity',
       'custom_cards',
       'custom_sections',

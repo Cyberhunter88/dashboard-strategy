@@ -2,7 +2,7 @@ import type { Simon42StrategyConfig, WeatherStartKey, WeatherStartLayoutItem } f
 
 type OptionalBlockConfig = Pick<
   Simon42StrategyConfig,
-  'quick_action_entities' | 'show_media_section' | 'show_activity_section'
+  'quick_action_entities' | 'show_media_section' | 'show_timers_section' | 'show_activity_section'
 >;
 
 /**
@@ -14,6 +14,7 @@ const LATE_OPTIONAL_BLOCKS: readonly { key: WeatherStartKey; enabled: (config: O
   { key: 'quick_actions', enabled: (config) => (config.quick_action_entities ?? []).length > 0 },
   { key: 'media', enabled: (config) => config.show_media_section === true },
   { key: 'activity', enabled: (config) => config.show_activity_section === true },
+  { key: 'timers', enabled: (config) => config.show_timers_section === true },
 ];
 
 export function withEnabledOptionalBlocks(
