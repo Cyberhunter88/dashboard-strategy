@@ -96,12 +96,33 @@ export function isBadgeCandidate(
   return false;
 }
 
-/** Keep one automatic badge per type until the user explicitly curates that type. */
-export function selectBadgeEntitiesOfType(entities: string[], hiddenBadges: ReadonlySet<string>): string[] {
+/**
+ * Keep one automatic badge per type until the user explicitly curates that type.
+ *
+ * With `deviceKey`, the automatic selection keeps one badge per device instead
+ * (entities without a device count individually). This lets rooms with several
+ * physical sensors of one type, such as two motion sensors in a stairwell
+ * hallway, show each sensor while a camera's motion/person/vehicle/animal
+ * entities still collapse into a single badge.
+ */
+export function selectBadgeEntitiesOfType(
+  entities: string[],
+  hiddenBadges: ReadonlySet<string>,
+  deviceKey?: (entityId: string) => string | null | undefined
+): string[] {
   const first = entities[0];
   if (!first) return [];
   const curated = entities.some((entityId) => hiddenBadges.has(entityId));
-  return curated ? entities.filter((entityId) => !hiddenBadges.has(entityId)) : [first];
+  if (curated) return entities.filter((entityId) => !hiddenBadges.has(entityId));
+  if (!deviceKey) return [first];
+  const seenDevices = new Set<string>();
+  return entities.filter((entityId) => {
+    const key = deviceKey(entityId);
+    if (!key) return true;
+    if (seenDevices.has(key)) return false;
+    seenDevices.add(key);
+    return true;
+  });
 }
 
 export interface BadgeCandidate {

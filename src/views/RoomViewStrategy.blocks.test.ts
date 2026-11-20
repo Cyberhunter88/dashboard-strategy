@@ -70,3 +70,32 @@ describe('room helpers and sensors blocks', () => {
     ]);
   });
 });
+
+describe('room motion badges', () => {
+  const hall = { area_id: 'hallway', name: 'Hallway' };
+  const hallHass = makeHass({
+    areas: [hall],
+    devices: [
+      { id: 'dev_ground', area_id: 'hallway' },
+      { id: 'dev_upper', area_id: 'hallway' },
+      { id: 'dev_cam', area_id: 'hallway' },
+    ],
+    entities: [
+      { entity_id: 'binary_sensor.hall_ground', device_id: 'dev_ground', attributes: { device_class: 'motion' } },
+      { entity_id: 'binary_sensor.hall_upper', device_id: 'dev_upper', attributes: { device_class: 'motion' } },
+      { entity_id: 'binary_sensor.cam_motion', device_id: 'dev_cam', attributes: { device_class: 'motion' } },
+      { entity_id: 'binary_sensor.cam_person', device_id: 'dev_cam', attributes: { device_class: 'motion' } },
+    ],
+  });
+
+  it('shows one motion badge per device', async () => {
+    const dashboardConfig = {};
+    Registry.initialize(hallHass, dashboardConfig);
+    const view = await generate({ area: hall, dashboardConfig }, hallHass);
+    expect((view.badges ?? []).map((b) => (typeof b === 'string' ? b : b.entity))).toEqual([
+      'binary_sensor.hall_ground',
+      'binary_sensor.hall_upper',
+      'binary_sensor.cam_motion',
+    ]);
+  });
+});

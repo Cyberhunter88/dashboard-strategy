@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.38.0`. Unit tests live beside source modules;
+Current development version: `1.43.0`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -80,7 +80,7 @@ The generated maintenance view is resolved centrally through `resolveFeatureTogg
 Important behavior:
 
 - Area temperature/humidity and room primary temperature/humidity use explicit Home Assistant area assignments; other sensor badges may be auto-detected.
-- `groups_options.badges.hidden` is badge-local and must never enter the Registry's dashboard-wide exclusion set. Automatic badges show one entity per sensor type until that type is manually curated; then all still-selected entities of that type render. Explicit `badges.additional` entries remain supported.
+- `groups_options.badges.hidden` is badge-local and must never enter the Registry's dashboard-wide exclusion set. Automatic badges show one entity per sensor type (motion and occupancy/presence: one per device) until that type is manually curated; then all still-selected entities of that type render. Explicit `badges.additional` entries remain supported.
 - Power, energy, water, and gas sensors belong to the room energy block and are not automatic badge candidates. Config and diagnostic registry entities must not appear in editor entity pickers.
 - UPS detection uses only visible pre-filtered entities and is enabled by default.
 - `house_mode_entity` accepts user-facing `input_select.*` and `select.*` entities. It renders as a full-width native tile with `select-options`; categorized config/diagnostic selects are excluded from the editor picker.

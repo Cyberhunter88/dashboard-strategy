@@ -453,23 +453,30 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     };
 
-    // Single-match sensor types
-    const singleTypes: Array<[string[], string]> = [
+    // Single-match sensor types; motion and occupancy keep one badge per device
+    // so rooms spanning several floors (e.g. a stairwell hallway) show every
+    // physical sensor, while multi-entity devices such as cameras stay at one.
+    const perDevice = (entityId: string) => Registry.getEntity(entityId)?.device_id;
+    const singleTypes: Array<[string[], string, boolean?]> = [
       [sensorEntities.pm25, 'pm25'],
       [sensorEntities.pm10, 'pm10'],
       [sensorEntities.co2, 'carbon_dioxide'],
       [sensorEntities.voc, 'volatile_organic_compounds'],
       [sensorEntities.illuminance, 'illuminance'],
       [sensorEntities.battery, 'battery'],
-      [sensorEntities.motion, 'motion'],
-      [sensorEntities.occupancy, 'occupancy'],
+      [sensorEntities.motion, 'motion', true],
+      [sensorEntities.occupancy, 'occupancy', true],
       [sensorEntities.absolute_humidity, 'moisture'],
       [sensorEntities.smoke, 'smoke'],
       [sensorEntities.gas, 'gas'],
     ];
     const hiddenBadgeSet = new Set<string>(badgeOpts?.hidden || []);
-    for (const [entities, colorKey] of singleTypes) {
-      for (const entityId of selectBadgeEntitiesOfType(entities, hiddenBadgeSet)) {
+    for (const [entities, colorKey, oncePerDevice] of singleTypes) {
+      for (const entityId of selectBadgeEntitiesOfType(
+        entities,
+        hiddenBadgeSet,
+        oncePerDevice ? perDevice : undefined
+      )) {
         addCandidate(entityId, colorKey);
       }
     }

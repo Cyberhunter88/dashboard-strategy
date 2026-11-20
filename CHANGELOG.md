@@ -4,6 +4,10 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.42.0...HEAD).
 
+## 1.43.0
+
+- Room badges show every motion and occupancy/presence sensor of a room, one per device, instead of only the first one: a hallway with motion sensors on the ground and upper floor now shows both. A camera's motion/person/vehicle/animal entities still collapse into one badge. Curating the type in the editor keeps working as before.
+
 ## 1.42.0
 
 - New opt-in room block **Helpers & controls** (`show_helpers_section_in_rooms`): helpers (`input_boolean`, `input_number`, `input_select`, `input_button`, `input_datetime`, `input_text`, `timer`, `counter`) and user-facing `select`, `number`, `button`, `siren` and `remote` entities assigned to a room were previously not shown in its room view at all.
