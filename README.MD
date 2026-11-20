@@ -250,7 +250,7 @@ strategy:
 
 **Fenster- & Türkontakte** — Optional können Fensterkontakte und Türkontakte als Badges in den Raum-Views angezeigt werden. Zwei getrennte Toggles im Editor, standardmäßig aus. Absolute Luftfeuchtigkeit (z.B. von der Thermal Comfort Integration, `g/m³`) wird automatisch als Badge erkannt.
 
-**Badge-Auswahl** — Ohne manuelle Auswahl erscheint höchstens ein automatisch erkanntes Badge pro Sensortyp. Sobald ein Typ im Editor kuratiert wurde, werden alle weiterhin ausgewählten Sensoren dieses Typs angezeigt. Das Ausblenden in der Badge-Gruppe wirkt nur auf Raumbadges und versteckt die Entität nicht in anderen Dashboard-Bereichen. Leistungs-, Energie-, Wasser- und Gassensoren gehören konsistent in den Energieblock.
+**Badge-Auswahl** — Ohne manuelle Auswahl erscheint höchstens ein automatisch erkanntes Badge pro Sensortyp. Bewegungs- und Präsenzmelder erscheinen dagegen einmal pro Gerät: Ein Flur mit Meldern im EG und OG zeigt beide, die Bewegungs-/Personen-/Tier-Sensoren einer Kamera bleiben ein einzelnes Badge. Sobald ein Typ im Editor kuratiert wurde, werden alle weiterhin ausgewählten Sensoren dieses Typs angezeigt. Das Ausblenden in der Badge-Gruppe wirkt nur auf Raumbadges und versteckt die Entität nicht in anderen Dashboard-Bereichen. Leistungs-, Energie-, Wasser- und Gassensoren gehören konsistent in den Energieblock.
 
 **Ansichten** — Summary-Views (Lichter, Rollos, etc.) und Raum-Views können optional in der oberen Navigation angezeigt werden. Die Unterseiten für Licht, Rollos, Security, Batterien und Klima lassen sich außerdem separat aktivieren, wenn ihre Übersichtskachel ausgeblendet ist; Deep-Links und Custom-View-Positionierung bleiben dabei gültig.
 
