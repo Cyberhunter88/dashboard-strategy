@@ -63,3 +63,46 @@ describe('locale selection', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+describe('translation bundles', () => {
+  // Built dynamically so the translation lint does not treat them as real keys.
+  const GREETING = ['extra', 'greeting'].join('.');
+  const ONLY_EN = ['extra', 'only_en'].join('.');
+
+  it('keeps editor strings out of the dashboard translations', async () => {
+    const runtime = await import('../translations/en.json');
+    expect(Object.keys(runtime.default ?? runtime)).not.toContain('editor');
+  });
+
+  it('resolves a registered bundle with English fallback and lazy languages', async () => {
+    vi.resetModules();
+    const fresh = await import('./localize');
+    await fresh.loadLanguage(hassFor('de'));
+    const listener = vi.fn();
+    const unsubscribe = fresh.onLanguageLoaded(listener);
+    const ready = fresh.registerTranslationBundle(
+      { extra: { greeting: 'Hello', only_en: 'English only' } },
+      { de: () => Promise.resolve({ default: { extra: { greeting: 'Hallo' } } }) }
+    );
+    await ready;
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(fresh.localize(GREETING)).toBe('Hallo');
+    expect(fresh.localize(ONLY_EN)).toBe('English only');
+    // Dashboard strings are unaffected by the extra bundle.
+    expect(fresh.localize('views.lights')).toBe('Lichter');
+    unsubscribe();
+  });
+
+  it('loads every bundle when the language changes later', async () => {
+    vi.resetModules();
+    const fresh = await import('./localize');
+    await fresh.loadLanguage(hassFor('en'));
+    const deLoader = vi.fn(() => Promise.resolve({ default: { extra: { greeting: 'Hallo' } } }));
+    await fresh.registerTranslationBundle({ extra: { greeting: 'Hello' } }, { de: deLoader });
+    expect(deLoader).not.toHaveBeenCalled();
+    expect(fresh.localize(GREETING)).toBe('Hello');
+    await fresh.loadLanguage(hassFor('de-DE'));
+    expect(deLoader).toHaveBeenCalledTimes(1);
+    expect(fresh.localize(GREETING)).toBe('Hallo');
+  });
+});

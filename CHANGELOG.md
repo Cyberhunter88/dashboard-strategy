@@ -2,7 +2,12 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.1...HEAD).
+
+## 1.44.2
+
+- Performance: editor-only strings (`editor.*`, about 85 % of all translations) moved to `src/translations/editor/` and load only with the editor. Every dashboard load is smaller: the eager `core` chunk drops from about 134 KB to 97 KB (34 → 24 KB brotli) and each language chunk by about 85 % (German 50 KB → 7 KB). Editor strings in other languages load as small `lang-editor-*` chunks when the editor opens. No visible changes.
+- The two search card tip texts moved from `editor.*` to `sections.*`, because the dashboard renders them.
 
 ## 1.44.1
 

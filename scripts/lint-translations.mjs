@@ -13,17 +13,26 @@ function flatten(value, prefix = '', result = new Map()) {
   return result;
 }
 
+const errors = [];
+
+// Each locale has dashboard strings (<locale>.json, eager) and editor strings
+// (editor/<locale>.json, loaded with the editor chunk); both form one key set.
 async function load(locale) {
-  const file = path.join(translationDir, `${locale}.json`);
-  const parsed = JSON.parse(await readFile(file, 'utf8'));
-  return flatten(parsed);
+  const runtime = flatten(JSON.parse(await readFile(path.join(translationDir, `${locale}.json`), 'utf8')));
+  const editor = flatten(JSON.parse(await readFile(path.join(translationDir, 'editor', `${locale}.json`), 'utf8')));
+  for (const key of runtime.keys()) {
+    if (key.startsWith('editor.')) errors.push(`Editor key in ${locale}.json (belongs in editor/${locale}.json): ${key}`);
+  }
+  for (const key of editor.keys()) {
+    if (!key.startsWith('editor.')) errors.push(`Non-editor key in editor/${locale}.json: ${key}`);
+  }
+  return new Map([...runtime, ...editor]);
 }
 
 const locales = ['de', 'en', 'hu', 'pl', 'ru'];
 const translations = new Map(await Promise.all(locales.map(async (locale) => [locale, await load(locale)])));
 const de = translations.get('de');
 const en = translations.get('en');
-const errors = [];
 for (const key of en.keys()) if (!de.has(key)) errors.push(`Missing in de.json: ${key}`);
 for (const key of de.keys()) if (!en.has(key)) errors.push(`Missing in en.json: ${key}`);
 for (const [locale, entries] of translations) {

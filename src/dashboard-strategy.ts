@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.44.1'; // synchronized from package.json
+const STRATEGY_VERSION = '1.44.2'; // synchronized from package.json
 
 declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
@@ -274,7 +274,12 @@ class Simon42DashboardStrategy extends HTMLElement {
   }
 
   static async getConfigElement(): Promise<HTMLElement> {
-    await import('./editor/StrategyEditor');
+    const [, translations] = await Promise.all([
+      import('./editor/StrategyEditor'),
+      import('./editor/editor-translations'),
+    ]);
+    // Show the editor in the user's language right away instead of English first.
+    await translations.editorTranslationsReady;
     await customElements.whenDefined('dashboard-strategy-editor');
     return document.createElement('dashboard-strategy-editor');
   }

@@ -61,7 +61,9 @@ const config: webpack.Configuration = {
         },
         editor: {
           // Metadata is consumed by the editor/diagnostics and stays on demand.
-          test: /[\\/](?:src[\\/]editor|node_modules[\\/]js-yaml)[\\/]|[\\/]src[\\/]utils[\\/]option-metadata\.ts$/,
+          // Bundled English editor strings join it; other editor languages
+          // stay separate `lang-editor-*` chunks.
+          test: /[\\/](?:src[\\/]editor|node_modules[\\/]js-yaml)[\\/]|[\\/]src[\\/](?:utils[\\/]option-metadata\.ts|translations[\\/]editor[\\/]en\.json)$/,
           name: 'editor',
           chunks: 'async',
           enforce: true,
