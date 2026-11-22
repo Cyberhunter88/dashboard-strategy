@@ -5,8 +5,8 @@ Updated: 2026-11-22
 ## Current development state
 
 - Dashboard Strategy development version: 1.44.1. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
-- Version 1.44.1 makes the `no_dboard` label strict and dashboard-wide again, now also for labels on devices: labeled area temperature/humidity sensors are no longer shown (reverting the 1.44.0 exception) and are replaced by the best visible room sensor of the same kind, and labeled entities are removed from every entity-valued strategy option in `generate()` (`applyDashboardLabelExclusion`). The editor diagnosis warns about both cases; hand-written YAML stays untouched (branch `codex/strict-no-dboard`). Validation in Home Assistant is still pending.
-- Version 1.44.0 always shows the temperature/humidity sensors assigned in the Home Assistant area settings as room badges and on overview area cards, even with a `no_dboard` label, config/diagnostic category, or room hidden list entry (only HA-hidden/disabled or stateless entities are skipped). The editor diagnosis warns about assigned sensors that cannot be shown and notes overridden ones, low-battery room badges follow `battery_critical_threshold`, and the room view and editor share one badge classifier (`classifyBadgeSensor`) (branch `codex/area-sensor-badges`). Validation in Home Assistant is still pending.
+- Version 1.44.1 makes the `no_dboard` label strict and dashboard-wide again, now also for labels on devices: labeled area temperature/humidity sensors are no longer shown (reverting the 1.44.0 exception) and are replaced by the best visible room sensor of the same kind, and labeled entities are removed from every entity-valued strategy option in `generate()` (`applyDashboardLabelExclusion`). The editor diagnosis warns about both cases; hand-written YAML stays untouched Released as v1.44.1; the room sensor replacement is confirmed in Home Assistant for the living room.
+- Version 1.44.0 always shows the temperature/humidity sensors assigned in the Home Assistant area settings as room badges and on overview area cards, even with a `no_dboard` label, config/diagnostic category, or room hidden list entry (only HA-hidden/disabled or stateless entities are skipped). The editor diagnosis warns about assigned sensors that cannot be shown and notes overridden ones, low-battery room badges follow `battery_critical_threshold`, and the room view and editor share one badge classifier (`classifyBadgeSensor`) Released as v1.44.0; its exception for `no_dboard`-labeled area sensors was reverted in 1.44.1.
 - Version 1.43.0 shows room motion and occupancy/presence badges once per device instead of only the first sensor of the type, so a hallway with sensors on two floors shows both while camera motion entities still collapse into one badge (branch `codex/multiple-motion-badges`). Validation in Home Assistant is still pending.
 - Version 1.42.0 adds three opt-in features: the room blocks `show_helpers_section_in_rooms` (helpers and user-facing select/number/button/siren/remote entities, previously missing from room views) and `show_sensors_section_in_rooms` (motion/presence/leak/smoke binary sensors as tiles), and the overview section `show_timers_section` (running or paused timers via visibility conditions). It also fixes the Misc entry in the stack order editor for humidifier/valve/water heater rooms, translates the pollen card title, moves view-only cards from the `core` chunk to `views` (core about 172 KB to 129 KB), extracts the area options and custom content editor panels (`StrategyEditor.ts` about 3,200 lines), narrows exports and Lovelace types, removes 13 unused translation keys, adds `scripts/find-unused-translations.mjs`, and moves to Prettier 3.10. Validation in Home Assistant is still pending.
 - Version 1.41.1 is a housekeeping release without behavior changes: the unused `EditableCard` and inline-editor helper are removed (the name `dashboard-strategy-editable-card` stays reserved), the maintenance sensor discovery builds search texts once, the changelog covers 1.39.0 to 1.41.0, and TypeScript-ESLint/Playwright are updated within their major version. Validation in Home Assistant is still pending.
@@ -31,6 +31,7 @@ Updated: 2026-11-22
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.
 - Resolve the historical credential finding through private coordination; do not rewrite any published branch without explicit approval.
 - Review the seven historical binary or oversized objects that the text scanner could not inspect.
+- The editor chunk is slightly above webpack's 244 KiB recommendation (build warning only); consider trimming it while splitting `StrategyEditor.ts`.
 
 ## Technical decisions
 
@@ -41,5 +42,5 @@ Updated: 2026-11-22
 
 ## Next steps
 
-1. Validate versions 1.36.0 to 1.44.1 in Home Assistant before publishing.
-2. Open the pull request for branch `codex/strict-no-dboard` after authorization, wait for CI and HACS validation, then run the manual Version Release workflow.
+1. Validate the remaining behavior of versions 1.36.0 to 1.44.1 in Home Assistant.
+2. Decide whether the unmerged remote branch `codex/webrtc-camera-defaults` is still needed; all merged `codex/` branches were removed.
