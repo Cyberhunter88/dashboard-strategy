@@ -6,6 +6,7 @@ import type { Simon42StrategyConfig } from '../types/strategy';
 import { getOptionMetadata } from '../utils/option-metadata';
 import { hasNormalUnknownState } from '../utils/availability-utils';
 import { getGroupedClimateMembers, getRegistryExclusionReason } from '../utils/entity-exclusion';
+import { getAreaPrimarySensorIssue } from '../utils/badge-utils';
 
 export interface EntityReference {
   entityId: string;
@@ -169,6 +170,7 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
   };
   return [
     ...hints,
+    ...inspectAreaPrimarySensors(analysis.config, hass, configExcluded),
     ...analysis.references.flatMap((ref): ConfigIssue[] => {
       if (
         isDashboardWideExclusion(ref) &&
@@ -196,6 +198,35 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
     }),
   ];
 }
+/**
+ * Explain the temperature/humidity sensors assigned in the HA area settings:
+ * warn when one cannot be shown, and note when it is shown in the room header
+ * although dashboard rules (no_dboard label, category, hidden list) hide it
+ * elsewhere.
+ */
+function inspectAreaPrimarySensors(
+  config: Simon42StrategyConfig,
+  hass: HomeAssistant,
+  configExcluded: ReadonlySet<string>
+): ConfigIssue[] {
+  const hiddenAreas = new Set(config.areas_display?.hidden ?? []);
+  const issues: ConfigIssue[] = [];
+  for (const area of Object.values(hass.areas ?? {})) {
+    if (hiddenAreas.has(area.area_id)) continue;
+    const path = `areas_options.${area.area_id}`;
+    for (const entityId of [area.temperature_entity_id, area.humidity_entity_id]) {
+      if (!entityId) continue;
+      const issue = getAreaPrimarySensorIssue(hass, entityId);
+      if (issue) {
+        issues.push({ code: `area_sensor_${issue}`, severity: 'warning', path, entityId });
+      } else if (configExcluded.has(entityId) || getRegistryExclusionReason(hass, entityId)) {
+        issues.push({ code: 'area_sensor_override', severity: 'info', path, entityId });
+      }
+    }
+  }
+  return issues;
+}
+
 export function inspectConfig(config: unknown, hass: HomeAssistant): ConfigIssue[] {
   return inspectAnalysis(analyzeConfig(config), hass);
 }

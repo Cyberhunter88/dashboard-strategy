@@ -2,7 +2,14 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.42.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.43.0...HEAD).
+
+## 1.44.0
+
+- Fix: the temperature and humidity sensors assigned in the Home Assistant area settings now always appear as room header badges and on the overview area card, even when they carry the `no_dboard` label, a config/diagnostic category or sit in a room hidden list. Only entities hidden or disabled in Home Assistant, or without a state, are left out. Previously such a room silently showed no temperature.
+- The editor diagnosis explains these sensors: a warning when an assigned sensor cannot be shown (no state, hidden or disabled), and a note when it is shown as room badge although the dashboard hides it elsewhere.
+- Room badges for low batteries follow `battery_critical_threshold` instead of a fixed 20 %.
+- Maintenance: the room view and the editor badge list now share one sensor classifier (`classifyBadgeSensor`), so they can no longer disagree about which sensors become automatic badges.
 
 ## 1.43.0
 

@@ -2,7 +2,7 @@ import { Registry } from '../Registry';
 import type { HomeAssistant } from '../types/homeassistant';
 import { isEntityRegistryHidden, type EntityRegistryEntry } from '../types/registries';
 import type { RoomEntities, Simon42StrategyConfig } from '../types/strategy';
-import { isBadgeCandidate, isEnergyBlockSensor } from './badge-utils';
+import { classifyBadgeSensor, isCriticalBatteryBadge, isEnergyBlockSensor } from './badge-utils';
 
 const UPS_DEVICE_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
 const UPS_ID_PATTERN = /load|runtime|time_left|input_voltage|status/;
@@ -203,23 +203,25 @@ export function createRoomEntities(
   return result;
 }
 
-export function getAreaBadgeCandidates(entities: EntityRegistryEntry[], hass: HomeAssistant): string[] {
+export function getAreaBadgeCandidates(
+  entities: EntityRegistryEntry[],
+  hass: HomeAssistant,
+  criticalBatteryThreshold?: number
+): string[] {
   const candidates: string[] = [];
   for (const entity of entities) {
     const state = hass.states[entity.entity_id];
     if (!state) continue;
 
-    const domain = entity.entity_id.split('.')[0];
-    const deviceClass = state.attributes?.device_class as string | undefined;
-    const unit = state.attributes?.unit_of_measurement as string | undefined;
-    if (!isBadgeCandidate(domain, deviceClass, unit, entity.entity_id)) continue;
-
-    if (domain === 'sensor' && (deviceClass === 'battery' || entity.entity_id.includes('battery'))) {
-      const value = parseFloat(state.state);
-      if (!isNaN(value) && value < 20) candidates.push(entity.entity_id);
-    } else {
-      candidates.push(entity.entity_id);
-    }
+    const type = classifyBadgeSensor(
+      entity.entity_id.split('.')[0],
+      state.attributes?.device_class as string | undefined,
+      state.attributes?.unit_of_measurement as string | undefined,
+      entity.entity_id
+    );
+    if (!type) continue;
+    if (type === 'battery' && !isCriticalBatteryBadge(state.state, criticalBatteryThreshold)) continue;
+    candidates.push(entity.entity_id);
   }
   return candidates;
 }

@@ -28,6 +28,9 @@ import {
   BADGE_COLOR_MAP,
   ROOM_ENERGY_SENSOR_CLASSES,
   applyBadgeGroupOptions,
+  classifyBadgeSensor,
+  isCriticalBatteryBadge,
+  resolveAreaPrimarySensor,
   type BadgeCandidate,
   isDefaultShowName,
   selectBadgeEntitiesOfType,
@@ -38,8 +41,6 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { createSectionsView } from '../utils/view-builder';
 import { createRoomEntities, findUpsEntityGroups, getVisibleAreaEntities } from '../utils/area-entity-utils';
 import { buildCoverControlBadges } from '../utils/cover-controls';
-
-const ROOM_ENERGY_SENSOR_CLASS_SET = new Set<string>(ROOM_ENERGY_SENSOR_CLASSES);
 
 function upsSensorRole(entityId: string, hass: HomeAssistant): number {
   const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
@@ -313,84 +314,25 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       upsDevices.push({ name, batteryId, sensorIds });
     }
 
+    // Sort sensors into badge buckets with the classifier shared with the editor.
+    // Temperature and humidity are never auto-detected (see area settings below).
+    const criticalBattery = dashboardConfig.battery_critical_threshold;
     for (const entity of visibleEntities) {
       const entityId = entity.entity_id;
       if (usedByUps.has(entityId)) continue;
 
-      // State check
       const state = hass.states[entityId];
       if (!state) continue;
 
-      const domain = entityId.split('.')[0];
-      const deviceClass = state.attributes?.device_class as string | undefined;
-      const unit = state.attributes?.unit_of_measurement as string | undefined;
-
-      // Sensors for badges
-      if (domain === 'sensor') {
-        if (deviceClass && ROOM_ENERGY_SENSOR_CLASS_SET.has(deviceClass)) {
-          continue;
-        }
-        if (entityId.includes('battery') || deviceClass === 'battery') {
-          const val = parseFloat(state.state);
-          if (!isNaN(val) && val < 20) sensorEntities.battery.push(entityId);
-          continue;
-        }
-        // Temperature and humidity badges are only shown when explicitly
-        // assigned in HA area settings (area.temperature_entity_id / humidity_entity_id).
-        // No auto-detection — avoids wrong sensors (e.g. heater temperature).
-        if (deviceClass === 'temperature' || unit === '°C' || unit === '°F') continue;
-        if (deviceClass === 'humidity' || unit === '%') continue;
-        if (unit === 'g/m³') {
-          sensorEntities.absolute_humidity.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'pm25' || entityId.includes('pm_2_5') || entityId.includes('pm25')) {
-          sensorEntities.pm25.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'pm10' || entityId.includes('pm_10') || entityId.includes('pm10')) {
-          sensorEntities.pm10.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'carbon_dioxide' || entityId.includes('co2')) {
-          sensorEntities.co2.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'volatile_organic_compounds' || entityId.includes('voc')) {
-          sensorEntities.voc.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'illuminance' || unit === 'lx') {
-          sensorEntities.illuminance.push(entityId);
-          continue;
-        }
-      }
-      if (domain === 'binary_sensor') {
-        if (deviceClass === 'motion') {
-          sensorEntities.motion.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'occupancy' || deviceClass === 'presence') {
-          sensorEntities.occupancy.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'window') {
-          sensorEntities.window.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'door') {
-          sensorEntities.door.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'smoke') {
-          sensorEntities.smoke.push(entityId);
-          continue;
-        }
-        if (deviceClass === 'gas') {
-          sensorEntities.gas.push(entityId);
-          continue;
-        }
-      }
+      const type = classifyBadgeSensor(
+        entityId.split('.')[0],
+        state.attributes?.device_class as string | undefined,
+        state.attributes?.unit_of_measurement as string | undefined,
+        entityId
+      );
+      if (!type) continue;
+      if (type === 'battery' && !isCriticalBatteryBadge(state.state, criticalBattery)) continue;
+      sensorEntities[type].push(entityId);
     }
 
     // Apply groups_options filters
@@ -417,24 +359,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // === BADGES ===
 
-    // Primary temp/humidity from area config (always shown, not filterable)
-    let primaryTemp: string | null = null;
-    let primaryHumidity: string | null = null;
-
-    if (
-      area.temperature_entity_id &&
-      hass.states[area.temperature_entity_id] &&
-      !Registry.isEntityExcluded(area.temperature_entity_id)
-    ) {
-      primaryTemp = area.temperature_entity_id;
-    }
-    if (
-      area.humidity_entity_id &&
-      hass.states[area.humidity_entity_id] &&
-      !Registry.isEntityExcluded(area.humidity_entity_id)
-    ) {
-      primaryHumidity = area.humidity_entity_id;
-    }
+    // Primary temp/humidity from the HA area settings. The explicit area
+    // assignment wins over dashboard exclusions such as the no_dboard label;
+    // only HA-hidden/disabled entities or a missing state suppress it.
+    const primaryTemp = resolveAreaPrimarySensor(area, 'temperature', hass);
+    const primaryHumidity = resolveAreaPrimarySensor(area, 'humidity', hass);
 
     // Build auto-detected badge candidates
     const badgeOpts = groupsOptions.badges;

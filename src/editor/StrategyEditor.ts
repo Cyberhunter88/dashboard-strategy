@@ -1550,7 +1550,11 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     );
     const hiddenEntities = getHiddenEntitiesForArea(areaId, this._config);
     const entityOrders = getEntityOrdersForArea(areaId, this._config);
-    const badgeCandidates = getAreaBadgeCandidates(visibleEntities, this._hass);
+    const badgeCandidates = getAreaBadgeCandidates(
+      visibleEntities,
+      this._hass,
+      this._config.battery_critical_threshold
+    );
     const additionalBadges = getAdditionalBadgesForArea(areaId, this._config);
     const availableEntities = getAvailableBadgeEntities(visibleEntities, this._hass, [
       ...badgeCandidates,
@@ -1581,7 +1585,11 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     const hiddenEntities = getHiddenEntitiesForArea(areaId, this._config);
     const entityOrders = getEntityOrdersForArea(areaId, this._config);
     const visibleEntities = getEditableAreaEntities(areaId, this._hass, this._config);
-    const badgeCandidates = getAreaBadgeCandidates(visibleEntities, this._hass);
+    const badgeCandidates = getAreaBadgeCandidates(
+      visibleEntities,
+      this._hass,
+      this._config.battery_critical_threshold
+    );
     const additionalBadges = getAdditionalBadgesForArea(areaId, this._config);
     const availableEntities = getAvailableBadgeEntities(visibleEntities, this._hass, [
       ...badgeCandidates,
