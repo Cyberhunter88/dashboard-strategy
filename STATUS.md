@@ -4,8 +4,9 @@ Updated: 2026-11-22
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.44.5. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
-- Version 1.44.5 is maintenance without behavior changes: room option updates moved to pure functions in `src/editor/area-options-config.ts` and the weather-start layout logic to `src/editor/weather-start-layout.ts`, so `StrategyEditor.ts` drops to about 2,690 lines (branch `codex/split-strategy-editor`). Validation in Home Assistant is still pending.
+- Dashboard Strategy development version: 1.44.6. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.44.6 is maintenance without behavior changes: the three drag-and-drop implementations share `src/editor/drag-sort.ts` and the custom view/card/section/badge YAML handlers use `withParsedYaml()`, so `StrategyEditor.ts` drops to about 2,460 lines (branch `codex/split-editor-handlers`). Validation in Home Assistant is still pending.
+- Version 1.44.5 is maintenance without behavior changes: room option updates moved to pure functions in `src/editor/area-options-config.ts` and the weather-start layout logic to `src/editor/weather-start-layout.ts`, so `StrategyEditor.ts` drops to about 2,690 lines Released as v1.44.5; room options and the weather-start layout are confirmed in Home Assistant.
 - Version 1.44.4 moves js-yaml into its own lazy `yaml` chunk that the editor preloads in the background; YAML actions run through `withYaml()`. The editor chunk drops from about 284 KB to 241 KB and the webpack size warning is gone Released as v1.44.4; YAML editing, the card picker and the dashboard check are confirmed in Home Assistant.
 - Version 1.44.3 is housekeeping without behavior changes: 64 unused translation keys removed, `any` types replaced in the group cards, card picker, overview/covers views, availability badges, debug helper and Home Assistant service types, and development dependencies updated within their major version Released as v1.44.3; confirmed in Home Assistant.
 - Version 1.44.2 moves editor-only strings to `src/translations/editor/` so they load only with the editor: the eager `core` chunk shrinks from about 134 KB to 97 KB and each language chunk by about 85 % Released as v1.44.2; the dashboard and the German editor are confirmed in Home Assistant.
@@ -28,7 +29,7 @@ Updated: 2026-11-22
 
 ## Open tasks
 
-- Split further parts out of `src/editor/StrategyEditor.ts` (about 2,690 lines; remaining candidates: the three drag/drop handler sets and the custom view/card/section/badge YAML update handlers). `CustomContentPanel.ts` still contains the custom cards/sections list renderers that are disabled by a hard-coded `isWeatherStart = true`; decide whether to remove them.
+- Split further parts out of `src/editor/StrategyEditor.ts` (about 2,460 lines; remaining candidates: the area entity loading/cache and the area custom card handlers, and the six host facade builders at the end of the class). `CustomContentPanel.ts` still contains the custom cards/sections list renderers that are disabled by a hard-coded `isWeatherStart = true`; decide whether to remove them.
 - Replace the remaining `Record<string, any>` types for user YAML (`parsed_config` and its helpers in `src/types/strategy.ts`, `lovelace-utils.ts`, the card picker and `StrategyEditor.ts`) and the `LovelaceCardConfig` index signature with `unknown`; this touches many call sites and tests. The `eslint-disable` comments that remain are intentional (webpack public path, getter facades in `StrategyEditor.ts`).
 - Evaluate the major updates `js-yaml` 5, `typescript` 7 and `vitest` 5 separately; they are deliberately not part of 1.42.0.
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.

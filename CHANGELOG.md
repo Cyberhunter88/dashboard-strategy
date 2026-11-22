@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.4...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.5...HEAD).
+
+## 1.44.6
+
+- Maintenance without behavior changes: `StrategyEditor.ts` shrinks from about 2,680 to 2,460 lines. The three drag-and-drop implementations (area order, room stack order, weather-start layout) now share `createDragSortHandlers()` and `moveKey()` in `src/editor/drag-sort.ts`, and the custom view/card/section/badge YAML handlers use one `withParsedYaml()` helper. Dropping an item on its own position no longer fires an unchanged config.
 
 ## 1.44.5
 
