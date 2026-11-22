@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.3...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.4...HEAD).
+
+## 1.44.5
+
+- Maintenance without behavior changes: `StrategyEditor.ts` shrinks from about 3,250 to 2,690 lines. The room option updates (entity and group visibility, extra badges, badge names, area visibility, navigation pins, area and stack order, room custom cards) are pure functions in `src/editor/area-options-config.ts`, which replace five near-identical copies of the nested update-and-prune code. The free weather-start layout logic (disabled blocks, area/floor options, legacy order, item normalization, labels) lives in `src/editor/weather-start-layout.ts`. Both modules have their own tests.
 
 ## 1.44.4
 
