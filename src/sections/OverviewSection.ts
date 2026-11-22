@@ -224,7 +224,7 @@ export function createSearchSection(
     variant === 'tip'
       ? {
           type: 'markdown',
-          content: `### 🔍 ${localize('editor.search_card_tip_title')}\n\n${localize('editor.search_card_tip_body')}`,
+          content: `### 🔍 ${localize('sections.search_card_tip_title')}\n\n${localize('sections.search_card_tip_body')}`,
           grid_options: { columns: 'full' },
         }
       : { type: 'custom:search-card', grid_options: { columns: 'full' } };

@@ -11,6 +11,7 @@ import { CONFIG_ALIASES } from '../utils/config-aliases';
 import { localize } from '../utils/localize';
 import { getOptionDefault, getOptionMetadata, OPTION_METADATA } from '../utils/option-metadata';
 import { editorPanelMeta, type EditorPanelKey } from './editor-panel-registry';
+import './editor-translations';
 
 /** Editor panel that renders each metadata option; `null` means YAML only. */
 export const OPTION_PANELS: Readonly<Record<keyof typeof OPTION_METADATA, EditorPanelKey | null>> = {

@@ -16,7 +16,8 @@ import path from 'node:path';
 
 const root = process.cwd();
 const srcDir = path.join(root, 'src');
-const enFile = path.join(srcDir, 'translations', 'en.json');
+// Dashboard strings and editor-only strings (editor/en.json) together.
+const enFiles = [path.join(srcDir, 'translations', 'en.json'), path.join(srcDir, 'translations', 'editor', 'en.json')];
 
 function flatten(value, prefix = '', result = []) {
   for (const [key, child] of Object.entries(value)) {
@@ -127,7 +128,8 @@ function scan(code) {
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const keys = flatten(JSON.parse(await readFile(enFile, 'utf8')));
+const keys = [];
+for (const file of enFiles) flatten(JSON.parse(await readFile(file, 'utf8')), '', keys);
 const namespaces = new Set(keys.map((key) => key.split('.')[0]));
 const files = await sourceFiles(srcDir);
 

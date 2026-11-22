@@ -288,7 +288,7 @@ Die Strategy erkennt automatisch die Sprache aus deinen Home Assistant Einstellu
 | 🇬🇧 English | Vollständig |
 | 🇷🇺 Русский | Upstream-Basis mit englischem Fallback für Fork-spezifische Optionen |
 
-**Weitere Sprachen hinzufügen:** Erstelle eine neue Datei `src/translations/<code>.json` (z.B. `fr.json`) nach dem Muster der bestehenden Dateien und öffne einen Pull Request. Der Aufwand ist gering — es müssen nur die Strings übersetzt werden, kein Code.
+**Weitere Sprachen hinzufügen:** Erstelle nach dem Muster der bestehenden Dateien zwei Dateien: `src/translations/<code>.json` (z.B. `fr.json`) für die Dashboard-Texte und `src/translations/editor/<code>.json` für die Editor-Texte. Trage die Sprache je mit einer Zeile in `src/utils/localize.ts` und `src/editor/editor-translations.ts` ein und öffne einen Pull Request. Der Aufwand ist gering — im Wesentlichen müssen nur die Strings übersetzt werden.
 
 ## Contributing
 

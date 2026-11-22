@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import en from '../translations/en.json';
-import de from '../translations/de.json';
+import en from '../translations/editor/en.json';
+import de from '../translations/editor/de.json';
 import { getOptionDefault, getOptionMetadata, OPTION_METADATA } from './option-metadata';
 import { normalizeStrategyConfig } from './strategy-config';
 

@@ -73,6 +73,7 @@ import {
 import { isDefaultShowName } from '../utils/badge-utils';
 import { getEffectiveDeviceAreaId } from '../utils/device-utils';
 import { loadLanguage, localize, onLanguageLoaded } from '../utils/localize';
+import './editor-translations';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
 import { getWeatherStartWeatherMode, withEnabledOptionalBlocks } from '../utils/weather-start-defaults';
