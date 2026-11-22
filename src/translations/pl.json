@@ -49,7 +49,6 @@
     "locks": "Zamki",
     "climate": "Klimat",
     "covers": "Rolety i osłony",
-    "covers_curtain": "Zasłony",
     "covers_window": "Okna",
     "media": "Multimedia",
     "scenes": "Sceny",
@@ -57,10 +56,7 @@
     "helpers": "Pomocnicy i sterowanie",
     "sensors": "Czujniki",
     "misc": "Inne",
-    "automations": "Automatyzacje",
-    "scripts": "Skrypty",
-    "room_pins": "Przypięte elementy",
-    "vacuums": "Odkurzacze i kosiarki"
+    "room_pins": "Przypięte elementy"
   },
   "summary": {
     "lights_on_one": "włączone światło",

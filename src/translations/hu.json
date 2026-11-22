@@ -49,7 +49,6 @@
     "locks": "Zárak",
     "climate": "Klíma",
     "covers": "Árnyékolók",
-    "covers_curtain": "Függönyök",
     "covers_window": "Ablakok",
     "media": "Média",
     "scenes": "Jelenetek",
@@ -57,10 +56,7 @@
     "helpers": "Segédek és vezérlők",
     "sensors": "Érzékelők",
     "misc": "Egyéb",
-    "automations": "Automatizálások",
-    "scripts": "Szkriptek",
-    "room_pins": "Helyiség kiemelt elemei",
-    "vacuums": "Porszívók és fűnyírók"
+    "room_pins": "Helyiség kiemelt elemei"
   },
   "summary": {
     "lights_on_one": "lámpa bekapcsolva",

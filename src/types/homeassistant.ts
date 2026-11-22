@@ -39,7 +39,7 @@ export interface FrontendLocaleData {
 
 export interface ServiceCallResponse {
   context: { id: string; parent_id?: string; user_id?: string | null };
-  response?: any;
+  response?: unknown;
 }
 
 // -- Main Interface ---------------------------------------------------
@@ -69,7 +69,7 @@ export interface HomeAssistant {
   callService(
     domain: string,
     service: string,
-    serviceData?: Record<string, any>,
+    serviceData?: Record<string, unknown>,
     target?: HassServiceTarget,
     notifyOnError?: boolean,
     returnResponse?: boolean
@@ -81,7 +81,7 @@ export interface HomeAssistant {
 
   formatEntityState(stateObj: HassEntity, state?: string): string;
 
-  formatEntityAttributeValue(stateObj: HassEntity, attribute: string, value?: any): string;
+  formatEntityAttributeValue(stateObj: HassEntity, attribute: string, value?: unknown): string;
 
   formatEntityAttributeName(stateObj: HassEntity, attribute: string): string;
 }

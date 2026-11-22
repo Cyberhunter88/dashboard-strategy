@@ -49,7 +49,6 @@
     "locks": "Locks",
     "climate": "Climate",
     "covers": "Blinds & Curtains",
-    "covers_curtain": "Curtains",
     "covers_window": "Motorized windows",
     "media": "Media",
     "scenes": "Scenes & Automations",
@@ -57,10 +56,7 @@
     "helpers": "Helpers & controls",
     "sensors": "Detectors & sensors",
     "misc": "Switches",
-    "automations": "Automations",
-    "scripts": "Scripts",
-    "room_pins": "Pinned",
-    "vacuums": "Vacuums & Mowers"
+    "room_pins": "Pinned"
   },
   "summary": {
     "lights_on_one": "light on",

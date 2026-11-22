@@ -101,7 +101,14 @@ function dumpAllMeasures(): void {
   console.log(`[s42-perf] Total measured: ${total.toFixed(2)}ms across ${entries.length} measures`);
 }
 
+declare global {
+  interface Window {
+    /** Console helper: print all collected performance measures. */
+    __s42_dump?: () => void;
+  }
+}
+
 // Expose globally for console access
 if (typeof window !== 'undefined') {
-  (window as any).__s42_dump = dumpAllMeasures;
+  window.__s42_dump = dumpAllMeasures;
 }

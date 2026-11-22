@@ -4,7 +4,9 @@
 
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import type { HomeAssistant, HassEntity } from '../types/homeassistant';
+import type { LovelaceCardConfig } from '../types/lovelace';
 import type { AreaRegistryEntry } from '../types/registries';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize, onLanguageLoaded, setupLocalize } from '../utils/localize';
@@ -26,7 +28,8 @@ import {
 } from '../utils/card-element-utils';
 
 interface LightsGroupConfig {
-  config?: any;
+  /** The full dashboard strategy config (registry, availability, sorting, navigation). */
+  config?: Simon42StrategyConfig;
   entities?: string[];
   group_type: 'on' | 'off' | 'all';
   group_by_floors?: boolean;
@@ -478,7 +481,7 @@ class Simon42LightsGroupCard extends LitElement {
     return floorId ?? '_none';
   }
 
-  private _buildHeadingConfig(lights: string[], label?: string, icon?: string): any {
+  private _buildHeadingConfig(lights: string[], label?: string, icon?: string): LovelaceCardConfig {
     const isOn = this._config.group_type === 'on';
     const isAll = this._config.group_type === 'all';
     const heading = label

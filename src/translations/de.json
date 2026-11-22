@@ -49,7 +49,6 @@
     "locks": "Schlösser",
     "climate": "Klima",
     "covers": "Rollos & Vorhänge",
-    "covers_curtain": "Vorhänge",
     "covers_window": "Fenster (motorisiert)",
     "media": "Medien",
     "scenes": "Szenen & Automationen",
@@ -57,10 +56,7 @@
     "helpers": "Helfer & Steuerung",
     "sensors": "Melder & Sensoren",
     "misc": "Schalter",
-    "automations": "Automationen",
-    "scripts": "Skripte",
-    "room_pins": "Angepinnt",
-    "vacuums": "Saug- & Mähroboter"
+    "room_pins": "Angepinnt"
   },
   "summary": {
     "lights_on_one": "Licht an",
