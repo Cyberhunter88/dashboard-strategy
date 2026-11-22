@@ -36,7 +36,8 @@ const config: webpack.Configuration = {
       //                   (SummaryCard, AreaNavigationCard)
       //   views         → non-overview view strategies plus their cards (lights/covers
       //                   groups, batteries, camera, video tip); loaded eagerly with core
-      //   editor        → StrategyEditor + js-yaml (on-demand only)
+      //   editor        → StrategyEditor (on-demand only)
+      //   yaml          → js-yaml, preloaded by the editor in the background
       cacheGroups: {
         lit: {
           test: /[\\/]node_modules[\\/](?:lit|@lit|lit-html|lit-element)[\\/]/,
@@ -63,7 +64,7 @@ const config: webpack.Configuration = {
           // Metadata is consumed by the editor/diagnostics and stays on demand.
           // Bundled English editor strings join it; other editor languages
           // stay separate `lang-editor-*` chunks.
-          test: /[\\/](?:src[\\/]editor|node_modules[\\/]js-yaml)[\\/]|[\\/]src[\\/](?:utils[\\/]option-metadata\.ts|translations[\\/]editor[\\/]en\.json)$/,
+          test: /[\\/]src[\\/]editor[\\/]|[\\/]src[\\/](?:utils[\\/]option-metadata\.ts|translations[\\/]editor[\\/]en\.json)$/,
           name: 'editor',
           chunks: 'async',
           enforce: true,

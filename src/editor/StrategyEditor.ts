@@ -1,4 +1,4 @@
-import { parseEditorYamlConfig } from './editor-yaml';
+import { parseEditorYamlConfig, preloadYaml, requireYaml, withYaml } from './editor-yaml';
 import {
   cardPickerYamlChanged,
   closeCardPicker,
@@ -38,7 +38,6 @@ import {
 // LitElement editor host with focused rendering panels under ./panels.
 // ====================================================================
 
-import yaml from 'js-yaml';
 import { getOptionDefault } from '../utils/option-metadata';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { hasHassPresentationChanged } from '../utils/card-element-utils';
@@ -215,6 +214,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     timeStart('editor-open');
     this._openingMeasured = false;
     this._unsubscribeLanguage = onLanguageLoaded(() => this.requestUpdate());
+    // js-yaml is its own chunk; fetch it in the background so YAML actions run instantly.
+    void preloadYaml().catch(() => undefined);
   }
 
   override disconnectedCallback(): void {
@@ -551,10 +552,12 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       <p>${localize('editor.diagnostics_help')}</p>
       <button
         type="button"
-        @click=${() => {
-          this._diagnosticsChecked = true;
-          this.requestUpdate();
-        }}
+        @click=${() =>
+          // The check also reads entity references inside YAML blocks.
+          withYaml(() => {
+            this._diagnosticsChecked = true;
+            this.requestUpdate();
+          })}
       >
         ${localize('editor.diagnostics_check')}
       </button>
@@ -1054,7 +1057,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   private _openCardPickerForWeatherStartCard = (): void => {
     this._openCardPicker((config) => {
       const id = this._createWeatherStartItemId('card');
-      const yamlStr = yaml.dump(config).trim();
+      const yamlStr = requireYaml().dump(config).trim();
       const customCards: CustomCard[] = [
         ...(this._config.custom_cards || []),
         { id, editor_title: '', yaml: yamlStr, parsed_config: config },
@@ -1808,21 +1811,23 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateCustomViewYaml(index: number, yamlString: string): void {
-    const customViews: CustomView[] = [...(this._config.custom_views || [])];
-    if (!customViews[index]) return;
+    withYaml(() => {
+      const customViews: CustomView[] = [...(this._config.custom_views || [])];
+      if (!customViews[index]) return;
 
-    const updated: CustomView = { ...customViews[index], yaml: yamlString };
-    delete updated._yaml_error;
+      const updated: CustomView = { ...customViews[index], yaml: yamlString };
+      delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
-    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-    updated._yaml_error = parsed._yaml_error;
+      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
+      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+      updated._yaml_error = parsed._yaml_error;
 
-    customViews[index] = updated;
+      customViews[index] = updated;
 
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_views: customViews };
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+      const newConfig: Simon42StrategyConfig = { ...this._config, custom_views: customViews };
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+    });
   }
 
   // -- Custom Cards -----------------------------------------------------
@@ -1878,26 +1883,28 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateCustomCardYaml(index: number, yamlString: string): void {
-    const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
-    if (!customCards[index]) return;
+    withYaml(() => {
+      const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
+      if (!customCards[index]) return;
 
-    const updated: CustomCard = { ...customCards[index], yaml: yamlString };
-    delete updated._yaml_error;
+      const updated: CustomCard = { ...customCards[index], yaml: yamlString };
+      delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
-    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-    updated._yaml_error = parsed._yaml_error;
+      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
+      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+      updated._yaml_error = parsed._yaml_error;
 
-    customCards[index] = updated;
+      customCards[index] = updated;
 
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
-    if (updated._yaml_error) {
+      const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
+      if (updated._yaml_error) {
+        this._config = newConfig;
+        this.requestUpdate();
+        return;
+      }
       this._config = newConfig;
-      this.requestUpdate();
-      return;
-    }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+      this._fireConfigChanged(newConfig);
+    });
   }
 
   // -- Custom Sections (overview) ------------------------------------------
@@ -1933,17 +1940,19 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateCustomSectionYaml(sectionIndex: number, yamlString: string): void {
-    const customSections = [...(this._config.custom_sections || [])];
-    if (!customSections[sectionIndex]) return;
-    const updated: CustomSection = { ...customSections[sectionIndex], yaml: yamlString };
-    const parsed = parseEditorYamlConfig(yamlString, localize('editor.custom_section_yaml_invalid'));
-    updated.parsed_config = parsed.parsed_config;
-    updated._yaml_error = parsed._yaml_error;
-    customSections[sectionIndex] = updated;
-    const newConfig = { ...this._config, custom_sections: customSections };
-    this._config = newConfig;
-    if (updated._yaml_error) this.requestUpdate();
-    else this._fireConfigChanged(newConfig);
+    withYaml(() => {
+      const customSections = [...(this._config.custom_sections || [])];
+      if (!customSections[sectionIndex]) return;
+      const updated: CustomSection = { ...customSections[sectionIndex], yaml: yamlString };
+      const parsed = parseEditorYamlConfig(yamlString, localize('editor.custom_section_yaml_invalid'));
+      updated.parsed_config = parsed.parsed_config;
+      updated._yaml_error = parsed._yaml_error;
+      customSections[sectionIndex] = updated;
+      const newConfig = { ...this._config, custom_sections: customSections };
+      this._config = newConfig;
+      if (updated._yaml_error) this.requestUpdate();
+      else this._fireConfigChanged(newConfig);
+    });
   }
 
   private _removeCardFromSection(sectionIndex: number, cardIndex: number): void {
@@ -1974,30 +1983,32 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateSectionCardYaml(sectionIndex: number, cardIndex: number, yamlString: string): void {
-    const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
-    if (!customSections[sectionIndex]) return;
-    const section = { ...customSections[sectionIndex] };
-    const cards = [...(section.cards || [])];
-    if (!cards[cardIndex]) return;
+    withYaml(() => {
+      const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
+      if (!customSections[sectionIndex]) return;
+      const section = { ...customSections[sectionIndex] };
+      const cards = [...(section.cards || [])];
+      if (!cards[cardIndex]) return;
 
-    const updated: CustomCard = { ...cards[cardIndex], yaml: yamlString };
-    delete updated._yaml_error;
+      const updated: CustomCard = { ...cards[cardIndex], yaml: yamlString };
+      delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
-    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-    updated._yaml_error = parsed._yaml_error;
+      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
+      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+      updated._yaml_error = parsed._yaml_error;
 
-    cards[cardIndex] = updated;
-    section.cards = cards;
-    customSections[sectionIndex] = section;
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
-    if (updated._yaml_error) {
+      cards[cardIndex] = updated;
+      section.cards = cards;
+      customSections[sectionIndex] = section;
+      const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
+      if (updated._yaml_error) {
+        this._config = newConfig;
+        this.requestUpdate();
+        return;
+      }
       this._config = newConfig;
-      this.requestUpdate();
-      return;
-    }
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+      this._fireConfigChanged(newConfig);
+    });
   }
 
   // -- Area Custom Cards (per-area room view) ---------------------------
@@ -2064,17 +2075,19 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateAreaCustomCardField(areaId: string, index: number, field: string, value: string): void {
-    const cards = this._getAreaCustomCards(areaId);
-    if (!cards[index]) return;
-    const updated: AreaCustomCard = { ...cards[index], [field]: value };
-    if (field === 'mode' && value !== 'tile') {
-      this._parseAreaCustomCardYamlConfig(updated, updated.yaml || '');
-    }
-    if (field === 'mode' && value === 'tile') {
-      delete updated._yaml_error;
-    }
-    cards[index] = updated;
-    this._writeAreaCustomCards(areaId, cards);
+    withYaml(() => {
+      const cards = this._getAreaCustomCards(areaId);
+      if (!cards[index]) return;
+      const updated: AreaCustomCard = { ...cards[index], [field]: value };
+      if (field === 'mode' && value !== 'tile') {
+        this._parseAreaCustomCardYamlConfig(updated, updated.yaml || '');
+      }
+      if (field === 'mode' && value === 'tile') {
+        delete updated._yaml_error;
+      }
+      cards[index] = updated;
+      this._writeAreaCustomCards(areaId, cards);
+    });
   }
 
   private _parseAreaCustomCardYamlConfig(updated: AreaCustomCard, yamlString: string): void {
@@ -2083,7 +2096,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
     if (yamlString.trim()) {
       try {
-        const parsed = yaml.load(yamlString);
+        const parsed = requireYaml().load(yamlString);
         if (parsed && typeof parsed === 'object') {
           if (updated.mode === 'section') {
             const sections = Array.isArray(parsed) ? parsed : [parsed];
@@ -2113,14 +2126,16 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateAreaCustomCardYaml(areaId: string, index: number, yamlString: string): void {
-    const cards = this._getAreaCustomCards(areaId);
-    if (!cards[index]) return;
+    withYaml(() => {
+      const cards = this._getAreaCustomCards(areaId);
+      if (!cards[index]) return;
 
-    const updated: AreaCustomCard = { ...cards[index] };
-    this._parseAreaCustomCardYamlConfig(updated, yamlString);
+      const updated: AreaCustomCard = { ...cards[index] };
+      this._parseAreaCustomCardYamlConfig(updated, yamlString);
 
-    cards[index] = updated;
-    this._writeAreaCustomCards(areaId, cards);
+      cards[index] = updated;
+      this._writeAreaCustomCards(areaId, cards);
+    });
   }
 
   // -- Custom Badges ----------------------------------------------------
@@ -2150,21 +2165,23 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateCustomBadgeYaml(index: number, yamlString: string): void {
-    const customBadges: CustomBadge[] = [...(this._config.custom_badges || [])];
-    if (!customBadges[index]) return;
+    withYaml(() => {
+      const customBadges: CustomBadge[] = [...(this._config.custom_badges || [])];
+      if (!customBadges[index]) return;
 
-    const updated: CustomBadge = { ...customBadges[index], yaml: yamlString };
-    delete updated._yaml_error;
+      const updated: CustomBadge = { ...customBadges[index], yaml: yamlString };
+      delete updated._yaml_error;
 
-    const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
-    updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-    updated._yaml_error = parsed._yaml_error;
+      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
+      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
+      updated._yaml_error = parsed._yaml_error;
 
-    customBadges[index] = updated;
+      customBadges[index] = updated;
 
-    const newConfig: Simon42StrategyConfig = { ...this._config, custom_badges: customBadges };
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+      const newConfig: Simon42StrategyConfig = { ...this._config, custom_badges: customBadges };
+      this._config = newConfig;
+      this._fireConfigChanged(newConfig);
+    });
   }
 
   // ====================================================================
@@ -2701,7 +2718,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   private _openCardPickerForCustomCard = () => {
     this._openCardPicker((config) => {
-      const yamlStr = yaml.dump(config).trim();
+      const yamlStr = requireYaml().dump(config).trim();
       const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
       customCards.push({ editor_title: '', yaml: yamlStr, parsed_config: config });
       const newConfig = { ...this._config, custom_cards: customCards };
@@ -2712,7 +2729,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   private _openCardPickerForSection(sectionIndex: number): void {
     this._openCardPicker((config) => {
-      const yamlStr = yaml.dump(config).trim();
+      const yamlStr = requireYaml().dump(config).trim();
       const customSections = [...(this._config.custom_sections || [])];
       if (!customSections[sectionIndex]) return;
       const section = { ...customSections[sectionIndex] };
@@ -2726,7 +2743,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   private _openCardPickerForAreaCustomCard(areaId: string): void {
     this._openCardPicker((config) => {
-      const yamlStr = yaml.dump(config).trim();
+      const yamlStr = requireYaml().dump(config).trim();
       const cards = this._getAreaCustomCards(areaId);
       cards.push({
         mode: 'yaml',
@@ -2740,43 +2757,49 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _openCardEditorForCustomCard(index: number): void {
-    const card = this._config.custom_cards?.[index];
-    const initialConfig = this._getEditableYamlCardConfig(card);
-    if (!initialConfig) return;
+    withYaml(() => {
+      const card = this._config.custom_cards?.[index];
+      const initialConfig = this._getEditableYamlCardConfig(card);
+      if (!initialConfig) return;
 
-    this._openCardPicker((config) => {
-      this._updateCustomCardYaml(index, yaml.dump(config).trim());
-    }, initialConfig);
+      this._openCardPicker((config) => {
+        this._updateCustomCardYaml(index, requireYaml().dump(config).trim());
+      }, initialConfig);
+    });
   }
 
   private _openCardEditorForSectionCard(sectionIndex: number, cardIndex: number): void {
-    const card = this._config.custom_sections?.[sectionIndex]?.cards?.[cardIndex];
-    const initialConfig = this._getEditableYamlCardConfig(card);
-    if (!initialConfig) return;
+    withYaml(() => {
+      const card = this._config.custom_sections?.[sectionIndex]?.cards?.[cardIndex];
+      const initialConfig = this._getEditableYamlCardConfig(card);
+      if (!initialConfig) return;
 
-    this._openCardPicker((config) => {
-      this._updateSectionCardYaml(sectionIndex, cardIndex, yaml.dump(config).trim());
-    }, initialConfig);
+      this._openCardPicker((config) => {
+        this._updateSectionCardYaml(sectionIndex, cardIndex, requireYaml().dump(config).trim());
+      }, initialConfig);
+    });
   }
 
   private _openCardEditorForAreaCustomCard(areaId: string, index: number): void {
-    const card = this._getAreaCustomCards(areaId)[index];
-    const initialConfig = this._getEditableAreaCardConfig(card);
-    if (!initialConfig) return;
+    withYaml(() => {
+      const card = this._getAreaCustomCards(areaId)[index];
+      const initialConfig = this._getEditableAreaCardConfig(card);
+      if (!initialConfig) return;
 
-    this._openCardPicker((config) => {
-      const cards = this._getAreaCustomCards(areaId);
-      if (!cards[index]) return;
-      const updated: AreaCustomCard = {
-        ...cards[index],
-        mode: 'yaml',
-        yaml: yaml.dump(config).trim(),
-        parsed_config: config,
-      };
-      delete updated._yaml_error;
-      cards[index] = updated;
-      this._writeAreaCustomCards(areaId, cards);
-    }, initialConfig);
+      this._openCardPicker((config) => {
+        const cards = this._getAreaCustomCards(areaId);
+        if (!cards[index]) return;
+        const updated: AreaCustomCard = {
+          ...cards[index],
+          mode: 'yaml',
+          yaml: requireYaml().dump(config).trim(),
+          parsed_config: config,
+        };
+        delete updated._yaml_error;
+        cards[index] = updated;
+        this._writeAreaCustomCards(areaId, cards);
+      }, initialConfig);
+    });
   }
 
   private _getEditableAreaCardConfig(card: AreaCustomCard | undefined): Record<string, any> | null {
@@ -2790,7 +2813,9 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _openCardPicker(callback: (config: Record<string, any>) => void, initialConfig?: Record<string, any>): void {
-    return openCardPicker(this._cardPickerHost, callback, initialConfig);
+    withYaml(() => {
+      openCardPicker(this._cardPickerHost, callback, initialConfig);
+    });
   }
 
   private _closeCardPicker(): void {

@@ -4,8 +4,9 @@ Updated: 2026-11-22
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.44.3. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
-- Version 1.44.3 is housekeeping without behavior changes: 64 unused translation keys removed, `any` types replaced in the group cards, card picker, overview/covers views, availability badges, debug helper and Home Assistant service types, and development dependencies updated within their major version (branch `codex/deps-and-cleanup`). Validation in Home Assistant is still pending.
+- Dashboard Strategy development version: 1.44.4. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.44.4 moves js-yaml into its own lazy `yaml` chunk that the editor preloads in the background; YAML actions run through `withYaml()`. The editor chunk drops from about 284 KB to 241 KB and the webpack size warning is gone (branch `codex/lazy-js-yaml`). Validation in Home Assistant is still pending.
+- Version 1.44.3 is housekeeping without behavior changes: 64 unused translation keys removed, `any` types replaced in the group cards, card picker, overview/covers views, availability badges, debug helper and Home Assistant service types, and development dependencies updated within their major version Released as v1.44.3.
 - Version 1.44.2 moves editor-only strings to `src/translations/editor/` so they load only with the editor: the eager `core` chunk shrinks from about 134 KB to 97 KB and each language chunk by about 85 % Released as v1.44.2; the dashboard and the German editor are confirmed in Home Assistant.
 - Version 1.44.1 makes the `no_dboard` label strict and dashboard-wide again, now also for labels on devices: labeled area temperature/humidity sensors are no longer shown (reverting the 1.44.0 exception) and are replaced by the best visible room sensor of the same kind, and labeled entities are removed from every entity-valued strategy option in `generate()` (`applyDashboardLabelExclusion`). The editor diagnosis warns about both cases; hand-written YAML stays untouched Released as v1.44.1; the room sensor replacement is confirmed in Home Assistant for the living room.
 - Version 1.44.0 always shows the temperature/humidity sensors assigned in the Home Assistant area settings as room badges and on overview area cards, even with a `no_dboard` label, config/diagnostic category, or room hidden list entry (only HA-hidden/disabled or stateless entities are skipped). The editor diagnosis warns about assigned sensors that cannot be shown and notes overridden ones, low-battery room badges follow `battery_critical_threshold`, and the room view and editor share one badge classifier (`classifyBadgeSensor`) Released as v1.44.0; its exception for `no_dboard`-labeled area sensors was reverted in 1.44.1.
@@ -32,7 +33,6 @@ Updated: 2026-11-22
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.
 - Resolve the historical credential finding through private coordination; do not rewrite any published branch without explicit approval.
 - Review the seven historical binary or oversized objects that the text scanner could not inspect.
-- The editor chunk is slightly above webpack's 244 KiB recommendation (build warning only); consider trimming it while splitting `StrategyEditor.ts`.
 
 ## Technical decisions
 

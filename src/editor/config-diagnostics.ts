@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { requireYaml } from './editor-yaml';
 import type { HomeAssistant } from '../types/homeassistant';
 import { trackOperation } from '../utils/debug';
 import { getConfiguredNavigationPaths } from '../utils/summary-view-utils';
@@ -99,8 +99,11 @@ export function analyzeConfig(config: unknown): ConfigAnalysis {
           links.push({ path: location, target: child });
         if (key === 'yaml' && typeof child === 'string') {
           trackOperation('diagnostics-yaml');
+          // Outside the try: a missing js-yaml must fail loudly instead of
+          // caching an analysis without the YAML blocks (see withYaml()).
+          const parser = requireYaml();
           try {
-            walk(yaml.load(child), location, depth + 1);
+            walk(parser.load(child), location, depth + 1);
           } catch {
             /* Syntax errors belong to the YAML editor. */
           }

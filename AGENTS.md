@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.44.3`. Unit tests live beside source modules;
+Current development version: `1.44.4`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -110,6 +110,7 @@ Important behavior:
 ## Performance constraints
 
 - Keep the entry chunk small and register `ll-strategy-dashboard-strategy` immediately.
+- js-yaml is a lazy `yaml` chunk. Never import `js-yaml` directly: use `requireYaml()` from `src/editor/editor-yaml.ts` inside a user action wrapped in `withYaml()`. The editor preloads the chunk in `connectedCallback`; tests that parse YAML call `preloadYaml()` first.
 - Dashboard strings live in `src/translations/<lang>.json`; editor-only `editor.*` strings live in `src/translations/editor/<lang>.json` and are registered by `src/editor/editor-translations.ts`, so they never load with the dashboard. Put a new key in the file matching where it renders; `scripts/lint-translations.mjs` rejects `editor.*` keys in the dashboard files.
 - Keep code splitting and content-hashed chunk names; start loading chunks from the entry point.
 - Pre-resolve views in `generate()` rather than returning lazy strategy stubs.
