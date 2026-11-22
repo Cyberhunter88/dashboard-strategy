@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.44.4`. Unit tests live beside source modules;
+Current development version: `1.44.5`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -97,6 +97,9 @@ Important behavior:
   lists have focused panel modules under `src/editor/panels/`. Keep configuration and expansion state in the editor
   host; use its stable typed facades for panel actions (`OptionPanelHost` for plain option panels, with the shared
   `toggleRow` helper). Simple option metadata lives in `src/utils/option-metadata.ts`.
+- Config updates and layout logic without UI state belong in pure editor modules: `src/editor/area-options-config.ts`
+  (immutable `areas_options`/`areas_display` updates that prune empty levels) and `src/editor/weather-start-layout.ts`
+  (free weather-start layout). Add new room option updates there instead of copying the nested update code.
 - Overview sections are driven by `src/sections/section-registry.ts`: a new toggle-backed section needs its registry
   entry, a `SectionKey`/`WeatherStartKey`/`HeadingKey`, the default order, the editor block meta, translations in all
   five languages, and a builder wired into `OverviewViewStrategy`. Sections that react to live state (media, air

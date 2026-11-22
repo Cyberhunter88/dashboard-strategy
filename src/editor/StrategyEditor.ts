@@ -1,5 +1,20 @@
 import { parseEditorYamlConfig, preloadYaml, requireYaml, withYaml } from './editor-yaml';
 import {
+  getAdditionalBadgesForArea,
+  getBadgeNamesConfig,
+  getDefaultShowNameEntities,
+  getEntityOrdersForArea,
+  getHiddenEntitiesForArea,
+  setAreaNavPinned,
+  setAreaOrder,
+  setAreaVisible,
+  setBadgeAdditional,
+  setBadgeShowName,
+  setGroupEntitiesVisible,
+  setGroupEntityVisible,
+  updateAreaOptions,
+} from './area-options-config';
+import {
   cardPickerYamlChanged,
   closeCardPicker,
   confirmCardPicker,
@@ -55,13 +70,11 @@ import type {
   CustomCard,
   CustomSection,
   CustomView,
-  SectionKey,
   Simon42StrategyConfig,
   StackKey,
-  WeatherStartKey,
   WeatherStartLayoutItem,
 } from '../types/strategy';
-import { DEFAULT_STACKS_ORDER, DEFAULT_WEATHER_START_ORDER } from '../types/strategy';
+import { DEFAULT_STACKS_ORDER } from '../types/strategy';
 import {
   createRoomEntities,
   findUpsEntityGroups,
@@ -75,16 +88,11 @@ import { loadLanguage, localize, onLanguageLoaded } from '../utils/localize';
 import './editor-translations';
 import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
-import { getWeatherStartWeatherMode, withEnabledOptionalBlocks } from '../utils/weather-start-defaults';
+import { withEnabledOptionalBlocks } from '../utils/weather-start-defaults';
 import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
 import { stripLegacyAreaWebrtcCameras, stripLegacyOverviewLayoutConfig } from './editor-config-utils';
 import { dispatchStrategyConfigChanged } from './editor-host';
-import {
-  editorPanelMeta,
-  EDITOR_NAV_GROUPS,
-  WEATHER_START_BLOCK_META,
-  type EditorPanelKey,
-} from './editor-panel-registry';
+import { editorPanelMeta, EDITOR_NAV_GROUPS, type EditorPanelKey } from './editor-panel-registry';
 import { searchOptions } from './option-search';
 import { strategyEditorStyles } from './editor-styles';
 import { renderAreaOptionsPanel } from './panels/AreaOptionsPanel';
@@ -102,6 +110,19 @@ import { renderViewsPanel } from './panels/ViewsPanel';
 import { moveVisibleStack, presentStackKeys, renderRoomStackOrderPanel } from './panels/RoomStackOrderPanel';
 import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
 import { type WeatherStartFloorOption } from './panels/WeatherStartPanel';
+import {
+  buildLegacyWeatherStartLayoutItems,
+  computeWeatherStartAreaOptions,
+  computeWeatherStartFloorOptions,
+  countNestedFixedGrids,
+  getCustomCardEditorLabel,
+  getCustomCardRef,
+  getCustomSectionRef,
+  getSectionLabelKey,
+  getWeatherStartItemMeta,
+  isWeatherStartItemDisabled,
+  normalizeWeatherStartLayoutItems,
+} from './weather-start-layout';
 import { loadExpandedPanels, openPanel, renderCollapsiblePanel } from './panels/panel-shell';
 
 // -- Supporting types for the editor ------------------------------------
@@ -591,85 +612,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   // -- Weather-start block order panel -----------------------------------
 
-  private _getWeatherStartOrder(): WeatherStartKey[] {
-    return this._config.weather_start_order || [...DEFAULT_WEATHER_START_ORDER];
-  }
-
-  private _isWeatherStartBlockDisabled(key: WeatherStartKey): boolean {
-    switch (key) {
-      case 'clock':
-        return this._config.show_clock_card === false;
-      case 'weather_current':
-      case 'weather_daily':
-        return this._config.show_weather === false;
-      case 'weather_hourly':
-        return this._config.show_weather === false || getWeatherStartWeatherMode(this._config) === 'compact_hourly';
-      case 'weather_details':
-        return (this._config.weather_sensors || []).length === 0 && (this._config.pollen_entities || []).length === 0;
-      case 'favorites':
-        return (this._config.favorite_entities || []).length === 0;
-      case 'light_favorites':
-        return (this._config.light_favorite_entities || []).length === 0;
-      case 'alarm':
-        return !this._config.alarm_entity;
-      case 'search':
-        return this._config.show_search_card !== true;
-      case 'overview':
-        return !(this._config.custom_cards || []).some(
-          (card) => (card.target_section || 'custom_cards') === 'overview'
-        );
-      case 'energy':
-        return this._config.show_energy === false;
-      case 'plants':
-        return this._config.show_plants_section !== true;
-      case 'agenda':
-        return this._config.show_agenda_section !== true;
-      case 'todos':
-        return this._config.show_todos_section !== true;
-      case 'persons':
-        return this._config.show_persons_section !== true;
-      case 'vacuums':
-        return this._config.show_vacuums_section !== true;
-      case 'maintenance':
-        return this._config.show_maintenance_section !== true;
-      case 'quick_actions':
-        return (this._config.quick_action_entities || []).length === 0;
-      case 'media':
-        return this._config.show_media_section !== true;
-      case 'timers':
-        return this._config.show_timers_section !== true;
-      case 'activity':
-        return this._config.show_activity_section !== true;
-      case 'custom_cards':
-        return (this._config.custom_cards || []).length === 0;
-      case 'custom_sections':
-        return (this._config.custom_sections || []).length === 0;
-      case 'summaries':
-        return (
-          this._config.show_light_summary === false &&
-          this._config.show_covers_summary === false &&
-          this._config.show_security_summary === false &&
-          this._config.show_battery_summary === false &&
-          this._config.show_climate_summary !== true &&
-          this._config.show_windows_summary !== true
-        );
-      default:
-        return false;
-    }
-  }
-
-  private static _weatherStartBlockMeta = new Map<WeatherStartKey, { icon: string; labelKey: string }>(
-    Object.entries(WEATHER_START_BLOCK_META) as [WeatherStartKey, { icon: string; labelKey: string }][]
-  );
-
-  private static _sectionMeta = new Map<SectionKey, { icon: string; labelKey: string }>([
-    ['overview', { icon: 'mdi:home-outline', labelKey: 'sections.overview' }],
-    ['custom_cards', { icon: 'mdi:cards', labelKey: 'sections.custom_cards' }],
-    ['areas', { icon: 'mdi:floor-plan', labelKey: 'sections.areas' }],
-    ['weather', { icon: 'mdi:weather-partly-cloudy', labelKey: 'sections.weather' }],
-    ['energy', { icon: 'mdi:lightning-bolt', labelKey: 'sections.energy' }],
-  ]);
-
   private _createWeatherStartItemId(prefix: string): string {
     return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -690,17 +632,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       return this._weatherStartAreaOptionsCache.options;
     }
 
-    const hidden = new Set(hiddenList);
-    const orderMap = new Map(order.map((areaId, index) => [areaId, index]));
-    const options = Object.values(this._hass.areas || {})
-      .filter((area) => !hidden.has(area.area_id))
-      .sort((a, b) => {
-        const ai = orderMap.get(a.area_id) ?? -1;
-        const bi = orderMap.get(b.area_id) ?? -1;
-        const ae = ai >= 0 ? ai : 9999;
-        const be = bi >= 0 ? bi : 9999;
-        return ae - be || a.name.localeCompare(b.name);
-      });
+    const options = computeWeatherStartAreaOptions(this._hass.areas, hiddenList, order);
     this._weatherStartAreaOptionsCache = {
       areas: this._hass.areas,
       hiddenKey,
@@ -721,25 +653,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       return this._weatherStartFloorOptionsCache.options;
     }
 
-    const floorIds = new Set<string>();
-    let hasFloorlessAreas = false;
-    for (const area of areas) {
-      if (area.floor_id) floorIds.add(area.floor_id);
-      else hasFloorlessAreas = true;
-    }
-
-    const floors: WeatherStartFloorOption[] = Object.values(this._hass.floors || {})
-      .filter((floor) => floorIds.has(floor.floor_id))
-      .sort((a, b) => {
-        const aLevel = a.level ?? 9999;
-        const bLevel = b.level ?? 9999;
-        return aLevel - bLevel || a.name.localeCompare(b.name);
-      })
-      .map((floor) => ({ floor_id: floor.floor_id, name: floor.name, icon: floor.icon }));
-
-    if (hasFloorlessAreas) {
-      floors.push({ floor_id: null, name: localize('sections.areas_other'), icon: 'mdi:home-outline' });
-    }
+    const floors = computeWeatherStartFloorOptions(this._hass.floors, areas);
 
     this._weatherStartFloorOptionsCache = {
       floors: this._hass.floors,
@@ -750,131 +664,34 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _getCustomCardRef(card: CustomCard, index: number): string {
-    return card.id || `legacy-custom-card-${index}`;
+    return getCustomCardRef(card, index);
   }
 
   private _getCustomSectionRef(section: CustomSection, index: number): string {
-    return section.id || `legacy-custom-section-${index}`;
+    return getCustomSectionRef(section, index);
   }
 
   private _getCustomCardEditorLabel(card: CustomCard | AreaCustomCard | undefined, fallback: string): string {
-    return card?.editor_title || card?.title || fallback;
-  }
-
-  private _getLegacyWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
-    const order = this._getWeatherStartOrder();
-    const items: WeatherStartLayoutItem[] = [];
-    for (const key of order) {
-      const blockCfg = this._config.weather_start_blocks_config?.[key];
-      if (key === 'areas') {
-        if (this._config.group_by_floors === true) {
-          for (const floor of this._getWeatherStartFloorOptions()) {
-            items.push({
-              id: `floor-${floor.floor_id || 'none'}`,
-              type: 'floor',
-              floor_id: floor.floor_id,
-              title: floor.name,
-            });
-          }
-        } else {
-          for (const area of this._getWeatherStartAreaOptions()) {
-            items.push({ id: `area-${area.area_id}`, type: 'area', area_id: area.area_id });
-          }
-        }
-      } else if (key === 'custom_cards') {
-        (this._config.custom_cards || []).forEach((card, index) => {
-          items.push({
-            id: `custom-card-${this._getCustomCardRef(card, index)}`,
-            type: 'custom_card',
-            custom_card_id: this._getCustomCardRef(card, index),
-          });
-        });
-      } else if (key === 'custom_sections') {
-        (this._config.custom_sections || []).forEach((section, index) => {
-          items.push({
-            id: `custom-section-${this._getCustomSectionRef(section, index)}`,
-            type: 'custom_section',
-            custom_section_id: this._getCustomSectionRef(section, index),
-          });
-        });
-      } else {
-        items.push({
-          id: key,
-          type: key,
-          ...(blockCfg?.yaml
-            ? { yaml: blockCfg.yaml, parsed_config: blockCfg.parsed_config, _yaml_error: blockCfg._yaml_error }
-            : {}),
-        });
-      }
-    }
-    return items;
+    return getCustomCardEditorLabel(card, fallback);
   }
 
   private _normalizeWeatherStartLayoutItems(items: WeatherStartLayoutItem[]): WeatherStartLayoutItem[] {
-    const areas = this._getWeatherStartAreaOptions();
-    const visibleAreaIds = new Set(areas.map((area) => area.area_id));
-    const representedAreaIds = new Set<string>();
-    const result: WeatherStartLayoutItem[] = [];
-
-    const addAreaItem = (areaId: string, item?: WeatherStartLayoutItem): void => {
-      if (!visibleAreaIds.has(areaId) || representedAreaIds.has(areaId)) return;
-      representedAreaIds.add(areaId);
-      result.push({
-        ...(item || {}),
-        id: item?.id || `area-${areaId}`,
-        type: 'area',
-        area_id: areaId,
-      });
-    };
-
-    const addFloorItem = (item: WeatherStartLayoutItem): void => {
-      const floorAreas = areas.filter((area) => (item.floor_id ? area.floor_id === item.floor_id : !area.floor_id));
-      if (floorAreas.length === 0) return;
-      for (const area of floorAreas) representedAreaIds.add(area.area_id);
-      result.push({ ...item });
-    };
-
-    for (const item of items) {
-      if (item.type === 'area') {
-        if (item.area_id) addAreaItem(item.area_id, item);
-        continue;
-      }
-
-      if (item.type === 'floor') {
-        addFloorItem(item);
-        continue;
-      }
-
-      if (item.type === 'areas') {
-        if (this._config.group_by_floors === true) {
-          for (const floor of this._getWeatherStartFloorOptions()) {
-            addFloorItem({
-              id: `floor-${floor.floor_id || 'none'}`,
-              type: 'floor',
-              floor_id: floor.floor_id,
-              title: floor.name,
-            });
-          }
-        } else {
-          for (const area of areas) addAreaItem(area.area_id);
-        }
-        continue;
-      }
-
-      result.push({ ...item });
-    }
-
-    for (const area of areas) {
-      addAreaItem(area.area_id);
-    }
-
-    return result;
+    return normalizeWeatherStartLayoutItems(
+      items,
+      this._config,
+      this._getWeatherStartAreaOptions(),
+      this._getWeatherStartFloorOptions()
+    );
   }
 
   private _getWeatherStartLayoutItems(): WeatherStartLayoutItem[] {
     const items = this._config.weather_start_layout_items?.length
       ? this._config.weather_start_layout_items.map((item) => ({ ...item }))
-      : this._getLegacyWeatherStartLayoutItems();
+      : buildLegacyWeatherStartLayoutItems(
+          this._config,
+          this._getWeatherStartAreaOptions(),
+          this._getWeatherStartFloorOptions()
+        );
 
     return this._normalizeWeatherStartLayoutItems(withEnabledOptionalBlocks(items, this._config));
   }
@@ -1083,33 +900,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     customCards: CustomCard[],
     customSections: CustomSection[]
   ): { icon: string; label: string } {
-    if (item.type === 'area') {
-      const area = areas.find((entry) => entry.area_id === item.area_id);
-      return {
-        icon: area?.icon || 'mdi:home-outline',
-        label: area?.name || item.area_id || localize('sections.areas'),
-      };
-    }
-    if (item.type === 'floor') {
-      const floor = this._getWeatherStartFloorOptions().find((entry) => entry.floor_id === (item.floor_id ?? null));
-      return { icon: floor?.icon || 'mdi:floor-plan', label: item.title || floor?.name || localize('sections.areas') };
-    }
-    if (item.type === 'custom_card') {
-      const card = customCards.find((entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id);
-      return { icon: 'mdi:cards', label: this._getCustomCardEditorLabel(card, localize('editor.new_card')) };
-    }
-    if (item.type === 'custom_section') {
-      const section = customSections.find(
-        (entry, index) => this._getCustomSectionRef(entry, index) === item.custom_section_id
-      );
-      return {
-        icon: section?.icon || 'mdi:view-grid-plus-outline',
-        label: section?.title || localize('editor.section_custom_sections'),
-      };
-    }
-
-    const meta = Simon42DashboardStrategyEditor._weatherStartBlockMeta.get(item.type);
-    return { icon: meta?.icon || 'mdi:view-dashboard-outline', label: meta ? localize(meta.labelKey) : item.type };
+    return getWeatherStartItemMeta(item, areas, this._getWeatherStartFloorOptions(), customCards, customSections);
   }
 
   private _isWeatherStartItemDisabled(
@@ -1117,43 +908,17 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     customCards: CustomCard[],
     customSections: CustomSection[]
   ): boolean {
-    if (item.parsed_config) return false;
-    if (item._yaml_error) return true;
-    if (item.type === 'custom_card') {
-      return !customCards.some(
-        (entry, index) => this._getCustomCardRef(entry, index) === item.custom_card_id && entry.parsed_config
-      );
-    }
-    if (item.type === 'custom_section') {
-      return !customSections.some(
-        (entry, index) =>
-          this._getCustomSectionRef(entry, index) === item.custom_section_id &&
-          (entry.cards || []).some((card) => card.parsed_config)
-      );
-    }
-    if (item.type === 'floor') {
-      return !this._getWeatherStartAreaOptions().some((area) =>
-        item.floor_id ? area.floor_id === item.floor_id : !area.floor_id
-      );
-    }
-    if (item.type === 'summaries') {
-      return this._isWeatherStartBlockDisabled('summaries');
-    }
-    if (Simon42DashboardStrategyEditor._weatherStartBlockMeta.has(item.type as WeatherStartKey)) {
-      return this._isWeatherStartBlockDisabled(item.type as WeatherStartKey);
-    }
-    return false;
+    return isWeatherStartItemDisabled(
+      item,
+      this._config,
+      this._getWeatherStartAreaOptions(),
+      customCards,
+      customSections
+    );
   }
 
   private _countNestedFixedGrids(value: unknown, depth = 0): number {
-    if (!value || typeof value !== 'object') return 0;
-    if (Array.isArray(value))
-      return value.reduce<number>((sum, entry) => sum + this._countNestedFixedGrids(entry, depth), 0);
-    const record = value as Record<string, unknown>;
-    const own = depth > 0 && record.type === 'grid' && typeof record.columns === 'number' ? 1 : 0;
-    return (
-      own + Object.values(record).reduce<number>((sum, entry) => sum + this._countNestedFixedGrids(entry, depth + 1), 0)
-    );
+    return countNestedFixedGrids(value, depth);
   }
 
   private _renderWeatherStartOrderPanel(): TemplateResult {
@@ -1241,33 +1006,14 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateStacksOrder(areaId: string, newOrder: StackKey[]): void {
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const newAreaOptions: Record<string, any> = { ...currentAreaOptions };
-
-    if (newOrder.join('|') === DEFAULT_STACKS_ORDER.join('|')) {
-      delete newAreaOptions.stacks_order;
-    } else {
-      newAreaOptions.stacks_order = newOrder;
-    }
-
-    const newAreasOptions: Record<string, any> = {
-      ...this._config.areas_options,
-      [areaId]: newAreaOptions,
-    };
-
-    if (Object.keys(newAreasOptions[areaId]).length === 0) {
-      delete newAreasOptions[areaId];
-    }
-
-    const newConfig: Simon42StrategyConfig = { ...this._config };
-    if (Object.keys(newAreasOptions).length === 0) {
-      delete newConfig.areas_options;
-    } else {
-      newConfig.areas_options = newAreasOptions;
-    }
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+    const isDefault = newOrder.join('|') === DEFAULT_STACKS_ORDER.join('|');
+    this._applyConfig(
+      updateAreaOptions(this._config, areaId, (options) => {
+        if (isDefault) delete options.stacks_order;
+        else options.stacks_order = newOrder;
+        return options;
+      })
+    );
   }
 
   private _renderStackOrderPanel(
@@ -2021,38 +1767,16 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   /**
    * Schreibt die custom_cards-Liste einer Area zurück in die Config.
    * Räumt leere Verschachtelungen auf (Delete-when-empty), damit die
-   * gespeicherte Config minimal bleibt — analog zu _updateEntityConfig.
+   * gespeicherte Config minimal bleibt (siehe updateAreaOptions).
    */
   private _writeAreaCustomCards(areaId: string, cards: AreaCustomCard[]): void {
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-
-    const newAreaOptions: Record<string, any> = { ...currentAreaOptions };
-    if (cards.length === 0) {
-      delete newAreaOptions.custom_cards;
-    } else {
-      newAreaOptions.custom_cards = cards;
-    }
-
-    const newAreasOptions: Record<string, any> = {
-      ...this._config.areas_options,
-      [areaId]: newAreaOptions,
-    };
-
-    if (Object.keys(newAreasOptions[areaId]).length === 0) {
-      delete newAreasOptions[areaId];
-    }
-
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      areas_options: newAreasOptions,
-    };
-
-    if (newConfig.areas_options && Object.keys(newConfig.areas_options).length === 0) {
-      delete newConfig.areas_options;
-    }
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+    this._applyConfig(
+      updateAreaOptions(this._config, areaId, (options) => {
+        if (cards.length === 0) delete options.custom_cards;
+        else options.custom_cards = cards;
+        return options;
+      })
+    );
   }
 
   private _addAreaCustomCard(areaId: string): void {
@@ -2190,60 +1914,18 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   private _areaVisibilityChanged(areaId: string, isVisible: boolean): void {
     if (!this._hass) return;
-
-    let hiddenAreas = [...(this._config.areas_display?.hidden || [])];
-
-    if (isVisible) {
-      hiddenAreas = hiddenAreas.filter((id) => id !== areaId);
-    } else {
-      if (!hiddenAreas.includes(areaId)) {
-        hiddenAreas.push(areaId);
-      }
+    if (!isVisible) {
       // Collapse area when hidden
       this._expandedAreas.delete(areaId);
       this._expandedGroups.delete(areaId);
       this._areaEntitiesCache.delete(areaId);
     }
-
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      areas_display: {
-        ...this._config.areas_display,
-        hidden: hiddenAreas,
-      },
-    };
-
-    if (newConfig.areas_display?.hidden?.length === 0) {
-      delete newConfig.areas_display.hidden;
-    }
-    if (newConfig.areas_display && Object.keys(newConfig.areas_display).length === 0) {
-      delete newConfig.areas_display;
-    }
-
     this._invalidateWeatherStartOptionsCaches();
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+    this._applyConfig(setAreaVisible(this._config, areaId, isVisible));
   }
 
   private _areaNavPinChanged(areaId: string, isPinned: boolean): void {
-    let navItems = [...(this._config.areas_display?.nav_items || [])];
-
-    if (isPinned) {
-      if (!navItems.includes(areaId)) navItems.push(areaId);
-    } else {
-      navItems = navItems.filter((id) => id !== areaId);
-    }
-
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      areas_display: { ...this._config.areas_display, nav_items: navItems },
-    };
-
-    if (newConfig.areas_display?.nav_items?.length === 0) delete newConfig.areas_display.nav_items;
-    if (newConfig.areas_display && Object.keys(newConfig.areas_display).length === 0) delete newConfig.areas_display;
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+    this._applyConfig(setAreaNavPinned(this._config, areaId, isPinned));
   }
 
   private _toggleAreaExpand(e: Event, areaId: string): void {
@@ -2288,19 +1970,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   private _groupVisibilityChanged(areaId: string, group: string, isVisible: boolean, entities: string[]): void {
     if (!this._hass) return;
-
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const currentGroupsOptions = currentAreaOptions.groups_options || {};
-    const currentGroupOptions = currentGroupsOptions[group] as Record<string, any> | undefined;
-    let hiddenEntities = [...(currentGroupOptions?.hidden || [])];
-
-    if (isVisible) {
-      hiddenEntities = hiddenEntities.filter((e) => !entities.includes(e));
-    } else {
-      hiddenEntities = [...new Set([...hiddenEntities, ...entities])];
-    }
-
-    this._updateEntityConfig(areaId, group, hiddenEntities);
+    this._applyConfig(setGroupEntitiesVisible(this._config, areaId, group, entities, isVisible));
+    this._refreshAreaCache(areaId);
   }
 
   private _entityVisibilityChanged(areaId: string, group: string, entityId: string, isVisible: boolean): void {
@@ -2318,76 +1989,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       return;
     }
 
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const currentGroupsOptions = currentAreaOptions.groups_options || {};
-    const currentGroupOptions = currentGroupsOptions[group] as Record<string, any> | undefined;
-    let hiddenEntities = [...(currentGroupOptions?.hidden || [])];
-
-    if (isVisible) {
-      hiddenEntities = hiddenEntities.filter((e) => e !== entityId);
-    } else {
-      if (!hiddenEntities.includes(entityId)) {
-        hiddenEntities.push(entityId);
-      }
-    }
-
-    this._updateEntityConfig(areaId, group, hiddenEntities);
-  }
-
-  private _updateEntityConfig(areaId: string, group: string, hiddenEntities: string[]): void {
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const currentGroupsOptions = currentAreaOptions.groups_options || {};
-    const currentGroupOptions = currentGroupsOptions[group] as Record<string, any> | undefined;
-
-    const newGroupOptions: Record<string, any> = {
-      ...currentGroupOptions,
-      hidden: hiddenEntities,
-    };
-
-    if (newGroupOptions.hidden.length === 0) {
-      delete newGroupOptions.hidden;
-    }
-
-    const newGroupsOptions: Record<string, any> = {
-      ...currentGroupsOptions,
-      [group]: newGroupOptions,
-    };
-
-    if (Object.keys(newGroupsOptions[group]).length === 0) {
-      delete newGroupsOptions[group];
-    }
-
-    const newAreaOptions: Record<string, any> = {
-      ...currentAreaOptions,
-      groups_options: newGroupsOptions,
-    };
-
-    if (Object.keys(newAreaOptions.groups_options).length === 0) {
-      delete newAreaOptions.groups_options;
-    }
-
-    const newAreasOptions: Record<string, any> = {
-      ...this._config.areas_options,
-      [areaId]: newAreaOptions,
-    };
-
-    if (Object.keys(newAreasOptions[areaId]).length === 0) {
-      delete newAreasOptions[areaId];
-    }
-
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      areas_options: newAreasOptions,
-    };
-
-    if (newConfig.areas_options && Object.keys(newConfig.areas_options).length === 0) {
-      delete newConfig.areas_options;
-    }
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-
-    // Refresh cached data so re-render picks up the changes
+    this._applyConfig(setGroupEntityVisible(this._config, areaId, group, entityId, isVisible));
     this._refreshAreaCache(areaId);
   }
 
@@ -2395,116 +1997,14 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
   private _badgeAdditionalChanged(areaId: string, entityId: string, isAdd: boolean): void {
     if (!this._config) return;
-
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const currentGroupsOptions = currentAreaOptions.groups_options || {};
-    const currentBadgeOptions = currentGroupsOptions['badges'] || {};
-
-    let additional = [...(currentBadgeOptions.additional || [])];
-
-    if (isAdd) {
-      if (!additional.includes(entityId)) additional.push(entityId);
-    } else {
-      additional = additional.filter((e) => e !== entityId);
-    }
-
-    const newBadgeOptions: Record<string, any> = { ...currentBadgeOptions };
-    if (additional.length > 0) {
-      newBadgeOptions.additional = additional;
-    } else {
-      delete newBadgeOptions.additional;
-    }
-
-    const newGroupsOptions: Record<string, any> = {
-      ...currentGroupsOptions,
-      badges: newBadgeOptions,
-    };
-
-    if (Object.keys(newGroupsOptions.badges).length === 0) {
-      delete newGroupsOptions.badges;
-    }
-
-    const newAreaOptions: Record<string, any> = {
-      ...currentAreaOptions,
-      groups_options: newGroupsOptions,
-    };
-
-    if (Object.keys(newAreaOptions.groups_options).length === 0) {
-      delete newAreaOptions.groups_options;
-    }
-
-    const newAreasOptions: Record<string, any> = {
-      ...this._config.areas_options,
-      [areaId]: newAreaOptions,
-    };
-
-    if (Object.keys(newAreasOptions[areaId]).length === 0) {
-      delete newAreasOptions[areaId];
-    }
-
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      areas_options: newAreasOptions,
-    };
-
-    if (newConfig.areas_options && Object.keys(newConfig.areas_options).length === 0) {
-      delete newConfig.areas_options;
-    }
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-
-    // Refresh cached data
+    this._applyConfig(setBadgeAdditional(this._config, areaId, entityId, isAdd));
     this._refreshAreaCache(areaId);
   }
 
   private _badgeShowNameChanged(areaId: string, entityId: string, showName: boolean): void {
     if (!this._config || !this._hass) return;
-
-    const currentAreaOptions = this._config.areas_options?.[areaId] || {};
-    const currentGroupsOptions = currentAreaOptions.groups_options || {};
-    const currentBadgeOptions = currentGroupsOptions['badges'] || {};
-
-    let namesVisible = [...(currentBadgeOptions.names_visible || [])];
-    let namesHidden = [...(currentBadgeOptions.names_hidden || [])];
-
-    const stateObj = this._hass.states[entityId];
-    const dc = stateObj?.attributes?.device_class as string | undefined;
-    const defaultShowName = isDefaultShowName(dc);
-
-    if (showName === defaultShowName) {
-      namesVisible = namesVisible.filter((e) => e !== entityId);
-      namesHidden = namesHidden.filter((e) => e !== entityId);
-    } else if (showName) {
-      if (!namesVisible.includes(entityId)) namesVisible.push(entityId);
-      namesHidden = namesHidden.filter((e) => e !== entityId);
-    } else {
-      namesVisible = namesVisible.filter((e) => e !== entityId);
-      if (!namesHidden.includes(entityId)) namesHidden.push(entityId);
-    }
-
-    const newBadgeOptions: Record<string, any> = { ...currentBadgeOptions };
-    if (namesVisible.length > 0) newBadgeOptions.names_visible = namesVisible;
-    else delete newBadgeOptions.names_visible;
-    if (namesHidden.length > 0) newBadgeOptions.names_hidden = namesHidden;
-    else delete newBadgeOptions.names_hidden;
-
-    const newGroupsOptions: Record<string, any> = { ...currentGroupsOptions, badges: newBadgeOptions };
-    if (Object.keys(newGroupsOptions.badges).length === 0) delete newGroupsOptions.badges;
-
-    const newAreaOptions: Record<string, any> = { ...currentAreaOptions, groups_options: newGroupsOptions };
-    if (Object.keys(newAreaOptions.groups_options).length === 0) delete newAreaOptions.groups_options;
-
-    const newAreasOptions: Record<string, any> = { ...this._config.areas_options, [areaId]: newAreaOptions };
-    if (Object.keys(newAreasOptions[areaId]).length === 0) delete newAreasOptions[areaId];
-
-    const newConfig: Simon42StrategyConfig = { ...this._config, areas_options: newAreasOptions };
-    if (newConfig.areas_options && Object.keys(newConfig.areas_options).length === 0) delete newConfig.areas_options;
-
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
-
-    // Refresh cached data
+    const deviceClass = this._hass.states[entityId]?.attributes?.device_class as string | undefined;
+    this._applyConfig(setBadgeShowName(this._config, areaId, entityId, showName, isDefaultShowName(deviceClass)));
     this._refreshAreaCache(areaId);
   }
 
@@ -2608,22 +2108,19 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
 
   private _updateAreaOrder(newOrder: string[]): void {
-    const newConfig: Simon42StrategyConfig = {
-      ...this._config,
-      areas_display: {
-        ...this._config.areas_display,
-        order: newOrder,
-      },
-    };
-
     this._invalidateWeatherStartOptionsCaches();
-    this._config = newConfig;
-    this._fireConfigChanged(newConfig);
+    this._applyConfig(setAreaOrder(this._config, newOrder));
   }
 
   // ====================================================================
   // CONFIG DISPATCH
   // ====================================================================
+
+  /** Store a new config and notify Home Assistant. */
+  private _applyConfig(config: Simon42StrategyConfig): void {
+    this._config = config;
+    this._fireConfigChanged(config);
+  }
 
   _fireConfigChanged(config: Simon42StrategyConfig): void {
     this._isUpdatingConfig = true;
@@ -3077,7 +2574,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         return editor._config;
       },
       customViewsHost: this._customViewsHost,
-      _sectionLabelKey: (key) => Simon42DashboardStrategyEditor._sectionMeta.get(key)!.labelKey,
+      _sectionLabelKey: getSectionLabelKey,
       _getCustomCardEditorLabel: this._getCustomCardEditorLabel.bind(this),
       _customCardsHeadingChanged: this._customCardsHeadingChanged.bind(this),
       _customCardsIconChanged: this._customCardsIconChanged.bind(this),
@@ -3177,68 +2674,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       _getEditableYamlCardConfig: this._getEditableYamlCardConfig.bind(this),
     };
   }
-}
-
-// ====================================================================
-// HELPER FUNCTIONS (local to this module)
-// ====================================================================
-
-function getAdditionalBadgesForArea(areaId: string, config: Simon42StrategyConfig): string[] {
-  return config.areas_options?.[areaId]?.groups_options?.badges?.additional || [];
-}
-
-function getDefaultShowNameEntities(badgeCandidates: string[], hass: HomeAssistant): Set<string> {
-  const result = new Set<string>();
-  for (const entityId of badgeCandidates) {
-    const stateObj = hass.states[entityId];
-    if (!stateObj) continue;
-    const dc = stateObj.attributes?.device_class as string | undefined;
-    if (isDefaultShowName(dc)) result.add(entityId);
-  }
-  return result;
-}
-
-function getBadgeNamesConfig(
-  areaId: string,
-  config: Simon42StrategyConfig
-): { namesVisible: string[]; namesHidden: string[] } {
-  const opts = config.areas_options?.[areaId]?.groups_options?.badges;
-  return {
-    namesVisible: opts?.names_visible || [],
-    namesHidden: opts?.names_hidden || [],
-  };
-}
-
-function getHiddenEntitiesForArea(areaId: string, config: Simon42StrategyConfig): Record<string, string[]> {
-  const areaOptions = config.areas_options?.[areaId];
-  if (!areaOptions || !areaOptions.groups_options) {
-    return {};
-  }
-
-  const hidden: Record<string, string[]> = {};
-  for (const [group, options] of Object.entries(areaOptions.groups_options)) {
-    if (options.hidden) {
-      hidden[group] = options.hidden;
-    }
-  }
-
-  return hidden;
-}
-
-function getEntityOrdersForArea(areaId: string, config: Simon42StrategyConfig): Record<string, string[]> {
-  const areaOptions = config.areas_options?.[areaId];
-  if (!areaOptions || !areaOptions.groups_options) {
-    return {};
-  }
-
-  const orders: Record<string, string[]> = {};
-  for (const [group, options] of Object.entries(areaOptions.groups_options)) {
-    if (options.order) {
-      orders[group] = options.order;
-    }
-  }
-
-  return orders;
 }
 
 // Register custom element
