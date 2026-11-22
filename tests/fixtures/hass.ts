@@ -45,6 +45,8 @@ interface AreaFixture {
   floor_id?: string | null;
   icon?: string | null;
   picture?: string | null;
+  temperature_entity_id?: string | null;
+  humidity_entity_id?: string | null;
 }
 
 interface FloorFixture {

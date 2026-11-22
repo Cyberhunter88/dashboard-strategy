@@ -6,6 +6,7 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { GroupOptions } from '../types/strategy';
+import { isEntityRegistryHidden } from '../types/registries';
 
 // -- Badge color map (device_class → HA color name) -------------------
 
@@ -55,45 +56,108 @@ export function isEnergyBlockSensor(domain: string, deviceClass: string | undefi
 
 // -- Badge candidate detection ----------------------------------------
 
+/** Automatic room badge buckets, in the order the room header renders them. */
+export type BadgeSensorType =
+  | 'pm25'
+  | 'pm10'
+  | 'co2'
+  | 'voc'
+  | 'illuminance'
+  | 'battery'
+  | 'motion'
+  | 'occupancy'
+  | 'absolute_humidity'
+  | 'smoke'
+  | 'gas'
+  | 'window'
+  | 'door';
+
 /**
- * Check if a sensor/binary_sensor entity qualifies as a badge candidate.
- * Temperature and humidity are excluded (handled by HA area config).
- * Battery detection returns true but threshold check remains with the caller.
+ * Classify a sensor/binary_sensor into its automatic badge bucket.
+ *
+ * Single source of truth for the room view and the editor badge list.
+ * Energy block classes, temperature, and humidity return null: temperature
+ * and humidity come only from the Home Assistant area settings.
+ * Battery sensors are classified regardless of level; the caller applies
+ * the critical threshold.
  */
-export function isBadgeCandidate(
+export function classifyBadgeSensor(
   domain: string,
   deviceClass: string | undefined,
   unit: string | undefined,
   entityId: string
-): boolean {
+): BadgeSensorType | null {
   if (domain === 'sensor') {
-    // Battery (caller must check threshold)
-    if (deviceClass === 'battery' || entityId.includes('battery')) return true;
-    // Skip temperature/humidity (handled by HA area config, not auto-detected)
-    if (deviceClass === 'temperature' || unit === '°C' || unit === '°F') return false;
-    if (deviceClass === 'humidity' || unit === '%') return false;
-    // Air quality
-    if (deviceClass === 'pm25' || entityId.includes('pm_2_5') || entityId.includes('pm25')) return true;
-    if (deviceClass === 'pm10' || entityId.includes('pm_10') || entityId.includes('pm10')) return true;
-    if (deviceClass === 'carbon_dioxide' || entityId.includes('co2')) return true;
-    if (deviceClass === 'volatile_organic_compounds' || entityId.includes('voc')) return true;
-    // Light / humidity
-    if (deviceClass === 'illuminance' || unit === 'lx') return true;
-    if (unit === 'g/m³') return true; // absolute humidity
-    return false;
+    if (isEnergyBlockSensor(domain, deviceClass)) return null;
+    if (deviceClass === 'battery' || entityId.includes('battery')) return 'battery';
+    if (deviceClass === 'temperature' || unit === '°C' || unit === '°F') return null;
+    if (deviceClass === 'humidity' || unit === '%') return null;
+    if (unit === 'g/m³') return 'absolute_humidity';
+    if (deviceClass === 'pm25' || entityId.includes('pm_2_5') || entityId.includes('pm25')) return 'pm25';
+    if (deviceClass === 'pm10' || entityId.includes('pm_10') || entityId.includes('pm10')) return 'pm10';
+    if (deviceClass === 'carbon_dioxide' || entityId.includes('co2')) return 'co2';
+    if (deviceClass === 'volatile_organic_compounds' || entityId.includes('voc')) return 'voc';
+    if (deviceClass === 'illuminance' || unit === 'lx') return 'illuminance';
+    return null;
   }
   if (domain === 'binary_sensor') {
-    return (
-      deviceClass === 'motion' ||
-      deviceClass === 'occupancy' ||
-      deviceClass === 'presence' ||
-      deviceClass === 'window' ||
-      deviceClass === 'door' ||
-      deviceClass === 'smoke' ||
-      deviceClass === 'gas'
-    );
+    switch (deviceClass) {
+      case 'motion':
+      case 'window':
+      case 'door':
+      case 'smoke':
+      case 'gas':
+        return deviceClass;
+      case 'occupancy':
+      case 'presence':
+        return 'occupancy';
+    }
   }
-  return false;
+  return null;
+}
+
+/** Default critical battery threshold shared with the battery views. */
+export const DEFAULT_BATTERY_CRITICAL_THRESHOLD = 20;
+
+/** Whether a battery sensor is below the configured critical threshold. */
+export function isCriticalBatteryBadge(state: string | undefined, criticalThreshold?: number): boolean {
+  const value = parseFloat(state ?? '');
+  return !isNaN(value) && value < (criticalThreshold ?? DEFAULT_BATTERY_CRITICAL_THRESHOLD);
+}
+
+// -- Area primary sensors ---------------------------------------------
+
+export type AreaPrimarySensorKind = 'temperature' | 'humidity';
+export type AreaPrimarySensorIssue = 'missing' | 'hidden';
+
+interface AreaPrimarySensorSource {
+  temperature_entity_id?: string | null;
+  humidity_entity_id?: string | null;
+}
+
+/**
+ * Why an area's assigned temperature/humidity sensor cannot be shown.
+ *
+ * The assignment in the Home Assistant area settings is an explicit choice,
+ * so dashboard-level exclusions (no_dboard label, configured hidden lists,
+ * config/diagnostic category) do not apply. Only a missing state and
+ * entities hidden or disabled in Home Assistant block it.
+ */
+export function getAreaPrimarySensorIssue(hass: HomeAssistant, entityId: string): AreaPrimarySensorIssue | undefined {
+  if (!hass.states[entityId]) return 'missing';
+  if (isEntityRegistryHidden(hass.entities[entityId])) return 'hidden';
+  return undefined;
+}
+
+/** The area's assigned temperature/humidity entity when it can be shown. */
+export function resolveAreaPrimarySensor(
+  area: AreaPrimarySensorSource,
+  kind: AreaPrimarySensorKind,
+  hass: HomeAssistant
+): string | null {
+  const entityId = kind === 'temperature' ? area.temperature_entity_id : area.humidity_entity_id;
+  if (!entityId || getAreaPrimarySensorIssue(hass, entityId)) return null;
+  return entityId;
 }
 
 /**

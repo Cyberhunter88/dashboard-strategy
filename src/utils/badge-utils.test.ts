@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyBadgeGroupOptions,
-  isBadgeCandidate,
+  classifyBadgeSensor,
+  getAreaPrimarySensorIssue,
+  isCriticalBatteryBadge,
   isEnergyBlockSensor,
+  resolveAreaPrimarySensor,
   selectBadgeEntitiesOfType,
 } from './badge-utils';
 import { makeHass } from '../../tests/fixtures/hass';
@@ -52,8 +55,45 @@ describe('badge regressions', () => {
   it('routes energy classes away from automatic badges', () => {
     for (const deviceClass of ['power', 'energy', 'water', 'gas']) {
       expect(isEnergyBlockSensor('sensor', deviceClass)).toBe(true);
-      expect(isBadgeCandidate('sensor', deviceClass, undefined, `sensor.${deviceClass}`)).toBe(false);
+      expect(classifyBadgeSensor('sensor', deviceClass, undefined, `sensor.${deviceClass}`)).toBeNull();
     }
-    expect(isBadgeCandidate('binary_sensor', 'gas', undefined, 'binary_sensor.gas')).toBe(true);
+    expect(classifyBadgeSensor('binary_sensor', 'gas', undefined, 'binary_sensor.gas')).toBe('gas');
+  });
+
+  it('classifies sensors into one shared set of badge buckets', () => {
+    expect(classifyBadgeSensor('sensor', 'temperature', '°C', 'sensor.t')).toBeNull();
+    expect(classifyBadgeSensor('sensor', 'humidity', '%', 'sensor.h')).toBeNull();
+    expect(classifyBadgeSensor('sensor', undefined, 'g/m³', 'sensor.abs')).toBe('absolute_humidity');
+    expect(classifyBadgeSensor('sensor', 'battery', '%', 'sensor.b')).toBe('battery');
+    expect(classifyBadgeSensor('sensor', 'energy', 'kWh', 'sensor.battery_energy')).toBeNull();
+    expect(classifyBadgeSensor('sensor', 'carbon_dioxide', 'ppm', 'sensor.x')).toBe('co2');
+    expect(classifyBadgeSensor('sensor', undefined, 'lx', 'sensor.lux')).toBe('illuminance');
+    expect(classifyBadgeSensor('binary_sensor', 'presence', undefined, 'binary_sensor.p')).toBe('occupancy');
+    expect(classifyBadgeSensor('binary_sensor', 'moisture', undefined, 'binary_sensor.leak')).toBeNull();
+    expect(classifyBadgeSensor('light', undefined, undefined, 'light.lux')).toBeNull();
+  });
+
+  it('uses the configured critical battery threshold', () => {
+    expect(isCriticalBatteryBadge('19')).toBe(true);
+    expect(isCriticalBatteryBadge('20')).toBe(false);
+    expect(isCriticalBatteryBadge('25', 30)).toBe(true);
+    expect(isCriticalBatteryBadge('unavailable', 30)).toBe(false);
+  });
+
+  it('lets the area settings sensor win over dashboard exclusions but not HA hiding', () => {
+    const hass = makeHass({
+      entities: [
+        { entity_id: 'sensor.labeled_temp', state: '21', labels: ['no_dboard'] },
+        { entity_id: 'sensor.diag_hum', state: '40', entity_category: 'diagnostic' },
+        { entity_id: 'sensor.hidden_temp', state: '20', hidden_by: 'user' },
+      ],
+    });
+    const area = { temperature_entity_id: 'sensor.labeled_temp', humidity_entity_id: 'sensor.diag_hum' };
+    expect(resolveAreaPrimarySensor(area, 'temperature', hass)).toBe('sensor.labeled_temp');
+    expect(resolveAreaPrimarySensor(area, 'humidity', hass)).toBe('sensor.diag_hum');
+    expect(resolveAreaPrimarySensor({ temperature_entity_id: 'sensor.hidden_temp' }, 'temperature', hass)).toBeNull();
+    expect(resolveAreaPrimarySensor({ temperature_entity_id: null }, 'temperature', hass)).toBeNull();
+    expect(getAreaPrimarySensorIssue(hass, 'sensor.hidden_temp')).toBe('hidden');
+    expect(getAreaPrimarySensorIssue(hass, 'sensor.gone')).toBe('missing');
   });
 });

@@ -71,6 +71,26 @@ describe('editor diagnostics', () => {
     ]);
   });
 
+  it('explains area settings sensors that are overridden or cannot be shown', () => {
+    const hass = makeHass({
+      areas: [
+        { area_id: 'living', name: 'Living', temperature_entity_id: 'sensor.temp', humidity_entity_id: 'sensor.hum' },
+        { area_id: 'bath', name: 'Bath', temperature_entity_id: 'sensor.gone' },
+        { area_id: 'attic', name: 'Attic', temperature_entity_id: 'sensor.gone' },
+      ],
+      entities: [
+        { entity_id: 'sensor.temp', state: '21', labels: ['no_dboard'] },
+        { entity_id: 'sensor.hum', state: '40', hidden_by: 'user' },
+      ],
+    });
+    const issues = inspectConfig({ areas_display: { hidden: ['attic'] } }, hass);
+    expect(issues.map((issue) => `${issue.code}:${issue.path}:${issue.entityId}`)).toEqual([
+      'area_sensor_override:areas_options.living:sensor.temp',
+      'area_sensor_hidden:areas_options.living:sensor.hum',
+      'area_sensor_missing:areas_options.bath:sensor.gone',
+    ]);
+  });
+
   it('keeps climate members listed when the option is off or the wrapper is hidden by configuration', () => {
     const hass = makeHass({
       entities: [

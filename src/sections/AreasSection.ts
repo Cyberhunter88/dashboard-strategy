@@ -11,6 +11,7 @@ import type { LovelaceCardConfig, LovelaceCondition, LovelaceSectionConfig } fro
 import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries';
 import type { AreaDisplayType, AreaOptions, Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
+import { resolveAreaPrimarySensor } from '../utils/badge-utils';
 import { localize } from '../utils/localize';
 import { getViewVisibleUsers, unionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 
@@ -129,31 +130,7 @@ function getAreaAlertClasses(areaEntities: EntityRegistryEntry[], hass: HomeAssi
   return [...found];
 }
 
-/**
- * Pre-computes which sensor classes should be shown on the native area card.
- * Uses the Registry-visible entities only, so no_dboard labels and configured
- * hidden entities remain authoritative.
- */
-function getAreaSensorClasses(area: AreaRegistryEntry, hass: HomeAssistant, visibleEntityIds: Set<string>): string[] {
-  const found = new Set<string>();
-
-  if (
-    area.temperature_entity_id &&
-    visibleEntityIds.has(area.temperature_entity_id) &&
-    hass.states[area.temperature_entity_id]
-  ) {
-    found.add('temperature');
-  }
-  if (
-    area.humidity_entity_id &&
-    visibleEntityIds.has(area.humidity_entity_id) &&
-    hass.states[area.humidity_entity_id]
-  ) {
-    found.add('humidity');
-  }
-
-  return (['temperature', 'humidity'] as const).filter((sensorClass) => found.has(sensorClass));
-}
+const AREA_PRIMARY_SENSOR_KINDS = ['temperature', 'humidity'] as const;
 
 function getDashboardBasePath(): string {
   const path = window.location.pathname.replace(/\/+$/, '');
@@ -184,8 +161,18 @@ export function buildAreaCard(
 ): LovelaceCardConfig {
   const areaData = getAreaCardData(area.area_id, hass, context);
   const controls = getAreaControls(areaData.visibleEntities, hass);
-  const sensorClasses = getAreaSensorClasses(area, hass, areaData.visibleEntityIds);
-  const excludeEntities = areaData.excludedEntities;
+  // Only the sensors assigned in the HA area settings are shown. That explicit
+  // assignment wins over dashboard exclusions such as the no_dboard label
+  // (matching the room header badges), so they must not be excluded either.
+  const sensorClasses: string[] = [];
+  const primarySensors = new Set<string>();
+  for (const kind of AREA_PRIMARY_SENSOR_KINDS) {
+    const entityId = resolveAreaPrimarySensor(area, kind, hass);
+    if (!entityId) continue;
+    sensorClasses.push(kind);
+    primarySensors.add(entityId);
+  }
+  const excludeEntities = areaData.excludedEntities.filter((entityId) => !primarySensors.has(entityId));
   const roomPath = `${getDashboardBasePath()}/${area.area_id}`;
   const userVisibility = userVisibilityConditions(getViewVisibleUsers(Registry.config, area.area_id));
   const displayType = resolveAreaDisplayType(area, Registry.config);
