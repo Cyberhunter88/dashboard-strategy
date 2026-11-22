@@ -35,26 +35,59 @@ describe('area card display type', () => {
 });
 
 describe('area card sensors', () => {
-  it('shows the area settings temperature even with a no_dboard label and never excludes it', () => {
+  it('drops a no_dboard area temperature and never excludes a shown area sensor', () => {
     Object.assign(globalThis, { window: { location: { pathname: '/dashboard-test/home' } } });
     const living = {
       area_id: 'living',
       name: 'Living',
       temperature_entity_id: 'sensor.trv_temperature',
-      humidity_entity_id: 'sensor.trv_humidity',
+      humidity_entity_id: 'sensor.diag_humidity',
     };
     const hass = makeHass({
       areas: [living],
       entities: [
         { entity_id: 'sensor.trv_temperature', area_id: 'living', state: '21', labels: ['no_dboard'] },
-        { entity_id: 'sensor.trv_humidity', area_id: 'living', state: '40', hidden_by: 'user' },
-        { entity_id: 'sensor.other', area_id: 'living', state: '1', labels: ['no_dboard'] },
+        { entity_id: 'sensor.diag_humidity', area_id: 'living', state: '40', entity_category: 'diagnostic' },
       ],
     });
     Registry.resetForTesting();
     Registry.initialize(hass, {});
     const card = buildAreaCard(hass.areas.living, hass);
+    expect(card.sensor_classes).toEqual(['humidity']);
+    expect(card.exclude_entities).toEqual(['sensor.trv_temperature']);
+  });
+});
+
+describe('area card sensor replacement', () => {
+  it('hands the native card the replacement sensor when the assigned one is labeled', () => {
+    Object.assign(globalThis, { window: { location: { pathname: '/dashboard-test/home' } } });
+    const bath = { area_id: 'bath', name: 'Bath', temperature_entity_id: 'sensor.trv_temperature' };
+    const hass = makeHass({
+      areas: [bath],
+      devices: [
+        { id: 'dev_trv', area_id: 'bath', labels: ['no_dboard'] },
+        { id: 'dev_thermometer', area_id: 'bath' },
+      ],
+      entities: [
+        {
+          entity_id: 'sensor.trv_temperature',
+          device_id: 'dev_trv',
+          state: '19',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+        },
+        {
+          entity_id: 'sensor.thermometer_temperature',
+          device_id: 'dev_thermometer',
+          state: '21',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+        },
+      ],
+    });
+    Registry.resetForTesting();
+    Registry.initialize(hass, {});
+    const card = buildAreaCard(hass.areas.bath, hass);
     expect(card.sensor_classes).toEqual(['temperature']);
-    expect(card.exclude_entities).toEqual(['sensor.trv_humidity', 'sensor.other']);
+    expect(card.area_sensor_overrides).toEqual({ temperature_entity_id: 'sensor.thermometer_temperature' });
+    expect(card.exclude_entities).toEqual(['sensor.trv_temperature']);
   });
 });

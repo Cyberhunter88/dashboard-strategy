@@ -11,3 +11,4 @@ export { insertCustomViews, resolveCustomViews } from '../utils/custom-view-ref'
 export { applyDesign } from '../utils/design';
 export { isUtilityViewEnabled } from '../utils/summary-view-utils';
 export { resolveAutomaticFeatures } from '../utils/feature-availability';
+export { applyDashboardLabelExclusion } from '../utils/label-exclusion';

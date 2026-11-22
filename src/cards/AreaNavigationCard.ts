@@ -8,8 +8,15 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig } from '../types/lovelace';
 
+/** Area sensors resolved by the strategy that differ from the HA area settings. */
+export interface AreaSensorOverrides {
+  temperature_entity_id?: string;
+  humidity_entity_id?: string;
+}
+
 interface AreaNavigationCardConfig extends LovelaceCardConfig {
   navigation_path: string;
+  area_sensor_overrides?: AreaSensorOverrides;
 }
 
 type NativeAreaCard = HTMLElement & {
@@ -33,6 +40,8 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   private _config?: AreaNavigationCardConfig;
   private _card?: NativeAreaCard;
   private _renderToken = 0;
+  private _areasSource?: HomeAssistant['areas'];
+  private _areasOverride?: HomeAssistant['areas'];
   private _pending = false;
   private _tapStart: { pointerId: number; x: number; y: number } | null = null;
   private _lastPointerNavigation = 0;
@@ -46,7 +55,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
   set hass(hass: HomeAssistant | undefined) {
     this._hass = hass;
     this._updateLabel();
-    if (this._card) this._card.hass = hass;
+    if (this._card) this._card.hass = this._nativeHass();
   }
 
   get hass(): HomeAssistant | undefined {
@@ -55,6 +64,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
 
   setConfig(config: AreaNavigationCardConfig): void {
     this._config = config;
+    this._areasOverride = undefined;
     this._updateLabel();
     this._ensureCard();
   }
@@ -104,7 +114,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
 
         this._card = card;
         this._updateNativeCard();
-        if (this._hass) this._card.hass = this._hass;
+        if (this._hass) this._card.hass = this._nativeHass();
         this.replaceChildren(this._card);
       })
       .catch(() => {
@@ -134,10 +144,30 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     return card;
   }
 
+  /**
+   * The native card reads temperature/humidity from the area settings. When
+   * the strategy replaced an assigned sensor (no_dboard, hidden, no state),
+   * hand the native card an area entry pointing at the replacement. The
+   * areas object is rebuilt only when Home Assistant's areas change.
+   */
+  private _nativeHass(): HomeAssistant | undefined {
+    const hass = this._hass;
+    const overrides = this._config?.area_sensor_overrides;
+    const areaId = this._config?.area as string | undefined;
+    if (!hass || !overrides || !areaId || !hass.areas?.[areaId]) return hass;
+    if (this._areasSource !== hass.areas || !this._areasOverride) {
+      this._areasSource = hass.areas;
+      this._areasOverride = { ...hass.areas, [areaId]: { ...hass.areas[areaId], ...overrides } };
+    }
+    return { ...hass, areas: this._areasOverride };
+  }
+
   private _createNativeConfig(): LovelaceCardConfig {
     if (!this._config) return { type: 'area' };
     const areaConfig: LovelaceCardConfig = Object.fromEntries(
-      Object.entries(this._config).filter(([key]) => key !== 'navigation_path' && key !== 'type')
+      Object.entries(this._config).filter(
+        ([key]) => key !== 'navigation_path' && key !== 'type' && key !== 'area_sensor_overrides'
+      )
     ) as LovelaceCardConfig;
 
     return {
@@ -229,6 +259,7 @@ class DashboardStrategyAreaNavigationCard extends HTMLElement {
     const nativeConfig = this._createNativeConfig();
     if (typeof this._card.setConfig === 'function') {
       this._card.setConfig(nativeConfig);
+      if (this._hass) this._card.hass = this._nativeHass();
       return;
     }
 

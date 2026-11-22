@@ -7,6 +7,7 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { GroupOptions } from '../types/strategy';
 import { isEntityRegistryHidden } from '../types/registries';
+import { isDashboardLabelExcluded } from './entity-exclusion';
 
 // -- Badge color map (device_class → HA color name) -------------------
 
@@ -128,36 +129,102 @@ export function isCriticalBatteryBadge(state: string | undefined, criticalThresh
 // -- Area primary sensors ---------------------------------------------
 
 export type AreaPrimarySensorKind = 'temperature' | 'humidity';
-export type AreaPrimarySensorIssue = 'missing' | 'hidden';
+export type AreaPrimarySensorIssue = 'missing' | 'hidden' | 'label';
 
 interface AreaPrimarySensorSource {
   temperature_entity_id?: string | null;
   humidity_entity_id?: string | null;
 }
 
+interface AreaSensorCandidate {
+  entity_id: string;
+  device_id?: string | null;
+}
+
+const PRIMARY_SENSOR_UNITS: Record<AreaPrimarySensorKind, ReadonlySet<string>> = {
+  temperature: new Set(['°C', '°F', 'K']),
+  humidity: new Set(['%']),
+};
+
 /**
  * Why an area's assigned temperature/humidity sensor cannot be shown.
  *
- * The assignment in the Home Assistant area settings is an explicit choice,
- * so dashboard-level exclusions (no_dboard label, configured hidden lists,
- * config/diagnostic category) do not apply. Only a missing state and
- * entities hidden or disabled in Home Assistant block it.
+ * The `no_dboard` label (on the entity or its device) is strict and
+ * dashboard-wide, so it also removes an assigned area sensor. The explicit
+ * area assignment still wins over the softer dashboard rules
+ * (config/diagnostic category, room hidden lists). A missing state and
+ * entities hidden or disabled in Home Assistant block it as well.
  */
 export function getAreaPrimarySensorIssue(hass: HomeAssistant, entityId: string): AreaPrimarySensorIssue | undefined {
   if (!hass.states[entityId]) return 'missing';
   if (isEntityRegistryHidden(hass.entities[entityId])) return 'hidden';
+  if (isDashboardLabelExcluded(hass, entityId)) return 'label';
   return undefined;
 }
 
-/** The area's assigned temperature/humidity entity when it can be shown. */
+const climateDevicesCache = new WeakMap<object, Set<string>>();
+
+/** Devices that provide a climate entity (thermostats), cached per entity registry. */
+function getClimateDeviceIds(hass: HomeAssistant): Set<string> {
+  const cached = climateDevicesCache.get(hass.entities);
+  if (cached) return cached;
+  const ids = new Set<string>();
+  for (const [entityId, entry] of Object.entries(hass.entities)) {
+    if (entry.device_id && entityId.startsWith('climate.')) ids.add(entry.device_id);
+  }
+  climateDevicesCache.set(hass.entities, ids);
+  return ids;
+}
+
+/**
+ * Pick a replacement room sensor when the assigned one cannot be shown.
+ *
+ * `candidates` must already be dashboard-visible area entities (Registry
+ * visibility: no no_dboard, hidden, or config/diagnostic entities). Ranking:
+ * a current numeric value first, then a dedicated room sensor (device
+ * without a climate entity), then a thermostat's own sensor, then
+ * device-less helpers such as smoothed values; ties resolve by entity id.
+ */
+function pickAreaFallbackSensor(
+  kind: AreaPrimarySensorKind,
+  candidates: readonly AreaSensorCandidate[],
+  hass: HomeAssistant
+): string | null {
+  const units = PRIMARY_SENSOR_UNITS[kind];
+  let best: { id: string; rank: number } | null = null;
+  for (const candidate of candidates) {
+    const id = candidate.entity_id;
+    if (!id.startsWith('sensor.')) continue;
+    const state = hass.states[id];
+    if (!state || state.attributes?.device_class !== kind) continue;
+    if (!units.has(state.attributes?.unit_of_measurement as string)) continue;
+    const available = !Number.isNaN(parseFloat(state.state));
+    const source = !candidate.device_id ? 2 : getClimateDeviceIds(hass).has(candidate.device_id) ? 1 : 0;
+    const rank = (available ? 0 : 3) + source;
+    if (!best || rank < best.rank || (rank === best.rank && id < best.id)) best = { id, rank };
+  }
+  return best?.id ?? null;
+}
+
+/**
+ * The area's temperature/humidity entity to show, or null.
+ *
+ * Uses the sensor assigned in the Home Assistant area settings. When that
+ * sensor exists but cannot be shown (no_dboard, hidden, no state), a
+ * replacement is picked from `candidates` so the room keeps working without
+ * manual changes. Areas without an assignment stay without the badge, which
+ * avoids guessing (e.g. server or printer temperatures).
+ */
 export function resolveAreaPrimarySensor(
   area: AreaPrimarySensorSource,
   kind: AreaPrimarySensorKind,
-  hass: HomeAssistant
+  hass: HomeAssistant,
+  candidates?: readonly AreaSensorCandidate[]
 ): string | null {
   const entityId = kind === 'temperature' ? area.temperature_entity_id : area.humidity_entity_id;
-  if (!entityId || getAreaPrimarySensorIssue(hass, entityId)) return null;
-  return entityId;
+  if (!entityId) return null;
+  if (!getAreaPrimarySensorIssue(hass, entityId)) return entityId;
+  return candidates ? pickAreaFallbackSensor(kind, candidates, hass) : null;
 }
 
 /**

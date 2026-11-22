@@ -12,7 +12,35 @@ import { getClimateGroupMembers } from './climate-group-utils';
 
 export type RegistryExclusionReason = 'label' | 'disabled' | 'hidden' | 'category' | 'climate_member';
 
-const EXCLUSION_LABELS = ['no_dboard', 'no-dboard'];
+const EXCLUSION_LABELS: readonly string[] = ['no_dboard', 'no-dboard'];
+
+/** Whether registry labels contain the dashboard exclusion label (`no_dboard`, upstream `no-dboard`). */
+export function hasDashboardExclusionLabel(labels: readonly string[] | undefined): boolean {
+  return !!labels?.some((label) => EXCLUSION_LABELS.includes(label));
+}
+
+interface LabeledEntityEntry {
+  labels?: readonly string[];
+  device_id?: string | null;
+}
+
+/**
+ * Strict dashboard exclusion: the entity itself or its device carries the
+ * `no_dboard` label. A labeled device hides every entity it provides.
+ */
+export function isEntityDashboardLabelExcluded(
+  entry: LabeledEntityEntry | undefined,
+  devices: Readonly<Record<string, { labels?: readonly string[] }>> | undefined
+): boolean {
+  if (!entry) return false;
+  if (hasDashboardExclusionLabel(entry.labels)) return true;
+  return !!entry.device_id && hasDashboardExclusionLabel(devices?.[entry.device_id]?.labels);
+}
+
+/** Whether Home Assistant labels this entity or its device with the dashboard exclusion label. */
+export function isDashboardLabelExcluded(hass: HomeAssistant, entityId: string): boolean {
+  return isEntityDashboardLabelExcluded(hass.entities[entityId], hass.devices);
+}
 
 /**
  * Returns the first registry rule that already excludes the entity, or
@@ -28,7 +56,7 @@ export function getRegistryExclusionReason(
 ): RegistryExclusionReason | undefined {
   const entry = hass.entities[entityId];
   if (!entry) return undefined;
-  if (entry.labels?.some((label) => EXCLUSION_LABELS.includes(label))) return 'label';
+  if (isEntityDashboardLabelExcluded(entry, hass.devices)) return 'label';
   if (entry.disabled_by) return 'disabled';
   if (entry.hidden === true || entry.hidden_by != null) return 'hidden';
   if (entry.entity_category === 'config' || entry.entity_category === 'diagnostic') return 'category';

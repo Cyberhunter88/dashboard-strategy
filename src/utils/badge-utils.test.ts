@@ -80,19 +80,22 @@ describe('badge regressions', () => {
     expect(isCriticalBatteryBadge('unavailable', 30)).toBe(false);
   });
 
-  it('lets the area settings sensor win over dashboard exclusions but not HA hiding', () => {
+  it('keeps no_dboard strict for area settings sensors but lets them win over softer exclusions', () => {
     const hass = makeHass({
       entities: [
         { entity_id: 'sensor.labeled_temp', state: '21', labels: ['no_dboard'] },
+        { entity_id: 'sensor.upstream_label', state: '21', labels: ['no-dboard'] },
         { entity_id: 'sensor.diag_hum', state: '40', entity_category: 'diagnostic' },
         { entity_id: 'sensor.hidden_temp', state: '20', hidden_by: 'user' },
       ],
     });
     const area = { temperature_entity_id: 'sensor.labeled_temp', humidity_entity_id: 'sensor.diag_hum' };
-    expect(resolveAreaPrimarySensor(area, 'temperature', hass)).toBe('sensor.labeled_temp');
+    expect(resolveAreaPrimarySensor(area, 'temperature', hass)).toBeNull();
     expect(resolveAreaPrimarySensor(area, 'humidity', hass)).toBe('sensor.diag_hum');
     expect(resolveAreaPrimarySensor({ temperature_entity_id: 'sensor.hidden_temp' }, 'temperature', hass)).toBeNull();
     expect(resolveAreaPrimarySensor({ temperature_entity_id: null }, 'temperature', hass)).toBeNull();
+    expect(getAreaPrimarySensorIssue(hass, 'sensor.labeled_temp')).toBe('label');
+    expect(getAreaPrimarySensorIssue(hass, 'sensor.upstream_label')).toBe('label');
     expect(getAreaPrimarySensorIssue(hass, 'sensor.hidden_temp')).toBe('hidden');
     expect(getAreaPrimarySensorIssue(hass, 'sensor.gone')).toBe('missing');
   });

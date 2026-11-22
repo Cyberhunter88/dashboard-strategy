@@ -359,11 +359,11 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // === BADGES ===
 
-    // Primary temp/humidity from the HA area settings. The explicit area
-    // assignment wins over dashboard exclusions such as the no_dboard label;
-    // only HA-hidden/disabled entities or a missing state suppress it.
-    const primaryTemp = resolveAreaPrimarySensor(area, 'temperature', hass);
-    const primaryHumidity = resolveAreaPrimarySensor(area, 'humidity', hass);
+    // Primary temp/humidity from the HA area settings. no_dboard is strict;
+    // when the assigned sensor cannot be shown, a visible room sensor of the
+    // same kind replaces it. See resolveAreaPrimarySensor().
+    const primaryTemp = resolveAreaPrimarySensor(area, 'temperature', hass, visibleEntities);
+    const primaryHumidity = resolveAreaPrimarySensor(area, 'humidity', hass, visibleEntities);
 
     // Build auto-detected badge candidates
     const badgeOpts = groupsOptions.badges;

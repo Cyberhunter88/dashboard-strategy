@@ -23,6 +23,7 @@ import { timeStart, timeEnd, debugLog } from './utils/debug';
 import { setupLocalize } from './utils/localize';
 import { getEffectiveDeviceAreaId } from './utils/device-utils';
 import { getClimateGroupMembers } from './utils/climate-group-utils';
+import { isEntityDashboardLabelExcluded } from './utils/entity-exclusion';
 
 /**
  * Static singleton registry that holds all HA registry data and provides
@@ -282,14 +283,15 @@ class Registry {
    * Build exclusion sets from labels and config.
    *
    * Exclusion pipeline (matches the JS data-collectors logic):
-   * 1. no_dboard label -> _excludeSet
+   * 1. no_dboard label on the entity or its device -> _excludeSet
    * 2. areas_options.*.groups_options.*.hidden -> _hiddenFromConfig
    */
   private static _buildExclusionSets(): void {
-    // no_dboard label exclusion
+    // no_dboard label exclusion (entity label or label on its device)
     Registry._excludeSet = new Set();
+    const devices = Registry._hass.devices;
     for (const e of Registry._fetchedEntities) {
-      if (e.labels.includes('no_dboard') || e.labels.includes('no-dboard')) {
+      if (isEntityDashboardLabelExcluded(e, devices)) {
         Registry._excludeSet.add(e.entity_id);
       }
     }
