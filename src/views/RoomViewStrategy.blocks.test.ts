@@ -105,7 +105,7 @@ describe('room temperature and battery badges', () => {
     area_id: 'living',
     name: 'Living',
     temperature_entity_id: 'sensor.trv_temperature',
-    humidity_entity_id: 'sensor.trv_humidity',
+    humidity_entity_id: 'sensor.diag_humidity',
   };
   const livingHass = makeHass({
     areas: [living],
@@ -118,10 +118,10 @@ describe('room temperature and battery badges', () => {
         attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
       },
       {
-        entity_id: 'sensor.trv_humidity',
+        entity_id: 'sensor.diag_humidity',
         area_id: 'living',
         state: '45',
-        hidden_by: 'user',
+        entity_category: 'diagnostic',
         attributes: { device_class: 'humidity', unit_of_measurement: '%' },
       },
       {
@@ -130,21 +130,28 @@ describe('room temperature and battery badges', () => {
         state: '25',
         attributes: { device_class: 'battery', unit_of_measurement: '%' },
       },
+      {
+        entity_id: 'binary_sensor.labeled_motion',
+        area_id: 'living',
+        state: 'off',
+        labels: ['no_dboard'],
+        attributes: { device_class: 'motion' },
+      },
     ],
   });
   const badgeIds = (view: LovelaceViewConfig) => (view.badges ?? []).map((b) => (typeof b === 'string' ? b : b.entity));
 
-  it('shows the area temperature despite no_dboard but not an HA-hidden humidity sensor', async () => {
+  it('drops a no_dboard area temperature but keeps a diagnostic area humidity', async () => {
     const dashboardConfig = {};
     Registry.initialize(livingHass, dashboardConfig);
     const view = await generate({ area: living, dashboardConfig }, livingHass);
-    expect(badgeIds(view)).toEqual(['sensor.trv_temperature']);
+    expect(badgeIds(view)).toEqual(['sensor.diag_humidity']);
   });
 
   it('applies the configured critical battery threshold to room badges', async () => {
     const dashboardConfig = { battery_critical_threshold: 30 };
     Registry.initialize(livingHass, dashboardConfig);
     const view = await generate({ area: living, dashboardConfig }, livingHass);
-    expect(badgeIds(view)).toEqual(['sensor.trv_temperature', 'sensor.remote_battery']);
+    expect(badgeIds(view)).toEqual(['sensor.diag_humidity', 'sensor.remote_battery']);
   });
 });

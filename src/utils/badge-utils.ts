@@ -7,6 +7,7 @@
 import type { HomeAssistant } from '../types/homeassistant';
 import type { GroupOptions } from '../types/strategy';
 import { isEntityRegistryHidden } from '../types/registries';
+import { hasDashboardExclusionLabel } from './entity-exclusion';
 
 // -- Badge color map (device_class → HA color name) -------------------
 
@@ -128,7 +129,7 @@ export function isCriticalBatteryBadge(state: string | undefined, criticalThresh
 // -- Area primary sensors ---------------------------------------------
 
 export type AreaPrimarySensorKind = 'temperature' | 'humidity';
-export type AreaPrimarySensorIssue = 'missing' | 'hidden';
+export type AreaPrimarySensorIssue = 'missing' | 'hidden' | 'label';
 
 interface AreaPrimarySensorSource {
   temperature_entity_id?: string | null;
@@ -138,14 +139,16 @@ interface AreaPrimarySensorSource {
 /**
  * Why an area's assigned temperature/humidity sensor cannot be shown.
  *
- * The assignment in the Home Assistant area settings is an explicit choice,
- * so dashboard-level exclusions (no_dboard label, configured hidden lists,
- * config/diagnostic category) do not apply. Only a missing state and
- * entities hidden or disabled in Home Assistant block it.
+ * The `no_dboard` label is strict and dashboard-wide, so it also removes an
+ * assigned area sensor. The explicit area assignment still wins over the
+ * softer dashboard rules (config/diagnostic category, room hidden lists).
+ * A missing state and entities hidden or disabled in Home Assistant block it.
  */
 export function getAreaPrimarySensorIssue(hass: HomeAssistant, entityId: string): AreaPrimarySensorIssue | undefined {
   if (!hass.states[entityId]) return 'missing';
-  if (isEntityRegistryHidden(hass.entities[entityId])) return 'hidden';
+  const entry = hass.entities[entityId];
+  if (isEntityRegistryHidden(entry)) return 'hidden';
+  if (hasDashboardExclusionLabel(entry?.labels)) return 'label';
   return undefined;
 }
 

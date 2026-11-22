@@ -7,6 +7,7 @@ import { getOptionMetadata } from '../utils/option-metadata';
 import { hasNormalUnknownState } from '../utils/availability-utils';
 import { getGroupedClimateMembers, getRegistryExclusionReason } from '../utils/entity-exclusion';
 import { getAreaPrimarySensorIssue } from '../utils/badge-utils';
+import { findLabelExcludedOptionEntities } from '../utils/label-exclusion';
 
 export interface EntityReference {
   entityId: string;
@@ -171,6 +172,12 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
   return [
     ...hints,
     ...inspectAreaPrimarySensors(analysis.config, hass, configExcluded),
+    ...findLabelExcludedOptionEntities(analysis.config, hass).map(({ path, entityId }): ConfigIssue => ({
+      code: 'option_label_excluded',
+      severity: 'warning',
+      path,
+      entityId,
+    })),
     ...analysis.references.flatMap((ref): ConfigIssue[] => {
       if (
         isDashboardWideExclusion(ref) &&
@@ -200,9 +207,9 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
 }
 /**
  * Explain the temperature/humidity sensors assigned in the HA area settings:
- * warn when one cannot be shown, and note when it is shown in the room header
- * although dashboard rules (no_dboard label, category, hidden list) hide it
- * elsewhere.
+ * warn when one cannot be shown (no state, hidden/disabled, no_dboard label),
+ * and note when it is shown in the room header although softer dashboard
+ * rules (category, hidden list) hide it elsewhere.
  */
 function inspectAreaPrimarySensors(
   config: Simon42StrategyConfig,

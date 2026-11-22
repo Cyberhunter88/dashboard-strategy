@@ -12,7 +12,17 @@ import { getClimateGroupMembers } from './climate-group-utils';
 
 export type RegistryExclusionReason = 'label' | 'disabled' | 'hidden' | 'category' | 'climate_member';
 
-const EXCLUSION_LABELS = ['no_dboard', 'no-dboard'];
+const EXCLUSION_LABELS: readonly string[] = ['no_dboard', 'no-dboard'];
+
+/** Whether registry labels contain the dashboard exclusion label (`no_dboard`, upstream `no-dboard`). */
+export function hasDashboardExclusionLabel(labels: readonly string[] | undefined): boolean {
+  return !!labels?.some((label) => EXCLUSION_LABELS.includes(label));
+}
+
+/** Whether Home Assistant labels this entity with the dashboard exclusion label. */
+export function isDashboardLabelExcluded(hass: HomeAssistant, entityId: string): boolean {
+  return hasDashboardExclusionLabel(hass.entities[entityId]?.labels);
+}
 
 /**
  * Returns the first registry rule that already excludes the entity, or
@@ -28,7 +38,7 @@ export function getRegistryExclusionReason(
 ): RegistryExclusionReason | undefined {
   const entry = hass.entities[entityId];
   if (!entry) return undefined;
-  if (entry.labels?.some((label) => EXCLUSION_LABELS.includes(label))) return 'label';
+  if (hasDashboardExclusionLabel(entry.labels)) return 'label';
   if (entry.disabled_by) return 'disabled';
   if (entry.hidden === true || entry.hidden_by != null) return 'hidden';
   if (entry.entity_category === 'config' || entry.entity_category === 'diagnostic') return 'category';

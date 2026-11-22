@@ -359,9 +359,9 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // === BADGES ===
 
-    // Primary temp/humidity from the HA area settings. The explicit area
-    // assignment wins over dashboard exclusions such as the no_dboard label;
-    // only HA-hidden/disabled entities or a missing state suppress it.
+    // Primary temp/humidity from the HA area settings. The no_dboard label is
+    // strict; the explicit assignment only wins over softer exclusions
+    // (category, hidden lists). See resolveAreaPrimarySensor().
     const primaryTemp = resolveAreaPrimarySensor(area, 'temperature', hass);
     const primaryHumidity = resolveAreaPrimarySensor(area, 'humidity', hass);
 

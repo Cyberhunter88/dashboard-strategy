@@ -23,6 +23,7 @@ import { timeStart, timeEnd, debugLog } from './utils/debug';
 import { setupLocalize } from './utils/localize';
 import { getEffectiveDeviceAreaId } from './utils/device-utils';
 import { getClimateGroupMembers } from './utils/climate-group-utils';
+import { hasDashboardExclusionLabel } from './utils/entity-exclusion';
 
 /**
  * Static singleton registry that holds all HA registry data and provides
@@ -289,7 +290,7 @@ class Registry {
     // no_dboard label exclusion
     Registry._excludeSet = new Set();
     for (const e of Registry._fetchedEntities) {
-      if (e.labels.includes('no_dboard') || e.labels.includes('no-dboard')) {
+      if (hasDashboardExclusionLabel(e.labels)) {
         Registry._excludeSet.add(e.entity_id);
       }
     }

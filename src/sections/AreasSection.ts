@@ -161,9 +161,9 @@ export function buildAreaCard(
 ): LovelaceCardConfig {
   const areaData = getAreaCardData(area.area_id, hass, context);
   const controls = getAreaControls(areaData.visibleEntities, hass);
-  // Only the sensors assigned in the HA area settings are shown. That explicit
-  // assignment wins over dashboard exclusions such as the no_dboard label
-  // (matching the room header badges), so they must not be excluded either.
+  // Only the sensors assigned in the HA area settings are shown, resolved like
+  // the room header badges: no_dboard stays strict, while the explicit
+  // assignment wins over softer exclusions, so shown sensors are not excluded.
   const sensorClasses: string[] = [];
   const primarySensors = new Set<string>();
   for (const kind of AREA_PRIMARY_SENSOR_KINDS) {

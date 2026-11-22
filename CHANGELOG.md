@@ -2,7 +2,14 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.43.0...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.0...HEAD).
+
+## 1.44.1
+
+- The `no_dboard` label is strict and dashboard-wide again: an entity carrying it (or the upstream `no-dboard`) is never shown by this strategy, including a temperature/humidity sensor assigned in the Home Assistant area settings. This reverts the 1.44.0 exception for labeled area sensors; the area assignment still wins over a config/diagnostic category or a room hidden list.
+- Entities chosen in the strategy options now follow the same rule: favorites, light favorites, quick actions, room pins, extra room badges, security extra entities, weather sensors, pollen, agenda calendars, to-do lists, alarm, house mode, weather and power badge entities are filtered once in `generate()`. Hand-written YAML (custom cards, sections, badges, view overrides) is not rewritten.
+- The editor diagnosis warns when an area sensor or a configured option entry is dropped because of the label.
+- Maintenance: label detection lives in one helper (`hasDashboardExclusionLabel`) used by the Registry, the editor and the diagnosis.
 
 ## 1.44.0
 

@@ -12,7 +12,7 @@ import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 
-const STRATEGY_VERSION = '1.44.0'; // synchronized from package.json
+const STRATEGY_VERSION = '1.44.1'; // synchronized from package.json
 
 declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
@@ -102,8 +102,13 @@ class Simon42DashboardStrategy extends HTMLElement {
       applyDesign,
       isUtilityViewEnabled,
       resolveAutomaticFeatures,
+      applyDashboardLabelExclusion,
     } = runtime;
     t('imports done');
+
+    // Strict no_dboard rule: drop labeled entities from every entity option
+    // before any view or the Registry sees the config.
+    config = applyDashboardLabelExclusion(config, hass);
 
     // Non-English translations are separate chunks; load before views are resolved.
     await loadLanguage(hass);
