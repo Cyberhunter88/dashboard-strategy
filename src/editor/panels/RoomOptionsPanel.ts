@@ -4,7 +4,7 @@ import type { AreaCustomCard, AreaDisplayType, Simon42StrategyConfig } from '../
 import { resolveShowName } from '../../utils/badge-utils';
 import { localize } from '../../utils/localize';
 import type { Simon42DashboardStrategyEditor } from '../StrategyEditor';
-import { parseEditorYamlConfig } from '../editor-yaml';
+import { parseEditorYamlConfig, withYaml } from '../editor-yaml';
 type PanelHost = ReturnType<Simon42DashboardStrategyEditor['createRoomOptionsHost']>;
 
 interface DomainGroup {
@@ -643,31 +643,33 @@ export function renderBadgeGroup(
 }
 
 export function updateAreaViewOverride(host: PanelHost, areaId: string, yamlString: string): void {
-  const currentAreaOptions = host._config.areas_options?.[areaId] || {};
-  const newAreaOptions = { ...currentAreaOptions };
+  withYaml(() => {
+    const currentAreaOptions = host._config.areas_options?.[areaId] || {};
+    const newAreaOptions = { ...currentAreaOptions };
 
-  if (!yamlString.trim()) {
-    delete newAreaOptions.view_override;
-  } else {
-    const parsed = parseEditorYamlConfig(yamlString, localize('editor.area_view_override_object_error'));
-    const parsedConfig = parsed.parsed_config;
-    const isObject = parsedConfig && !Array.isArray(parsedConfig);
-    newAreaOptions.view_override = {
-      yaml: yamlString,
-      parsed_config: isObject ? (parsedConfig as Record<string, any>) : undefined,
-      _yaml_error: isObject
-        ? parsed._yaml_error
-        : parsed._yaml_error || localize('editor.area_view_override_object_error'),
-    };
-  }
+    if (!yamlString.trim()) {
+      delete newAreaOptions.view_override;
+    } else {
+      const parsed = parseEditorYamlConfig(yamlString, localize('editor.area_view_override_object_error'));
+      const parsedConfig = parsed.parsed_config;
+      const isObject = parsedConfig && !Array.isArray(parsedConfig);
+      newAreaOptions.view_override = {
+        yaml: yamlString,
+        parsed_config: isObject ? (parsedConfig as Record<string, any>) : undefined,
+        _yaml_error: isObject
+          ? parsed._yaml_error
+          : parsed._yaml_error || localize('editor.area_view_override_object_error'),
+      };
+    }
 
-  const newAreasOptions = { ...host._config.areas_options };
-  if (Object.keys(newAreaOptions).length === 0) delete newAreasOptions[areaId];
-  else newAreasOptions[areaId] = newAreaOptions;
+    const newAreasOptions = { ...host._config.areas_options };
+    if (Object.keys(newAreaOptions).length === 0) delete newAreasOptions[areaId];
+    else newAreasOptions[areaId] = newAreaOptions;
 
-  const newConfig: Simon42StrategyConfig = { ...host._config };
-  if (Object.keys(newAreasOptions).length === 0) delete newConfig.areas_options;
-  else newConfig.areas_options = newAreasOptions;
-  host._config = newConfig;
-  host._fireConfigChanged(newConfig);
+    const newConfig: Simon42StrategyConfig = { ...host._config };
+    if (Object.keys(newAreasOptions).length === 0) delete newConfig.areas_options;
+    else newConfig.areas_options = newAreasOptions;
+    host._config = newConfig;
+    host._fireConfigChanged(newConfig);
+  });
 }

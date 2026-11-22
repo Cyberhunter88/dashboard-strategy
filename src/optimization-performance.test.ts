@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, it, expect } from 'vitest';
 import { Registry } from './Registry';
 import * as diagnostics from './editor/config-diagnostics';
+import { preloadYaml } from './editor/editor-yaml';
 import { makeOptimizationFixture } from '../tests/fixtures/optimization';
 import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
@@ -20,6 +21,7 @@ beforeAll(async () => {
     window: { location: { pathname: '/synthetic-dashboard/home', search: '' } },
   });
   await import('./views/OverviewViewStrategy');
+  await preloadYaml(); // js-yaml is a lazy chunk; the editor preloads it before diagnostics run
   generate = (definitions.get('ll-strategy-dashboard-strategy-view-overview') as { generate: typeof generate })
     .generate;
 });

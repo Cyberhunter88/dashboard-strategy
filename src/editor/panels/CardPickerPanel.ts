@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { requireYaml } from '../editor-yaml';
 import { html, nothing, type TemplateResult } from 'lit';
 import type { AreaCustomCard, CustomCard } from '../../types/strategy';
 import type { Simon42DashboardStrategyEditor } from '../StrategyEditor';
@@ -124,7 +124,7 @@ export function openCardPicker(
   host._cardPickerStep = initialConfig ? 'editor' : 'type';
   host._cardPickerSearch = '';
   host._cardPickerSelectedType = typeof initialConfig?.type === 'string' ? initialConfig.type : '';
-  host._cardPickerYaml = initialConfig ? yaml.dump(initialConfig).trim() : '';
+  host._cardPickerYaml = initialConfig ? requireYaml().dump(initialConfig).trim() : '';
   host._cardPickerHasVisualEditor = false;
 }
 export function closeCardPicker(host: PanelHost): void {
@@ -141,7 +141,7 @@ export function selectCardType(host: PanelHost, type: string): void {
   if (cardType) {
     host._cardPickerYaml = cardType.template;
     try {
-      const parsed = yaml.load(cardType.template);
+      const parsed = requireYaml().load(cardType.template);
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         host._cardPickerConfig = parsed as Record<string, any>;
       }
@@ -158,7 +158,7 @@ export function cardPickerYamlChanged(host: PanelHost, e: Event): void {
   const yamlStr = (e.target as HTMLTextAreaElement).value;
   host._cardPickerYaml = yamlStr;
   try {
-    const parsed = yaml.load(yamlStr);
+    const parsed = requireYaml().load(yamlStr);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       host._cardPickerConfig = parsed as Record<string, any>;
     }
@@ -187,7 +187,7 @@ export function tryMountVisualCardEditor(host: PanelHost): void {
       const config = (ev as CustomEvent).detail?.config;
       if (config && typeof config === 'object') {
         host._cardPickerConfig = config;
-        host._cardPickerYaml = yaml.dump(config).trim();
+        host._cardPickerYaml = requireYaml().dump(config).trim();
         host.requestUpdate('_cardPickerYaml');
       }
     });
@@ -214,7 +214,7 @@ export function getEditableYamlCardConfig(
   }
   if (!card?.yaml?.trim()) return null;
   try {
-    const parsed = yaml.load(card.yaml);
+    const parsed = requireYaml().load(card.yaml);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, any>) : null;
   } catch {
     return null;

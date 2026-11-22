@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { ConfigDiagnostics, collectEntityReferences, inspectConfig, isSelectableEntity } from './config-diagnostics';
 import { makeHass } from '../../tests/fixtures/hass';
 import type { HomeAssistant } from '../types/homeassistant';
+import { preloadYaml } from './editor-yaml';
+
+// js-yaml is a lazy chunk; the editor preloads it before the dashboard check runs.
+beforeAll(() => preloadYaml());
 
 describe('editor diagnostics', () => {
   it('caches references per config and reflects state changes without reparsing', () => {

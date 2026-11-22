@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.2...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.3...HEAD).
+
+## 1.44.4
+
+- Performance: js-yaml moved out of the editor chunk into its own `yaml` chunk. The editor opens without it and loads it in the background; every YAML action (typing YAML, the card picker, the dashboard check) waits for it only if it is not there yet. The editor chunk drops from about 284 KB to 241 KB (55 → 43 KB brotli), below webpack's size warning. No visible changes.
 
 ## 1.44.3
 

@@ -3,6 +3,7 @@ import '../../src/dashboard-strategy';
 import { Registry } from '../../src/Registry';
 import { makeOptimizationFixture } from '../fixtures/optimization';
 import * as diagnostics from '../../src/editor/config-diagnostics';
+import { preloadYaml } from '../../src/editor/editor-yaml';
 import type { HomeAssistant } from '../../src/types/homeassistant';
 
 type TestCard = HTMLElement & { hass?: HomeAssistant; setConfig: (config: any) => void; updateComplete?: Promise<boolean> };
@@ -71,6 +72,7 @@ async function checkMemoryGrowth(width: number) {
 }
 
 async function benchmark() {
+  await preloadYaml(); // js-yaml is a lazy chunk; the editor preloads it before diagnostics run
   const results = [];
   for (const count of [500, 2000, 5000]) {
     const { hass, config } = makeOptimizationFixture(count);
@@ -346,6 +348,8 @@ async function checkEditor() {
   content.replaceChildren();
   const { hass, config } = makeOptimizationFixture(48);
   const editor = await strategy().getConfigElement() as any;
+  // The editor preloads the lazy js-yaml chunk; the direct calls below expect it to be ready.
+  await preloadYaml();
   const custom = { ...config, extension_option: { retained: true }, weather_start_layout_items: [{ id: 'browser-yaml', type: 'clock', yaml: 'type: markdown\ncontent: Original', parsed_config: { type: 'markdown', content: 'Original' } }] };
   editor.setConfig(custom); editor.hass = hass; content.appendChild(editor);
   await settle(editor);

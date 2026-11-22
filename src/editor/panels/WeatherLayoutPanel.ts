@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { requireYaml, withYaml } from '../editor-yaml';
 import { html, nothing, type TemplateResult } from 'lit';
 import type { CustomCard, CustomSection, Simon42StrategyConfig, WeatherStartLayoutItem } from '../../types/strategy';
 import { localize } from '../../utils/localize';
@@ -232,7 +232,7 @@ export function parseWeatherStartItemYaml(
   if (!trimmed) return { parsed_config: undefined, _yaml_error: undefined };
 
   try {
-    const raw = yaml.load(trimmed);
+    const raw = requireYaml().load(trimmed);
     if (Array.isArray(raw)) return { parsed_config: raw as Record<string, any>[] };
     if (raw && typeof raw === 'object') return { parsed_config: raw as Record<string, any> };
     return {
@@ -245,26 +245,28 @@ export function parseWeatherStartItemYaml(
   }
 }
 export function updateWeatherStartItemYaml(host: PanelHost, itemId: string, yamlString: string): void {
-  const items = host._getWeatherStartLayoutItems().map((item) => {
-    if (item.id !== itemId) return item;
-    const updated: WeatherStartLayoutItem = { ...item, yaml: yamlString };
-    const parsed = host._parseWeatherStartItemYaml(yamlString);
-    updated.parsed_config = parsed.parsed_config;
-    updated._yaml_error = parsed._yaml_error;
-    if (!yamlString.trim()) {
-      delete updated.yaml;
-      delete updated.parsed_config;
-      delete updated._yaml_error;
+  withYaml(() => {
+    const items = host._getWeatherStartLayoutItems().map((item) => {
+      if (item.id !== itemId) return item;
+      const updated: WeatherStartLayoutItem = { ...item, yaml: yamlString };
+      const parsed = host._parseWeatherStartItemYaml(yamlString);
+      updated.parsed_config = parsed.parsed_config;
+      updated._yaml_error = parsed._yaml_error;
+      if (!yamlString.trim()) {
+        delete updated.yaml;
+        delete updated.parsed_config;
+        delete updated._yaml_error;
+      }
+      return updated;
+    });
+    const invalidItem = items.find((item) => item.id === itemId && item._yaml_error);
+    if (invalidItem) {
+      host._config = { ...host._config, weather_start_layout_items: items };
+      host.requestUpdate();
+      return;
     }
-    return updated;
+    host._saveWeatherStartLayoutItems(items);
   });
-  const invalidItem = items.find((item) => item.id === itemId && item._yaml_error);
-  if (invalidItem) {
-    host._config = { ...host._config, weather_start_layout_items: items };
-    host.requestUpdate();
-    return;
-  }
-  host._saveWeatherStartLayoutItems(items);
 }
 export function resetWeatherStartItemYaml(host: PanelHost, itemId: string): void {
   const items = host._getWeatherStartLayoutItems().map((item) => {
