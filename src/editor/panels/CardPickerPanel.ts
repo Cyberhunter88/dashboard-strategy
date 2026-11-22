@@ -176,9 +176,13 @@ export function tryMountVisualCardEditor(host: PanelHost): void {
   if (!visualHost || visualHost.firstChild) return;
   if (!customElements.get('hui-card-element-editor')) return;
   try {
-    const el = document.createElement('hui-card-element-editor');
-    (el as any).hass = host._hass;
-    (el as any).value = host._cardPickerConfig || { type: host._cardPickerSelectedType };
+    // HA's native card editor element; only the two properties set here are used.
+    const el = document.createElement('hui-card-element-editor') as HTMLElement & {
+      hass?: unknown;
+      value?: Record<string, unknown>;
+    };
+    el.hass = host._hass;
+    el.value = host._cardPickerConfig || { type: host._cardPickerSelectedType };
     el.addEventListener('config-changed', (ev: Event) => {
       const config = (ev as CustomEvent).detail?.config;
       if (config && typeof config === 'object') {

@@ -3,8 +3,10 @@
 // ====================================================================
 
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
+import type { LovelaceCardConfig } from '../types/lovelace';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { AreaRegistryEntry } from '../types/registries';
+import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { trackHassUpdate } from '../utils/debug';
 import { localize, onLanguageLoaded, setupLocalize } from '../utils/localize';
@@ -27,7 +29,8 @@ import {
 } from '../utils/card-element-utils';
 
 interface CoversGroupConfig {
-  config?: any;
+  /** The full dashboard strategy config (registry, availability, sorting, navigation). */
+  config?: Simon42StrategyConfig;
   group_type: 'open' | 'closed' | 'partially_open';
   show_partially_open?: boolean;
   device_classes?: string[];
@@ -313,7 +316,7 @@ class Simon42CoversGroupCard extends LitElement {
     return relevant;
   }
 
-  private _buildHeadingConfig(covers: string[], floorLabel?: string, floorIcon?: string): any {
+  private _buildHeadingConfig(covers: string[], floorLabel?: string, floorIcon?: string): LovelaceCardConfig {
     const groupType = this._config.group_type;
     const openText = this._config.batch_open_text || localize('covers.open_all');
     const closeText = this._config.batch_close_text || localize('covers.close_all');

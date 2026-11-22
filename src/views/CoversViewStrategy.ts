@@ -2,7 +2,7 @@
 // VIEW STRATEGY — COVERS (reactive group cards)
 // ====================================================================
 
-import type { LovelaceViewConfig } from '../types/lovelace';
+import type { LovelaceCardConfig, LovelaceViewConfig } from '../types/lovelace';
 import type { HomeAssistant } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { localize } from '../utils/localize';
@@ -32,7 +32,7 @@ class Simon42ViewCoversStrategy extends HTMLElement {
     };
 
     // Rollos & Vorhänge
-    const cards: any[] = [
+    const cards: LovelaceCardConfig[] = [
       {
         type: 'custom:dashboard-strategy-covers-group-card',
         ...baseConfig,

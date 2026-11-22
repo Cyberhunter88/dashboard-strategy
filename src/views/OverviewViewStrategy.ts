@@ -759,7 +759,10 @@ function createWeatherStartSections(
 }
 
 class Simon42ViewOverviewStrategy extends HTMLElement {
-  static async generate(config: any, hass: HomeAssistant): Promise<LovelaceViewConfig> {
+  static async generate(
+    config: { dashboardConfig?: Simon42StrategyConfig },
+    hass: HomeAssistant
+  ): Promise<LovelaceViewConfig> {
     timeStart('overview-generate');
     const rawDashboardConfig: Simon42StrategyConfig = config.dashboardConfig || {};
 

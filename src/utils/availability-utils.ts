@@ -217,7 +217,7 @@ function applyToCard(card: LovelaceCardConfig): LovelaceCardConfig {
   if (Array.isArray(next.badges)) {
     next = {
       ...next,
-      badges: next.badges.map((badge: any) => {
+      badges: next.badges.map((badge: unknown) => {
         if (!badge || typeof badge !== 'object' || Array.isArray(badge)) return badge;
         return withAvailabilityVisibility(badge);
       }),

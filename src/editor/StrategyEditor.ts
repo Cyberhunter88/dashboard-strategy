@@ -1626,7 +1626,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
 
     // Remove property when set to default
     if (value === getOptionDefault(key, this._config, defaultValue)) {
-      delete (newConfig as any)[key];
+      Reflect.deleteProperty(newConfig, key);
     }
 
     this._config = newConfig;

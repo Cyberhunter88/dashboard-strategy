@@ -2,7 +2,13 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.1...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.2...HEAD).
+
+## 1.44.3
+
+- Housekeeping without behavior changes: 64 unused translation keys removed in all five languages (60 `editor.*`, 4 `stacks.*`; each checked against literal and dynamically built keys), so the translation chunks are a little smaller. `find-unused-translations.mjs` now reports none.
+- Type cleanup: the lights/covers group cards type their dashboard config and heading cards, the card picker types the native editor element, and the overview view, covers view, availability badges, debug helper and Home Assistant service types no longer use `any`.
+- Development dependencies updated within their major version: ESLint 10.15, TypeScript-ESLint 8.73, webpack 5.113, Playwright 1.65.1 and home-assistant-js-websocket 9.9 (`npm audit`: 0 vulnerabilities).
 
 ## 1.44.2
 
