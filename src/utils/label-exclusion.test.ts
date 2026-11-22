@@ -4,7 +4,9 @@ import { makeHass } from '../../tests/fixtures/hass';
 import type { Simon42StrategyConfig } from '../types/strategy';
 
 const hass = makeHass({
+  devices: [{ id: 'dev_labeled', labels: ['no_dboard'] }],
   entities: [
+    { entity_id: 'light.on_labeled_device', state: 'on', device_id: 'dev_labeled' },
     { entity_id: 'light.labeled', state: 'on', labels: ['no_dboard'] },
     { entity_id: 'light.visible', state: 'on' },
     { entity_id: 'scene.upstream_label', state: 'unknown', labels: ['no-dboard'] },
@@ -22,7 +24,7 @@ describe('strict no_dboard option filtering', () => {
 
   it('removes labeled entities from every entity option without mutating the input', () => {
     const config: Simon42StrategyConfig = {
-      favorite_entities: ['light.visible', 'light.labeled'],
+      favorite_entities: ['light.visible', 'light.labeled', 'light.on_labeled_device'],
       light_favorite_entities: ['light.labeled'],
       quick_action_entities: ['scene.upstream_label', 'light.visible'],
       room_pin_entities: ['light.labeled'],

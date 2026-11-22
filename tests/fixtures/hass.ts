@@ -37,6 +37,7 @@ interface DeviceFixture {
   name_by_user?: string | null;
   primary_config_entry?: string | null;
   config_entries?: string[];
+  labels?: string[];
 }
 
 interface AreaFixture {
@@ -72,7 +73,16 @@ export interface HassFixtureSpec {
  * areas as records keyed by their respective id fields).
  */
 export function makeHass(spec: HassFixtureSpec = {}): HomeAssistant {
-  const states: Record<string, { entity_id: string; state: string; attributes: Record<string, unknown>; last_changed: string; last_updated: string }> = {};
+  const states: Record<
+    string,
+    {
+      entity_id: string;
+      state: string;
+      attributes: Record<string, unknown>;
+      last_changed: string;
+      last_updated: string;
+    }
+  > = {};
   const entities: Record<string, EntityFixture> = {};
   const devices: Record<string, DeviceFixture> = {};
   const areas: Record<string, AreaFixture> = {};

@@ -6,7 +6,8 @@ import type { Simon42StrategyConfig } from '../types/strategy';
 import { getOptionMetadata } from '../utils/option-metadata';
 import { hasNormalUnknownState } from '../utils/availability-utils';
 import { getGroupedClimateMembers, getRegistryExclusionReason } from '../utils/entity-exclusion';
-import { getAreaPrimarySensorIssue } from '../utils/badge-utils';
+import { getAreaPrimarySensorIssue, resolveAreaPrimarySensor } from '../utils/badge-utils';
+import { getEditableAreaEntities } from '../utils/area-entity-utils';
 import { findLabelExcludedOptionEntities } from '../utils/label-exclusion';
 
 export interface EntityReference {
@@ -207,9 +208,10 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
 }
 /**
  * Explain the temperature/humidity sensors assigned in the HA area settings:
- * warn when one cannot be shown (no state, hidden/disabled, no_dboard label),
- * and note when it is shown in the room header although softer dashboard
- * rules (category, hidden list) hide it elsewhere.
+ * note when one cannot be shown (no state, hidden/disabled, no_dboard label)
+ * and a visible room sensor replaces it, warn when no replacement exists, and
+ * note when it is shown in the room header although softer dashboard rules
+ * (category, hidden list) hide it elsewhere.
  */
 function inspectAreaPrimarySensors(
   config: Simon42StrategyConfig,
@@ -221,11 +223,19 @@ function inspectAreaPrimarySensors(
   for (const area of Object.values(hass.areas ?? {})) {
     if (hiddenAreas.has(area.area_id)) continue;
     const path = `areas_options.${area.area_id}`;
-    for (const entityId of [area.temperature_entity_id, area.humidity_entity_id]) {
+    let candidates: ReturnType<typeof getEditableAreaEntities> | undefined;
+    for (const kind of ['temperature', 'humidity'] as const) {
+      const entityId = kind === 'temperature' ? area.temperature_entity_id : area.humidity_entity_id;
       if (!entityId) continue;
       const issue = getAreaPrimarySensorIssue(hass, entityId);
       if (issue) {
-        issues.push({ code: `area_sensor_${issue}`, severity: 'warning', path, entityId });
+        candidates ??= getEditableAreaEntities(area.area_id, hass, config);
+        const replaced = !!resolveAreaPrimarySensor(area, kind, hass, candidates);
+        issues.push(
+          replaced
+            ? { code: 'area_sensor_replaced', severity: 'info', path, entityId }
+            : { code: `area_sensor_${issue}`, severity: 'warning', path, entityId }
+        );
       } else if (configExcluded.has(entityId) || getRegistryExclusionReason(hass, entityId)) {
         issues.push({ code: 'area_sensor_override', severity: 'info', path, entityId });
       }

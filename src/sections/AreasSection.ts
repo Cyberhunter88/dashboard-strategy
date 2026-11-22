@@ -12,6 +12,7 @@ import type { AreaRegistryEntry, EntityRegistryEntry } from '../types/registries
 import type { AreaDisplayType, AreaOptions, Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { resolveAreaPrimarySensor } from '../utils/badge-utils';
+import type { AreaSensorOverrides } from '../cards/AreaNavigationCard';
 import { localize } from '../utils/localize';
 import { getViewVisibleUsers, unionVisibleUsers, userVisibilityConditions } from '../utils/view-visibility';
 
@@ -161,16 +162,18 @@ export function buildAreaCard(
 ): LovelaceCardConfig {
   const areaData = getAreaCardData(area.area_id, hass, context);
   const controls = getAreaControls(areaData.visibleEntities, hass);
-  // Only the sensors assigned in the HA area settings are shown, resolved like
-  // the room header badges: no_dboard stays strict, while the explicit
-  // assignment wins over softer exclusions, so shown sensors are not excluded.
+  // Area temperature/humidity are resolved like the room header badges
+  // (assigned sensor, or a visible room replacement when it cannot be shown).
   const sensorClasses: string[] = [];
   const primarySensors = new Set<string>();
+  const sensorOverrides: AreaSensorOverrides = {};
   for (const kind of AREA_PRIMARY_SENSOR_KINDS) {
-    const entityId = resolveAreaPrimarySensor(area, kind, hass);
+    const entityId = resolveAreaPrimarySensor(area, kind, hass, areaData.visibleEntities);
     if (!entityId) continue;
     sensorClasses.push(kind);
     primarySensors.add(entityId);
+    const key = kind === 'temperature' ? 'temperature_entity_id' : 'humidity_entity_id';
+    if (area[key] !== entityId) sensorOverrides[key] = entityId;
   }
   const excludeEntities = areaData.excludedEntities.filter((entityId) => !primarySensors.has(entityId));
   const roomPath = `${getDashboardBasePath()}/${area.area_id}`;
@@ -189,6 +192,7 @@ export function buildAreaCard(
     sensor_classes: sensorClasses.length > 0 ? sensorClasses : undefined,
     alert_classes: alertClasses && alertClasses.length > 0 ? alertClasses : undefined,
     exclude_entities: excludeEntities.length > 0 ? excludeEntities : undefined,
+    ...(Object.keys(sensorOverrides).length > 0 ? { area_sensor_overrides: sensorOverrides } : {}),
     features: controls.length > 0 ? [{ type: 'area-controls', controls }] : [],
     features_position: 'inline',
     navigation_path: roomPath,

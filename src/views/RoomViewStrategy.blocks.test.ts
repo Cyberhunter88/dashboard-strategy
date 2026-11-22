@@ -155,3 +155,92 @@ describe('room temperature and battery badges', () => {
     expect(badgeIds(view)).toEqual(['sensor.diag_humidity', 'sensor.remote_battery']);
   });
 });
+
+describe('strict no_dboard with room sensor replacement', () => {
+  const bath = {
+    area_id: 'bath',
+    name: 'Bath',
+    temperature_entity_id: 'sensor.trv_temperature',
+    humidity_entity_id: 'sensor.trv_humidity',
+  };
+  const temp = (entity_id: string, device_id: string | null, state = '20.5') => ({
+    entity_id,
+    device_id,
+    area_id: device_id ? undefined : 'bath',
+    state,
+    attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+  });
+  const bathHass = makeHass({
+    areas: [bath, { area_id: 'server', name: 'Server' }],
+    devices: [
+      { id: 'dev_trv', area_id: 'bath', labels: ['no_dboard'] },
+      { id: 'dev_wall_trv', area_id: 'bath' },
+      { id: 'dev_thermometer', area_id: 'bath' },
+      { id: 'dev_disk', area_id: 'server' },
+    ],
+    entities: [
+      temp('sensor.trv_temperature', 'dev_trv'),
+      {
+        entity_id: 'sensor.trv_humidity',
+        device_id: 'dev_trv',
+        state: '40',
+        attributes: { device_class: 'humidity', unit_of_measurement: '%' },
+      },
+      { entity_id: 'climate.trv', device_id: 'dev_trv', state: 'heat' },
+      { entity_id: 'climate.wall_trv', device_id: 'dev_wall_trv', state: 'heat' },
+      temp('sensor.a_wall_trv_temperature', 'dev_wall_trv'),
+      temp('sensor.a_smoothed_temperature', null),
+      temp('sensor.z_thermometer_temperature', 'dev_thermometer'),
+      {
+        entity_id: 'sensor.temperature_change',
+        area_id: 'bath',
+        state: '0.1',
+        attributes: { unit_of_measurement: 'K/min' },
+      },
+      temp('sensor.disk_temperature', 'dev_disk', '43'),
+    ],
+  });
+  const badgeIds = (view: LovelaceViewConfig) => (view.badges ?? []).map((b) => (typeof b === 'string' ? b : b.entity));
+
+  it('hides every entity of a no_dboard device', () => {
+    Registry.initialize(bathHass, {});
+    const visible = Registry.getVisibleEntitiesForArea('bath').map((entity) => entity.entity_id);
+    expect(visible).not.toContain('sensor.trv_temperature');
+    expect(visible).not.toContain('climate.trv');
+    expect(visible).toContain('climate.wall_trv');
+  });
+
+  it('replaces a labeled area sensor with the best visible room sensor', async () => {
+    const dashboardConfig = {};
+    Registry.initialize(bathHass, dashboardConfig);
+    const view = await generate({ area: bath, dashboardConfig }, bathHass);
+    // Room thermometer beats a thermostat sensor and a device-less helper;
+    // there is no visible humidity replacement, so no humidity badge.
+    expect(badgeIds(view)).toEqual(['sensor.z_thermometer_temperature']);
+  });
+
+  it('prefers a thermostat sensor over a helper and never guesses for unassigned rooms', async () => {
+    const withoutThermometer = makeHass({
+      areas: [bath, { area_id: 'server', name: 'Server' }],
+      devices: [
+        { id: 'dev_trv', area_id: 'bath', labels: ['no_dboard'] },
+        { id: 'dev_wall_trv', area_id: 'bath' },
+        { id: 'dev_disk', area_id: 'server' },
+      ],
+      entities: [
+        temp('sensor.trv_temperature', 'dev_trv'),
+        { entity_id: 'climate.wall_trv', device_id: 'dev_wall_trv', state: 'heat' },
+        temp('sensor.a_smoothed_temperature', null),
+        temp('sensor.z_wall_trv_temperature', 'dev_wall_trv'),
+        temp('sensor.disk_temperature', 'dev_disk', '43'),
+      ],
+    });
+    const dashboardConfig = {};
+    Registry.initialize(withoutThermometer, dashboardConfig);
+    const view = await generate({ area: bath, dashboardConfig }, withoutThermometer);
+    expect(badgeIds(view)).toEqual(['sensor.z_wall_trv_temperature']);
+
+    const server = await generate({ area: withoutThermometer.areas.server, dashboardConfig }, withoutThermometer);
+    expect(badgeIds(server)).toEqual([]);
+  });
+});

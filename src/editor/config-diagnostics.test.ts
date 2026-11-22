@@ -93,6 +93,33 @@ describe('editor diagnostics', () => {
     ]);
   });
 
+  it('notes a replaced area sensor instead of warning, including device labels', () => {
+    const hass = makeHass({
+      areas: [{ area_id: 'bath', name: 'Bath', temperature_entity_id: 'sensor.trv_temp' }],
+      devices: [
+        { id: 'dev_trv', area_id: 'bath', labels: ['no_dboard'] },
+        { id: 'dev_thermometer', area_id: 'bath' },
+      ],
+      entities: [
+        {
+          entity_id: 'sensor.trv_temp',
+          device_id: 'dev_trv',
+          state: '19',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+        },
+        {
+          entity_id: 'sensor.room_temp',
+          device_id: 'dev_thermometer',
+          state: '21',
+          attributes: { device_class: 'temperature', unit_of_measurement: '°C' },
+        },
+      ],
+    });
+    expect(inspectConfig({}, hass).map((issue) => `${issue.code}:${issue.entityId}`)).toEqual([
+      'area_sensor_replaced:sensor.trv_temp',
+    ]);
+  });
+
   it('warns about configured option entities that the no_dboard label removes', () => {
     const hass = makeHass({
       entities: [

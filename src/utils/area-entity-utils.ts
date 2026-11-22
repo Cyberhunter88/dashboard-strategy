@@ -3,7 +3,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import { isEntityRegistryHidden, type EntityRegistryEntry } from '../types/registries';
 import type { RoomEntities, Simon42StrategyConfig } from '../types/strategy';
 import { classifyBadgeSensor, isCriticalBatteryBadge, isEnergyBlockSensor } from './badge-utils';
-import { hasDashboardExclusionLabel } from './entity-exclusion';
+import { isEntityDashboardLabelExcluded } from './entity-exclusion';
 
 const UPS_DEVICE_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
 const UPS_ID_PATTERN = /load|runtime|time_left|input_voltage|status/;
@@ -72,7 +72,7 @@ export function getEditableAreaEntities(
   return Registry.getEntitiesForArea(areaId).filter(
     (entity) =>
       !!hass.states[entity.entity_id] &&
-      !hasDashboardExclusionLabel(entity.labels) &&
+      !isEntityDashboardLabelExcluded(entity, hass.devices) &&
       !isEntityRegistryHidden(entity) &&
       entity.entity_category !== 'config' &&
       entity.entity_category !== 'diagnostic'
