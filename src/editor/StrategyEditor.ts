@@ -1,4 +1,4 @@
-import { parseEditorYamlConfig, preloadYaml, requireYaml, withYaml } from './editor-yaml';
+import { preloadYaml, requireYaml, withParsedYaml, withYaml } from './editor-yaml';
 import {
   getAdditionalBadgesForArea,
   getBadgeNamesConfig,
@@ -110,6 +110,7 @@ import { renderViewsPanel } from './panels/ViewsPanel';
 import { moveVisibleStack, presentStackKeys, renderRoomStackOrderPanel } from './panels/RoomStackOrderPanel';
 import { renderRoomVisibilityPanel, renderUserVisibilityPanel } from './panels/VisibilityPanels';
 import { type WeatherStartFloorOption } from './panels/WeatherStartPanel';
+import { createDragSortHandlers, moveKey } from './drag-sort';
 import {
   buildLegacyWeatherStartLayoutItems,
   computeWeatherStartAreaOptions,
@@ -212,9 +213,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   private _refDashboardsLoading = false;
 
   // Drag state (not reactive — no render needed)
-  private _draggedElement: HTMLElement | null = null;
-  private _stackDraggedElement: HTMLElement | null = null;
-  private _weatherStartDraggedElement: HTMLElement | null = null;
 
   // Card picker state (reactive via static properties)
   _cardPickerOpen = false;
@@ -926,78 +924,20 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   }
   // -- Weather-start block order drag & drop -----------------------------
 
-  private _handleWeatherStartDragStart = (ev: DragEvent): void => {
-    const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) {
-      ev.preventDefault();
-      return;
-    }
-
-    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (!item) {
-      ev.preventDefault();
-      return;
-    }
-
-    item.classList.add('dragging');
-    if (ev.dataTransfer) {
-      ev.dataTransfer.effectAllowed = 'move';
-      ev.dataTransfer.setData('text/plain', item.dataset.wsId || '');
-    }
-    this._weatherStartDraggedElement = item;
-  };
-
-  private _handleWeatherStartDragEnd = (ev: DragEvent): void => {
-    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (item) item.classList.remove('dragging');
-
-    const list = this.shadowRoot?.querySelector('#weather-start-order-list');
-    if (list) {
-      list.querySelectorAll('.section-order-item').forEach((el) => {
-        el.classList.remove('drag-over');
-      });
-    }
-    this._weatherStartDraggedElement = null;
-  };
-
-  private _handleWeatherStartDragOver = (ev: DragEvent): void => {
-    ev.preventDefault();
-    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
-
-    const item = ev.currentTarget as HTMLElement;
-    if (item !== this._weatherStartDraggedElement) {
-      item.classList.add('drag-over');
-    }
-  };
-
-  private _handleWeatherStartDragLeave = (ev: DragEvent): void => {
-    (ev.currentTarget as HTMLElement).classList.remove('drag-over');
-  };
-
-  private _handleWeatherStartDrop = (ev: DragEvent): void => {
-    ev.stopPropagation();
-    ev.preventDefault();
-
-    const dropTarget = ev.currentTarget as HTMLElement;
-    dropTarget.classList.remove('drag-over');
-
-    if (!this._weatherStartDraggedElement || this._weatherStartDraggedElement === dropTarget) return;
-
-    const draggedId = this._weatherStartDraggedElement.dataset.wsId;
-    const dropId = dropTarget.dataset.wsId;
-    if (!draggedId || !dropId) return;
-
-    const currentOrder = this._getWeatherStartLayoutItems();
-    const draggedIndex = currentOrder.findIndex((item) => item.id === draggedId);
-    const dropIndex = currentOrder.findIndex((item) => item.id === dropId);
-    if (draggedIndex === -1 || dropIndex === -1) return;
-
-    const newOrder = [...currentOrder];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(dropIndex, 0, currentOrder[draggedIndex]);
-
-    this._saveWeatherStartLayoutItems(newOrder);
-  };
+  private readonly _weatherStartDragSort = createDragSortHandlers({
+    itemSelector: '.section-order-item',
+    keyOf: (item) => item.dataset.wsId,
+    clearScope: () => this.shadowRoot?.querySelector('#weather-start-order-list'),
+    onReorder: (draggedId, dropId) => {
+      const newOrder = moveKey(this._getWeatherStartLayoutItems(), (item) => item.id, draggedId, dropId);
+      if (newOrder) this._saveWeatherStartLayoutItems(newOrder);
+    },
+  });
+  private _handleWeatherStartDragStart = this._weatherStartDragSort.onDragStart;
+  private _handleWeatherStartDragEnd = this._weatherStartDragSort.onDragEnd;
+  private _handleWeatherStartDragOver = this._weatherStartDragSort.onDragOver;
+  private _handleWeatherStartDragLeave = this._weatherStartDragSort.onDragLeave;
+  private _handleWeatherStartDrop = this._weatherStartDragSort.onDrop;
 
   // -- Room stack order panel -------------------------------------------
 
@@ -1036,76 +976,22 @@ export class Simon42DashboardStrategyEditor extends LitElement {
       onDrop: this._handleStackDrop,
     });
   }
-  private _handleStackDragStart = (ev: DragEvent): void => {
-    const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) {
-      ev.preventDefault();
-      return;
-    }
-
-    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (!item) {
-      ev.preventDefault();
-      return;
-    }
-
-    item.classList.add('dragging');
-    if (ev.dataTransfer) {
-      ev.dataTransfer.effectAllowed = 'move';
-      ev.dataTransfer.setData('text/plain', item.dataset.stackKey || '');
-    }
-    this._stackDraggedElement = item;
-  };
-
-  private _handleStackDragEnd = (ev: DragEvent): void => {
-    const item = (ev.target as HTMLElement).closest('.section-order-item') as HTMLElement | null;
-    if (item) item.classList.remove('dragging');
-
-    this.shadowRoot
-      ?.querySelectorAll('.section-order-item.drag-over')
-      .forEach((el) => el.classList.remove('drag-over'));
-    this._stackDraggedElement = null;
-  };
-
-  private _handleStackDragOver = (ev: DragEvent): void => {
-    ev.preventDefault();
-    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
-
-    const item = ev.currentTarget as HTMLElement;
-    if (item !== this._stackDraggedElement) {
-      item.classList.add('drag-over');
-    }
-  };
-
-  private _handleStackDragLeave = (ev: DragEvent): void => {
-    (ev.currentTarget as HTMLElement).classList.remove('drag-over');
-  };
-
-  private _handleStackDrop = (ev: DragEvent): void => {
-    ev.stopPropagation();
-    ev.preventDefault();
-
-    const dropTarget = ev.currentTarget as HTMLElement;
-    dropTarget.classList.remove('drag-over');
-
-    if (!this._stackDraggedElement || this._stackDraggedElement === dropTarget) return;
-
-    const draggedKey = this._stackDraggedElement.dataset.stackKey as StackKey | undefined;
-    const dropKey = dropTarget.dataset.stackKey as StackKey | undefined;
-    const areaId = dropTarget.dataset.areaId;
-    if (!draggedKey || !dropKey || !areaId) return;
-
-    const currentOrder = this._getStacksOrder(areaId);
-    const draggedIndex = currentOrder.indexOf(draggedKey);
-    const dropIndex = currentOrder.indexOf(dropKey);
-    if (draggedIndex === -1 || dropIndex === -1) return;
-
-    const newOrder = [...currentOrder];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(dropIndex, 0, draggedKey);
-
-    this._updateStacksOrder(areaId, newOrder);
-  };
+  private readonly _stackDragSort = createDragSortHandlers({
+    itemSelector: '.section-order-item',
+    keyOf: (item) => item.dataset.stackKey,
+    clearScope: () => this.shadowRoot,
+    onReorder: (draggedKey, dropKey, dropTarget) => {
+      const areaId = dropTarget.dataset.areaId;
+      if (!areaId) return;
+      const newOrder = moveKey(this._getStacksOrder(areaId), (key) => key, draggedKey, dropKey);
+      if (newOrder) this._updateStacksOrder(areaId, newOrder);
+    },
+  });
+  private _handleStackDragStart = this._stackDragSort.onDragStart;
+  private _handleStackDragEnd = this._stackDragSort.onDragEnd;
+  private _handleStackDragOver = this._stackDragSort.onDragOver;
+  private _handleStackDragLeave = this._stackDragSort.onDragLeave;
+  private _handleStackDrop = this._stackDragSort.onDrop;
 
   // -- Overview section --------------------------------------------------
 
@@ -1560,19 +1446,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     withYaml(() => {
       const customViews: CustomView[] = [...(this._config.custom_views || [])];
       if (!customViews[index]) return;
-
-      const updated: CustomView = { ...customViews[index], yaml: yamlString };
-      delete updated._yaml_error;
-
-      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
-      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-      updated._yaml_error = parsed._yaml_error;
-
-      customViews[index] = updated;
-
-      const newConfig: Simon42StrategyConfig = { ...this._config, custom_views: customViews };
-      this._config = newConfig;
-      this._fireConfigChanged(newConfig);
+      customViews[index] = withParsedYaml(customViews[index], yamlString, 'YAML muss ein Objekt ergeben');
+      this._applyConfig({ ...this._config, custom_views: customViews });
     });
   }
 
@@ -1632,24 +1507,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     withYaml(() => {
       const customCards: CustomCard[] = [...(this._config.custom_cards || [])];
       if (!customCards[index]) return;
-
-      const updated: CustomCard = { ...customCards[index], yaml: yamlString };
-      delete updated._yaml_error;
-
-      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
-      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-      updated._yaml_error = parsed._yaml_error;
-
-      customCards[index] = updated;
-
-      const newConfig: Simon42StrategyConfig = { ...this._config, custom_cards: customCards };
-      if (updated._yaml_error) {
-        this._config = newConfig;
-        this.requestUpdate();
-        return;
-      }
-      this._config = newConfig;
-      this._fireConfigChanged(newConfig);
+      customCards[index] = withParsedYaml(customCards[index], yamlString, 'YAML muss ein Objekt oder Array ergeben');
+      this._applyYamlConfig({ ...this._config, custom_cards: customCards }, customCards[index]._yaml_error);
     });
   }
 
@@ -1689,15 +1548,15 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     withYaml(() => {
       const customSections = [...(this._config.custom_sections || [])];
       if (!customSections[sectionIndex]) return;
-      const updated: CustomSection = { ...customSections[sectionIndex], yaml: yamlString };
-      const parsed = parseEditorYamlConfig(yamlString, localize('editor.custom_section_yaml_invalid'));
-      updated.parsed_config = parsed.parsed_config;
-      updated._yaml_error = parsed._yaml_error;
-      customSections[sectionIndex] = updated;
-      const newConfig = { ...this._config, custom_sections: customSections };
-      this._config = newConfig;
-      if (updated._yaml_error) this.requestUpdate();
-      else this._fireConfigChanged(newConfig);
+      customSections[sectionIndex] = withParsedYaml(
+        customSections[sectionIndex],
+        yamlString,
+        localize('editor.custom_section_yaml_invalid')
+      );
+      this._applyYamlConfig(
+        { ...this._config, custom_sections: customSections },
+        customSections[sectionIndex]._yaml_error
+      );
     });
   }
 
@@ -1732,28 +1591,11 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     withYaml(() => {
       const customSections: CustomSection[] = [...(this._config.custom_sections || [])];
       if (!customSections[sectionIndex]) return;
-      const section = { ...customSections[sectionIndex] };
-      const cards = [...(section.cards || [])];
+      const cards = [...(customSections[sectionIndex].cards || [])];
       if (!cards[cardIndex]) return;
-
-      const updated: CustomCard = { ...cards[cardIndex], yaml: yamlString };
-      delete updated._yaml_error;
-
-      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt oder Array ergeben');
-      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-      updated._yaml_error = parsed._yaml_error;
-
-      cards[cardIndex] = updated;
-      section.cards = cards;
-      customSections[sectionIndex] = section;
-      const newConfig: Simon42StrategyConfig = { ...this._config, custom_sections: customSections };
-      if (updated._yaml_error) {
-        this._config = newConfig;
-        this.requestUpdate();
-        return;
-      }
-      this._config = newConfig;
-      this._fireConfigChanged(newConfig);
+      cards[cardIndex] = withParsedYaml(cards[cardIndex], yamlString, 'YAML muss ein Objekt oder Array ergeben');
+      customSections[sectionIndex] = { ...customSections[sectionIndex], cards };
+      this._applyYamlConfig({ ...this._config, custom_sections: customSections }, cards[cardIndex]._yaml_error);
     });
   }
 
@@ -1892,19 +1734,8 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     withYaml(() => {
       const customBadges: CustomBadge[] = [...(this._config.custom_badges || [])];
       if (!customBadges[index]) return;
-
-      const updated: CustomBadge = { ...customBadges[index], yaml: yamlString };
-      delete updated._yaml_error;
-
-      const parsed = parseEditorYamlConfig(yamlString, 'YAML muss ein Objekt ergeben');
-      updated.parsed_config = parsed.parsed_config as Record<string, any> | undefined;
-      updated._yaml_error = parsed._yaml_error;
-
-      customBadges[index] = updated;
-
-      const newConfig: Simon42StrategyConfig = { ...this._config, custom_badges: customBadges };
-      this._config = newConfig;
-      this._fireConfigChanged(newConfig);
+      customBadges[index] = withParsedYaml(customBadges[index], yamlString, 'YAML muss ein Objekt ergeben');
+      this._applyConfig({ ...this._config, custom_badges: customBadges });
     });
   }
 
@@ -2024,81 +1855,21 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   // DRAG AND DROP
   // ====================================================================
 
-  private _handleDragStart = (ev: DragEvent): void => {
-    const dragHandle = (ev.target as HTMLElement).closest('.drag-handle');
-    if (!dragHandle) {
-      ev.preventDefault();
-      return;
-    }
-
-    const areaItem = (ev.target as HTMLElement).closest('.area-item') as HTMLElement | null;
-    if (!areaItem) {
-      ev.preventDefault();
-      return;
-    }
-
-    areaItem.classList.add('dragging');
-    if (ev.dataTransfer) {
-      ev.dataTransfer.effectAllowed = 'move';
-      ev.dataTransfer.setData('text/plain', areaItem.dataset.areaId || '');
-    }
-    this._draggedElement = areaItem;
-  };
-
-  private _handleDragEnd = (ev: DragEvent): void => {
-    const areaItem = (ev.target as HTMLElement).closest('.area-item') as HTMLElement | null;
-    if (areaItem) {
-      areaItem.classList.remove('dragging');
-    }
-
-    // Remove all drag-over classes
-    const areaList = this.shadowRoot!.querySelector('#area-list');
-    if (areaList) {
-      areaList.querySelectorAll('.area-item').forEach((item) => {
-        item.classList.remove('drag-over');
-      });
-    }
-  };
-
-  private _handleDragOver = (ev: DragEvent): void => {
-    ev.preventDefault();
-    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
-
-    const item = ev.currentTarget as HTMLElement;
-    if (item !== this._draggedElement) {
-      item.classList.add('drag-over');
-    }
-  };
-
-  private _handleDragLeave = (ev: DragEvent): void => {
-    (ev.currentTarget as HTMLElement).classList.remove('drag-over');
-  };
-
-  private _handleDrop = (ev: DragEvent): void => {
-    ev.stopPropagation();
-    ev.preventDefault();
-
-    const dropTarget = ev.currentTarget as HTMLElement;
-    dropTarget.classList.remove('drag-over');
-
-    if (!this._draggedElement || this._draggedElement === dropTarget) return;
-
-    const draggedAreaId = this._draggedElement.dataset.areaId;
-    const dropAreaId = dropTarget.dataset.areaId;
-    if (!draggedAreaId || !dropAreaId) return;
-
-    // Compute new order from current config state (NOT from DOM)
-    const currentOrder = this._getAreaOrder();
-    const draggedIndex = currentOrder.indexOf(draggedAreaId);
-    const dropIndex = currentOrder.indexOf(dropAreaId);
-    if (draggedIndex === -1 || dropIndex === -1) return;
-
-    const newOrder = [...currentOrder];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(dropIndex, 0, draggedAreaId);
-
-    this._updateAreaOrder(newOrder);
-  };
+  private readonly _areaDragSort = createDragSortHandlers({
+    itemSelector: '.area-item',
+    keyOf: (item) => item.dataset.areaId,
+    clearScope: () => this.shadowRoot?.querySelector('#area-list'),
+    // The new order comes from the config state, never from the DOM.
+    onReorder: (draggedAreaId, dropAreaId) => {
+      const newOrder = moveKey(this._getAreaOrder(), (id) => id, draggedAreaId, dropAreaId);
+      if (newOrder) this._updateAreaOrder(newOrder);
+    },
+  });
+  private _handleDragStart = this._areaDragSort.onDragStart;
+  private _handleDragEnd = this._areaDragSort.onDragEnd;
+  private _handleDragOver = this._areaDragSort.onDragOver;
+  private _handleDragLeave = this._areaDragSort.onDragLeave;
+  private _handleDrop = this._areaDragSort.onDrop;
 
   private _getAreaOrder(): string[] {
     if (!this._hass) return [];
@@ -2120,6 +1891,19 @@ export class Simon42DashboardStrategyEditor extends LitElement {
   private _applyConfig(config: Simon42StrategyConfig): void {
     this._config = config;
     this._fireConfigChanged(config);
+  }
+
+  /**
+   * Store a config after a YAML edit. With a parse error only re-render (the
+   * user is still typing); otherwise notify Home Assistant.
+   */
+  private _applyYamlConfig(config: Simon42StrategyConfig, yamlError: string | undefined): void {
+    if (yamlError) {
+      this._config = config;
+      this.requestUpdate();
+      return;
+    }
+    this._applyConfig(config);
   }
 
   _fireConfigChanged(config: Simon42StrategyConfig): void {

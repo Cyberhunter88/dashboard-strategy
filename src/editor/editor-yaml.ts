@@ -69,3 +69,24 @@ export function parseEditorYamlConfig(yamlString: string, invalidMessage: string
     return { parsed_config: undefined, _yaml_error: getYamlErrorMessage(error) };
   }
 }
+
+interface YamlBackedItem {
+  yaml?: string;
+  parsed_config?: unknown;
+  _yaml_error?: string;
+}
+
+/**
+ * Copy of a YAML-backed config item (custom view, card, section, badge)
+ * with new YAML, its parsed result and the parse error (undefined when
+ * valid). Call inside withYaml().
+ */
+export function withParsedYaml<T extends YamlBackedItem>(item: T, yamlString: string, invalidMessage: string): T {
+  const parsed = parseEditorYamlConfig(yamlString, invalidMessage);
+  return {
+    ...item,
+    yaml: yamlString,
+    parsed_config: parsed.parsed_config as T['parsed_config'],
+    _yaml_error: parsed._yaml_error,
+  };
+}
