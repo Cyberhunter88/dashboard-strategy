@@ -413,6 +413,7 @@
     "diagnostics_area_sensor_override": "Czujnik temperatury/wilgotności jest ukryty na pulpicie (kategoria lub lista ukrytych), ale nadal jest wyświetlany jako plakietka pomieszczenia, ponieważ jest przypisany w ustawieniach obszaru",
     "diagnostics_area_sensor_label": "Czujnik temperatury/wilgotności z ustawień obszaru ma etykietę no_dboard (na encji lub jej urządzeniu), a pomieszczenie nie ma innego odpowiedniego czujnika – plakietka pomieszczenia nie jest wyświetlana",
     "diagnostics_area_sensor_replaced": "Czujnik temperatury/wilgotności z ustawień obszaru nie jest wyświetlany (etykieta no_dboard, ukryty lub bez stanu); automatycznie używany jest inny widoczny czujnik pomieszczenia",
+    "diagnostics_area_sensor_unassigned": "Do tego pomieszczenia nie przypisano w ustawieniach obszaru Home Assistant czujnika temperatury/wilgotności, więc nie ma plakietki pokoju; możliwy czujnik pokazano tutaj – przypisz go w ustawieniach obszaru, aby go wyświetlić",
     "diagnostics_option_label_excluded": "Encja ma etykietę no_dboard i nie jest wyświetlana na tym pulpicie",
     "camera_renderer": "Sposób wyświetlania kamery",
     "section_overview_sections": "Sekcje przeglądu",

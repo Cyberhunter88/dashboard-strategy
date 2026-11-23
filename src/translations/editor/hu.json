@@ -413,6 +413,7 @@
     "diagnostics_area_sensor_override": "A hőmérséklet-/páratartalom-érzékelő el van rejtve az irányítópulton (kategória vagy rejtett lista), de szoba jelvényként megjelenik, mert a terület beállításaiban hozzá van rendelve",
     "diagnostics_area_sensor_label": "A terület beállításaiban megadott hőmérséklet-/páratartalom-érzékelő no_dboard címkével rendelkezik (az entitáson vagy az eszközén), és a szobában nincs más megfelelő érzékelő – nem jelenik meg szoba jelvény",
     "diagnostics_area_sensor_replaced": "A terület beállításaiban megadott hőmérséklet-/páratartalom-érzékelő nem jelenik meg (no_dboard címke, rejtett vagy nincs állapota); helyette automatikusan a szoba egy másik látható érzékelője jelenik meg",
+    "diagnostics_area_sensor_unassigned": "Ehhez a szobához nincs hőmérséklet-/páratartalom-érzékelő rendelve a Home Assistant terület beállításaiban, ezért nem jelenik meg szoba jelvény; egy lehetséges érzékelő itt látható – rendelje hozzá a terület beállításaiban a megjelenítéshez",
     "diagnostics_option_label_excluded": "Az entitás no_dboard címkével rendelkezik, és nem jelenik meg ezen az irányítópulton",
     "camera_renderer": "Kamera megjelenítője",
     "section_overview_sections": "Áttekintés szakaszai",

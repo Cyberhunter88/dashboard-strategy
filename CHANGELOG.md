@@ -2,7 +2,14 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.5...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.6...HEAD).
+
+## 1.44.7
+
+- Room badges: the badge-local `hidden`, `names_visible`, and `names_hidden` options now also apply to the primary temperature/humidity badges (previously the only way to remove them was changing the Home Assistant area assignment), and an entity never renders twice when it is also listed in `additional`. Badge assembly lives in the tested `buildRoomBadges()`.
+- Room sensor replacement: when the assigned area sensor cannot be shown, appliance, server, and outdoor readings (NAS, printer, fridge, soil, ...) are no longer chosen; a device that provides both temperature and humidity is preferred.
+- Badge classification: the sensor `device_class` now wins over name heuristics (a `..._battery_temperature` sensor is no longer a battery badge), names match whole words only (no more `voc`/`co2` substring hits), and Kelvin temperatures are excluded like °C/°F.
+- Editor diagnosis: rooms without an assigned temperature/humidity sensor get an info hint with the best visible candidate, since they get no automatic room badge.
 
 ## 1.44.6
 

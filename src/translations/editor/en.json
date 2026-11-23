@@ -413,6 +413,7 @@
     "diagnostics_area_sensor_override": "Room temperature/humidity sensor is hidden on the dashboard (category or hidden list) but still shown as room badge because it is assigned in the area settings",
     "diagnostics_area_sensor_label": "Room temperature/humidity sensor from the area settings has the no_dboard label (on the entity or its device) and the room has no other suitable sensor – no room badge is shown",
     "diagnostics_area_sensor_replaced": "Room temperature/humidity sensor from the area settings is not shown (no_dboard label, hidden, or no state); another visible sensor of the room is used automatically",
+    "diagnostics_area_sensor_unassigned": "No temperature/humidity sensor is assigned to this room in the Home Assistant area settings, so it gets no room badge; a possible sensor is shown here – assign it in the area settings to display it",
     "diagnostics_option_label_excluded": "Entity has the no_dboard label and is not shown on this dashboard",
     "camera_renderer": "Camera renderer",
     "section_overview_sections": "Overview sections",
