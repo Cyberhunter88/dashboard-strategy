@@ -176,14 +176,12 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
   return [
     ...hints,
     ...inspectAreaPrimarySensors(analysis.config, hass, configExcluded),
-    ...findLabelExcludedOptionEntities(analysis.config, hass).map(
-      ({ path, entityId }): ConfigIssue => ({
-        code: 'option_label_excluded',
-        severity: 'warning',
-        path,
-        entityId,
-      })
-    ),
+    ...findLabelExcludedOptionEntities(analysis.config, hass).map(({ path, entityId }): ConfigIssue => ({
+      code: 'option_label_excluded',
+      severity: 'warning',
+      path,
+      entityId,
+    })),
     ...analysis.references.flatMap((ref): ConfigIssue[] => {
       if (
         isDashboardWideExclusion(ref) &&
