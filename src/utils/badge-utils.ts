@@ -6,6 +6,7 @@
 
 import type { HomeAssistant } from '../types/homeassistant';
 import type { GroupOptions } from '../types/strategy';
+import type { LovelaceBadgeConfig } from '../types/lovelace';
 import { isEntityRegistryHidden } from '../types/registries';
 import { isDashboardLabelExcluded } from './entity-exclusion';
 
@@ -73,6 +74,12 @@ export type BadgeSensorType =
   | 'window'
   | 'door';
 
+/** Whether the object id contains `token` as a whole underscore-delimited word. */
+function hasNameToken(entityId: string, token: string): boolean {
+  const objectId = entityId.slice(entityId.indexOf('.') + 1);
+  return `_${objectId}_`.includes(`_${token}_`);
+}
+
 /**
  * Classify a sensor/binary_sensor into its automatic badge bucket.
  *
@@ -90,15 +97,25 @@ export function classifyBadgeSensor(
 ): BadgeSensorType | null {
   if (domain === 'sensor') {
     if (isEnergyBlockSensor(domain, deviceClass)) return null;
-    if (deviceClass === 'battery' || entityId.includes('battery')) return 'battery';
-    if (deviceClass === 'temperature' || unit === '°C' || unit === '°F') return null;
-    if (deviceClass === 'humidity' || unit === '%') return null;
+    // A declared device_class always wins over name heuristics, so a
+    // temperature sensor called "..._battery_temperature" is not a battery.
+    if (deviceClass === 'battery') return 'battery';
+    if (deviceClass === 'temperature' || unit === '°C' || unit === '°F' || unit === 'K') return null;
+    if (deviceClass === 'humidity') return null;
+    if (deviceClass === 'pm25') return 'pm25';
+    if (deviceClass === 'pm10') return 'pm10';
+    if (deviceClass === 'carbon_dioxide') return 'co2';
+    if (deviceClass === 'volatile_organic_compounds') return 'voc';
+    if (deviceClass === 'illuminance') return 'illuminance';
     if (unit === 'g/m³') return 'absolute_humidity';
-    if (deviceClass === 'pm25' || entityId.includes('pm_2_5') || entityId.includes('pm25')) return 'pm25';
-    if (deviceClass === 'pm10' || entityId.includes('pm_10') || entityId.includes('pm10')) return 'pm10';
-    if (deviceClass === 'carbon_dioxide' || entityId.includes('co2')) return 'co2';
-    if (deviceClass === 'volatile_organic_compounds' || entityId.includes('voc')) return 'voc';
-    if (deviceClass === 'illuminance' || unit === 'lx') return 'illuminance';
+    if (unit === 'lx') return 'illuminance';
+    if (unit === '%') return !deviceClass && hasNameToken(entityId, 'battery') ? 'battery' : null;
+    if (deviceClass) return null;
+    if (hasNameToken(entityId, 'battery')) return 'battery';
+    if (hasNameToken(entityId, 'pm25') || hasNameToken(entityId, 'pm_2_5')) return 'pm25';
+    if (hasNameToken(entityId, 'pm10') || hasNameToken(entityId, 'pm_10')) return 'pm10';
+    if (hasNameToken(entityId, 'co2')) return 'co2';
+    if (hasNameToken(entityId, 'voc')) return 'voc';
     return null;
   }
   if (domain === 'binary_sensor') {
@@ -176,21 +193,39 @@ function getClimateDeviceIds(hass: HomeAssistant): Set<string> {
   return ids;
 }
 
+/** Sensors that measure something other than the room climate (appliances, servers, outdoors, ...). */
+const NON_ROOM_SENSOR_PATTERN =
+  /(^|[^a-z])(cpu|gpu|nas|server|proxmox|printer|drucker|fridge|freezer|k[uü]hlschrank|gefrier|oven|ofen|boiler|soil|pool|outdoor|outside|au[sß]en|garden|garten|core|processor|dew|taupunkt|battery|akku)([^a-z]|$)/i;
+
+function isNumericState(state: string | undefined): boolean {
+  return !Number.isNaN(parseFloat(state ?? ''));
+}
+
 /**
  * Pick a replacement room sensor when the assigned one cannot be shown.
  *
  * `candidates` must already be dashboard-visible area entities (Registry
- * visibility: no no_dboard, hidden, or config/diagnostic entities). Ranking:
- * a current numeric value first, then a dedicated room sensor (device
- * without a climate entity), then a thermostat's own sensor, then
- * device-less helpers such as smoothed values; ties resolve by entity id.
+ * visibility: no no_dboard, hidden, or config/diagnostic entities). Sensors
+ * that look like appliance, server, or outdoor readings are skipped. Ranking:
+ * a current numeric value first, then a device that provides both temperature
+ * and humidity (a real room sensor), then other dedicated devices, then a
+ * thermostat's own sensor, then device-less helpers such as smoothed values;
+ * ties resolve by entity id.
  */
-function pickAreaFallbackSensor(
+export function pickAreaFallbackSensor(
   kind: AreaPrimarySensorKind,
   candidates: readonly AreaSensorCandidate[],
   hass: HomeAssistant
 ): string | null {
   const units = PRIMARY_SENSOR_UNITS[kind];
+  const classesByDevice = new Map<string, Set<string>>();
+  for (const candidate of candidates) {
+    const deviceClass = hass.states[candidate.entity_id]?.attributes?.device_class as string | undefined;
+    if (!candidate.device_id || !candidate.entity_id.startsWith('sensor.') || !deviceClass) continue;
+    const set = classesByDevice.get(candidate.device_id) ?? new Set<string>();
+    set.add(deviceClass);
+    classesByDevice.set(candidate.device_id, set);
+  }
   let best: { id: string; rank: number } | null = null;
   for (const candidate of candidates) {
     const id = candidate.entity_id;
@@ -198,9 +233,18 @@ function pickAreaFallbackSensor(
     const state = hass.states[id];
     if (!state || state.attributes?.device_class !== kind) continue;
     if (!units.has(state.attributes?.unit_of_measurement as string)) continue;
-    const available = !Number.isNaN(parseFloat(state.state));
-    const source = !candidate.device_id ? 2 : getClimateDeviceIds(hass).has(candidate.device_id) ? 1 : 0;
-    const rank = (available ? 0 : 3) + source;
+    const available = isNumericState(state.state);
+    const name = `${id.split('.')[1]} ${(state.attributes?.friendly_name as string) ?? ''}`;
+    if (NON_ROOM_SENSOR_PATTERN.test(name.replace(/_/g, ' '))) continue;
+    const device = candidate.device_id;
+    let source: number;
+    if (!device) source = 3;
+    else if (getClimateDeviceIds(hass).has(device)) source = 2;
+    else {
+      const classes = classesByDevice.get(device);
+      source = classes?.has('temperature') && classes.has('humidity') ? 0 : 1;
+    }
+    const rank = (available ? 0 : 4) + source;
     if (!best || rank < best.rank || (rank === best.rank && id < best.id)) best = { id, rank };
   }
   return best?.id ?? null;
@@ -211,9 +255,11 @@ function pickAreaFallbackSensor(
  *
  * Uses the sensor assigned in the Home Assistant area settings. When that
  * sensor exists but cannot be shown (no_dboard, hidden, no state), a
- * replacement is picked from `candidates` so the room keeps working without
- * manual changes. Areas without an assignment stay without the badge, which
- * avoids guessing (e.g. server or printer temperatures).
+ * replacement is picked from `candidates`. A sensor that is merely
+ * unavailable stays: the strategy only regenerates on registry changes, so a
+ * live-state switch would stick after the sensor recovers. Areas without an
+ * assignment stay without the badge, which avoids guessing (e.g. server or
+ * printer temperatures).
  */
 export function resolveAreaPrimarySensor(
   area: AreaPrimarySensorSource,
@@ -296,4 +342,45 @@ export function resolveShowName(
   if (namesHidden?.has(entityId)) return false;
   if (namesVisible?.has(entityId)) return true;
   return defaultShowName;
+}
+
+// -- Room badge assembly ----------------------------------------------
+
+/**
+ * Build the room header badges: the area's primary temperature/humidity
+ * sensors first, then the automatic candidates.
+ *
+ * The badge-local `hidden`, `additional`, `names_visible`, and `names_hidden`
+ * options apply to primary sensors as well, so a user can hide the primary
+ * badge without touching the Home Assistant area assignment. An entity never
+ * renders twice (e.g. a primary sensor that is also listed in `additional`).
+ */
+export function buildRoomBadges(
+  primary: ReadonlyArray<{ entity: string | null; color: string }>,
+  candidates: BadgeCandidate[],
+  options: GroupOptions | undefined,
+  hass: HomeAssistant
+): LovelaceBadgeConfig[] {
+  const hidden = new Set(options?.hidden || []);
+  const namesVisible = options ? new Set(options.names_visible || []) : null;
+  const namesHidden = options ? new Set(options.names_hidden || []) : null;
+  const all: BadgeCandidate[] = [
+    ...primary.flatMap((p) => (p.entity && !hidden.has(p.entity) ? [{ entity: p.entity, color: p.color }] : [])),
+    ...applyBadgeGroupOptions(candidates, options, hass),
+  ];
+  const seen = new Set<string>();
+  const badges: LovelaceBadgeConfig[] = [];
+  for (const badge of all) {
+    if (seen.has(badge.entity)) continue;
+    seen.add(badge.entity);
+    const showName = resolveShowName(badge.entity, !!badge.showName, namesVisible, namesHidden);
+    badges.push({
+      type: 'entity',
+      entity: badge.entity,
+      color: badge.color,
+      tap_action: { action: 'more-info' },
+      ...(showName ? { show_name: true } : {}),
+    });
+  }
+  return badges;
 }

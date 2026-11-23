@@ -1,10 +1,11 @@
 # Project status
 
-Updated: 2026-11-22
+Updated: 2026-11-23
 
 ## Current development state
 
 - Dashboard Strategy development version: 1.44.6. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.44.7 improves room badges (branch `codex/room-badge-improvements`): `hidden`/`names_*` now apply to the primary temperature/humidity badges, the replacement sensor skips appliance/server/outdoor readings and prefers devices with temperature and humidity, the badge classifier prefers `device_class` over whole-word name matches, and the editor diagnosis suggests a sensor for rooms without an area assignment. A live-state switch for `unavailable` primary sensors was deliberately not added because the strategy only regenerates on registry changes. Validation in Home Assistant is still pending.
 - Version 1.44.6 is maintenance without behavior changes: the three drag-and-drop implementations share `src/editor/drag-sort.ts` and the custom view/card/section/badge YAML handlers use `withParsedYaml()`, so `StrategyEditor.ts` drops to about 2,460 lines (branch `codex/split-editor-handlers`). Validation in Home Assistant is still pending.
 - Version 1.44.5 is maintenance without behavior changes: room option updates moved to pure functions in `src/editor/area-options-config.ts` and the weather-start layout logic to `src/editor/weather-start-layout.ts`, so `StrategyEditor.ts` drops to about 2,690 lines Released as v1.44.5; room options and the weather-start layout are confirmed in Home Assistant.
 - Version 1.44.4 moves js-yaml into its own lazy `yaml` chunk that the editor preloads in the background; YAML actions run through `withYaml()`. The editor chunk drops from about 284 KB to 241 KB and the webpack size warning is gone Released as v1.44.4; YAML editing, the card picker and the dashboard check are confirmed in Home Assistant.

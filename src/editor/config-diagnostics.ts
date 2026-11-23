@@ -6,7 +6,7 @@ import type { Simon42StrategyConfig } from '../types/strategy';
 import { getOptionMetadata } from '../utils/option-metadata';
 import { hasNormalUnknownState } from '../utils/availability-utils';
 import { getGroupedClimateMembers, getRegistryExclusionReason } from '../utils/entity-exclusion';
-import { getAreaPrimarySensorIssue, resolveAreaPrimarySensor } from '../utils/badge-utils';
+import { getAreaPrimarySensorIssue, pickAreaFallbackSensor, resolveAreaPrimarySensor } from '../utils/badge-utils';
 import { getEditableAreaEntities } from '../utils/area-entity-utils';
 import { findLabelExcludedOptionEntities } from '../utils/label-exclusion';
 
@@ -214,7 +214,8 @@ export function inspectAnalysis(analysis: ConfigAnalysis, hass: HomeAssistant): 
  * note when one cannot be shown (no state, hidden/disabled, no_dboard label)
  * and a visible room sensor replaces it, warn when no replacement exists, and
  * note when it is shown in the room header although softer dashboard rules
- * (category, hidden list) hide it elsewhere.
+ * (category, hidden list) hide it elsewhere, and suggest a visible room sensor
+ * for areas without an assignment (they get no automatic room badge).
  */
 function inspectAreaPrimarySensors(
   config: Simon42StrategyConfig,
@@ -229,7 +230,12 @@ function inspectAreaPrimarySensors(
     let candidates: ReturnType<typeof getEditableAreaEntities> | undefined;
     for (const kind of ['temperature', 'humidity'] as const) {
       const entityId = kind === 'temperature' ? area.temperature_entity_id : area.humidity_entity_id;
-      if (!entityId) continue;
+      if (!entityId) {
+        candidates ??= getEditableAreaEntities(area.area_id, hass, config);
+        const suggestion = pickAreaFallbackSensor(kind, candidates, hass);
+        if (suggestion) issues.push({ code: 'area_sensor_unassigned', severity: 'info', path, entityId: suggestion });
+        continue;
+      }
       const issue = getAreaPrimarySensorIssue(hass, entityId);
       if (issue) {
         candidates ??= getEditableAreaEntities(area.area_id, hass, config);

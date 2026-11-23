@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyBadgeGroupOptions,
+  buildRoomBadges,
+  pickAreaFallbackSensor,
   classifyBadgeSensor,
   getAreaPrimarySensorIssue,
   isCriticalBatteryBadge,
@@ -98,5 +100,65 @@ describe('badge regressions', () => {
     expect(getAreaPrimarySensorIssue(hass, 'sensor.upstream_label')).toBe('label');
     expect(getAreaPrimarySensorIssue(hass, 'sensor.hidden_temp')).toBe('hidden');
     expect(getAreaPrimarySensorIssue(hass, 'sensor.gone')).toBe('missing');
+  });
+});
+
+describe('badge improvements', () => {
+  it('lets device_class win over name heuristics', () => {
+    expect(classifyBadgeSensor('sensor', 'temperature', '°C', 'sensor.x_battery_temperature')).toBeNull();
+    expect(classifyBadgeSensor('sensor', 'temperature', 'K', 'sensor.x')).toBeNull();
+    expect(classifyBadgeSensor('sensor', undefined, '%', 'sensor.door_battery')).toBe('battery');
+    expect(classifyBadgeSensor('sensor', undefined, 'ppm', 'sensor.hall_co2')).toBe('co2');
+  });
+
+  it('matches name heuristics on whole words only', () => {
+    expect(classifyBadgeSensor('sensor', undefined, 'x', 'sensor.advocate_level')).toBeNull();
+    expect(classifyBadgeSensor('sensor', undefined, 'x', 'sensor.room_voc')).toBe('voc');
+    expect(classifyBadgeSensor('sensor', undefined, 'x', 'sensor.co2_hall')).toBe('co2');
+  });
+
+  it('applies hidden, names and de-duplication to primary badges', () => {
+    const hass = makeHass({
+      entities: [
+        { entity_id: 'sensor.t', state: '20' },
+        { entity_id: 'sensor.h', state: '40' },
+      ],
+    });
+    const primary = [
+      { entity: 'sensor.t', color: 'red' },
+      { entity: 'sensor.h', color: 'indigo' },
+    ];
+    expect(buildRoomBadges(primary, [], undefined, hass).map((b) => b.entity)).toEqual(['sensor.t', 'sensor.h']);
+    const hidden = buildRoomBadges(primary, [], { hidden: ['sensor.t'] }, hass);
+    expect(hidden.map((b) => b.entity)).toEqual(['sensor.h']);
+    const dup = buildRoomBadges(primary, [], { additional: ['sensor.t'], names_visible: ['sensor.h'] }, hass);
+    expect(dup.map((b) => b.entity)).toEqual(['sensor.t', 'sensor.h']);
+    expect(dup[1]).toMatchObject({ show_name: true });
+    expect(buildRoomBadges([{ entity: null, color: 'red' }], [], undefined, hass)).toEqual([]);
+  });
+
+  it('prefers a room sensor with temperature and humidity and skips appliances', () => {
+    const attrs = { device_class: 'temperature', unit_of_measurement: '°C' };
+    const hass = makeHass({
+      entities: [
+        { entity_id: 'sensor.nas_temperature', device_id: 'nas', state: '40', attributes: attrs },
+        { entity_id: 'sensor.a_temp', device_id: 'solo', state: '21', attributes: attrs },
+        { entity_id: 'sensor.b_temp', device_id: 'combo', state: '20', attributes: attrs },
+        {
+          entity_id: 'sensor.b_hum',
+          device_id: 'combo',
+          state: '50',
+          attributes: { device_class: 'humidity', unit_of_measurement: '%' },
+        },
+      ],
+    });
+    const candidates = [
+      { entity_id: 'sensor.nas_temperature', device_id: 'nas' },
+      { entity_id: 'sensor.a_temp', device_id: 'solo' },
+      { entity_id: 'sensor.b_temp', device_id: 'combo' },
+      { entity_id: 'sensor.b_hum', device_id: 'combo' },
+    ];
+    expect(pickAreaFallbackSensor('temperature', candidates, hass)).toBe('sensor.b_temp');
+    expect(pickAreaFallbackSensor('temperature', candidates.slice(0, 1), hass)).toBeNull();
   });
 });

@@ -3,12 +3,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type {
-  LovelaceViewConfig,
-  LovelaceCardConfig,
-  LovelaceSectionConfig,
-  LovelaceBadgeConfig,
-} from '../types/lovelace';
+import type { LovelaceViewConfig, LovelaceCardConfig, LovelaceSectionConfig } from '../types/lovelace';
 import type { AreaRegistryEntry } from '../types/registries';
 import type {
   RoomEntities,
@@ -27,14 +22,13 @@ import { localize } from '../utils/localize';
 import {
   BADGE_COLOR_MAP,
   ROOM_ENERGY_SENSOR_CLASSES,
-  applyBadgeGroupOptions,
+  buildRoomBadges,
   classifyBadgeSensor,
   isCriticalBatteryBadge,
   resolveAreaPrimarySensor,
   type BadgeCandidate,
   isDefaultShowName,
   selectBadgeEntitiesOfType,
-  resolveShowName,
 } from '../utils/badge-utils';
 import { createHeadingCard, parsedConfigToCards } from '../utils/lovelace-utils';
 import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
@@ -367,7 +361,6 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // Build auto-detected badge candidates
     const badgeOpts = groupsOptions.badges;
-    const hasBadgeConfig = !!badgeOpts;
 
     const candidates: BadgeCandidate[] = [];
 
@@ -417,28 +410,15 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       for (const id of sensorEntities.door) addCandidate(id, 'door', 'door');
     }
 
-    const filteredCandidates = applyBadgeGroupOptions(candidates, badgeOpts, hass);
-
-    // Resolve show_name per badge: default + config overrides
-    const namesVisible = hasBadgeConfig ? new Set<string>(badgeOpts.names_visible || []) : null;
-    const namesHidden = hasBadgeConfig ? new Set<string>(badgeOpts.names_hidden || []) : null;
-
-    // Convert to LovelaceBadgeConfig
-    const badges: LovelaceBadgeConfig[] = [];
-    if (primaryTemp)
-      badges.push({ type: 'entity', entity: primaryTemp, color: 'red', tap_action: { action: 'more-info' } });
-    if (primaryHumidity)
-      badges.push({ type: 'entity', entity: primaryHumidity, color: 'indigo', tap_action: { action: 'more-info' } });
-    for (const b of filteredCandidates) {
-      const showName = resolveShowName(b.entity, !!b.showName, namesVisible, namesHidden);
-      badges.push({
-        type: 'entity',
-        entity: b.entity,
-        color: b.color,
-        tap_action: { action: 'more-info' },
-        ...(showName ? { show_name: true } : {}),
-      });
-    }
+    const badges = buildRoomBadges(
+      [
+        { entity: primaryTemp, color: 'red' },
+        { entity: primaryHumidity, color: 'indigo' },
+      ],
+      candidates,
+      badgeOpts,
+      hass
+    );
 
     // === SECTIONS ===
     // Custom cards (position 'top') always come first, before all auto-stacks.
