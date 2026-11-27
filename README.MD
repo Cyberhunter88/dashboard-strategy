@@ -1,16 +1,21 @@
 ﻿# Dashboard Strategy
 
+<!-- ha-marketplace:exclude-start -->
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/v/release/Cyberhunter88/dashboard-strategy?style=for-the-badge&color=green)](https://github.com/Cyberhunter88/dashboard-strategy/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/Cyberhunter88/dashboard-strategy?style=for-the-badge&color=yellow)](https://github.com/Cyberhunter88/dashboard-strategy/stargazers)
 ![AI-Assisted](https://img.shields.io/badge/AI--Assisted-blue?style=for-the-badge)
 [![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-lightgrey?style=for-the-badge)](LICENSE)
 
+<!-- ha-marketplace:exclude-end -->
+
 Eine modulare und hochkonfigurierbare Dashboard-Strategy für Home Assistant, die automatisch Views basierend auf Bereichen, Entitäten und deren Zuständen generiert.
 
-Aktueller Entwicklungsstand: **1.35.1**
+<!-- ha-marketplace:exclude-start -->
+Aktueller Entwicklungsstand: **1.45.0**
 
 Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RELEASE.md) dokumentiert.
+<!-- ha-marketplace:exclude-end -->
 
 
 ---
@@ -50,20 +55,27 @@ Die Versionsquelle und der automatisierte Release-Ablauf sind in [RELEASE.md](RE
 - **Reaktive Updates** — Echtzeit-Aktualisierung via LitElement Custom Cards
 - **Mehrsprachig** — Deutsch, Englisch, Ungarisch, Polnisch und Russisch, automatische Erkennung aus HA-Einstellungen, Fallback auf Englisch
 - **Performance-optimiert** — Code-Split Bundles, Registry-Caching, Tile-Card-Pooling
+- **Raum als Abschnitt** — Ab HA 2026.11 lässt sich ein generierter Raum als „Community-Abschnitt“ in jedes manuelle Dashboard einbauen (`custom:dashboard-strategy-room`)
+- **Aktuelle HA-Bedienelemente** — Timer-Tasten ab HA 2026.10, pulsierende Alert-Badges für Rauch- und Gasmelder ab HA 2026.11, optional Farbton-Regler und Solltemperatur-Tasten (`extended_tile_controls`)
 
+<!-- ha-marketplace:exclude-start -->
 ## Installation
 
-### HACS (empfohlen)
+### Marketplace (Home Assistant 2026.11+) oder HACS (empfohlen)
+
+Ab Home Assistant 2026.11 ist HACS als **Marketplace** in Home Assistant eingebaut; bestehende HACS-Installationen werden automatisch übernommen. Der Button funktioniert für beide und öffnet ab 2026.11 den Marketplace.
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Cyberhunter88&repository=dashboard-strategy&category=plugin)
 
 <details>
 <summary>Alternative zum Button</summary>
 
-1. Gehe zu HACS → **Custom repositories**
-2. Füge das Repository hinzu: `https://github.com/Cyberhunter88/dashboard-strategy`
-3. Lade die "Dashboard Strategy" herunter
-4. Klicke nach dem Download in HACS auf die Meldung "Neu laden", um die Installation abzuschließen
+1. Öffne **Einstellungen → Marketplace** (bis HA 2026.10: HACS) → **Benutzerdefinierte Repositories**
+2. Füge das Repository hinzu: `https://github.com/Cyberhunter88/dashboard-strategy` (Typ: Dashboard)
+3. Lade die "Dashboard Strategy" herunter; die Dashboard-Ressource wird automatisch eingetragen
+4. Lade den Browser neu, um die Installation abzuschließen
+
+Der Marketplace legt die Dateien unter `/local/community/dashboard-strategy/` ab; alte `/hacsfiles/`-Pfade funktionieren weiter. Ab Home Assistant 2026.12 installiert er das ZIP-Paket des Releases mit allen nachgeladenen Dateien, ältere Versionen nutzen die einzelnen Release-Dateien.
 
 </details>
 
@@ -86,6 +98,7 @@ lovelace:
 3. Lade Home Assistant neu. Bei einem Update kann zusätzlich ein harter Browser-Reload nötig sein.
 
 </details>
+<!-- ha-marketplace:exclude-end -->
 
 ## Voraussetzungen
 
@@ -124,6 +137,10 @@ Mehr zur Filterung findest du im Abschnitt [Entity-Filterung](docs/configuration
 <p align="center">
   <img src="https://raw.githubusercontent.com/Cyberhunter88/dashboard-strategy/main/assets/simon42-Strategy-Download-DashboardAnlegen-StrategyCodeEinfugen.webp" alt="Dashboard erstellen — Schritt für Schritt" width="800" />
 </p>
+
+**Am schnellsten:** **Einstellungen** → **Dashboards** → **Dashboard hinzufügen** → unter den Community-Dashboards **Dashboard Strategy** wählen. Titel und Icon sind vorbelegt, das Dashboard ist sofort einsatzbereit.
+
+Alternativ über den Raw-Konfigurationseditor:
 
 1. **Einstellungen** → **Dashboards** → **Dashboard hinzufügen**
 2. **Neues Dashboard von Grund auf**, Name vergeben
@@ -236,7 +253,23 @@ Die Hauptseite des Dashboards zeigt eine Übersicht mit folgenden Bereichen:
 
 **Melder & Sensoren in Räumen** — `show_sensors_section_in_rooms: true` zeigt Bewegungs-, Präsenz-, Wasser-, Rauch-, Gas-, CO-, Vibrations-, Sabotage- und Problem-Binärsensoren als Kacheln mit letzter Änderung. Die Raum-Badges bleiben unverändert; Tür- und Fensterkontakte bleiben bei `show_window_contacts_in_rooms`/`show_door_contacts_in_rooms`. Standardmäßig aus.
 
-**Aktive Timer** — `show_timers_section: true` ergänzt die Übersicht um einen Abschnitt mit allen laufenden oder pausierten Timern. Er blendet sich live aus, sobald kein Timer läuft, und lässt sich wie die anderen Abschnitte frei platzieren.
+**Aktive Timer** — `show_timers_section: true` ergänzt die Übersicht um einen Abschnitt mit allen laufenden oder pausierten Timern. Er blendet sich live aus, sobald kein Timer läuft, und lässt sich wie die anderen Abschnitte frei platzieren. Ab Home Assistant 2026.10 tragen Timer-Kacheln (auch im Helfer-Block der Räume) native Start-, Pause- und Abbrechen-Tasten.
+
+**Erweiterte Kachel-Steuerung** — `extended_tile_controls: true` ergänzt ab Home Assistant 2026.11 Farblichter um den Farbton-Regler und Thermostate mit Solltemperatur um +/- Tasten (Lichter-, Klima- und Raum-Ansichten). Die zusätzlichen Bedienelemente stehen unter der Kachel, deshalb ist die Option standardmäßig aus.
+
+**Rauch- & Gasmelder als Alert-Badge** — Ab Home Assistant 2026.11 erscheinen Rauch- und Gasmelder (`binary_sensor`) in den Raum-Badges als natives Alert-Badge, das bei Alarm rot hinterlegt ist und pulsiert. Ältere Versionen behalten das bisherige Badge.
+
+**Raum als Abschnitt in anderen Dashboards** — Ab Home Assistant 2026.11 steht beim Hinzufügen eines Abschnitts unter **Automatischer Abschnitt → Community-Abschnitte** der Eintrag **Dashboard Strategy: Room** bereit. Er erzeugt einen Raum wie die Raum-Ansicht (Lichter, Klima, Rollos, Medien …) als einzelnen Abschnitt in jedem manuellen Abschnitts-Dashboard. Im Abschnitts-Editor wählst du den Bereich; weitere Optionen der Strategy (z.B. `show_locks_in_rooms`) lassen sich im YAML ergänzen:
+
+```yaml
+strategy:
+  type: custom:dashboard-strategy-room
+  area: wohnzimmer
+  show_heading: true # Raumname als Überschrift mit den Raum-Badges
+  show_locks_in_rooms: true
+```
+
+**Namen** — Ab Home Assistant 2026.4 setzt die Strategy Anzeigenamen mit derselben Funktion zusammen wie die eingebauten Karten (Gerät + Entität) und entfernt in Räumen wie bisher Bereichs- und Gerätenamen. Ältere Versionen nutzen weiter `friendly_name`.
 
 ```yaml
 strategy:
@@ -286,15 +319,19 @@ Die Strategy erkennt automatisch die Sprache aus deinen Home Assistant Einstellu
 |---------|--------|
 | 🇩🇪 Deutsch | Vollständig |
 | 🇬🇧 English | Vollständig |
-| 🇷🇺 Русский | Upstream-Basis mit englischem Fallback für Fork-spezifische Optionen |
+| 🇭🇺 Magyar | Vollständig |
+| 🇵🇱 Polski | Vollständig |
+| 🇷🇺 Русский | Vollständig |
 
 **Weitere Sprachen hinzufügen:** Erstelle nach dem Muster der bestehenden Dateien zwei Dateien: `src/translations/<code>.json` (z.B. `fr.json`) für die Dashboard-Texte und `src/translations/editor/<code>.json` für die Editor-Texte. Trage die Sprache je mit einer Zeile in `src/utils/localize.ts` und `src/editor/editor-translations.ts` ein und öffne einen Pull Request. Der Aufwand ist gering — im Wesentlichen müssen nur die Strings übersetzt werden.
 
+<!-- ha-marketplace:exclude-start -->
 ## Contributing
 
 Issues und Pull Requests sind willkommen! Bitte teste PRs gründlich in einem lokalen HA-Setup.
 
 Entwicklerhinweise zu Datenfluss, Modulen, Caches und Tests stehen in der [Architektur](docs/architecture.md). Der [Release-Ablauf](RELEASE.md) beschreibt die Versionierung aus `package.json`.
+<!-- ha-marketplace:exclude-end -->
 
 ## Lizenz
 

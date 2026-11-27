@@ -28,3 +28,6 @@ playwright-report/
 test-results/
 *.log
 *.tsbuildinfo
+
+# Marketplace ZIP release asset (built by scripts/release-zip.mjs in CI)
+dist-release/

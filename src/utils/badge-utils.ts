@@ -306,6 +306,8 @@ export interface BadgeCandidate {
   entity: string;
   color: string;
   showName?: boolean;
+  /** Render as the native HA 2026.11+ alert badge (colored and pulsing while active). */
+  alert?: boolean;
 }
 
 /** Apply badge-only deselection and explicitly added room badges. */
@@ -374,6 +376,17 @@ export function buildRoomBadges(
     if (seen.has(badge.entity)) continue;
     seen.add(badge.entity);
     const showName = resolveShowName(badge.entity, !!badge.showName, namesVisible, namesHidden);
+    if (badge.alert) {
+      badges.push({
+        type: 'alert',
+        entity: badge.entity,
+        alert_color: badge.color,
+        pulse: true,
+        tap_action: { action: 'more-info' },
+        ...(showName ? { show_name: true } : {}),
+      });
+      continue;
+    }
     badges.push({
       type: 'entity',
       entity: badge.entity,

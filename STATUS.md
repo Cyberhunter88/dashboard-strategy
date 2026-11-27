@@ -1,10 +1,11 @@
 # Project status
 
-Updated: 2026-11-23
+Updated: 2026-11-27
 
 ## Current development state
 
-- Dashboard Strategy development version: 1.44.6. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Dashboard Strategy development version: 1.45.0. `package.json` is the version source; source marker and tracked distribution must stay synchronized.
+- Version 1.45.0 (branch `codex/ha-2026-11-compat`) adapts the strategy to Home Assistant 2026.11: editor text fields use `ha-input` (2026.11 no longer ships `ha-textfield`, so they were invisible), the dashboard picker registration uses the bare type name (it produced `custom:custom:dashboard-strategy`), the editor font follows `--ha-font-*`, and display names use `hass.formatEntityName`. New: the section strategy `custom:dashboard-strategy-room`, timer tile actions (2026.10+), alert badges for smoke/gas detectors (2026.11+), the opt-in `extended_tile_controls`, and a Marketplace ZIP release asset for 2026.12+. The live instance runs 2026.11.3 and loads the resource from `/local/community/dashboard-strategy/`. Validation in Home Assistant is still pending, especially the editor text fields, the dashboard picker entry and the room section in the section dialog.
 - Version 1.44.7 improves room badges (branch `codex/room-badge-improvements`): `hidden`/`names_*` now apply to the primary temperature/humidity badges, the replacement sensor skips appliance/server/outdoor readings and prefers devices with temperature and humidity, the badge classifier prefers `device_class` over whole-word name matches, and the editor diagnosis suggests a sensor for rooms without an area assignment. A live-state switch for `unavailable` primary sensors was deliberately not added because the strategy only regenerates on registry changes. Validation in Home Assistant is still pending.
 - Version 1.44.6 is maintenance without behavior changes: the three drag-and-drop implementations share `src/editor/drag-sort.ts` and the custom view/card/section/badge YAML handlers use `withParsedYaml()`, so `StrategyEditor.ts` drops to about 2,460 lines (branch `codex/split-editor-handlers`). Validation in Home Assistant is still pending.
 - Version 1.44.5 is maintenance without behavior changes: room option updates moved to pure functions in `src/editor/area-options-config.ts` and the weather-start layout logic to `src/editor/weather-start-layout.ts`, so `StrategyEditor.ts` drops to about 2,690 lines Released as v1.44.5; room options and the weather-start layout are confirmed in Home Assistant.
@@ -32,6 +33,7 @@ Updated: 2026-11-23
 
 - Split further parts out of `src/editor/StrategyEditor.ts` (about 2,460 lines; remaining candidates: the area entity loading/cache and the area custom card handlers, and the six host facade builders at the end of the class). `CustomContentPanel.ts` still contains the custom cards/sections list renderers that are disabled by a hard-coded `isWeatherStart = true`; decide whether to remove them.
 - Replace the remaining `Record<string, any>` types for user YAML (`parsed_config` and its helpers in `src/types/strategy.ts`, `lovelace-utils.ts`, the card picker and `StrategyEditor.ts`) and the `LovelaceCardConfig` index signature with `unknown`; this touches many call sites and tests. The `eslint-disable` comments that remain are intentional (webpack public path, getter facades in `StrategyEditor.ts`).
+- Decide when to raise `hacs.json` `homeassistant` to `2026.12.0` and ship only the ZIP (the Marketplace guide suggests keeping single files for about six months).
 - Evaluate the major updates `js-yaml` 5, `typescript` 7 and `vitest` 5 separately; they are deliberately not part of 1.42.0.
 - Validate the cross-platform pre-push hook on CachyOS and Windows in each local clone, and configure the shared Codex Git secret scanner when available.
 - Resolve the historical credential finding through private coordination; do not rewrite any published branch without explicit approval.

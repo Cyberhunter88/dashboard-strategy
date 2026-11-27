@@ -239,6 +239,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `hide_grouped_climate_members` | boolean | `true` | Thermostate ausblenden, die Better Thermostat oder eine Klimagruppe bereits steuert; die steuernde Entität bleibt sichtbar |
 | `show_window_contacts_in_rooms` | boolean | `false` | Fensterkontakte als Badges in Raum-Views |
 | `show_door_contacts_in_rooms` | boolean | `false` | Türkontakte als Badges in Raum-Views |
+| `extended_tile_controls` | boolean | `false` | Ab HA 2026.11: Farblichter bekommen zusätzlich den Farbton-Regler (`light-color`), Thermostate mit Solltemperatur +/- Tasten (`target-temperature`). Gilt für Lichter-, Klima- und Raum-Views; die Bedienelemente stehen unter der Kachel |
 | `use_default_area_sort` | boolean | `false` | HA-Sortierung für Bereiche verwenden |
 | `areas_display.hidden` | string[] | `[]` | Ausgeblendete Bereiche |
 | `areas_display.order` | string[] | `[]` | Reihenfolge der Bereiche |

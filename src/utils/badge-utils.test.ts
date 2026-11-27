@@ -137,6 +137,22 @@ describe('badge improvements', () => {
     expect(buildRoomBadges([{ entity: null, color: 'red' }], [], undefined, hass)).toEqual([]);
   });
 
+  it('renders alert candidates as native pulsing alert badges', () => {
+    const hass = makeHass({ entities: [{ entity_id: 'binary_sensor.smoke', state: 'off' }] });
+    const badges = buildRoomBadges([], [{ entity: 'binary_sensor.smoke', color: 'red', alert: true }], undefined, hass);
+    expect(badges).toEqual([
+      {
+        type: 'alert',
+        entity: 'binary_sensor.smoke',
+        alert_color: 'red',
+        pulse: true,
+        tap_action: { action: 'more-info' },
+      },
+    ]);
+    const plain = buildRoomBadges([], [{ entity: 'binary_sensor.smoke', color: 'red' }], undefined, hass);
+    expect(plain[0]).toMatchObject({ type: 'entity', color: 'red' });
+  });
+
   it('prefers a room sensor with temperature and humidity and skips appliances', () => {
     const attrs = { device_class: 'temperature', unit_of_measurement: '°C' };
     const hass = makeHass({

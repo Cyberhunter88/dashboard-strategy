@@ -16,6 +16,7 @@ import {
   type EntitySelectOption,
   type OptionPanelHost,
 } from './option-panel-host';
+import { renderTextInput } from '../text-input';
 
 interface EntityListOptions {
   key: EntityListKey;
@@ -225,20 +226,18 @@ export function renderFavoritesSection(host: OptionPanelHost): TemplateResult {
       ${toggleRow(host, 'favorites_hide_last_changed', { labelKey: 'editor.hide_last_changed', description: false })}
 
       <div class="subsection-title">${localize('editor.light_favorites')}</div>
-      <ha-textfield
-        .value=${lightFavorites.join(', ')}
-        label=${localize('editor.light_favorites_entities')}
-        helper=${localize('editor.light_favorites_desc')}
-        @change=${(event: Event) => {
-          const entities = parseEntityList((event.target as HTMLInputElement).value, (entry) =>
-            entry.startsWith('light.')
-          );
+      ${renderTextInput({
+        value: lightFavorites.join(', '),
+        label: localize('editor.light_favorites_entities'),
+        hint: localize('editor.light_favorites_desc'),
+        onChange: (value) => {
+          const entities = parseEntityList(value, (entry) => entry.startsWith('light.'));
           host.update((config) => {
             if (entities.length > 0) config.light_favorite_entities = entities;
             else delete config.light_favorite_entities;
           });
-        }}
-      ></ha-textfield>
+        },
+      })}
 
       <div class="subsection-title">${localize('editor.quick_actions')}</div>
       ${renderEntityList(host, {

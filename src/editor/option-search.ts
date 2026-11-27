@@ -76,6 +76,7 @@ export const OPTION_PANELS: Readonly<Record<keyof typeof OPTION_METADATA, Editor
   show_helpers_section_in_rooms: 'areaOptions',
   show_sensors_section_in_rooms: 'areaOptions',
   show_cover_controls_in_rooms: 'areaOptions',
+  extended_tile_controls: 'areaOptions',
   show_cameras_in_rooms: 'areaOptions',
   camera_live_toggle: 'areaOptions',
   camera_pause_when_hidden: 'areaOptions',

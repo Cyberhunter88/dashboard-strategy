@@ -4,6 +4,7 @@ import { isEntityRegistryHidden, type EntityRegistryEntry } from '../types/regis
 import type { RoomEntities, Simon42StrategyConfig } from '../types/strategy';
 import { classifyBadgeSensor, isCriticalBatteryBadge, isEnergyBlockSensor } from './badge-utils';
 import { isEntityDashboardLabelExcluded } from './entity-exclusion';
+import { formatEntityDisplayName } from './name-utils';
 
 const UPS_DEVICE_CLASSES = new Set(['duration', 'apparent_power', 'power', 'voltage']);
 const UPS_ID_PATTERN = /load|runtime|time_left|input_voltage|status/;
@@ -238,7 +239,7 @@ export function getAvailableBadgeEntities(
     return [
       {
         entity_id: entity.entity_id,
-        name: (state.attributes?.friendly_name as string) || entity.entity_id.split('.')[1].replace(/_/g, ' '),
+        name: formatEntityDisplayName(entity.entity_id, hass),
       },
     ];
   });

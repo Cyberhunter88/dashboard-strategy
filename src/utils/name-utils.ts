@@ -58,12 +58,37 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// -- Helper: extract friendly name or fallback from entity ID ---------
+// -- Helper: extract display name or fallback from entity ID ----------
+
+const DEVICE_ENTITY_NAME = [{ type: 'device' }, { type: 'entity' }] as const;
+
+/**
+ * Display name the way Home Assistant's own cards compose it: HA 2026.4+
+ * provides `hass.formatEntityName` (device name + entity name), which replaces
+ * the `friendly_name` attribute that HA plans to deprecate. Older versions and
+ * entities without a usable composed name fall back to `friendly_name` and
+ * finally to the object id. The space separator keeps device-prefix stripping
+ * working on the composed name.
+ */
+export function formatEntityDisplayName(entityId: string, hass: HomeAssistant): string {
+  const state = hass.states[entityId];
+  const fallback = entityId.split('.')[1]?.replace(/_/g, ' ') || entityId;
+  if (!state) return fallback;
+  if (typeof hass.formatEntityName === 'function') {
+    try {
+      const composed = hass.formatEntityName(state, [...DEVICE_ENTITY_NAME], { separator: ' ' }).trim();
+      if (composed) return composed;
+    } catch {
+      // Fall through to the legacy attribute.
+    }
+  }
+  const friendly = state.attributes?.friendly_name;
+  return typeof friendly === 'string' && friendly ? friendly : fallback;
+}
 
 function getFriendlyName(entityId: string, hass: HomeAssistant): string | null {
-  const state = hass.states[entityId];
-  if (!state) return null;
-  return (state.attributes?.friendly_name as string | undefined) ?? entityId.split('.')[1].replace(/_/g, ' ');
+  if (!hass.states[entityId]) return null;
+  return formatEntityDisplayName(entityId, hass);
 }
 
 /**
@@ -162,8 +187,8 @@ export function stripCoverType(entityId: string, hass: HomeAssistant): string {
     return name;
   }
 
-  // Fallback to original friendly name
-  return (state.attributes?.friendly_name as string | undefined) ?? entityId.split('.')[1].replace(/_/g, ' ');
+  // Fallback to the full display name
+  return formatEntityDisplayName(entityId, hass);
 }
 
 /**

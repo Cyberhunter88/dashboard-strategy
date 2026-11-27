@@ -10,6 +10,7 @@ import type { HomeAssistant } from '../types/homeassistant';
 import type { LovelaceCardConfig, LovelaceCondition, LovelaceSectionConfig } from '../types/lovelace';
 import { Registry } from '../Registry';
 import { localize } from '../utils/localize';
+import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 
 export const ACTIVE_TIMER_STATES = ['active', 'paused'] as const;
 
@@ -38,12 +39,13 @@ export function createTimersSection(
   }
 
   for (const entityId of timerIds) {
-    cards.push({
-      type: 'tile',
-      entity: entityId,
-      vertical: false,
-      visibility: [activeCondition(entityId)],
-    });
+    // HA 2026.10+ adds native start/pause/cancel buttons to the tile.
+    cards.push(
+      buildAdaptiveTileCardConfig(hass, entityId, {
+        vertical: false,
+        visibility: [activeCondition(entityId)],
+      })
+    );
   }
 
   return {

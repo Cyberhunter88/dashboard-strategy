@@ -8,11 +8,13 @@
 
 import type { HomeAssistant } from './types/homeassistant';
 import type { Simon42StrategyConfig } from './types/strategy';
-import type { LovelaceConfig, LovelaceViewConfig } from './types/lovelace';
+import type { LovelaceConfig, LovelaceSectionConfig, LovelaceViewConfig } from './types/lovelace';
+import type { RoomSectionStrategyConfig } from './sections/RoomSection';
 import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
+import { registerCustomStrategy, type CustomStrategyEntry } from './utils/custom-strategy-registry';
 
-const STRATEGY_VERSION = '1.44.7'; // synchronized from package.json
+const STRATEGY_VERSION = '1.45.0'; // synchronized from package.json
 
 declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
@@ -37,8 +39,9 @@ for (const candidate of entryUrls) {
   }
 }
 
-// Home Assistant serves HACS files with a long-lived cache policy. The entry
-// resource has HACS' `hacstag` cache buster, but Webpack's lazy chunks did not.
+// Home Assistant serves Marketplace/HACS files with a long-lived cache policy.
+// The entry resource carries the installer's `?v=`/`hacstag` cache buster, but
+// Webpack's lazy chunks did not.
 // Keep emitted filenames unchanged while versioning every chunk request as well.
 const getChunkScriptFilename = __webpack_get_script_filename__;
 __webpack_get_script_filename__ = (chunkId) => `${getChunkScriptFilename(chunkId)}?v=${STRATEGY_VERSION}`;
@@ -62,6 +65,14 @@ const modulesPromise = Promise.all([import('./loaders/core-modules'), import('./
     throw new Error(`Dashboard Strategy runtime modules could not be loaded${detail}`);
   }
 );
+
+function getStrategy(tag: string): StrategyGenerator {
+  const strategy = customElements.get(tag) as (CustomElementConstructor & Partial<StrategyGenerator>) | undefined;
+  if (!strategy || typeof strategy.generate !== 'function') {
+    throw new Error(`Dashboard Strategy module registration missing: ${tag}`);
+  }
+  return strategy as CustomElementConstructor & StrategyGenerator;
+}
 
 // Attach a rejection handler immediately so an early network failure does not
 // surface as an unhandled promise rejection before Home Assistant calls generate().
@@ -113,14 +124,6 @@ class Simon42DashboardStrategy extends HTMLElement {
     // Non-English translations are separate chunks; load before views are resolved.
     await loadLanguage(hass);
     t('language ready');
-
-    const getStrategy = (tag: string): StrategyGenerator => {
-      const strategy = customElements.get(tag) as (CustomElementConstructor & Partial<StrategyGenerator>) | undefined;
-      if (!strategy || typeof strategy.generate !== 'function') {
-        throw new Error(`Dashboard Strategy module registration missing: ${tag}`);
-      }
-      return strategy as CustomElementConstructor & StrategyGenerator;
-    };
 
     Registry.initialize(hass, config);
     t('registry initialized');
@@ -285,33 +288,77 @@ class Simon42DashboardStrategy extends HTMLElement {
   }
 }
 
-// Register strategy custom element IMMEDIATELY — no heavy imports needed.
-// This ensures HA's 5-second timeout is satisfied even on slow networks.
-customElements.define('ll-strategy-dashboard-strategy', Simon42DashboardStrategy);
+/**
+ * HA 2026.11+ section strategy `custom:dashboard-strategy-room`: one generated
+ * room as a section that any manual sections dashboard can embed via
+ * "Automatic section" → "Community sections".
+ */
+class DashboardStrategyRoomSection extends HTMLElement {
+  static async generate(config: RoomSectionStrategyConfig, hass: HomeAssistant): Promise<LovelaceSectionConfig> {
+    const [runtime] = await modulesPromise;
+    const { areaId, showHeading, dashboardConfig: rawConfig } = runtime.splitRoomSectionConfig(config);
+    let dashboardConfig = runtime.applyDashboardLabelExclusion(normalizeStrategyConfig(rawConfig), hass);
+    await runtime.loadLanguage(hass);
+    runtime.Registry.initialize(hass, dashboardConfig);
+    dashboardConfig = runtime.resolveAutomaticFeatures(dashboardConfig, hass);
+    runtime.Registry.initialize(hass, dashboardConfig);
 
-declare global {
-  interface Window {
-    customStrategies?: Array<{
-      type: string;
-      strategyType: 'dashboard' | 'view' | 'section';
-      name?: string;
-      description?: string;
-      documentationURL?: string;
-    }>;
+    const area = areaId ? hass.areas[areaId] : undefined;
+    if (!area) return runtime.buildMissingAreaSection(areaId);
+
+    const areaOptions = dashboardConfig.areas_options?.[area.area_id];
+    const view = await getStrategy('ll-strategy-dashboard-strategy-view-room').generate(
+      {
+        area,
+        groups_options: areaOptions?.groups_options || {},
+        custom_cards: areaOptions?.custom_cards || [],
+        dashboardConfig,
+      },
+      hass
+    );
+    return runtime.buildRoomSection(runtime.withUnavailableEntitiesHidden(view, dashboardConfig), area, showHeading);
+  }
+
+  static async getStubConfig(hass: HomeAssistant): Promise<RoomSectionStrategyConfig> {
+    const [runtime] = await modulesPromise;
+    const area = runtime.pickStubArea(hass);
+    return { type: runtime.ROOM_SECTION_STRATEGY_TYPE, ...(area ? { area } : {}) };
+  }
+
+  static async getConfigElement(): Promise<HTMLElement> {
+    await import('./editor/RoomSectionEditor');
+    return document.createElement('dashboard-strategy-room-section-editor');
   }
 }
 
-window.customStrategies = window.customStrategies || [];
-if (!window.customStrategies.some((strategy) => strategy.type === 'custom:dashboard-strategy')) {
-  window.customStrategies.push({
-    type: 'custom:dashboard-strategy',
-    strategyType: 'dashboard',
-    name: 'Dashboard Strategy',
-    description: 'Automatically generated dashboard from areas, devices and entities with summaries and room views.',
-    documentationURL: 'https://github.com/Cyberhunter88/dashboard-strategy',
-  });
+// Register strategy custom elements IMMEDIATELY — no heavy imports needed.
+// This ensures HA's 5-second timeout is satisfied even on slow networks.
+customElements.define('ll-strategy-dashboard-strategy', Simon42DashboardStrategy);
+customElements.define('ll-strategy-section-dashboard-strategy-room', DashboardStrategyRoomSection);
+
+declare global {
+  interface Window {
+    customStrategies?: CustomStrategyEntry[];
+  }
 }
 
+const DOCUMENTATION_URL = 'https://github.com/Cyberhunter88/dashboard-strategy';
+const customStrategies = (window.customStrategies = window.customStrategies || []);
+registerCustomStrategy(customStrategies, {
+  type: 'dashboard-strategy',
+  strategyType: 'dashboard',
+  name: 'Dashboard Strategy',
+  description: 'Automatically generated dashboard from areas, devices and entities with summaries and room views.',
+  documentationURL: DOCUMENTATION_URL,
+});
+registerCustomStrategy(customStrategies, {
+  type: 'dashboard-strategy-room',
+  strategyType: 'section',
+  name: 'Dashboard Strategy: Room',
+  description: 'One room generated like a Dashboard Strategy room view: lights, climate, covers, media and more.',
+  documentationURL: DOCUMENTATION_URL,
+});
+
 // Keep the version literal in the production bundle: the CI artifact check
-// validates this exact marker before HACS can publish the release.
+// validates this exact marker before the release is published.
 console.log(`Dashboard Strategy v${STRATEGY_VERSION} loaded`);

@@ -207,6 +207,8 @@
     "show_window_contacts_in_rooms_desc": "Pokazuje kontaktrony okien jako plakietki w odpowiednich widokach pomieszczeń.",
     "show_door_contacts_in_rooms": "Pokaż kontaktrony drzwi w widokach pomieszczeń",
     "show_door_contacts_in_rooms_desc": "Pokazuje kontaktrony drzwi jako plakietki w odpowiednich widokach pomieszczeń.",
+    "extended_tile_controls": "Rozszerzone sterowanie kafelków",
+    "extended_tile_controls_desc": "Kolorowe światła otrzymują dodatkowo suwak odcienia, a termostaty przyciski +/- temperatury docelowej (widoki świateł, klimatu i pomieszczeń, od Home Assistant 2026.11). Elementy sterujące pojawiają się pod kafelkiem.",
     "use_default_area_sort": "Użyj sortowania Home Assistant",
     "use_default_area_sort_desc": "Używa kolejności obszarów z Home Assistant zamiast kolejności skonfigurowanej tutaj.",
     "areas_manage_desc": "Wybierz, które obszary mają być wyświetlane na dashboardzie i w jakiej kolejności. Rozwiń obszary, aby zarządzać poszczególnymi encjami.",

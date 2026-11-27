@@ -5,6 +5,7 @@ import { resolveShowName } from '../../utils/badge-utils';
 import { localize } from '../../utils/localize';
 import type { Simon42DashboardStrategyEditor } from '../StrategyEditor';
 import { parseEditorYamlConfig, withYaml } from '../editor-yaml';
+import { formatEntityDisplayName } from '../../utils/name-utils';
 type PanelHost = ReturnType<Simon42DashboardStrategyEditor['createRoomOptionsHost']>;
 
 interface DomainGroup {
@@ -224,8 +225,7 @@ export function renderAreaEntities(
   const pushPickerEntity = (entityId: string): void => {
     if (!entityId || seenPickerEntities.has(entityId)) return;
     seenPickerEntities.add(entityId);
-    const stateObj = hass.states[entityId];
-    const name = stateObj?.attributes.friendly_name || entityId.split('.')[1]?.replace(/_/g, ' ') || entityId;
+    const name = formatEntityDisplayName(entityId, hass);
     areaPickerEntities.push({ entity_id: entityId, name });
   };
   for (const group of domainGroups) {
@@ -294,8 +294,7 @@ export function renderAreaEntities(
                 ? html`
                     <div class="entity-list" data-area-id=${areaId} data-group=${group.key}>
                       ${entities.map((entityId) => {
-                        const stateObj = hass.states[entityId];
-                        const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                        const name = formatEntityDisplayName(entityId, hass);
                         const isEntityHidden = hiddenInGroup.includes(entityId);
                         return html`
                           <div class="entity-item">
@@ -549,8 +548,7 @@ export function renderBadgeGroup(
           ? html`
               <div class="entity-list" data-area-id=${areaId} data-group="badges">
                 ${badgeCandidates.map((entityId) => {
-                  const stateObj = hass.states[entityId];
-                  const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                  const name = formatEntityDisplayName(entityId, hass);
                   const isHidden = hiddenInBadges.includes(entityId);
                   const showName = isNameShown(entityId);
 
@@ -587,8 +585,7 @@ export function renderBadgeGroup(
                     ? html`
                         <div class="badge-separator">${localize('editor.badges_additional')}</div>
                         ${additionalBadges.map((entityId) => {
-                          const stateObj = hass.states[entityId];
-                          const name = stateObj?.attributes.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+                          const name = formatEntityDisplayName(entityId, hass);
                           const showName = isNameShown(entityId);
 
                           return html`

@@ -84,7 +84,20 @@ export interface HomeAssistant {
   formatEntityAttributeValue(stateObj: HassEntity, attribute: string, value?: unknown): string;
 
   formatEntityAttributeName(stateObj: HassEntity, attribute: string): string;
+
+  /**
+   * HA 2026.4+: compose an entity name the way built-in cards do, e.g.
+   * `[{ type: 'device' }, { type: 'entity' }]`. Missing on older versions.
+   */
+  formatEntityName?(
+    stateObj: HassEntity,
+    name?: string | EntityNameItem | EntityNameItem[],
+    options?: { separator?: string }
+  ): string;
 }
+
+export type EntityNameItem =
+  { type: 'floor' | 'area' | 'parent_device' | 'device' | 'entity' } | { type: 'text'; text: string };
 
 // Re-export commonly used websocket types for convenience
 export type { HassEntities, HassEntity, HassConfig, HassServices, Connection, Auth, MessageBase, HassServiceTarget };
