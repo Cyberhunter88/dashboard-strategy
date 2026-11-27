@@ -235,6 +235,8 @@
     "section_advanced": "Funkcje zaawansowane",
     "section_area_views": "Obszary i własne widoki",
     "area_view_override_intro": "Zarządzaj obszarami lub rozwiń jeden z nich, aby wkleić pełny widok Lovelace jako YAML.",
+    "area_camera_streams_title": "Strumienie kamer go2rtc",
+    "area_camera_streams_help": "Jeden strumień w wierszu: nazwa strumienia go2rtc (lub adres URL), opcjonalnie z „| Nazwa wyświetlana”. Strumienie pojawiają się w bloku kamer tego pomieszczenia jako karty WebRTC i wymagają karty custom:webrtc-camera, ale nie encji kamery. Dalsze opcje, takie jak hd_url, można ustawić w YAML i są zachowywane.",
     "area_view_override_title": "Własny widok obszaru",
     "area_view_override_help": "YAML zastępuje automatycznie wygenerowany widok obszaru. Tytuł, ścieżka i ikona nadal pochodzą z obszaru Home Assistant.",
     "area_view_override_remove": "Usuń własny widok",

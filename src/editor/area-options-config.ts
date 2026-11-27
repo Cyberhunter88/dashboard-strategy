@@ -9,7 +9,7 @@
 // ====================================================================
 
 import type { HomeAssistant } from '../types/homeassistant';
-import type { AreaOptions, GroupOptions, Simon42StrategyConfig } from '../types/strategy';
+import type { AreaCameraStream, AreaOptions, GroupOptions, Simon42StrategyConfig } from '../types/strategy';
 import { isDefaultShowName } from '../utils/badge-utils';
 
 type AreasDisplay = NonNullable<Simon42StrategyConfig['areas_display']>;
@@ -32,6 +32,62 @@ function withList<T extends object>(target: T, key: keyof T & string, list: stri
 }
 
 // -- areas_options ----------------------------------------------------
+
+const streamUrl = (stream: AreaCameraStream): string =>
+  (typeof stream === 'string' ? stream : typeof stream?.url === 'string' ? stream.url : '').trim();
+
+/** Editor text for `camera_streams`: one `stream` or `stream | Name` per line. */
+export function formatCameraStreamLines(streams: readonly AreaCameraStream[] | undefined): string {
+  return (streams ?? [])
+    .map((stream) => {
+      const url = streamUrl(stream);
+      const name = typeof stream === 'object' && typeof stream?.name === 'string' ? stream.name.trim() : '';
+      return name && name !== url ? `${url} | ${name}` : url;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+/**
+ * Parse the editor text back into `camera_streams`. Options that only YAML can set (`hd_url`, `mode`, ...)
+ * are kept for streams whose URL is still listed; plain entries stay plain strings.
+ */
+export function parseCameraStreamLines(
+  text: string,
+  existing: readonly AreaCameraStream[] | undefined
+): AreaCameraStream[] {
+  const previous = new Map((existing ?? []).map((stream) => [streamUrl(stream), stream] as const));
+  const seen = new Set<string>();
+  const result: AreaCameraStream[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const separator = line.indexOf('|');
+    const url = (separator >= 0 ? line.slice(0, separator) : line).trim();
+    const name = separator >= 0 ? line.slice(separator + 1).trim() : '';
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+
+    const before = previous.get(url);
+    const base = before && typeof before === 'object' ? { ...before } : { url };
+    if (name) base.name = name;
+    else delete base.name;
+    result.push(Object.keys(base).length === 1 ? url : base);
+  }
+  return result;
+}
+
+/** Set an area's `camera_streams` from the editor text; an empty text removes the option. */
+export function setAreaCameraStreams(
+  config: Simon42StrategyConfig,
+  areaId: string,
+  text: string
+): Simon42StrategyConfig {
+  return updateAreaOptions(config, areaId, (options) => {
+    const streams = parseCameraStreamLines(text, options.camera_streams);
+    if (streams.length > 0) options.camera_streams = streams;
+    else delete options.camera_streams;
+    return options;
+  });
+}
 
 /** Replace one area's options; drops the area entry and areas_options when they become empty. */
 export function updateAreaOptions(

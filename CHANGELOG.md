@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.7...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.45.0...HEAD).
+
+## 1.46.0
+
+- New room option `areas_options.<area>.camera_streams`: go2rtc stream names or URLs without a Home Assistant camera entity render in the room's camera block as `custom:webrtc-camera` cards with the low-latency defaults (`mode: webrtc,mse`, muted, only while visible), independent of `camera_renderer`. Object entries take `name`, `hd_url` (browser_mod HD popup) and the webrtc-camera options. The room editor gets a "go2rtc camera streams" field (one `stream | Name` per line) that keeps YAML-only options. `show_cameras_in_rooms: false` hides them too.
 
 ## 1.45.0
 

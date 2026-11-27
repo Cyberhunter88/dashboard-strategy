@@ -6,6 +6,7 @@ import { localize } from '../../utils/localize';
 import type { Simon42DashboardStrategyEditor } from '../StrategyEditor';
 import { parseEditorYamlConfig, withYaml } from '../editor-yaml';
 import { formatEntityDisplayName } from '../../utils/name-utils';
+import { formatCameraStreamLines, setAreaCameraStreams } from '../area-options-config';
 type PanelHost = ReturnType<Simon42DashboardStrategyEditor['createRoomOptionsHost']>;
 
 interface DomainGroup {
@@ -98,7 +99,8 @@ export function renderAreaItems(
           isExpanded
             ? html`
                 <div class="area-content" data-area-id=${area.area_id}>
-                  ${host._renderAreaDisplayTypeOverride(area)} ${host._renderAreaViewOverride(area.area_id)}
+                  ${host._renderAreaDisplayTypeOverride(area)} ${renderAreaCameraStreams(host, area.area_id)}
+                  ${host._renderAreaViewOverride(area.area_id)}
                   ${
                     cachedData
                       ? host._renderAreaEntities(area.area_id, cachedData)
@@ -133,6 +135,30 @@ export function renderAreaDisplayTypeOverride(host: PanelHost, area: AreaRegistr
       </select>
     </div>
     ${!area.picture ? html`<div class="description">${localize('editor.area_display_type_no_picture')}</div>` : nothing}
+  `;
+}
+
+export function renderAreaCameraStreams(host: PanelHost, areaId: string): TemplateResult {
+  const streams = host._config.areas_options?.[areaId]?.camera_streams;
+  return html`
+    <div class="custom-item" style="margin-bottom: 10px;">
+      <div class="custom-item-header">
+        <strong>${localize('editor.area_camera_streams_title')}</strong>
+      </div>
+      <div class="description" style="margin: 0 0 10px 0;">${localize('editor.area_camera_streams_help')}</div>
+      <textarea
+        rows="3"
+        placeholder="kinderzimmer | Kinderzimmer"
+        .value=${formatCameraStreamLines(streams)}
+        style="width: 100%;"
+        @change=${(e: Event) => {
+          const newConfig = setAreaCameraStreams(host._config, areaId, (e.target as HTMLTextAreaElement).value);
+          host._config = newConfig;
+          host._fireConfigChanged(newConfig);
+        }}
+      >
+      </textarea>
+    </div>
   `;
 }
 

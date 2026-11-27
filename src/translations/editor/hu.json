@@ -235,6 +235,8 @@
     "section_advanced": "Speciális funkciók",
     "section_area_views": "Területek és egyéni nézetek",
     "area_view_override_intro": "Kezeld a területeket, vagy nyiss meg egyet teljes Lovelace-nézet YAML-ben történő beillesztéséhez.",
+    "area_camera_streams_title": "go2rtc kamerastreamek",
+    "area_camera_streams_help": "Soronként egy stream: a go2rtc stream neve (vagy egy URL), opcionálisan „| Megjelenített név” utótaggal. A streamek a helyiség kamerablokkjában WebRTC kártyaként jelennek meg; a custom:webrtc-camera kártya szükséges, kamera entitás nem. További beállítások, például a hd_url, YAML-ben adhatók meg, és megmaradnak.",
     "area_view_override_title": "Egyéni területnézet",
     "area_view_override_help": "A YAML felváltja a terület automatikusan létrehozott nézetét. A cím, az útvonal és az ikon továbbra is a Home Assistant területéből származik.",
     "area_view_override_remove": "Egyéni nézet eltávolítása",

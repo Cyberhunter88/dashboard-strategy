@@ -12,6 +12,7 @@ import type {
   StackKey,
   CameraWebrtcStreamsConfig,
   CameraWebrtcStreamConfig,
+  AreaCameraStream,
   GroupOptions,
   Simon42StrategyConfig,
 } from '../types/strategy';
@@ -147,6 +148,48 @@ export function buildWebrtcHdButton(
       },
     },
   };
+}
+
+/**
+ * Cards for a room camera stream without a camera entity (`areas_options.<area>.camera_streams`).
+ * A string is a go2rtc stream name or URL; an object takes `url` plus the webrtc-camera options.
+ * `hd_url` adds a browser_mod popup button like the entity-backed WebRTC cameras. Invalid entries
+ * (no `url`) render nothing.
+ */
+export function buildAreaCameraStreamCards(stream: AreaCameraStream, hass: HomeAssistant): LovelaceCardConfig[] {
+  const config = typeof stream === 'string' ? { url: stream } : stream;
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return [];
+  const url = typeof config.url === 'string' ? config.url.trim() : '';
+  if (!url) return [];
+
+  const name = (typeof config.name === 'string' && config.name.trim()) || url;
+  const options = omitKeys(config, ['url', 'entity', 'hd_url', 'name']);
+  const cards: LovelaceCardConfig[] = [
+    { type: 'custom:webrtc-camera', title: name, ...WEBRTC_CARD_DEFAULTS, ...options, url },
+  ];
+
+  const hdUrl = typeof config.hd_url === 'string' ? config.hd_url.trim() : '';
+  if (hdUrl && hass.services?.browser_mod?.popup) {
+    cards.push({
+      type: 'button',
+      name: `${name} HD`,
+      icon: 'mdi:fullscreen',
+      show_state: false,
+      tap_action: {
+        action: 'fire-dom-event',
+        browser_mod: {
+          service: 'browser_mod.popup',
+          data: {
+            title: name,
+            size: 'wide',
+            dismissable: true,
+            content: { type: 'custom:webrtc-camera', title: name, ...WEBRTC_CARD_DEFAULTS, ...options, url: hdUrl },
+          },
+        },
+      },
+    });
+  }
+  return cards;
 }
 
 function buildNativeCameraCard(
@@ -512,8 +555,12 @@ class Simon42ViewRoomStrategy extends HTMLElement {
       });
     }
 
-    // Cameras
-    if (roomEntities.cameras.length > 0) {
+    // Cameras (entity-backed cameras first, then entity-less go2rtc/WebRTC streams)
+    const areaCameraStreams =
+      dashboardConfig.show_cameras_in_rooms !== false && Array.isArray(areaOptions?.camera_streams)
+        ? areaOptions.camera_streams
+        : [];
+    if (roomEntities.cameras.length > 0 || areaCameraStreams.length > 0) {
       const cameraCards: LovelaceCardConfig[] = [];
       const cameraRenderer = dashboardConfig.camera_renderer ?? 'native';
       const cameraWebrtcStreams = dashboardConfig.camera_webrtc_streams as CameraWebrtcStreamsConfig | undefined;
@@ -612,6 +659,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           );
         }
       }
+      for (const stream of areaCameraStreams) cameraCards.push(...buildAreaCameraStreamCards(stream, hass));
       if (cameraCards.length > 0) {
         pushStack('cameras', {
           type: 'grid',

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatCameraStreamLines,
   getEntityOrdersForArea,
+  parseCameraStreamLines,
+  setAreaCameraStreams,
   getHiddenEntitiesForArea,
   setAreaNavPinned,
   setAreaOrder,
@@ -103,5 +106,26 @@ describe('area options config updates', () => {
     expect(getHiddenEntitiesForArea('kitchen', config)).toEqual({ lights: ['l1'] });
     expect(getEntityOrdersForArea('kitchen', config)).toEqual({ lights: ['l2'] });
     expect(getHiddenEntitiesForArea('missing', config)).toEqual({});
+  });
+});
+
+describe('camera stream lines', () => {
+  it('round-trips plain and named streams', () => {
+    const streams = parseCameraStreamLines('kids\r\n\n living | Living room \nkids', undefined);
+    expect(streams).toEqual(['kids', { url: 'living', name: 'Living room' }]);
+    expect(formatCameraStreamLines(streams)).toBe('kids\nliving | Living room');
+  });
+
+  it('keeps YAML-only options of streams that stay listed', () => {
+    const existing = [{ url: 'garden', hd_url: 'garden_hd', name: 'Old' }, 'gone'];
+    expect(parseCameraStreamLines('garden', existing)).toEqual([{ url: 'garden', hd_url: 'garden_hd' }]);
+  });
+
+  it('removes the option and empty levels for an empty text', () => {
+    const config = { areas_options: { kitchen: { camera_streams: ['cam'] } } };
+    expect(setAreaCameraStreams(config, 'kitchen', '  ')).toEqual({});
+    expect(setAreaCameraStreams({}, 'kitchen', 'cam')).toEqual({
+      areas_options: { kitchen: { camera_streams: ['cam'] } },
+    });
   });
 });

@@ -235,6 +235,8 @@
     "section_advanced": "Advanced",
     "section_area_views": "Areas and custom views",
     "area_view_override_intro": "Manage areas or expand one to paste a complete Lovelace view as YAML.",
+    "area_camera_streams_title": "go2rtc camera streams",
+    "area_camera_streams_help": "One stream per line: the go2rtc stream name (or a URL), optionally followed by “| Display name”. The streams appear in this room's camera block as WebRTC cards and need the custom:webrtc-camera card, but no camera entity. Further options such as hd_url can be set in YAML and are kept.",
     "area_view_override_title": "Custom area view",
     "area_view_override_help": "The YAML replaces the automatically generated view for this area. Title, path, and icon still come from the Home Assistant area.",
     "area_view_override_remove": "Remove custom view",
