@@ -298,6 +298,7 @@ export interface Simon42StrategyConfig {
   hide_grouped_climate_members?: boolean; // default: true — hide thermostats controlled by Better Thermostat or climate groups
   show_energy_in_rooms?: boolean; // default: true (keeps current behavior)
   show_cover_controls_in_rooms?: boolean; // default: false in this fork (conservative opt-in)
+  extended_tile_controls?: boolean; // default: false; HA 2026.11+ hue strip for color lights and target temperature buttons for climates
   show_cameras_in_rooms?: boolean; // default: true
   show_window_contacts_in_rooms?: boolean; // default: false
   show_door_contacts_in_rooms?: boolean; // default: false

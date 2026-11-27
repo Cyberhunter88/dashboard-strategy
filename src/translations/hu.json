@@ -220,6 +220,10 @@
   "pollen": {
     "title": "Pollen"
   },
+  "room_section": {
+    "no_area": "Válassz egy területet a szakasz beállításaiban.",
+    "unknown_area": "A(z) `{area}` terület már nem létezik. Válassz másik területet a szakasz beállításaiban."
+  },
   "maintenance": {
     "unavailable": "Nem érhető el",
     "batteries_critical": "Kritikus töltöttségű akkumulátorok",

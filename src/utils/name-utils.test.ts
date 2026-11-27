@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AreaRegistryEntry } from '../types/registries';
 
-import { mergeStacksOrder, normalizeAreasDisplay, sortLights, stripAreaName } from './name-utils';
+import {
+  formatEntityDisplayName,
+  mergeStacksOrder,
+  normalizeAreasDisplay,
+  sortLights,
+  stripAreaName,
+} from './name-utils';
 
 const areas: AreaRegistryEntry[] = [
   { area_id: 'wohnzimmer', name: 'Wohnzimmer' } as AreaRegistryEntry,
@@ -123,5 +129,51 @@ describe('stripAreaName with device-prefixed names (HA 2026.11)', () => {
   it('keeps the name without a device', () => {
     const noDevice = { ...h('Deckenlampe Licht'), entities: {} };
     expect(stripAreaName('light.a', area, noDevice)).toBe('Deckenlampe Licht');
+  });
+});
+
+describe('formatEntityDisplayName', () => {
+  const state = { entity_id: 'light.a', state: 'on', attributes: { friendly_name: 'Legacy Name' } };
+
+  it('uses the Home Assistant name formatter with device and entity parts', () => {
+    const calls: unknown[][] = [];
+    const hass = {
+      states: { 'light.a': state },
+      formatEntityName: (...args: unknown[]) => {
+        calls.push(args);
+        return 'Deckenlampe Licht';
+      },
+    } as any;
+    expect(formatEntityDisplayName('light.a', hass)).toBe('Deckenlampe Licht');
+    expect(calls[0][1]).toEqual([{ type: 'device' }, { type: 'entity' }]);
+    expect(calls[0][2]).toEqual({ separator: ' ' });
+  });
+
+  it('falls back to friendly_name on older Home Assistant or empty results', () => {
+    expect(formatEntityDisplayName('light.a', { states: { 'light.a': state } } as any)).toBe('Legacy Name');
+    const empty = { states: { 'light.a': state }, formatEntityName: () => '  ' } as any;
+    expect(formatEntityDisplayName('light.a', empty)).toBe('Legacy Name');
+    const throwing = {
+      states: { 'light.a': state },
+      formatEntityName: () => {
+        throw new Error('boom');
+      },
+    } as any;
+    expect(formatEntityDisplayName('light.a', throwing)).toBe('Legacy Name');
+  });
+
+  it('falls back to the object id without a state', () => {
+    expect(formatEntityDisplayName('light.desk_lamp', { states: {} } as any)).toBe('desk lamp');
+  });
+
+  it('strips the device prefix from the composed name', () => {
+    const area = { area_id: 'k', name: 'Küche' } as AreaRegistryEntry;
+    const hass = {
+      states: { 'light.a': state },
+      entities: { 'light.a': { entity_id: 'light.a', device_id: 'd1' } },
+      devices: { d1: { id: 'd1', name: 'Deckenlampe' } },
+      formatEntityName: () => 'Deckenlampe Licht',
+    } as any;
+    expect(stripAreaName('light.a', area, hass)).toBe('Licht');
   });
 });

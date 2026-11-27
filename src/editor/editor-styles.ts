@@ -39,8 +39,8 @@ export const strategyEditorStyles = [
     /* -- Base layout --------------------------------------------------- */
     .card-config {
       padding: 16px;
-      font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
-      font-size: var(--mdc-typography-body1-font-size, 14px);
+      font-family: var(--ha-font-family-body, var(--paper-font-body1_-_font-family, Roboto, sans-serif));
+      font-size: var(--ha-font-size-m, var(--mdc-typography-body1-font-size, 14px));
       color: var(--primary-text-color);
     }
     .panel-navigation {
@@ -1339,7 +1339,8 @@ export const strategyEditorStyles = [
     }
     .description + .subsection-title,
     .form-row + .subsection-title,
-    ha-textfield + .subsection-title {
+    ha-textfield + .subsection-title,
+    ha-input + .subsection-title {
       margin-top: 18px;
     }
     .description + .option-group-title,

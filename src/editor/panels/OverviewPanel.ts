@@ -13,6 +13,8 @@ import { getOptionMetadata } from '../../utils/option-metadata';
 import { getWeatherStartWeatherMode, usesDefaultWeatherStartLayout } from '../../utils/weather-start-defaults';
 import { renderDesignSection } from './DesignPanel';
 import { isOptionEnabled, parseEntityList, toggleRow, type OptionPanelHost } from './option-panel-host';
+import { renderTextInput } from '../text-input';
+import { formatEntityDisplayName } from '../../utils/name-utils';
 
 /** Headings that can be hidden while their section content stays visible. */
 const HIDEABLE_HEADINGS: readonly HeadingKey[] = [
@@ -53,7 +55,7 @@ function entityOptions(hass: HomeAssistant | null, accept: (entityId: string) =>
     .filter(accept)
     .map((entityId) => ({
       entity_id: entityId,
-      name: hass.states[entityId].attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' '),
+      name: formatEntityDisplayName(entityId, hass),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -272,20 +274,18 @@ function entityListField(
   key: 'agenda_calendar_entities' | 'todos_entities',
   prefix: string
 ): TemplateResult {
-  return html`
-    <ha-textfield
-      .value=${(host.config[key] || []).join(', ')}
-      label=${localize(`editor.${key}`)}
-      helper=${localize(`editor.${key}_desc`)}
-      @change=${(event: Event) => {
-        const entities = parseEntityList((event.target as HTMLInputElement).value, (entry) => entry.startsWith(prefix));
-        host.update((config) => {
-          if (entities.length > 0) config[key] = entities;
-          else delete config[key];
-        });
-      }}
-    ></ha-textfield>
-  `;
+  return renderTextInput({
+    value: (host.config[key] || []).join(', '),
+    label: localize(`editor.${key}`),
+    hint: localize(`editor.${key}_desc`),
+    onChange: (value) => {
+      const entities = parseEntityList(value, (entry) => entry.startsWith(prefix));
+      host.update((config) => {
+        if (entities.length > 0) config[key] = entities;
+        else delete config[key];
+      });
+    },
+  });
 }
 
 /**

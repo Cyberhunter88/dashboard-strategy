@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { readVersion, versionTag, VERSION_FILE_NAME } from './version-utils.mjs';
+import { releaseFiles, ZIP_ASSET_NAME } from './release-zip.mjs';
 
 const getArgument = (name) => {
   const index = process.argv.indexOf(name);
@@ -40,11 +41,9 @@ const expectedTag = versionTag(version);
 if (tag !== expectedTag) {
   throw new Error(`Release tag ${tag} does not match ${VERSION_FILE_NAME} version ${version}`);
 }
-const releaseAssetPattern = /\.js(?:\.gz|\.br)?$|\.js\.LICENSE\.txt$/;
-const expectedAssets = fs
-  .readdirSync(distUrl)
-  .filter((name) => releaseAssetPattern.test(name))
-  .sort();
+// Single files for Home Assistant before 2026.12, plus the Marketplace ZIP
+// that 2026.12+ installs in preference (see scripts/release-zip.mjs).
+const expectedAssets = [...releaseFiles(fileURLToPath(distUrl)), ZIP_ASSET_NAME].sort();
 
 const release = JSON.parse(
   execFileSync(

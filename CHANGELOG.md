@@ -2,7 +2,22 @@
 All notable changes to this project will be documented in this file.  
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.6...HEAD).
+A list of unreleased changes can be found [here](https://github.com/Cyberhunter88/dashboard-strategy/compare/v1.44.7...HEAD).
+
+## 1.45.0
+
+Home Assistant 2026.11 compatibility and adoption of its new dashboard features. Every new feature is gated on the running Home Assistant version, so older installations keep the previous behavior.
+
+- Fix: the editor's free-text fields (light favorites, agenda/to-do entities, extra security entities, room visibility rules) were invisible on Home Assistant 2026.11, which no longer ships `ha-textfield`. They now use `ha-input` and fall back to `ha-textfield` on older versions (`src/editor/text-input.ts`).
+- Fix: the dashboard picker entry was registered as `custom:dashboard-strategy`, and Home Assistant prefixes `custom:` itself, so a dashboard created from **Add dashboard** got the type `custom:custom:dashboard-strategy` and failed to load. The entry now uses the bare name; a legacy entry is replaced.
+- Fix: the editor reads the current `--ha-font-family-body`/`--ha-font-size-m` theme variables; Home Assistant 2026.11 removed `--mdc-typography-*`, so the editor fell back to Roboto 14px instead of the theme font.
+- New section strategy `custom:dashboard-strategy-room` (Home Assistant 2026.11+ "Community sections"): one generated room as a single section for any manual sections dashboard, with an area picker editor, a stub preview, and pass-through dashboard options.
+- Timer tiles (overview timers section and room helper block) get the native start/pause/cancel buttons (`timer-actions`, Home Assistant 2026.10+).
+- Smoke and gas `binary_sensor` room badges use the native alert badge that turns red and pulses while active (Home Assistant 2026.11+).
+- New opt-in `extended_tile_controls`: color lights add the hue strip (`light-color`) and climates with a target temperature add +/- buttons (`target-temperature`) in the lights, climate and room views (Home Assistant 2026.11+).
+- Display names use `hass.formatEntityName` (device + entity, Home Assistant 2026.4+) like the built-in cards, falling back to `friendly_name`, which Home Assistant plans to deprecate.
+- Releases attach `dashboard-strategy.zip` with all lazy chunks for the Marketplace in Home Assistant 2026.12+, in addition to the single files for older versions (`scripts/release-zip.mjs`, checked by `verify-release-assets.mjs`).
+- README: Marketplace installation, creating the dashboard from the picker, the new features, and `ha-marketplace:exclude` markers around GitHub-only sections.
 
 ## 1.44.7
 

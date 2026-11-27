@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.44.6`. Unit tests live beside source modules;
+Current development version: `1.45.0`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -17,9 +17,11 @@ Do not rename or remove these identifiers:
 - cards: `dashboard-strategy-{summary,lights-group,covers-group,batteries,area,camera,editable,video-tip}-card`
 - editor: `dashboard-strategy-editor`
 - HACS file: `dashboard-strategy.js`
-- HACS resource path: `/hacsfiles/dashboard-strategy/`
+- HACS resource path: `/hacsfiles/dashboard-strategy/` (Home Assistant 2026.11+ Marketplace serves `/local/community/dashboard-strategy/`; the runtime chunk public path handles both)
+- section strategy: `custom:dashboard-strategy-room` (`ll-strategy-section-dashboard-strategy-room`, editor `dashboard-strategy-room-section-editor`)
+- Marketplace ZIP release asset: `dashboard-strategy.zip` (built by `scripts/release-zip.mjs`)
 - HACS name: `Dashboard Strategy`
-- dashboard picker metadata: `custom:dashboard-strategy`, title `Dashboard Strategy`, icon `mdi:view-dashboard`
+- dashboard picker metadata: `custom:dashboard-strategy`, title `Dashboard Strategy`, icon `mdi:view-dashboard`. `window.customStrategies` entries carry the bare names `dashboard-strategy` and `dashboard-strategy-room`, because Home Assistant prefixes `custom:` itself; register them only through `registerCustomStrategy()` in `src/utils/custom-strategy-registry.ts`
 
 `dashboard-strategy-editable-card` is reserved but currently unused: its implementation was removed in 1.41.1 because nothing imported it, so it was never part of the bundle.
 
@@ -92,6 +94,17 @@ Important behavior:
 - Room cover batch controls are opt-in in this fork (`show_cover_controls_in_rooms: true`). They target only covers supporting each requested feature and exclude window/door/gate/garage cover classes by using only shading and curtain groups.
 - `camera_renderer: webrtc` requires the external `custom:webrtc-camera` card. `camera_webrtc_streams` is keyed by camera entity id and can contain a URL or card options. Keep the native renderer as the dependency-free default.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
+  Features newer than the `hacs.json` minimum must be gated with `haVersionAtLeast()` from `src/utils/ha-version.ts`
+  (timer actions: 2026.10; alert badge, hue strip and target temperature style: 2026.11). Multi-feature controls
+  stack below the tile and stay behind the opt-in `extended_tile_controls`.
+- Home Assistant 2026.11 no longer ships `ha-textfield`. Editor free-text fields use `renderTextInput()` from
+  `src/editor/text-input.ts`, which renders `ha-input` and falls back to `ha-textfield` on older versions. Do not use
+  other internal HA form elements without the same fallback.
+- Entity display names come from `formatEntityDisplayName()` in `src/utils/name-utils.ts` (`hass.formatEntityName`
+  with device + entity parts, falling back to `friendly_name`). Matching and search heuristics may keep reading
+  `friendly_name`.
+- The room section strategy reuses the room view strategy and folds it into one grid section in
+  `src/sections/RoomSection.ts`; options other than `area`/`show_heading` pass through as dashboard options.
 - The editor is the main complexity hotspot: preserve YAML parsing, config-changed events, expansion persistence, inline-editor state, and error reporting.
 - Weather layout, room options, the card picker, overview, summaries, and the favorites/room pin/quick action
   lists have focused panel modules under `src/editor/panels/`. Keep configuration and expansion state in the editor

@@ -51,6 +51,7 @@ jobs:
         run: |
           node scripts/verify-version-sync.mjs --require-tag --tag "$RELEASE_TAG"
           npm run verify:release
+          node scripts/release-zip.mjs
 
       - name: Synchronize release prerelease state
         env:
@@ -70,7 +71,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
-        run: gh release upload "$RELEASE_TAG" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt --clobber -R "$GITHUB_REPOSITORY"
+        run: gh release upload "$RELEASE_TAG" dist/*.js dist/*.js.gz dist/*.js.br dist/*.LICENSE.txt dist-release/dashboard-strategy.zip --clobber -R "$GITHUB_REPOSITORY"
 
       - name: Verify release assets
         env:

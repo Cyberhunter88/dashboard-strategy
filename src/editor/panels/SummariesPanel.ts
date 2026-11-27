@@ -9,6 +9,7 @@ import { localize } from '../../utils/localize';
 import { getOptionDefault } from '../../utils/option-metadata';
 import { DEFAULT_CO2_THRESHOLD, DEFAULT_HUMIDITY_THRESHOLD } from '../../views/ClimateAirQuality';
 import { parseEntityList, toggleRow, type OptionPanelHost } from './option-panel-host';
+import { renderTextInput } from '../text-input';
 
 type NumberOptionKey =
   'battery_critical_threshold' | 'battery_low_threshold' | 'climate_humidity_threshold' | 'climate_co2_threshold';
@@ -124,14 +125,14 @@ export function renderSummaryDetailsSection(host: OptionPanelHost): TemplateResu
           </option>
         </select>
       </div>
-      <ha-textfield
-        .value=${securityExtraEntities.join(', ')}
-        label=${localize('editor.security_extra_entities')}
-        @change=${(event: Event) => {
-          const entities = parseEntityList((event.target as HTMLInputElement).value, (entry) => entry.includes('.'));
+      ${renderTextInput({
+        value: securityExtraEntities.join(', '),
+        label: localize('editor.security_extra_entities'),
+        onChange: (value) => {
+          const entities = parseEntityList(value, (entry) => entry.includes('.'));
           setOrDelete(host, 'security_extra_entities', entities.length > 0 ? entities : undefined);
-        }}
-      ></ha-textfield>
+        },
+      })}
 
       <div class="subsection-title">${localize('editor.lights_options')}</div>
       ${viewSwitch(config.show_light_summary !== false, 'show_light_view')} ${toggleRow(host, 'group_lights_by_floors')}

@@ -4,6 +4,7 @@ import { SECTION_REGISTRY, isSectionHiddenByConfig } from '../../sections/sectio
 import { localize } from '../../utils/localize';
 import { isUtilityViewEnabled } from '../../utils/summary-view-utils';
 import type { StrategyEditorHost } from '../editor-host';
+import { renderTextInput } from '../text-input';
 
 export function renderRoomVisibilityPanel(host: StrategyEditorHost): TemplateResult {
   if (!host._hass) return html``;
@@ -15,18 +16,16 @@ export function renderRoomVisibilityPanel(host: StrategyEditorHost): TemplateRes
       return html`<div class="option-group">
         <div class="option-group-title">${area.name}</div>
         <div class="form-row">
-          <ha-textfield
-            label=${localize('editor.room_visibility_entity')}
-            .value=${rule?.entity || ''}
-            @change=${(event: Event) =>
-              roomVisibilityChanged(host, area.area_id, 'entity', (event.target as HTMLInputElement).value)}
-          ></ha-textfield>
-          <ha-textfield
-            label=${localize('editor.room_visibility_state')}
-            .value=${rule?.state || ''}
-            @change=${(event: Event) =>
-              roomVisibilityChanged(host, area.area_id, 'state', (event.target as HTMLInputElement).value)}
-          ></ha-textfield>
+          ${renderTextInput({
+            label: localize('editor.room_visibility_entity'),
+            value: rule?.entity || '',
+            onChange: (value) => roomVisibilityChanged(host, area.area_id, 'entity', value),
+          })}
+          ${renderTextInput({
+            label: localize('editor.room_visibility_state'),
+            value: rule?.state || '',
+            onChange: (value) => roomVisibilityChanged(host, area.area_id, 'state', value),
+          })}
         </div>
       </div>`;
     })}

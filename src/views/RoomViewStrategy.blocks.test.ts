@@ -244,3 +244,38 @@ describe('strict no_dboard with room sensor replacement', () => {
     expect(badgeIds(server)).toEqual([]);
   });
 });
+
+describe('room smoke detector alert badge', () => {
+  const attic = { area_id: 'attic', name: 'Attic' };
+  const smokeHass = (version?: string): HomeAssistant => {
+    const base = makeHass({
+      areas: [attic],
+      entities: [
+        {
+          entity_id: 'binary_sensor.attic_smoke',
+          area_id: 'attic',
+          state: 'off',
+          attributes: { device_class: 'smoke' },
+        },
+      ],
+    });
+    return { ...base, config: { ...base.config, ...(version ? { version } : {}) } } as HomeAssistant;
+  };
+  const smokeBadge = (view: LovelaceViewConfig) =>
+    (view.badges ?? []).find((b) => typeof b === 'object' && b.entity === 'binary_sensor.attic_smoke') as
+      Record<string, unknown> | undefined;
+
+  it('uses the native alert badge from Home Assistant 2026.11 on', async () => {
+    const hass = smokeHass('2026.11.3');
+    Registry.initialize(hass, {});
+    const view = await generate({ area: attic, dashboardConfig: {} }, hass);
+    expect(smokeBadge(view)).toMatchObject({ type: 'alert', alert_color: 'red', pulse: true });
+  });
+
+  it('keeps the entity badge on older Home Assistant', async () => {
+    const hass = smokeHass('2026.10.4');
+    Registry.initialize(hass, {});
+    const view = await generate({ area: attic, dashboardConfig: {} }, hass);
+    expect(smokeBadge(view)).toMatchObject({ type: 'entity', color: 'red' });
+  });
+});

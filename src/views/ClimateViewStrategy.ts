@@ -64,6 +64,7 @@ class Simon42ViewClimateStrategy extends HTMLElement {
               vertical: false,
               // Current next to target temperature makes the gap visible at a glance.
               state_content: ['hvac_action', 'current_temperature', 'temperature'],
+              extendedControls: strategyConfig.extended_tile_controls === true,
             })
           ),
         ],

@@ -7,8 +7,12 @@
 
 import type { HomeAssistant, HassEntity } from '../types/homeassistant';
 import type { LovelaceTileCardConfig, LovelaceTileCardFeatureConfig } from '../types/lovelace';
+import { haVersionAtLeast } from './ha-version';
 
 const LIGHT_BRIGHTNESS_MODES = ['brightness', 'color_temp', 'hs', 'xy', 'rgb', 'rgbw', 'rgbww', 'white'];
+const LIGHT_COLOR_MODES = ['hs', 'xy', 'rgb', 'rgbw', 'rgbww'];
+const CLIMATE_TARGET_TEMPERATURE = 1;
+const CLIMATE_TARGET_TEMPERATURE_RANGE = 2;
 const LEGACY_FAN_SET_SPEED = 1;
 const LEGACY_MEDIA_PAUSE = 1;
 const LEGACY_MEDIA_STOP = 4096;
@@ -20,6 +24,12 @@ export interface AdaptiveTileCardOptions extends Omit<
 > {
   allowAdaptiveFeatures?: boolean;
   preferFeaturePosition?: 'auto' | 'inline' | 'bottom' | 'none';
+  /**
+   * Opt-in `extended_tile_controls` (HA 2026.11+): color lights add the hue
+   * strip and climates with a target temperature add +/- buttons. Both stack
+   * below the tile, so they stay off by default to keep tiles single-row.
+   */
+  extendedControls?: boolean;
 }
 
 function getDomain(entityId: string): string {
@@ -30,6 +40,16 @@ function hasLightBrightness(state: HassEntity): boolean {
   const modes = state.attributes?.supported_color_modes as string[] | undefined;
   if (Array.isArray(modes) && modes.some((mode) => LIGHT_BRIGHTNESS_MODES.includes(mode))) return true;
   return typeof state.attributes?.brightness === 'number';
+}
+
+function lightSupportsColor(state: HassEntity): boolean {
+  const modes = state.attributes?.supported_color_modes as string[] | undefined;
+  return Array.isArray(modes) && modes.some((mode) => LIGHT_COLOR_MODES.includes(mode));
+}
+
+function climateSupportsTargetTemperature(state: HassEntity): boolean {
+  const supported = (state.attributes?.supported_features as number) || 0;
+  return (supported & (CLIMATE_TARGET_TEMPERATURE | CLIMATE_TARGET_TEMPERATURE_RANGE)) !== 0;
 }
 
 function fanSupportsSpeed(state: HassEntity): boolean {
@@ -53,14 +73,25 @@ function mediaPlayerSupportsSoundModeSelection(state: HassEntity): boolean {
   return Array.isArray(soundModeList) && soundModeList.length > 0;
 }
 
-function buildAdaptiveFeatures(entityId: string, state: HassEntity | undefined): LovelaceTileCardFeatureConfig[] {
+function buildAdaptiveFeatures(
+  hass: HomeAssistant,
+  entityId: string,
+  state: HassEntity | undefined,
+  extendedControls: boolean
+): LovelaceTileCardFeatureConfig[] {
   if (!state) return [];
+  const extended = extendedControls && haVersionAtLeast(hass, 2026, 11);
 
   switch (getDomain(entityId)) {
-    case 'light':
-      return hasLightBrightness(state) ? [{ type: 'light-brightness' }] : [];
+    case 'light': {
+      const features: LovelaceTileCardFeatureConfig[] = hasLightBrightness(state) ? [{ type: 'light-brightness' }] : [];
+      if (extended && lightSupportsColor(state)) features.push({ type: 'light-color', controls: 'hue' });
+      return features;
+    }
     case 'climate':
-      return [{ type: 'climate-hvac-modes' }];
+      return extended && climateSupportsTargetTemperature(state)
+        ? [{ type: 'target-temperature', style: 'buttons' }, { type: 'climate-hvac-modes' }]
+        : [{ type: 'climate-hvac-modes' }];
     case 'cover':
       return [{ type: 'cover-open-close' }];
     case 'fan':
@@ -95,6 +126,9 @@ function buildAdaptiveFeatures(entityId: string, state: HassEntity | undefined):
       return [{ type: 'update-actions' }];
     case 'input_boolean':
       return [{ type: 'toggle' }];
+    case 'timer':
+      // Native start/pause/cancel buttons arrived in HA 2026.10.
+      return haVersionAtLeast(hass, 2026, 10) ? [{ type: 'timer-actions' }] : [];
     default:
       return [];
   }
@@ -116,7 +150,13 @@ export function buildAdaptiveTileCardConfig(
   entityId: string,
   options: AdaptiveTileCardOptions = {}
 ): LovelaceTileCardConfig {
-  const { allowAdaptiveFeatures = true, preferFeaturePosition = 'auto', vertical, ...rest } = options;
+  const {
+    allowAdaptiveFeatures = true,
+    preferFeaturePosition = 'auto',
+    extendedControls = false,
+    vertical,
+    ...rest
+  } = options;
 
   const card: LovelaceTileCardConfig = {
     type: 'tile',
@@ -128,7 +168,7 @@ export function buildAdaptiveTileCardConfig(
   if (!allowAdaptiveFeatures) return card;
 
   const state = hass.states[entityId];
-  const features = buildAdaptiveFeatures(entityId, state);
+  const features = buildAdaptiveFeatures(hass, entityId, state, extendedControls);
   if (features.length === 0) return card;
 
   card.features = features;

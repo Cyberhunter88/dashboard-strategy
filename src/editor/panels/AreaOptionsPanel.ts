@@ -55,8 +55,9 @@ export function renderAreaOptionsPanel(
           ${toggleRow(host, 'show_scripts_in_rooms')} ${toggleRow(host, 'show_vacuums_section_in_rooms')}
           ${toggleRow(host, 'show_switches_section_in_rooms')} ${toggleRow(host, 'show_helpers_section_in_rooms')}
           ${toggleRow(host, 'show_sensors_section_in_rooms')} ${toggleRow(host, 'show_cover_controls_in_rooms')}
-          ${toggleRow(host, 'show_cameras_in_rooms', { defaultOn: true })} ${toggleRow(host, 'camera_live_toggle')}
-          ${toggleRow(host, 'camera_pause_when_hidden')} ${toggleRow(host, 'show_energy_in_rooms', { defaultOn: true })}
+          ${toggleRow(host, 'extended_tile_controls')} ${toggleRow(host, 'show_cameras_in_rooms', { defaultOn: true })}
+          ${toggleRow(host, 'camera_live_toggle')} ${toggleRow(host, 'camera_pause_when_hidden')}
+          ${toggleRow(host, 'show_energy_in_rooms', { defaultOn: true })}
           ${toggleRow(host, 'show_ups_in_rooms', { defaultOn: true })}
           ${toggleRow(host, 'hide_grouped_climate_members', { defaultOn: true })}
           ${toggleRow(host, 'show_window_contacts_in_rooms')} ${toggleRow(host, 'show_door_contacts_in_rooms')}

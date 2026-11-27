@@ -326,6 +326,12 @@ export const OPTION_METADATA = {
     labelKey: 'editor.show_window_contacts_in_rooms',
     values: [true, false],
   },
+  extended_tile_controls: {
+    kind: 'boolean',
+    defaultValue: false,
+    labelKey: 'editor.extended_tile_controls',
+    values: [true, false],
+  },
   show_door_contacts_in_rooms: {
     kind: 'boolean',
     defaultValue: false,

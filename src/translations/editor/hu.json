@@ -207,6 +207,8 @@
     "show_window_contacts_in_rooms_desc": "Jelvényként jeleníti meg az ablakérzékelőket a megfelelő helyiségnézetekben.",
     "show_door_contacts_in_rooms": "Ajtóérzékelők megjelenítése a helyiségnézetekben",
     "show_door_contacts_in_rooms_desc": "Jelvényként jeleníti meg az ajtóérzékelőket a megfelelő helyiségnézetekben.",
+    "extended_tile_controls": "Bővített csempevezérlők",
+    "extended_tile_controls_desc": "A színes lámpák színárnyalat-csúszkát, a termosztátok +/- gombokat kapnak a célhőmérséklethez (világítás-, klíma- és helyiségnézetek, Home Assistant 2026.11-től). A vezérlők a csempe alatt jelennek meg.",
     "use_default_area_sort": "Home Assistant-rendezés használata",
     "use_default_area_sort_desc": "Az itt beállított sorrend helyett a Home Assistantban megadott területsorrendet használja.",
     "areas_manage_desc": "Válaszd ki, mely területek jelenjenek meg az irányítópulton, és milyen sorrendben. Nyisd le a területeket az egyes entitások kezeléséhez.",

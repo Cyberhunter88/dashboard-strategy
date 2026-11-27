@@ -17,6 +17,7 @@ import type { HomeAssistant, HassEntity } from '../types/homeassistant';
 import type { Simon42StrategyConfig } from '../types/strategy';
 import { Registry } from '../Registry';
 import { getBatteryEntities } from './entity-filter';
+import { formatEntityDisplayName } from './name-utils';
 
 const SENSITIVE_STATUS_PATTERN =
   /(?:^|[._ -])(ip|ipv4|ipv6|mac|ssid|password|passwort|token|secret|public|öffentlich|oeffentlich)(?:$|[_ -])/i;
@@ -231,7 +232,7 @@ export function listUnavailableBlocks(hass: HomeAssistant, scan: MaintenanceScan
     const areaId = entry?.area_id ?? null;
     blocks.push({
       representativeId: id,
-      name: String(state.attributes?.friendly_name || id),
+      name: formatEntityDisplayName(id, hass),
       areaName: areaId ? ((Reflect.get(hass.areas, areaId) as { name?: string } | undefined)?.name ?? null) : null,
     });
   }
@@ -245,13 +246,4 @@ export function listUnavailableBlocks(hass: HomeAssistant, scan: MaintenanceScan
   return blocks;
 }
 
-/** hass.config.version >= major.minor (e.g. 2026.3 for the built-in repairs card). */
-export function haVersionAtLeast(hass: HomeAssistant, major: number, minor: number): boolean {
-  const raw = hass.config?.version;
-  if (typeof raw !== 'string') return false;
-  const match = /^(\d+)\.(\d+)/.exec(raw);
-  if (!match) return false;
-  const maj = Number(match[1]);
-  const min = Number(match[2]);
-  return maj > major || (maj === major && min >= minor);
-}
+export { haVersionAtLeast } from './ha-version';

@@ -220,6 +220,10 @@
   "pollen": {
     "title": "Pollen"
   },
+  "room_section": {
+    "no_area": "Wähle in den Einstellungen dieses Abschnitts einen Bereich aus.",
+    "unknown_area": "Der Bereich `{area}` existiert nicht mehr. Wähle in den Einstellungen dieses Abschnitts einen anderen Bereich."
+  },
   "maintenance": {
     "unavailable": "Nicht verfügbar",
     "batteries_critical": "Kritische Batterien",

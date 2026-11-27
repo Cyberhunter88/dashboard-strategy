@@ -27,6 +27,7 @@ import { localize } from '../utils/localize';
 import { debugLog } from '../utils/debug';
 import { defineViewStrategy } from './view-strategy-base';
 import { densePlacement } from '../utils/view-builder';
+import { formatEntityDisplayName } from '../utils/name-utils';
 
 // -- Camera stream preference (Reolink) --------------------------------
 // Reolink exposes several camera entities per device (sub/main streams,
@@ -260,8 +261,7 @@ function pickPrimaryCameras(cameraIds: string[]): string[] {
 }
 
 function cameraDisplayName(cameraId: string, hass: HomeAssistant): string {
-  const friendly = stateFor(hass, cameraId)?.attributes.friendly_name;
-  return typeof friendly === 'string' && friendly ? friendly : cameraId;
+  return stateFor(hass, cameraId) ? formatEntityDisplayName(cameraId, hass) : cameraId;
 }
 
 /** Resolve a camera block's area (camera entity first, then its device). */

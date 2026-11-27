@@ -86,7 +86,7 @@ import { isDefaultShowName } from '../utils/badge-utils';
 import { getEffectiveDeviceAreaId } from '../utils/device-utils';
 import { loadLanguage, localize, onLanguageLoaded } from '../utils/localize';
 import './editor-translations';
-import { mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
+import { formatEntityDisplayName, mergeStacksOrder, normalizeAreasDisplay } from '../utils/name-utils';
 import { normalizeStrategyConfig } from '../utils/strategy-config';
 import { withEnabledOptionalBlocks } from '../utils/weather-start-defaults';
 import { setAreaDisplayTypeOverride, setGlobalAreaDisplayType } from './area-display-options';
@@ -323,7 +323,6 @@ export class Simon42DashboardStrategyEditor extends LitElement {
     const options = [...new Set([...Object.keys(hass.states), ...selected])]
       .filter((id) => isSelectableEntity(hass, id, selected))
       .map((entityId) => {
-        const stateObj = hass.states[entityId];
         const entity = entityMap[entityId];
 
         let areaId = entity?.area_id;
@@ -334,7 +333,7 @@ export class Simon42DashboardStrategyEditor extends LitElement {
         return {
           entity_id: entityId,
           name:
-            (stateObj?.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' ')) +
+            formatEntityDisplayName(entityId, hass) +
             (isRestrictedEntity(hass, entityId) ? ` (${localize('editor.entity_existing_restricted')})` : ''),
           area_id: areaId,
           device_area_id: areaId,

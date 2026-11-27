@@ -82,8 +82,29 @@ export interface LawnMowerCommandsTileFeature extends LovelaceTileCardFeatureBas
   type: 'lawn-mower-commands';
 }
 
+/** HA 2026.11+: hue/saturation strip for color-capable lights. */
+export interface LightColorTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'light-color';
+  controls?: 'hue' | 'saturation' | 'hue_saturation';
+}
+
+/** Climate and water heater target temperature; `style` exists since HA 2026.11. */
+export interface TargetTemperatureTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'target-temperature';
+  style?: 'buttons' | 'slider';
+}
+
+/** HA 2026.10+: start/pause/cancel/finish buttons for timer helpers. */
+export interface TimerActionsTileFeature extends LovelaceTileCardFeatureBase {
+  type: 'timer-actions';
+  actions?: Array<'start' | 'pause' | 'cancel' | 'finish'>;
+}
+
 export type LovelaceTileCardFeatureConfig =
   | LightBrightnessTileFeature
+  | LightColorTileFeature
+  | TargetTemperatureTileFeature
+  | TimerActionsTileFeature
   | ClimateHvacModesTileFeature
   | CoverOpenCloseTileFeature
   | FanSpeedTileFeature
@@ -120,6 +141,21 @@ export interface LovelaceBadgeConfig {
   tap_action?: Record<string, unknown>;
   visibility?: LovelaceCondition[];
   [key: string]: unknown;
+}
+
+/**
+ * HA 2026.11+ native alert badge: colored (optionally pulsing) while the entity
+ * is in an alert state. Supports alarm_control_panel, binary_sensor, cover and lock.
+ */
+export interface LovelaceAlertBadgeConfig extends LovelaceBadgeConfig {
+  type: 'alert';
+  entity: string;
+  alert_color?: string;
+  clear_color?: string;
+  pulse?: boolean;
+  show_name?: boolean;
+  show_state?: boolean;
+  show_icon?: boolean;
 }
 
 // -- Sections ---------------------------------------------------------

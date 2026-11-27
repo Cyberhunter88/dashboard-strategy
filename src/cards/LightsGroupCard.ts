@@ -538,6 +538,7 @@ class Simon42LightsGroupCard extends LitElement {
     const cardConfig = buildAdaptiveTileCardConfig(this.hass!, entityId, {
       vertical: false,
       state_content: 'last_changed',
+      extendedControls: this._config?.config?.extended_tile_controls === true,
     });
     const displayName = this._getDisplayName(entityId);
     if (displayName) {

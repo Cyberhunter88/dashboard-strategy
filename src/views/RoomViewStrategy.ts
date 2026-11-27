@@ -35,6 +35,9 @@ import { buildAdaptiveTileCardConfig } from '../utils/tile-card-utils';
 import { createSectionsView } from '../utils/view-builder';
 import { createRoomEntities, findUpsEntityGroups, getVisibleAreaEntities } from '../utils/area-entity-utils';
 import { buildCoverControlBadges } from '../utils/cover-controls';
+import { haVersionAtLeast } from '../utils/ha-version';
+
+const ALERT_BADGE_KEYS = new Set(['smoke', 'gas']);
 
 function upsSensorRole(entityId: string, hass: HomeAssistant): number {
   const deviceClass = hass.states[entityId]?.attributes?.device_class as string | undefined;
@@ -366,12 +369,17 @@ class Simon42ViewRoomStrategy extends HTMLElement {
 
     // Auto-detected sensors (first match per type, except window/door which show all)
     // Colors from shared BADGE_COLOR_MAP, show_name from shared isDefaultShowName()
+    // Smoke and gas detectors use the native alert badge (HA 2026.11+), which
+    // lights up and pulses while the detector reports "on".
+    const alertBadges = haVersionAtLeast(hass, 2026, 11);
     const addCandidate = (entityId: string, colorKey: string, dcOverride?: string) => {
       const dc = dcOverride || (hass.states[entityId]?.attributes?.device_class as string | undefined);
+      const alert = alertBadges && ALERT_BADGE_KEYS.has(colorKey) && entityId.startsWith('binary_sensor.');
       candidates.push({
         entity: entityId,
         color: BADGE_COLOR_MAP[colorKey] || 'grey',
         ...(isDefaultShowName(dc) ? { showName: true } : {}),
+        ...(alert ? { alert: true } : {}),
       });
     };
 
@@ -671,6 +679,7 @@ class Simon42ViewRoomStrategy extends HTMLElement {
           name: stripAreaName(e, area, hass),
           vertical: false,
           state_content: ['hvac_action', 'current_temperature'],
+          extendedControls: dashboardConfig.extended_tile_controls === true,
         })
       );
     for (const e of roomEntities.fan) {
