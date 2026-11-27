@@ -117,6 +117,26 @@ strategy:
 - Zugangsdaten gehören nur in die eigene Home-Assistant-Konfiguration, nicht in öffentliche Repositories.
 - In der Kamera selbst ein Keyframe-Intervall von etwa einer Sekunde einstellen, das verkürzt Startzeit und Wiederverbinden.
 
+### go2rtc-Streams direkt einem Raum zuordnen
+
+Streams aus dem go2rtc-Add-on brauchen keine Kamera-Entität. Mit `areas_options.<bereich>.camera_streams` erscheinen sie im Kamerablock des Raums als `custom:webrtc-camera`-Karte, unabhängig von `camera_renderer`. Die Karte holt das Bild direkt über go2rtc (WebRTC mit MSE-Fallback, kein HLS) und startet erst, wenn sie sichtbar ist:
+
+```yaml
+strategy:
+  type: custom:dashboard-strategy
+  areas_options:
+    kinderzimmer:
+      camera_streams:
+        - kinderzimmer            # Stream-Name aus go2rtc.yaml
+    garten:
+      camera_streams:
+        - url: garten_sub
+          name: Garten
+          hd_url: garten_main     # optional, Popup per browser_mod
+```
+
+Ein Eintrag ist entweder der Stream-Name (oder eine URL) oder ein Objekt mit `url`, optional `name`, `hd_url` und den Optionen der WebRTC-Karte (`mode`, `muted`, `intersection`, `background`, `server`, ...). Im Editor gibt es pro Raum das Feld „go2rtc-Kamerastreams“ mit einem Eintrag pro Zeile (`stream` oder `stream | Name`); Optionen, die nur per YAML gesetzt wurden, bleiben dabei erhalten. `show_cameras_in_rooms: false` blendet auch diese Streams aus. Die Security- und CCTV-Ansichten zeigen weiterhin nur Kamera-Entitäten.
+
 ### Alle Optionen (Referenz)
 
 Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht mehr ausgewertete Layoutfelder sowie der intern vom Karteneditor verwaltete `inline_editor`-Block sind bewusst nicht als einstellbare Optionen aufgeführt.
@@ -247,6 +267,7 @@ Die Tabelle beschreibt die öffentliche YAML-Konfiguration. Veraltete, nicht meh
 | `areas_options` | object | `{}` | Entity-Filterung pro Bereich |
 | `areas_options.*.display_type` | `"compact"` \| `"picture"` | globaler Wert | Darstellung einer einzelnen Bereichskarte überschreiben |
 | `areas_options.*.stacks_order` | string[] | Standard-Reihenfolge | Reihenfolge der Abschnitte in einer Raum-View; im Editor per Drag & Drop oder mit den Auf-/Ab-Schaltflächen bedienbar |
+| `areas_options.*.camera_streams` | (string \| object)[] | `[]` | go2rtc-/WebRTC-Streams ohne Kamera-Entität im Kamerablock des Raums; braucht `custom:webrtc-camera` |
 | `areas_options.*.custom_cards` | object[] | `[]` | Eigene Karten, Kacheln oder Sections pro Raum |
 | `areas_options.*.view_override` | object | - | Vollständige YAML-View, die die automatisch erzeugte Bereichsansicht ersetzt |
 | `room_pin_entities` | string[] | `[]` | Raum-Pin Entitäten |

@@ -76,3 +76,24 @@ describe('hd_url grid/HD split', () => {
     ).toBeUndefined();
   });
 });
+
+describe('buildAreaCameraStreamCards', () => {
+  const hassWith = (popup: boolean) => ({ services: popup ? { browser_mod: { popup: {} } } : {} }) as never;
+
+  it('adds an HD popup button only with hd_url and browser_mod', async () => {
+    const { buildAreaCameraStreamCards } = await import('./RoomViewStrategy');
+    const stream = { url: 'garden_sub', hd_url: 'garden_main', name: 'Garden' };
+    const cards = buildAreaCameraStreamCards(stream, hassWith(true));
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).not.toHaveProperty('hd_url');
+    expect(cards[1]).toMatchObject({ type: 'button', name: 'Garden HD' });
+    expect((cards[1].tap_action as any).browser_mod.data.content).toMatchObject({ url: 'garden_main' });
+    expect(buildAreaCameraStreamCards(stream, hassWith(false))).toHaveLength(1);
+  });
+
+  it('ignores entries without a URL', async () => {
+    const { buildAreaCameraStreamCards } = await import('./RoomViewStrategy');
+    expect(buildAreaCameraStreamCards('  ', hassWith(false))).toEqual([]);
+    expect(buildAreaCameraStreamCards({ name: 'x' }, hassWith(false))).toEqual([]);
+  });
+});

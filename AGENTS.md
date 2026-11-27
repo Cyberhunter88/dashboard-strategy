@@ -4,7 +4,7 @@ Custom Lovelace Dashboard Strategy for Home Assistant. The project generates dyn
 
 This fork is `Cyberhunter88/dashboard-strategy` and must keep its own public names so it can coexist with `TheRealSimon42/dashboard-strategy`.
 
-Current development version: `1.45.0`. Unit tests live beside source modules;
+Current development version: `1.46.0`. Unit tests live beside source modules;
 browser tests, shared fixtures, and script integration tests live under `tests/`.
 
 ## Public contract
@@ -92,6 +92,8 @@ Important behavior:
 - Dual-lens camera devices render one block per preferred lens stream, but device-level companion entities, PTZ controls, and recordings links render only once per device.
 - Areas hidden from the overview remain visible in Security/CCTV by default and get no invalid room navigation link. Only `hide_hidden_areas_in_security: true` filters them from both layouts, cameras, and security activity.
 - Room cover batch controls are opt-in in this fork (`show_cover_controls_in_rooms: true`). They target only covers supporting each requested feature and exclude window/door/gate/garage cover classes by using only shading and curtain groups.
+- `areas_options.<area>.camera_streams` adds entity-less go2rtc/WebRTC streams to the room camera block only
+  (`buildAreaCameraStreamCards()`); Security/CCTV stay entity-based.
 - `camera_renderer: webrtc` requires the external `custom:webrtc-camera` card. `camera_webrtc_streams` is keyed by camera entity id and can contain a URL or card options. Keep the native renderer as the dependency-free default.
 - Adaptive native tile features are centralized in `src/utils/tile-card-utils.ts` and must only expose features supported by each entity.
   Features newer than the `hacs.json` minimum must be gated with `haVersionAtLeast()` from `src/utils/ha-version.ts`

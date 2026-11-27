@@ -184,6 +184,17 @@ export interface CameraWebrtcStreamConfig {
 
 export type CameraWebrtcStreamsConfig = Record<string, string | CameraWebrtcStreamConfig>;
 
+/**
+ * A camera stream shown in a room without a Home Assistant camera entity, e.g. a go2rtc stream name
+ * (`kinderzimmer`) or a full URL. Rendered with `custom:webrtc-camera` regardless of `camera_renderer`.
+ */
+export interface AreaCameraStreamConfig extends CameraWebrtcStreamConfig {
+  /** Card title; defaults to the stream name. */
+  name?: string;
+}
+
+export type AreaCameraStream = string | AreaCameraStreamConfig;
+
 // -- Stack Ordering (per-area room view) ------------------------------
 
 export type StackKey =
@@ -434,6 +445,8 @@ export interface AreaOptions {
   custom_cards?: AreaCustomCard[];
   stacks_order?: StackKey[]; // default: DEFAULT_STACKS_ORDER
   view_override?: AreaViewOverride;
+  /** go2rtc/WebRTC streams without a camera entity, shown in this room's camera block. */
+  camera_streams?: AreaCameraStream[];
 }
 
 export interface AreaViewOverride {

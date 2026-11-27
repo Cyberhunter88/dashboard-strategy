@@ -279,3 +279,34 @@ describe('room smoke detector alert badge', () => {
     expect(smokeBadge(view)).toMatchObject({ type: 'entity', color: 'red' });
   });
 });
+
+describe('room go2rtc camera streams', () => {
+  function webrtcCards(view: LovelaceViewConfig) {
+    return (view.sections ?? []).flatMap((section) =>
+      (section.cards ?? []).filter((card) => card.type === 'custom:webrtc-camera')
+    );
+  }
+
+  it('renders entity-less streams in the camera block with WebRTC defaults', async () => {
+    const dashboardConfig = {
+      areas_options: {
+        kitchen: { camera_streams: ['kitchen_cam', { url: 'kitchen_wide', name: 'Wide', mode: 'mse' }, { name: 'x' }] },
+      },
+    };
+    Registry.initialize(hass, dashboardConfig);
+    const view = await generate({ area, dashboardConfig }, hass);
+    expect(headings(view)).toContain('Cameras');
+    expect(webrtcCards(view)).toEqual([
+      expect.objectContaining({ url: 'kitchen_cam', title: 'kitchen_cam', mode: 'webrtc,mse', background: false }),
+      expect.objectContaining({ url: 'kitchen_wide', title: 'Wide', mode: 'mse' }),
+    ]);
+    expect(webrtcCards(view)[1]).not.toHaveProperty('name');
+  });
+
+  it('respects show_cameras_in_rooms: false', async () => {
+    const dashboardConfig = { show_cameras_in_rooms: false, areas_options: { kitchen: { camera_streams: ['cam'] } } };
+    Registry.initialize(hass, dashboardConfig);
+    const view = await generate({ area, dashboardConfig }, hass);
+    expect(webrtcCards(view)).toEqual([]);
+  });
+});

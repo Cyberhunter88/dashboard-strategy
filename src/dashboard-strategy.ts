@@ -14,7 +14,7 @@ import { isRoomViewVisible } from './utils/room-visibility';
 import { normalizeStrategyConfig } from './utils/strategy-config';
 import { registerCustomStrategy, type CustomStrategyEntry } from './utils/custom-strategy-registry';
 
-const STRATEGY_VERSION = '1.45.0'; // synchronized from package.json
+const STRATEGY_VERSION = '1.46.0'; // synchronized from package.json
 
 declare let __webpack_public_path__: string;
 declare let __webpack_get_script_filename__: (chunkId: number | string) => string;
